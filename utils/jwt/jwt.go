@@ -30,7 +30,7 @@ func ByteSliceEqual(s0 []byte, s1 []byte) bool {
 // 签名器
 type signer interface {
 	algorithmName() string                       // 返回加密算法名称，需要对应Header部分中的Alg属性
-	sign(data []byte) ([]byte, error)            // 加密
+	sign(data []byte) ([]byte, error)            // 签名
 	verify(data []byte, encryptData []byte) bool // 验证
 }
 
@@ -204,14 +204,14 @@ func (that *Jwt) General() (string, error) {
 	// Header
 	temp, err = json.Marshal(that.header)
 	if err != nil {
-		return "", err
+		return "", errors.New("header json编码失败")
 	}
 	that._headerBase64 = base64.RawURLEncoding.EncodeToString(temp)
 
 	// Payload
 	temp, err = json.Marshal(that.payload)
 	if err != nil {
-		return "", err
+		return "", errors.New("payload json编码失败")
 	}
 	that._payloadJson = string(temp)
 	that._payloadBase64 = base64.RawURLEncoding.EncodeToString(temp)
@@ -219,11 +219,11 @@ func (that *Jwt) General() (string, error) {
 	// Signature
 	that.signature, err = that.encryptor.sign([]byte(that._headerBase64 + "." + that._payloadBase64))
 	if err != nil {
-		return "", err
+		return "", errors.New("签名失败")
 	}
 	that._signatureBase64 = base64.RawURLEncoding.EncodeToString(that.signature)
 	if err != nil {
-		return "", err
+		return "", errors.New("signature base64编码失败")
 	}
 
 	that.jwtString = fmt.Sprintf("%s.%s.%s", that._headerBase64, that._payloadBase64, that._signatureBase64)
@@ -236,8 +236,7 @@ func (that *Jwt) Parse(jwtString string) (res map[string]interface{}, err error)
 	// 分割
 	splitRes := strings.Split(jwtString, ".")
 	if len(splitRes) != 3 {
-		err = errors.New("jwt格式错误")
-		return res, err
+		return res, errors.New("token格式错误")
 	}
 	that._headerBase64, that._payloadBase64, that._signatureBase64 = splitRes[0], splitRes[1], splitRes[2]
 
@@ -245,44 +244,39 @@ func (that *Jwt) Parse(jwtString string) (res map[string]interface{}, err error)
 
 	// Signature
 	if that.signature, err = base64.RawURLEncoding.DecodeString(that._signatureBase64); err != nil {
-		err = errors.New("signature格式错误")
-		return res, err
+		return res, errors.New("signature格式错误")
 	}
 	if !that.encryptor.verify([]byte(that._headerBase64+"."+that._payloadBase64), that.signature) {
-		err = errors.New("验证失败")
-		return res, err
+		return res, errors.New("无效token")
 	}
 
 	// Header
 	if temp, err = base64.RawURLEncoding.DecodeString(that._headerBase64); err != nil {
-		return res, err
+		return res, errors.New("header base64解码失败")
 	}
 	if err = json.Unmarshal(temp, &that.header); err != nil {
-		return res, err
+		return res, errors.New("header json解码失败")
 	}
 	if that.header.Typ != "JWT" || that.header.Alg != that.encryptor.algorithmName() {
-		err = errors.New("不支持的类型")
-		return res, err
+		return res, errors.New("不支持的类型：" + that.header.Alg)
 	}
 
 	// Payload
 	if temp, err = base64.RawURLEncoding.DecodeString(that._payloadBase64); err != nil {
-		return res, err
+		return res, errors.New("payload base64解码失败")
 	}
 	that._payloadJson = string(temp)
 	if err = json.Unmarshal(temp, &that.payload); err != nil {
-		return res, err
+		return res, errors.New("payload json解码失败")
 	}
 
 	// 验证有效性
 	now := time.Now().Unix()
 	if that.payload.Exp != 0 && that.payload.Exp <= now {
-		err = errors.New("JWT已过期")
-		return res, err
+		return res, errors.New("token已过期")
 	}
 	if that.payload.Nbf != 0 && that.payload.Nbf > now {
-		err = errors.New("JWT未生效")
-		return res, err
+		return res, errors.New("token未生效")
 	}
 
 	return that.payload.Data, nil

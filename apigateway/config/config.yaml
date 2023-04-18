@@ -1,0 +1,5 @@
+server:
+  port: "8080"
+
+db:
+  dsn: "root:_IpFCT^*pui~Mac7~0%SIicRq@Z6rtzE@tcp(db_1:3306)/kcserver?charset=utf8&parseTime=True&loc=Local"

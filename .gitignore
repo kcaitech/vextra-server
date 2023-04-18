@@ -1,1 +1,8 @@
 /.idea
+/docker_compose/nginx/kc_home
+/docker_compose/mysql/data
+/id_ed25519
+
+/apigateway/log
+/loginservice/log
+/userservice/log
