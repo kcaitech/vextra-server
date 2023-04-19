@@ -4,5 +4,5 @@
 /id_ed25519
 
 /apigateway/log
-/loginservice/log
+/authservice/log
 /userservice/log

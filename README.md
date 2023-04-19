@@ -3,7 +3,7 @@
 kcserver是一个使用Golang开发的微服务应用，其中包含以下微服务：
 
 - apigateway：API网关，用于接收和分发HTTP请求，并提供负载均衡、鉴权等功能。
-- loginservice：登录模块，处理用户登录验证和授权。
+- authservice：登录模块，处理用户登录验证和授权。
 - userservice：用户模块，提供用户信息管理服务。
 
 ## 架构设计

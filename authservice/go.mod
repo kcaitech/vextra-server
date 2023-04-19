@@ -1,4 +1,4 @@
-module protodesign.cn/kcserver/userservice
+module protodesign.cn/kcserver/authservice
 
 go 1.20
 

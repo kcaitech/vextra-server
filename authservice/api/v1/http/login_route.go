@@ -1,10 +1,11 @@
 package http
 
 import (
+	"protodesign.cn/kcserver/authservice/controllers"
+
 	"github.com/gin-gonic/gin"
-	"protodesign.cn/kcserver/userservice/controllers"
 )
 
 func loadUserRoutes(api *gin.RouterGroup) {
-	api.GET("/users/info", controllers.UserInfo)
+	api.POST("/login", controllers.Login)
 }

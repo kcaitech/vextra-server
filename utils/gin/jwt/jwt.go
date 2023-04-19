@@ -3,6 +3,7 @@ package jwt
 import (
 	"encoding/json"
 	"errors"
+	"github.com/gin-gonic/gin"
 	"protodesign.cn/kcserver/utils/jwt"
 	"time"
 )
@@ -50,4 +51,17 @@ func ParseJwt(token string) (*Data, error) {
 		return nil, errors.New("无效token")
 	}
 	return &jwtData, nil
+}
+
+func GetJwtData(c *gin.Context) (*Data, error) {
+	token := c.GetHeader("Token")
+	return ParseJwt(token)
+}
+
+func GetUserId(c *gin.Context) (uint, error) {
+	jwtData, err := GetJwtData(c)
+	if err != nil {
+		return 0, err
+	}
+	return jwtData.Id, nil
 }

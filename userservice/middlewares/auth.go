@@ -3,7 +3,7 @@ package middlewares
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"protodesign.cn/kcserver/userservice/utils/jwt"
+	"protodesign.cn/kcserver/utils/gin/jwt"
 	"protodesign.cn/kcserver/utils/gin/response"
 )
 

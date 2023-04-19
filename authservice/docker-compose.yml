@@ -1,31 +1,31 @@
 version: '3'
 
 services:
-  userservice:
+  authservice:
     build:
       context: ..
-      dockerfile: ./userservice/Dockerfile
-    image: userservice:latest
-    container_name: userservice
+      dockerfile: ./authservice/Dockerfile
+    image: authservice:latest
+    container_name: authservice
     networks:
-      userservice_net_1:
-        ipv4_address: 172.23.0.2
+      authservice_net_1:
+        ipv4_address: 172.22.0.2
       db_net_1:
     external_links:
       - db_1
     ports:
-      - "10002:10002"
+      - "10001:10001"
     volumes:
       - ./config/config.yaml:/app/config/config.yaml
       - ./log/all.log:/app/log/all.log
 
 networks:
-  userservice_net_1:
-    name: userservice_net_1
+  authservice_net_1:
+    name: authservice_net_1
     driver: bridge
     ipam:
       config:
-        - subnet: 172.23.0.0/16
-          gateway: 172.23.0.1
+        - subnet: 172.22.0.0/16
+          gateway: 172.22.0.1
   db_net_1:
     external: true
