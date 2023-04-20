@@ -4,7 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"protodesign.cn/kcserver/apigateway/utils/jwt"
-	"protodesign.cn/kcserver/utils/gin/response"
+	"protodesign.cn/kcserver/common/gin/response"
 )
 
 func AuthMiddleware() gin.HandlerFunc {

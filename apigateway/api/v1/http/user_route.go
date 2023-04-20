@@ -1,10 +1,9 @@
 package http
 
 import (
-	. "protodesign.cn/kcserver/utils/gin/reverse_proxy"
-
 	"github.com/gin-gonic/gin"
 	"protodesign.cn/kcserver/apigateway/middlewares"
+	. "protodesign.cn/kcserver/common/gin/reverse_proxy"
 )
 
 func loadUserRoutes(api *gin.RouterGroup) {

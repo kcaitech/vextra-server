@@ -1,30 +1,16 @@
 package config
 
 import (
-	"gopkg.in/yaml.v3"
-	"io/ioutil"
-	"log"
+	"protodesign.cn/kcserver/common/config"
 )
 
 type Configuration struct {
-	Server struct {
-		Port string `yaml:"port"`
-	} `yaml:"server"`
-	DB struct {
-		DSN string `yaml:"dsn"`
-	} `yaml:"db"`
+	config.BaseConfiguration `yaml:",inline"`
 }
 
 var Config Configuration
 
-func LoadConfig() {
-	file, err := ioutil.ReadFile("config/config.yaml")
-	if err != nil {
-		log.Fatalf("读取配置文件失败: %v", err)
-	}
-
-	err = yaml.Unmarshal(file, &Config)
-	if err != nil {
-		log.Fatalf("配置文件解析失败: %v", err)
-	}
+func LoadConfig() *Configuration {
+	config.LoadConfig("config/config.yaml", &Config)
+	return &Config
 }

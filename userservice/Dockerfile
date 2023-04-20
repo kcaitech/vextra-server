@@ -16,7 +16,8 @@ RUN set -ex \
 WORKDIR /app/userservice
 COPY ./userservice .
 COPY ./utils ../utils
-RUN go mod download && go mod tidy -v && go build -ldflags "-s -w" -o userservice ./cmd/main.go
+COPY ./common ../common
+RUN go mod download && go mod tidy -v && go build -ldflags "-s -w" -o userservice ./main.go
 
 FROM alpine:3.17 as runner
 WORKDIR /app

@@ -23,7 +23,7 @@ services:
       - ./data:/var/lib/mysql
       - ./conf/my.cnf:/etc/my.cnf
       - ./conf/conf.d:/etc/my.cnf.d
-      - ./init:/docker-entrypoint-initdb.d
+      - ./start:/docker-entrypoint-initdb.d
 
 networks:
   db_net_1:

@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"protodesign.cn/kcserver/utils/gin/response"
+	"protodesign.cn/kcserver/common/gin/response"
 
 	"github.com/gin-gonic/gin"
 )

@@ -2,10 +2,10 @@ package controllers
 
 import (
 	"github.com/gin-gonic/gin"
-	"protodesign.cn/kcserver/authservice/models"
-	"protodesign.cn/kcserver/authservice/services"
 	"protodesign.cn/kcserver/authservice/utils/jwt"
-	"protodesign.cn/kcserver/utils/gin/response"
+	"protodesign.cn/kcserver/common/gin/response"
+	"protodesign.cn/kcserver/common/models"
+	"protodesign.cn/kcserver/common/services"
 )
 
 type loginRequest struct {
