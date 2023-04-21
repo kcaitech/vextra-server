@@ -6,4 +6,5 @@ func LoadRoutes(router *gin.Engine) {
 	apiGroup := router.Group("/api/v1")
 	loadLoginRoutes(apiGroup)
 	loadUserRoutes(apiGroup)
+	loadDocumentRoutes(apiGroup)
 }

@@ -3,8 +3,8 @@ package middlewares
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"protodesign.cn/kcserver/apigateway/utils/jwt"
 	"protodesign.cn/kcserver/common/gin/response"
+	"protodesign.cn/kcserver/common/jwt"
 )
 
 func AuthMiddleware() gin.HandlerFunc {

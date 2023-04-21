@@ -2,7 +2,6 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
-	_ "gorm.io/driver/mysql"
 	httpApi "protodesign.cn/kcserver/apigateway/api/v1/http"
 	"protodesign.cn/kcserver/apigateway/config"
 	"protodesign.cn/kcserver/apigateway/models/migrations"

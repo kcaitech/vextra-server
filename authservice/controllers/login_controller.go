@@ -2,8 +2,8 @@ package controllers
 
 import (
 	"github.com/gin-gonic/gin"
-	"protodesign.cn/kcserver/authservice/utils/jwt"
 	"protodesign.cn/kcserver/common/gin/response"
+	"protodesign.cn/kcserver/common/jwt"
 	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/common/services"
 )

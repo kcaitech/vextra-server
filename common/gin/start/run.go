@@ -10,13 +10,16 @@ import (
 
 func Run(config *BaseConfiguration, init func(), afterInit func(router *gin.Engine)) {
 	log.Println("开始运行")
+
 	models.Init(config)
+
 	init()
+
 	router := gin.Default()
 	router.Use(middlewares.ErrorHandler())
+
 	afterInit(router)
 
-	// 启动 HTTP 服务器
 	err := router.Run(":" + config.Server.Port)
 	if err != nil {
 		if err != nil {

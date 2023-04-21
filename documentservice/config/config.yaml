@@ -3,3 +3,11 @@ server:
 
 db:
   dsn: "root:_IpFCT^*pui~Mac7~0%SIicRq@Z6rtzE@tcp(db_1:3306)/kcserver?charset=utf8&parseTime=True&loc=Local"
+
+minio:
+  endpoint: "localhost"
+  port: "9000"
+  accessKeyID: "Gathooh88mba5H3y"
+  secretAccessKey: "yFukp3vtIkUNck2XL3s2KOT4wyRPR71G"
+  BucketName: "files"
+  Region: ""

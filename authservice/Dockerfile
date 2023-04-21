@@ -15,7 +15,7 @@ RUN set -ex \
 
 WORKDIR /app/authservice
 COPY ./authservice .
-COPY ./utils ../utils
+COPY common ../utils
 COPY ./common ../common
 RUN go mod download && go mod tidy -v && go build -ldflags "-s -w" -o authservice ./main.go
 
