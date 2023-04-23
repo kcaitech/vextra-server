@@ -7,3 +7,5 @@
 /authservice/log
 /userservice/log
 /documentservice/log
+
+**/go.sum

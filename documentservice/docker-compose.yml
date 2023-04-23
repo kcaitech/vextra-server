@@ -17,6 +17,7 @@ services:
       - "10003:10003"
     volumes:
       - ./config/config.yaml:/app/config/config.yaml
+      - ../common/storage/config/config.yaml:/app/common/storage/config/config.yaml
       - ./log/all.log:/app/log/all.log
 
 networks:

@@ -9,15 +9,16 @@ import (
 	"log"
 	"net/http"
 	"protodesign.cn/kcserver/common/gin/response"
+	"protodesign.cn/kcserver/common/storage"
 )
 
 type uploadData struct {
 	Code string `json:"code"`
 	Data struct {
-		DocumentMeta     map[string]interface{}   `json:"document_meta"`
+		DocumentMeta     json.RawMessage          `json:"document_meta"`
 		Pages            json.RawMessage          `json:"pages"`
-		PageRefartboards [][]string               `json:"page_refartboards"`
-		PageRefsyms      [][]string               `json:"page_refsyms"`
+		PageRefartboards []json.RawMessage        `json:"page_refartboards"`
+		PageRefsyms      []json.RawMessage        `json:"page_refsyms"`
 		Artboards        []map[string]interface{} `json:"artboards"`
 		ArtboardsRefsyms [][]string               `json:"artboard_refsyms"`
 		Symbols          []map[string]interface{} `json:"symbols"`
@@ -66,62 +67,82 @@ func UploadHandler(c *gin.Context) {
 		))
 	}
 
+	uploadError := func(err error) {
+		log.Println("对象上传错误：" + err.Error())
+		conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(
+			websocket.CloseNormalClosure,
+			"对象上传错误",
+		))
+	}
+
 	docId := uuid.New().String()
 
 	for {
 		messageType, reader, err := conn.NextReader()
 		if err != nil {
 			connError()
-			break
+			return
 		}
 
 		if messageType == websocket.TextMessage {
 			_data, err := io.ReadAll(reader)
 			if err != nil {
 				connError()
-				break
+				return
 			}
 
 			var data uploadData
 			if err := json.Unmarshal(_data, &data); err != nil {
 				dataFormatError()
-				break
+				return
 			}
 			var pages []struct {
 				Id string `json:"id"`
 			}
 			if err := json.Unmarshal(data.Data.Pages, &pages); err != nil {
 				dataFormatError()
-				break
+				return
 			}
 			var pagesRaw []json.RawMessage
 			if err := json.Unmarshal(data.Data.Pages, &pagesRaw); err != nil {
 				dataFormatError()
-				break
+				return
 			}
 
 			if len(pages) != len(data.Data.PageRefartboards) || len(pages) != len(data.Data.PageRefsyms) {
 				dataFormatError()
-				break
+				return
 			}
 
 			for i := 0; i < len(pages); i++ {
 				pageId := pages[i].Id
 				path := docId + "/pages/" + pageId + ".json"
+				if _, err = storage.Bucket.PubObjectByte(path, pagesRaw[i]); err != nil {
+					uploadError(err)
+					return
+				}
 				path = docId + "/page-symrefs/" + pageId + ".json"
+				if _, err = storage.Bucket.PubObjectByte(path, data.Data.PageRefsyms[i]); err != nil {
+					uploadError(err)
+					return
+				}
 				path = docId + "/page-artboardrefs/" + pageId + ".json"
-				log.Println(path)
-				// 写入对象存储
+				if _, err = storage.Bucket.PubObjectByte(path, data.Data.PageRefartboards[i]); err != nil {
+					uploadError(err)
+					return
+				}
 			}
 
 			path := docId + "/document-meta.json"
-			log.Println(path)
-			// 写入对象存储
+			if _, err = storage.Bucket.PubObjectByte(path, data.Data.DocumentMeta); err != nil {
+				uploadError(err)
+				return
+			}
 		}
 
 		if messageType == websocket.CloseMessage {
 			conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
-			break
+			return
 		}
 	}
 }

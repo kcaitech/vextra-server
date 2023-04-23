@@ -1,0 +1,9 @@
+storage:
+  provider: "minio"
+
+minio:
+  endpoint: "host.docker.internal:9000"
+  accessKeyID: "Gathooh88mba5H3y"
+  secretAccessKey: "yFukp3vtIkUNck2XL3s2KOT4wyRPR71G"
+  bucketName: "files"
+  region: ""

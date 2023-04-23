@@ -137,19 +137,10 @@ type Jwt struct {
 }
 
 func NewJwt(encryptor signer) (Jwt, error) {
-	var alg string
-	switch encryptor.(type) {
-	case hs256Signer:
-		alg = "HS256"
-	case rs256Signer:
-		alg = "RS256"
-	default:
-		return Jwt{}, errors.New("加密器类型不支持")
-	}
 	return Jwt{
 		header: header{
 			Typ: "JWT",
-			Alg: alg,
+			Alg: encryptor.algorithmName(),
 		},
 		encryptor: encryptor,
 		payload: Payload{

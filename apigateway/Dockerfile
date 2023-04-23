@@ -15,7 +15,7 @@ RUN set -ex \
 
 WORKDIR /app/apigateway
 COPY ./apigateway .
-COPY common ../utils
+COPY ./utils ../utils
 COPY ./common ../common
 RUN go mod download && go mod tidy -v && go build -ldflags "-s -w" -o apigateway ./main.go
 
