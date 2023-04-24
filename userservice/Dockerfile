@@ -14,6 +14,7 @@ RUN set -ex \
     && apk --no-cache add ca-certificates
 
 WORKDIR /app/userservice
+RUN rm -rf ./*
 COPY ./userservice .
 COPY ./utils ../utils
 COPY ./common ../common

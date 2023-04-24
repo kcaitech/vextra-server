@@ -7,9 +7,9 @@ import (
 type PermType uint8 // 文档授权类型
 
 const (
-	None     PermType = 0 // 无权限
-	ReadOnly PermType = 1 // 只读
-	Writable PermType = 2 // 可写
+	PermTypeNone     PermType = 0 // 无权限
+	PermTypeReadOnly PermType = 1 // 只读
+	PermTypeWritable PermType = 2 // 可写
 )
 
 type DocumentUser struct {

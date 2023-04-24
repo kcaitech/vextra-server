@@ -7,9 +7,9 @@ import (
 type DocType uint8 // 文档权限
 
 const (
-	Private        DocType = 0 // 私有
-	PublicReadable DocType = 1 // 公共可读
-	PublicWritable DocType = 2 // 公共可写
+	DocTypePrivate        DocType = 0 // 私有
+	DocTypePublicReadable DocType = 1 // 公共可读
+	DocTypePublicWritable DocType = 2 // 公共可写
 )
 
 type Document struct {
@@ -18,6 +18,8 @@ type Document struct {
 	UserId  uint    `gorm:"" json:"user_id"`
 	Path    string  `gorm:"size:64" json:"path"`
 	DocType DocType `gorm:"default:0" json:"doc_type"`
+	Name    string  `gorm:"size:64" json:"name"`
+	Size    uint    `gorm:"" json:"size"`
 }
 
 func DocumentUp(db *gorm.DB) error {

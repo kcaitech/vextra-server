@@ -13,16 +13,16 @@ if not "%base_dir%"=="kcserver" (
 set base_dir=%cd%
 
 :: 创建空日志文件
-call :CreateLog %base_dir%\apigateway
-call :CreateLog %base_dir%\authservice
-call :CreateLog %base_dir%\documentservice
-call :CreateLog %base_dir%\userservice
+call :CreateLog apigateway
+call :CreateLog authservice
+call :CreateLog documentservice
+call :CreateLog userservice
 
 cd %original_path%
 exit /b
 
 :CreateLog
-    cd %1
+    cd %base_dir%\%1
     if not exist log\all.log (
         mkdir log
         type nul > log\all.log

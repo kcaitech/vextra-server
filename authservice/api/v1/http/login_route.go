@@ -7,5 +7,6 @@ import (
 )
 
 func loadUserRoutes(api *gin.RouterGroup) {
-	api.POST("/login", controllers.Login)
+	router := api.Group("/auth")
+	router.POST("/login", controllers.Login)
 }

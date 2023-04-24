@@ -14,6 +14,7 @@ RUN set -ex \
     && apk --no-cache add ca-certificates
 
 WORKDIR /app/apigateway
+RUN rm -rf ./*
 COPY ./apigateway .
 COPY ./utils ../utils
 COPY ./common ../common

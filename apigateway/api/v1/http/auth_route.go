@@ -6,7 +6,9 @@ import (
 )
 
 func loadLoginRoutes(api *gin.RouterGroup) {
-	api.POST("/login", NewReverseProxyHandler(
-		"http://"+Host+":10001",
-	))
+	router := api.Group("/auth")
+	handler := NewReverseProxyHandler(
+		"http://" + Host + ":10001",
+	)
+	router.POST("/login", handler)
 }

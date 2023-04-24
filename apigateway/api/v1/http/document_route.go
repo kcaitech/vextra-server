@@ -7,12 +7,14 @@ import (
 )
 
 func loadDocumentRoutes(api *gin.RouterGroup) {
-	api.GET("/documents/upload", NewReverseProxyHandler(
-		"http://"+Host+":10003",
-	))
-	authorized := api.Group("/")
+	router := api.Group("/documents")
+	handler := NewReverseProxyHandler(
+		"http://" + Host + ":10003",
+	)
+	router.GET("/upload", handler)
+	authorized := router.Group("/")
 	authorized.Use(middlewares.AuthMiddleware())
 	{
-
+		authorized.GET("/", handler)
 	}
 }

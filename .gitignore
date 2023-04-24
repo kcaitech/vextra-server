@@ -1,6 +1,7 @@
 /.idea
 /docker_compose/nginx/kc_home
 /docker_compose/mysql/data
+/docker_compose/minio/data
 /id_ed25519
 
 /apigateway/log

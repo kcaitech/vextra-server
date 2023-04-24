@@ -6,5 +6,7 @@ import (
 )
 
 func loadDocumentRoutes(api *gin.RouterGroup) {
-	api.GET("/documents/upload", controllers.UploadHandler)
+	router := api.Group("/documents")
+	router.GET("/upload", controllers.UploadHandler)
+	router.GET("/", controllers.DocumentUserList)
 }

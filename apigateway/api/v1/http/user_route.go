@@ -7,11 +7,13 @@ import (
 )
 
 func loadUserRoutes(api *gin.RouterGroup) {
-	authorized := api.Group("/")
+	router := api.Group("/users")
+	handler := NewReverseProxyHandler(
+		"http://" + Host + ":10002",
+	)
+	authorized := router.Group("/")
 	authorized.Use(middlewares.AuthMiddleware())
 	{
-		authorized.GET("/users/info", NewReverseProxyHandler(
-			"http://"+Host+":10002",
-		))
+		authorized.GET("/info", handler)
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"protodesign.cn/kcserver/common/gin/auth"
 	"protodesign.cn/kcserver/common/gin/response"
+	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/common/services"
 )
 
@@ -16,8 +17,8 @@ func UserInfo(c *gin.Context) {
 	}
 
 	userService := services.NewUserService()
-	user, err := userService.GetUser(userId)
-	if err != nil {
+	user := &models.User{}
+	if userService.GetById(userId, user) != nil {
 		response.BadRequest(c, err.Error())
 		return
 	}

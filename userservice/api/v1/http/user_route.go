@@ -6,5 +6,6 @@ import (
 )
 
 func loadUserRoutes(api *gin.RouterGroup) {
-	api.GET("/users/info", controllers.UserInfo)
+	router := api.Group("/users")
+	router.GET("/info", controllers.UserInfo)
 }

@@ -14,6 +14,7 @@ RUN set -ex \
     && apk --no-cache add ca-certificates
 
 WORKDIR /app/authservice
+RUN rm -rf ./*
 COPY ./authservice .
 COPY ./utils ../utils
 COPY ./common ../common

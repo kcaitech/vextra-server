@@ -27,13 +27,13 @@ func Login(c *gin.Context) {
 		return
 	}
 	userService := services.NewUserService()
-	user, _ := userService.GetUserByNickname(req.Nickname)
+	user, _ := userService.GetByNickname(req.Nickname)
 	if user == nil {
 		user = &models.User{
 			Nickname: req.Nickname,
 			WxOpenId: req.Nickname,
 		}
-		err := userService.CreateUser(user)
+		err := userService.Create(user)
 		if err != nil {
 			response.Fail(c, err.Error())
 			return
