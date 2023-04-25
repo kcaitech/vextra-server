@@ -5,7 +5,7 @@ import (
 	"gorm.io/gorm"
 	"log"
 	"protodesign.cn/kcserver/common/config"
-	"time"
+	"protodesign.cn/kcserver/utils/time"
 )
 
 var DB *gorm.DB
@@ -19,8 +19,8 @@ func Init(config *config.BaseConfiguration) {
 }
 
 type BaseModel struct {
-	CreatedAt time.Time      `gorm:"autoCreateTime" json:"created_at"`
-	UpdatedAt time.Time      `gorm:"autoUpdateTime" json:"updated_at"`
+	CreatedAt time.Time      `gorm:"autoCreateTime;type:datetime(6)" json:"created_at"`
+	UpdatedAt time.Time      `gorm:"autoUpdateTime;type:datetime(6)" json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at"`
 }
 

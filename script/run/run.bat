@@ -12,14 +12,22 @@ if not "%base_dir%"=="kcserver" (
 )
 set base_dir=%cd%
 
-call :StartService docker_compose\mysql
-call :StartService docker_compose\minio
+if "%1" == "" (
+  call :StartService docker_compose\mysql
+  call :StartService docker_compose\minio
 
-call :RestartService apigateway
-call :RestartService authservice
-call :RestartService documentservice
-call :RestartService userservice
+  call :RestartService apigateway
+  call :RestartService authservice
+  call :RestartService documentservice
+  call :RestartService userservice
 
+  goto :exit
+)
+
+call :RestartService %1
+goto :exit
+
+exit:
 cd %original_path%
 exit /b
 

@@ -18,6 +18,9 @@ call :CreateLog authservice
 call :CreateLog documentservice
 call :CreateLog userservice
 
+:: 创建docker network
+docker network create --subnet=172.21.0.0/16 --gateway=172.21.0.1 db_net_1
+
 cd %original_path%
 exit /b
 
