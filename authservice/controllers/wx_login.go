@@ -1,0 +1,168 @@
+package controllers
+
+import (
+	"encoding/json"
+	"github.com/gin-gonic/gin"
+	"io"
+	"log"
+	"net/http"
+	"net/url"
+	"protodesign.cn/kcserver/common/gin/response"
+	"protodesign.cn/kcserver/common/jwt"
+	"protodesign.cn/kcserver/common/models"
+	"protodesign.cn/kcserver/common/services"
+	. "protodesign.cn/kcserver/utils/time"
+	"time"
+)
+
+type wxLoginRequest struct {
+	Code string `json:"code" binding:"required"`
+}
+
+type wxLoginResponse struct {
+	Id       uint   `json:"id"`
+	Nickname string `json:"nickname"`
+	Token    string `json:"token"`
+	Avatar   string `json:"avatar"`
+}
+
+type wxAccessTokenResponse struct {
+	AccessToken  string `json:"access_token"`
+	ExpiresIn    int    `json:"expires_in"`
+	RefreshToken string `json:"refresh_token"`
+	Openid       string `json:"openid"`
+	Scope        string `json:"scope"`
+	Unionid      string `json:"unionid"`
+}
+
+type wxUserInfoResponse struct {
+	Openid     string   `json:"openid"`
+	Nickname   string   `json:"nickname"`
+	Sex        int      `json:"sex"`
+	Province   string   `json:"province"`
+	City       string   `json:"city"`
+	Country    string   `json:"country"`
+	Headimgurl string   `json:"headimgurl"`
+	Privilege  []string `json:"privilege"`
+	Unionid    string   `json:"unionid"`
+}
+
+// WxLogin 微信登录
+func WxLogin(c *gin.Context) {
+	var loginRes wxLoginRequest
+	if err := c.ShouldBindJSON(&loginRes); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	// Code换取AccessToken
+	// 发起请求
+	queryParams := url.Values{}
+	queryParams.Set("appid", "wx42bb87f7f2e86a6e")
+	queryParams.Set("secret", "fb1fe5995f6f297219f871703630b513")
+	queryParams.Set("code", loginRes.Code)
+	queryParams.Set("grant_type", "authorization_code")
+	resp, err := http.Get("https://api.weixin.qq.com/sns/oauth2/access_token" + "?" + queryParams.Encode())
+	if err != nil {
+		log.Println(err)
+		response.Fail(c, "登陆失败")
+		return
+	}
+	defer resp.Body.Close()
+	// 读取响应
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Println(err)
+		response.Fail(c, "登陆失败")
+		return
+	}
+	// json解析
+	var wxAccessTokenResp wxAccessTokenResponse
+	err = json.Unmarshal(body, &wxAccessTokenResp)
+	if err != nil {
+		log.Println(err)
+		response.Fail(c, "登陆失败")
+		return
+	}
+	if wxAccessTokenResp.Openid == "" {
+		log.Println("OpenId为空")
+		response.Fail(c, "登陆失败")
+		return
+	}
+
+	// CoAccessToken换取用户信息
+	// 发起请求
+	queryParams = url.Values{}
+	queryParams.Set("access_token", wxAccessTokenResp.AccessToken)
+	queryParams.Set("openid", wxAccessTokenResp.Openid)
+	queryParams.Set("lang", "lang")
+	resp, err = http.Get("https://api.weixin.qq.com/sns/userinfo" + "?" + queryParams.Encode())
+	if err != nil {
+		log.Println(err)
+		response.Fail(c, "登陆失败")
+		return
+	}
+	defer resp.Body.Close()
+	// 读取响应
+	body, err = io.ReadAll(resp.Body)
+	if err != nil {
+		log.Println(err)
+		response.Fail(c, "登陆失败")
+		return
+	}
+	// json解析
+	var wxUserInfoResp wxUserInfoResponse
+	err = json.Unmarshal(body, &wxUserInfoResp)
+	if err != nil {
+		log.Println(err)
+		response.Fail(c, "登陆失败")
+		return
+	}
+	if wxUserInfoResp.Nickname == "" || wxUserInfoResp.Headimgurl == "" {
+		log.Println("Nickname或Headimgurl为空")
+		response.Fail(c, "登陆失败")
+		return
+	}
+
+	userService := services.NewUserService()
+
+	// 创建用户
+	user := &models.User{}
+	err = userService.Get(user, "wx_open_id = ?", wxAccessTokenResp.Openid)
+	if err != nil {
+		log.Println(err)
+		t := Time(time.Now())
+		user = &models.User{
+			Nickname:                 wxUserInfoResp.Nickname,
+			WxOpenId:                 wxAccessTokenResp.Openid,
+			WxAccessToken:            wxAccessTokenResp.AccessToken,
+			WxAccessTokenCreateTime:  t,
+			WxRefreshToken:           wxAccessTokenResp.RefreshToken,
+			WxRefreshTokenCreateTime: t,
+			Avatar:                   wxUserInfoResp.Headimgurl,
+		}
+		err := userService.Create(user)
+		if err != nil {
+			log.Println(err)
+			response.Fail(c, "登陆失败")
+			return
+		}
+
+	}
+	// 创建JWT
+	token, err := jwt.CreateJwt(&jwt.Data{
+		Id:       user.ID,
+		Nickname: user.Nickname,
+	})
+	if err != nil {
+		response.Fail(c, err.Error())
+		return
+	}
+
+	response.Success(c, wxLoginResponse{
+		Id:       user.ID,
+		Nickname: user.Nickname,
+		Token:    token,
+		Avatar:   user.Avatar,
+	})
+}

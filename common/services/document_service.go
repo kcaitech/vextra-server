@@ -19,6 +19,6 @@ func NewDocumentService() *DocumentService {
 	return that
 }
 
-type DocumentUserService struct {
+type DocumentPermissionService struct {
 	DefaultService
 }

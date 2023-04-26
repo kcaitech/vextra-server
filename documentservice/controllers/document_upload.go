@@ -8,7 +8,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"protodesign.cn/kcserver/common/gin/auth"
 	"protodesign.cn/kcserver/common/gin/response"
 	. "protodesign.cn/kcserver/common/jwt"
 	"protodesign.cn/kcserver/common/models"
@@ -199,22 +198,4 @@ func UploadHandler(c *gin.Context) {
 	}
 
 	closeConn("")
-}
-
-// DocumentUserList 获取用户文档列表
-func DocumentUserList(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
-	if err != nil {
-		response.Unauthorized(c)
-		return
-	}
-
-	documentService := services.NewDocumentService()
-	var documentList []models.Document
-	if err := documentService.Find(&documentList, "", 20, "user_id = ?", userId); err != nil {
-		response.Fail(c, "")
-		return
-	}
-
-	response.Success(c, documentList)
 }

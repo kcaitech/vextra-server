@@ -20,8 +20,8 @@ func main() {
 	if err = DocumentUp(migration.DB); err != nil {
 		log.Fatalln("数据库迁移错误：" + err.Error())
 	}
-	log.Println("开始迁移DocumentUser表")
-	if err = DocumentUserUp(migration.DB); err != nil {
+	log.Println("开始迁移DocumentPermission表")
+	if err = DocumentPermissionUp(migration.DB); err != nil {
 		log.Fatalln("数据库迁移错误：" + err.Error())
 	}
 	log.Println("迁移结束")

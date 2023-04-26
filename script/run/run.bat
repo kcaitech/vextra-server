@@ -27,7 +27,7 @@ if "%1" == "" (
 call :RestartService %1
 goto :exit
 
-exit:
+:exit
 cd %original_path%
 exit /b
 

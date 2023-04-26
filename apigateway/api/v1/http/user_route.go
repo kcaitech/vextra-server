@@ -8,12 +8,11 @@ import (
 
 func loadUserRoutes(api *gin.RouterGroup) {
 	router := api.Group("/users")
-	handler := NewReverseProxyHandler(
-		"http://" + Host + ":10002",
-	)
+	handler := NewReverseProxyHandler("http://" + Host + ":10002")
+
 	authorized := router.Group("/")
 	authorized.Use(middlewares.AuthMiddleware())
 	{
-		authorized.GET("/info", handler)
+		authorized.Any("/*path", handler)
 	}
 }

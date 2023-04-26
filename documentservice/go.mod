@@ -21,8 +21,6 @@ require (
 	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
-	github.com/google/uuid v1.3.0 // indirect
-	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -50,7 +48,11 @@ require (
 	protodesign.cn/kcserver/utils v0.0.0 // indirect
 )
 
-require protodesign.cn/kcserver/common v0.0.0
+require (
+	github.com/google/uuid v1.3.0
+	github.com/gorilla/websocket v1.5.0
+	protodesign.cn/kcserver/common v0.0.0
+)
 
 replace (
 	protodesign.cn/kcserver/common => ../common

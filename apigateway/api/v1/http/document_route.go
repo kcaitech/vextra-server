@@ -8,13 +8,14 @@ import (
 
 func loadDocumentRoutes(api *gin.RouterGroup) {
 	router := api.Group("/documents")
-	handler := NewReverseProxyHandler(
-		"http://" + Host + ":10003",
-	)
-	router.GET("/upload", handler)
+	handler := NewReverseProxyHandler("http://" + Host + ":10003")
+
 	authorized := router.Group("/")
-	authorized.Use(middlewares.AuthMiddleware())
+	// 登陆验证，跳过upload（websocket协议，handler函数内部另外校验）
+	authorized.Use(middlewares.AuthMiddlewareConn(func(c *gin.Context) bool {
+		return c.Request.URL.Path != "upload"
+	}))
 	{
-		authorized.GET("/", handler)
+		authorized.Any("/*path", handler)
 	}
 }

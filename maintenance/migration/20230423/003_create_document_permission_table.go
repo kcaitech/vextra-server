@@ -1,25 +1,8 @@
-package models
+package main
 
-// DocType 文档类型
-type DocType uint8 // 文档权限
-const (
-	DocTypePrivate           DocType = 0 // 私有
-	DocTypeShareable         DocType = 1 // 可分享（默认无权限，需申请）
-	DocTypePublicReadable    DocType = 2 // 公共可读
-	DocTypePublicCommentable DocType = 3 // 公共可评论
-	DocTypePublicEditable    DocType = 4 // 公共可编辑
+import (
+	"gorm.io/gorm"
 )
-
-type Document struct {
-	BaseModel
-	ID      uint    `gorm:"primary_key" json:"id"`
-	UserId  uint    `gorm:"" json:"user_id"`
-	Path    string  `gorm:"size:64" json:"path"`
-	DocId   string  `gorm:"size:64;index" json:"doc_id"`
-	DocType DocType `gorm:"default:0" json:"doc_type"`
-	Name    string  `gorm:"size:64" json:"name"`
-	Size    uint    `gorm:"" json:"size"`
-}
 
 // ResourceType 资源类型
 type ResourceType uint8 // 文档授权类型
@@ -53,4 +36,18 @@ type DocumentPermission struct {
 	GranteeType  GranteeType  `gorm:"default:0" json:"grantee_type"`  // 受让人类型
 	GranteeId    uint         `gorm:"" json:"grantee_id"`             // 受让人ID
 	PermType     PermType     `gorm:"default:0" json:"perm_type"`     // 权限类型
+}
+
+func DocumentPermissionUp(db *gorm.DB) error {
+	if err := db.AutoMigrate(&DocumentPermission{}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func DocumentPermissionDown(db *gorm.DB) error {
+	if err := db.Migrator().DropTable(&DocumentPermission{}); err != nil {
+		return err
+	}
+	return nil
 }

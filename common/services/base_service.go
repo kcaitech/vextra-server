@@ -26,7 +26,7 @@ type WhereArgs struct {
 modelData：		*models.BaseModel 			&models.User{}
 modelDataList：	*[]models.BaseModel 		&[]models.User{}
 args：			[2]{string, interface{}}	"id = ?", 1
-args：			[]WhereArgs					返回id=1且type=1的或3<=id<=5且type=2的数据：\
+args：			[]WhereArgs					返回id=1且type=1或3<=id<=5且type=2的数据：\
 []WhereArgs {\
 	WhereArgs{Query:"id = ? AND type = ?", Args:[]interface{}{1,1}},\
 	WhereArgs{Query:"id >= ? AND id <= ? AND type = ?", Args:[]interface{}{3,5,2}},\

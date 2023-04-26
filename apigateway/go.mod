@@ -37,12 +37,10 @@ require (
 	golang.org/x/sys v0.7.0 // indirect
 	golang.org/x/text v0.9.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
+	protodesign.cn/kcserver/utils v0.0.0 // indirect
 )
 
-require (
-	protodesign.cn/kcserver/common v0.0.0
-	protodesign.cn/kcserver/utils v0.0.0
-)
+require protodesign.cn/kcserver/common v0.0.0
 
 replace (
 	protodesign.cn/kcserver/common => ../common

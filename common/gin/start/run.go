@@ -5,15 +5,17 @@ import (
 	"log"
 	. "protodesign.cn/kcserver/common/config"
 	"protodesign.cn/kcserver/common/gin/middlewares"
+	myInit "protodesign.cn/kcserver/common/init"
 	"protodesign.cn/kcserver/common/models"
 )
 
-func Run(config *BaseConfiguration, init func(), afterInit func(router *gin.Engine)) {
+func Run(config *BaseConfiguration, initFunc func(), afterInit func(router *gin.Engine)) {
 	log.Println("开始运行")
 
 	models.Init(config)
 
-	init()
+	myInit.Init()
+	initFunc()
 
 	router := gin.Default()
 	router.Use(middlewares.ErrorHandler())

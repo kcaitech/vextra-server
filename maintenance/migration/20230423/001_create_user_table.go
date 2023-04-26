@@ -2,13 +2,19 @@ package main
 
 import (
 	"gorm.io/gorm"
+	"protodesign.cn/kcserver/utils/time"
 )
 
 type User struct {
 	BaseModel
-	ID       uint   `gorm:"primary_key" json:"id"`
-	Nickname string `gorm:"size:64" json:"nickname"`
-	WxOpenId string `gorm:"unique;size:64" json:"wx_open_id"`
+	ID                       uint      `gorm:"primary_key" json:"id"`
+	Nickname                 string    `gorm:"size:64" json:"nickname"`
+	WxOpenId                 string    `gorm:"unique;size:64" json:"wx_open_id"`
+	WxAccessToken            string    `gorm:"size:255" json:"wx_access_token"`
+	WxAccessTokenCreateTime  time.Time `gorm:"type:datetime(6)" json:"wx_access_token_create_time"`
+	WxRefreshToken           string    `gorm:"size:255" json:"wx_refresh_token"`
+	WxRefreshTokenCreateTime time.Time `gorm:"type:datetime(6)" json:"wx_refresh_token_create_time"`
+	Avatar                   string    `gorm:"size:256" json:"avatar"`
 }
 
 func UserUp(db *gorm.DB) error {
