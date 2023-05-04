@@ -19,9 +19,11 @@ func Init(config *config.BaseConfiguration) {
 }
 
 type BaseModel struct {
+	Id        int64          `gorm:"primaryKey;autoIncrement:false" json:"id"`
 	CreatedAt time.Time      `gorm:"autoCreateTime;type:datetime(6)" json:"created_at"`
 	UpdatedAt time.Time      `gorm:"autoUpdateTime;type:datetime(6)" json:"updated_at"`
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at"`
 }
 
-type BaseModelInterface interface{}
+type ModelData interface{}     // 指向具体Model的指针，例如：&User{}
+type ModelListData interface{} // 指向具体Model数组的指针，例如：&[]User{}

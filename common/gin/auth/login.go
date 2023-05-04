@@ -10,7 +10,7 @@ func GetJwtData(c *gin.Context) (*Data, error) {
 	return ParseJwt(token)
 }
 
-func GetUserId(c *gin.Context) (uint, error) {
+func GetUserId(c *gin.Context) (int64, error) {
 	jwtData, err := GetJwtData(c)
 	if err != nil {
 		return 0, err

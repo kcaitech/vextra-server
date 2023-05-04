@@ -8,7 +8,7 @@ import (
 )
 
 type Data struct {
-	Id       uint   `json:"id"`
+	Id       int64  `json:"id"`
 	Nickname string `json:"nickname"`
 }
 

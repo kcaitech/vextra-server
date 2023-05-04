@@ -4,6 +4,7 @@ import (
 	"errors"
 	"gorm.io/gorm"
 	"protodesign.cn/kcserver/common/models"
+	"protodesign.cn/kcserver/common/snowflake"
 )
 
 type BaseService interface {
@@ -12,7 +13,7 @@ type BaseService interface {
 type DefaultService struct {
 	DB    *gorm.DB
 	That  BaseService
-	Model models.BaseModelInterface
+	Model models.ModelData
 }
 
 type WhereArgs struct {
@@ -56,11 +57,16 @@ func addWhereCond(db *gorm.DB, args ...interface{}) error {
 	return nil
 }
 
-func (s *DefaultService) Create(modelData models.BaseModelInterface) error {
+func (s *DefaultService) Create(modelData models.ModelData) error {
+	data, ok := modelData.(*models.BaseModel)
+	if !ok {
+		return errors.New("modelData类型错误")
+	}
+	data.Id = snowflake.NextId()
 	return s.DB.Model(s.Model).Create(modelData).Error
 }
 
-func (s *DefaultService) Get(modelData models.BaseModelInterface, args ...interface{}) error {
+func (s *DefaultService) Get(modelData models.ModelData, args ...interface{}) error {
 	db := s.DB.Model(s.Model)
 	if err := addWhereCond(db, args...); err != nil {
 		return err
@@ -68,11 +74,11 @@ func (s *DefaultService) Get(modelData models.BaseModelInterface, args ...interf
 	return db.First(modelData).Error
 }
 
-func (s *DefaultService) GetById(id uint, modelData models.BaseModelInterface) error {
+func (s *DefaultService) GetById(id int64, modelData models.ModelData) error {
 	return s.DB.Model(s.Model).Where("id = ?", id).First(modelData).Error
 }
 
-func (s *DefaultService) Find(modelDataList interface{}, order string, limit int, args ...interface{}) error {
+func (s *DefaultService) Find(modelDataList models.ModelListData, order string, limit int, args ...interface{}) error {
 	db := s.DB.Model(s.Model)
 	if err := addWhereCond(db, args...); err != nil {
 		return err
@@ -80,7 +86,7 @@ func (s *DefaultService) Find(modelDataList interface{}, order string, limit int
 	return db.Find(modelDataList).Order(order).Limit(limit).Error
 }
 
-func (s *DefaultService) Updates(modelData models.BaseModelInterface, args ...interface{}) error {
+func (s *DefaultService) Updates(modelData models.ModelData, args ...interface{}) error {
 	db := s.DB.Model(s.Model)
 	if err := addWhereCond(db, args...); err != nil {
 		return err
@@ -88,7 +94,7 @@ func (s *DefaultService) Updates(modelData models.BaseModelInterface, args ...in
 	return db.Updates(modelData).Error
 }
 
-func (s *DefaultService) UpdatesById(id uint, modelData models.BaseModelInterface) error {
+func (s *DefaultService) UpdatesById(id int64, modelData models.ModelData) error {
 	return s.DB.Model(s.Model).Where("id = ?", id).Updates(modelData).Error
 }
 
@@ -100,6 +106,6 @@ func (s *DefaultService) Delete(args ...interface{}) error {
 	return db.Delete(s.Model).Error
 }
 
-func (s *DefaultService) DeleteById(id uint) error {
+func (s *DefaultService) DeleteById(id int64) error {
 	return s.DB.Model(s.Model).Where("id = ?", id).Delete(s.Model).Error
 }

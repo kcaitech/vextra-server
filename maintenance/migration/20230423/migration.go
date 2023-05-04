@@ -24,5 +24,9 @@ func main() {
 	if err = DocumentPermissionUp(migration.DB); err != nil {
 		log.Fatalln("数据库迁移错误：" + err.Error())
 	}
+	log.Println("开始迁移DocumentAccessRecord表")
+	if err = DocumentAccessRecordUp(migration.DB); err != nil {
+		log.Fatalln("数据库迁移错误：" + err.Error())
+	}
 	log.Println("迁移结束")
 }

@@ -16,10 +16,9 @@ const (
 
 type Document struct {
 	BaseModel
-	ID      uint    `gorm:"primary_key" json:"id"`
-	UserId  uint    `gorm:"" json:"user_id"`
+	Id      int64   `gorm:"primary_key" json:"id"`
+	UserId  int64   `gorm:"" json:"user_id"`
 	Path    string  `gorm:"size:64" json:"path"`
-	DocId   string  `gorm:"size:64;index" json:"doc_id"`
 	DocType DocType `gorm:"default:0" json:"doc_type"`
 	Name    string  `gorm:"size:64" json:"name"`
 	Size    uint    `gorm:"" json:"size"`

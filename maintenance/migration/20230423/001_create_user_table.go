@@ -7,7 +7,7 @@ import (
 
 type User struct {
 	BaseModel
-	ID                       uint      `gorm:"primary_key" json:"id"`
+	Id                       int64     `gorm:"primary_key" json:"id"`
 	Nickname                 string    `gorm:"size:64" json:"nickname"`
 	WxOpenId                 string    `gorm:"unique;size:64" json:"wx_open_id"`
 	WxAccessToken            string    `gorm:"size:255" json:"wx_access_token"`

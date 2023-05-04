@@ -17,6 +17,7 @@ services:
       - "10002:10002"
     volumes:
       - ./config/config.yaml:/app/config/config.yaml
+      - ../common/snowflake/config/config.yaml:/app/common/snowflake/config/config.yaml
       - ./log/all.log:/app/log/all.log
 
 networks:

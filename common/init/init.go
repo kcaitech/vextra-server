@@ -1,5 +1,9 @@
 package init
 
-func Init() {
+import (
+	"protodesign.cn/kcserver/common/snowflake"
+)
 
+func Init() {
+	snowflake.Init()
 }

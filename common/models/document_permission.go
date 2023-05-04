@@ -1,8 +1,4 @@
-package main
-
-import (
-	"gorm.io/gorm"
-)
+package models
 
 // ResourceType 资源类型
 type ResourceType uint8 // 文档授权类型
@@ -28,26 +24,12 @@ const (
 	PermTypeEditable    PermType = 3 // 可编辑
 )
 
+// DocumentPermission 文档权限
 type DocumentPermission struct {
 	BaseModel
-	Id           int64        `gorm:"primary_key" json:"id"`          // 授权记录的ID
 	ResourceType ResourceType `gorm:"default:0" json:"resource_type"` // 资源类型
 	ResourceId   int64        `gorm:"" json:"resourceId"`             // 资源ID
 	GranteeType  GranteeType  `gorm:"default:0" json:"grantee_type"`  // 受让人类型
 	GranteeId    int64        `gorm:"" json:"grantee_id"`             // 受让人ID
 	PermType     PermType     `gorm:"default:0" json:"perm_type"`     // 权限类型
-}
-
-func DocumentPermissionUp(db *gorm.DB) error {
-	if err := db.AutoMigrate(&DocumentPermission{}); err != nil {
-		return err
-	}
-	return nil
-}
-
-func DocumentPermissionDown(db *gorm.DB) error {
-	if err := db.Migrator().DropTable(&DocumentPermission{}); err != nil {
-		return err
-	}
-	return nil
 }

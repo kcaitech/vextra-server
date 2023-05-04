@@ -18,6 +18,7 @@ services:
     volumes:
       - ./config/config.yaml:/app/config/config.yaml
       - ../common/storage/config/config.yaml:/app/common/storage/config/config.yaml
+      - ../common/snowflake/config/config.yaml:/app/common/snowflake/config/config.yaml
       - ./log/all.log:/app/log/all.log
 
 networks:
