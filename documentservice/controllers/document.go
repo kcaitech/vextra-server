@@ -18,7 +18,25 @@ func DocumentUserList(c *gin.Context) {
 
 	documentService := services.NewDocumentService()
 	var documentList []models.Document
-	if err := documentService.Find(&documentList, "", 20, "user_id = ?", userId); err != nil {
+	if err := documentService.Find(&documentList, "user_id = ?", userId); err != nil {
+		response.Fail(c, "")
+		return
+	}
+
+	response.Success(c, documentList)
+}
+
+// DocumentUserAccessRecordsList 获取用户的文档访问记录
+func DocumentUserAccessRecordsList(c *gin.Context) {
+	userId, err := auth.GetUserId(c)
+	if err != nil {
+		response.Unauthorized(c)
+		return
+	}
+
+	documentService := services.NewDocumentService()
+	var documentList []models.Document
+	if err := documentService.Find(&documentList, "user_id = ?", userId); err != nil {
 		response.Fail(c, "")
 		return
 	}

@@ -6,6 +6,8 @@ import (
 
 type DocumentService struct {
 	DefaultService
+	DocumentPermissionService   *DocumentPermissionService
+	DocumentAccessRecordService *DocumentAccessRecordService
 }
 
 func NewDocumentService() *DocumentService {
@@ -14,9 +16,15 @@ func NewDocumentService() *DocumentService {
 			DB:    models.DB,
 			Model: &models.Document{},
 		},
+		DocumentPermissionService:   NewDocumentPermissionService(),
+		DocumentAccessRecordService: NewDocumentAccessRecordService(),
 	}
 	that.That = that
 	return that
+}
+
+func (s *DocumentService) FindAccessRecordsByUserId(userId int64) {
+
 }
 
 type DocumentPermissionService struct {
