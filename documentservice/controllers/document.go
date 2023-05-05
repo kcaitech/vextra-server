@@ -35,11 +35,7 @@ func DocumentUserAccessRecordsList(c *gin.Context) {
 	}
 
 	documentService := services.NewDocumentService()
-	var documentList []models.Document
-	if err := documentService.Find(&documentList, "user_id = ?", userId); err != nil {
-		response.Fail(c, "")
-		return
-	}
+	result := documentService.FindAccessRecordsByUserId(userId)
 
-	response.Success(c, documentList)
+	response.Success(c, result)
 }

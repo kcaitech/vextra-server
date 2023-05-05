@@ -2,6 +2,7 @@ package services
 
 import (
 	"protodesign.cn/kcserver/common/models"
+	"protodesign.cn/kcserver/utils/time"
 )
 
 type DocumentService struct {
@@ -23,8 +24,19 @@ func NewDocumentService() *DocumentService {
 	return that
 }
 
-func (s *DocumentService) FindAccessRecordsByUserId(userId int64) {
+type AccessRecordResult struct {
+	models.Document
+	LastAccessTime time.Time `json:"last_access_time"`
+}
 
+func (s *DocumentService) FindAccessRecordsByUserId(userId int64) *[]AccessRecordResult {
+	var result []AccessRecordResult
+	_ = s.DocumentAccessRecordService.Find(&result, "document_access_record.user_id = ?", userId,
+		JoinArgs{"inner join user ON document_access_record.user_id = User.id", nil},
+		JoinArgs{"inner join document ON document_access_record.document_id = Document.id", nil},
+		SelectArgs{"document_access_record.*, document.*", nil},
+	)
+	return &result
 }
 
 type DocumentPermissionService struct {
