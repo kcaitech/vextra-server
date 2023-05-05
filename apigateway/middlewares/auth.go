@@ -8,7 +8,7 @@ import (
 )
 
 func handler(c *gin.Context) {
-	token := c.GetHeader("Token")
+	token := jwt.GetJwtFromAuthorization(c.GetHeader("Authorization"))
 	if token == "" {
 		c.AbortWithStatusJSON(http.StatusUnauthorized, response.Response{
 			Code:    http.StatusUnauthorized,

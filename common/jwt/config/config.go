@@ -5,16 +5,16 @@ import (
 )
 
 type Configuration struct {
-	Snowflake struct {
-		WorkerId int64 `yaml:"workerId"`
-	} `yaml:"snowflake"`
+	Jwt struct {
+		Secret string `yaml:"secret"`
+	} `yaml:"jwt"`
 }
 
 var Config Configuration
 
 func LoadConfig(filePath string) *Configuration {
 	if filePath == "" {
-		filePath = "common/snowflake/config/config.yaml"
+		filePath = "common/jwt/config/config.yaml"
 	}
 	config.LoadConfig(filePath, &Config)
 	return &Config

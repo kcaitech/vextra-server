@@ -8,10 +8,10 @@ import (
 
 var snowFlake *s.SnowFlake
 
-func Init() {
+func Init(configFilePath string) {
 	if snowFlake == nil {
 		var err error
-		conf := config.LoadConfig()
+		conf := config.LoadConfig(configFilePath)
 		if snowFlake, err = s.NewSnowFlake(conf.Snowflake.WorkerId); err != nil {
 			log.Fatalln(err)
 		}

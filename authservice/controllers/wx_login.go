@@ -2,11 +2,13 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
+	"protodesign.cn/kcserver/authservice/config"
 	"protodesign.cn/kcserver/common/gin/response"
 	"protodesign.cn/kcserver/common/jwt"
 	"protodesign.cn/kcserver/common/models"
@@ -58,8 +60,8 @@ func WxLogin(c *gin.Context) {
 	// Code换取AccessToken
 	// 发起请求
 	queryParams := url.Values{}
-	queryParams.Set("appid", "wx42bb87f7f2e86a6e")
-	queryParams.Set("secret", "fb1fe5995f6f297219f871703630b513")
+	queryParams.Set("appid", config.Config.Wx.Appid)
+	queryParams.Set("secret", config.Config.Wx.Secret)
 	queryParams.Set("code", loginRes.Code)
 	queryParams.Set("grant_type", "authorization_code")
 	resp, err := http.Get("https://api.weixin.qq.com/sns/oauth2/access_token" + "?" + queryParams.Encode())
@@ -151,7 +153,7 @@ func WxLogin(c *gin.Context) {
 	}
 	// 创建JWT
 	token, err := jwt.CreateJwt(&jwt.Data{
-		Id:       user.Id,
+		Id:       fmt.Sprintf("%d", user.Id),
 		Nickname: user.Nickname,
 	})
 	if err != nil {

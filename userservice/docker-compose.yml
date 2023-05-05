@@ -7,6 +7,8 @@ services:
       dockerfile: ./userservice/Dockerfile
     image: userservice:latest
     container_name: userservice
+    environment:
+      TZ: Asia/Shanghai
     networks:
       userservice_net_1:
         ipv4_address: 172.23.0.2
@@ -17,6 +19,7 @@ services:
       - "10002:10002"
     volumes:
       - ./config/config.yaml:/app/config/config.yaml
+      - ../common/jwt/config/config.yaml:/app/common/jwt/config/config.yaml
       - ../common/snowflake/config/config.yaml:/app/common/snowflake/config/config.yaml
       - ./log/all.log:/app/log/all.log
 

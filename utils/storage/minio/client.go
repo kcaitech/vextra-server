@@ -2,10 +2,12 @@ package minio
 
 import (
 	"context"
+	"encoding/json"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"io"
 	"protodesign.cn/kcserver/utils/storage/base"
+	"strconv"
 	"strings"
 )
 
@@ -69,4 +71,63 @@ func (that *bucket) PubObject(objectName string, reader io.Reader, objectSize in
 		return nil, err
 	}
 	return uploadInfo, nil
+}
+
+var authOpMap = map[int]string{
+	base.AuthOpGetObject:  "s3:GetObject",
+	base.AuthOpPutObject:  "s3:PutObject",
+	base.AuthOpDelObject:  "s3:DeleteObject",
+	base.AuthOpListObject: "s3:ListBucket",
+}
+
+func (that *bucket) GenerateAccessKey(authPath string, authOp int, expires int) (*base.AccessKeyValue, error) {
+	authPath = strings.TrimLeft(authPath, "/")
+	authOpList := make([]string, 0, strconv.IntSize)
+	authOpListDistinct := make(map[int]bool, strconv.IntSize)
+	for i := 0; i < strconv.IntSize; i++ {
+		authOpValue := 1 << i
+		if authOpListDistinct[authOpValue] {
+			continue
+		}
+		if authOp&(authOpValue) > 0 {
+			authOpList = append(authOpList, authOpMap[authOpValue])
+			authOpListDistinct[authOpValue] = true
+		}
+	}
+	policy, err := json.Marshal(map[string]interface{}{
+		"Version": "2012-10-17",
+		"Statement": []map[string]interface{}{
+			{
+				"Action": authOpList,
+				"Effect": "Allow",
+				"Resource": []string{
+					"arn:aws:s3:::" + that.config.BucketName + "/" + authPath,
+				},
+			},
+		},
+	})
+	if err != nil {
+		return nil, err
+	}
+	stsAssumeRole, err := credentials.NewSTSAssumeRole("http://"+that.client.config.Endpoint, credentials.STSAssumeRoleOptions{
+		AccessKey:       that.client.config.StsAccessKeyID,
+		SecretKey:       that.client.config.StsSecretAccessKey,
+		Policy:          string(policy),
+		Location:        "",
+		DurationSeconds: expires,
+	})
+	if err != nil {
+		return nil, err
+	}
+	v, err := stsAssumeRole.Get()
+	if err != nil {
+		return nil, err
+	}
+	value := base.AccessKeyValue{
+		AccessKeyID:     v.AccessKeyID,
+		SecretAccessKey: v.SecretAccessKey,
+		SessionToken:    v.SessionToken,
+		SignerType:      int(v.SignerType),
+	}
+	return &value, err
 }

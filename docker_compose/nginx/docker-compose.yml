@@ -8,6 +8,8 @@ services:
       nginx_net_1:
         ipv4_address: 172.22.0.2
     restart: always
+    environment:
+      TZ: Asia/Shanghai
     ports:
       - "80:80"
       - "443:443"

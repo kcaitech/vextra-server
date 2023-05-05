@@ -14,7 +14,10 @@ type Configuration struct {
 
 var Config Configuration
 
-func LoadConfig() *Configuration {
-	config.LoadConfig("common/storage/config/config.yaml", &Config)
+func LoadConfig(filePath string) *Configuration {
+	if filePath == "" {
+		filePath = "common/storage/config/config.yaml"
+	}
+	config.LoadConfig(filePath, &Config)
 	return &Config
 }

@@ -3,18 +3,15 @@ package main
 import (
 	"github.com/gin-gonic/gin"
 	httpApi "protodesign.cn/kcserver/authservice/api/v1/http"
-	"protodesign.cn/kcserver/authservice/config"
+	myConfig "protodesign.cn/kcserver/authservice/config"
 	"protodesign.cn/kcserver/common/gin/start"
+	myInit "protodesign.cn/kcserver/common/init"
 )
 
 func main() {
-	start.Run(
-		&config.LoadConfig().BaseConfiguration,
-		func() {
-
-		},
-		func(router *gin.Engine) {
-			httpApi.LoadRoutes(router)
-		},
-	)
+	conf := &myConfig.LoadConfig().BaseConfiguration
+	myInit.Init(conf)
+	start.Run(conf, func(router *gin.Engine) {
+		httpApi.LoadRoutes(router)
+	})
 }

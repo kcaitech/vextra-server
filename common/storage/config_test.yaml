@@ -2,9 +2,9 @@ storage:
   provider: "minio"
 
 minio:
-  endpoint: "host.docker.internal:9000"
-  accessKeyID: "Gathooh88mba5H3y2"
-  secretAccessKey: "yFukp3vtIkUNck2XL3s2KOT4wyRPR71G2"
+  endpoint: "localhost:9000"
+  accessKeyID: "Gathooh88mba5H3y"
+  secretAccessKey: "yFukp3vtIkUNck2XL3s2KOT4wyRPR71G"
   stsAccessKeyID: "Gathooh88mba5H3y1"
   stsSecretAccessKey: "yFukp3vtIkUNck2XL3s2KOT4wyRPR71G1"
   bucketName: "document"

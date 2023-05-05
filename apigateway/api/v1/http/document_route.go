@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"protodesign.cn/kcserver/apigateway/middlewares"
 	. "protodesign.cn/kcserver/common/gin/reverse_proxy"
+	"strings"
 )
 
 func loadDocumentRoutes(api *gin.RouterGroup) {
@@ -13,7 +14,7 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 	authorized := router.Group("/")
 	// 登陆验证，跳过upload（websocket协议，handler函数内部另外校验）
 	authorized.Use(middlewares.AuthMiddlewareConn(func(c *gin.Context) bool {
-		return c.Request.URL.Path != "upload"
+		return !strings.HasSuffix(c.Request.URL.Path, "/upload")
 	}))
 	{
 		authorized.Any("/*path", handler)

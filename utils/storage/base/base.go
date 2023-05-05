@@ -11,15 +11,18 @@ type Client interface {
 }
 
 type ClientConfig struct {
-	Provider        Provider `yaml:"provider"`
-	Endpoint        string   `yaml:"endpoint"`
-	AccessKeyID     string   `yaml:"accessKeyID"`
-	SecretAccessKey string   `yaml:"secretAccessKey"`
+	Provider           Provider `yaml:"provider"`
+	Endpoint           string   `yaml:"endpoint"`
+	AccessKeyID        string   `yaml:"accessKeyID"`
+	SecretAccessKey    string   `yaml:"secretAccessKey"`
+	StsAccessKeyID     string   `yaml:"stsAccessKeyID"`
+	StsSecretAccessKey string   `yaml:"stsSecretAccessKey"`
 }
 
 type Bucket interface {
 	PubObject(objectName string, reader io.Reader, objectSize int64, contentType string) (*UploadInfo, error)
 	PubObjectByte(objectName string, content []byte) (*UploadInfo, error)
+	GenerateAccessKey(authPath string, authOp int, expires int) (*AccessKeyValue, error)
 }
 
 type BucketConfig struct {
@@ -45,4 +48,23 @@ func (that *DefaultBucket) PubObject(objectName string, reader io.Reader, object
 
 func (that *DefaultBucket) PubObjectByte(objectName string, content []byte) (*UploadInfo, error) {
 	return that.That.PubObject(objectName, bytes.NewReader(content), int64(len(content)), "")
+}
+
+type AccessKeyValue struct {
+	AccessKeyID     string
+	SecretAccessKey string
+	SessionToken    string
+	SignerType      int
+}
+
+const (
+	AuthOpGetObject  = 1 << 0
+	AuthOpPutObject  = 1 << 1
+	AuthOpDelObject  = 1 << 2
+	AuthOpListObject = 1 << 3
+	AuthOpAll        = AuthOpGetObject | AuthOpPutObject | AuthOpDelObject | AuthOpListObject
+)
+
+func (that *DefaultBucket) GenerateAccessKey(authPath string, authOp int, expires int) (*AccessKeyValue, error) {
+	return nil, errors.New("generateAccessKey方法未实现")
 }

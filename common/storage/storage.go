@@ -10,8 +10,8 @@ import (
 var Client base.Client
 var Bucket base.Bucket
 
-func Init() (base.Bucket, error) {
-	conf := config.LoadConfig()
+func Init(filePath string) (base.Bucket, error) {
+	conf := config.LoadConfig(filePath)
 
 	var providerConf base.Config
 	switch conf.Storage.Provider {
@@ -21,14 +21,10 @@ func Init() (base.Bucket, error) {
 		return nil, errors.New("不支持的provider")
 	}
 
+	providerConf.ClientConfig.Provider = conf.Storage.Provider
+
 	var err error
-	Client, err = storage.NewClient(&base.ClientConfig{
-		Provider:        conf.Storage.Provider,
-		Endpoint:        providerConf.Endpoint,
-		AccessKeyID:     providerConf.AccessKeyID,
-		SecretAccessKey: providerConf.SecretAccessKey,
-	})
-	if err != nil {
+	if Client, err = storage.NewClient(&providerConf.ClientConfig); err != nil {
 		return nil, err
 	}
 	Bucket = Client.NewBucket(&base.BucketConfig{

@@ -7,7 +7,10 @@ import (
 
 func loadDocumentRoutes(api *gin.RouterGroup) {
 	router := api.Group("/documents")
-	router.GET("/upload", controllers.UploadHandler)
-	router.GET("/", controllers.DocumentUserList)
-	router.GET("/access_records", controllers.DocumentUserAccessRecordsList)
+	{
+		router.GET("/upload", controllers.UploadHandler)
+		router.GET("/", controllers.DocumentUserList)
+		router.GET("/access_records", controllers.DocumentUserAccessRecordsList)
+		router.GET("/access_key", controllers.GetDocumentAccessKey)
+	}
 }

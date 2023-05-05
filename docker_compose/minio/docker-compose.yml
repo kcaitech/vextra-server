@@ -7,10 +7,12 @@ services:
     container_name: minio
     restart: always
     environment:
+      TZ: Asia/Shanghai
       MINIO_ACCESS_KEY: Gathooh88mba5H3y
       MINIO_SECRET_KEY: yFukp3vtIkUNck2XL3s2KOT4wyRPR71G
-      MINIO_ROOT_USER: user
-      MINIO_ROOT_PASSWORD: password
+      MINIO_ROOT_USER: kcserver
+      MINIO_ROOT_PASSWORD: kcai1212
+      MINIO_REGION:
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 30s

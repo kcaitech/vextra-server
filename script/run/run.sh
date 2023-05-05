@@ -46,7 +46,8 @@ function RunService() {
 }
 
 if [ $# -eq 0 ] || [ $1 = "" ]; then
-  serviceList=("mysql" "minio" "apigateway" "authservice" "documentservice" "userservice")
+  # "mysql" "minio"
+  serviceList=("apigateway" "authservice" "documentservice" "userservice")
   for service in "${serviceList[@]}"; do
     RunService "$service"
   done

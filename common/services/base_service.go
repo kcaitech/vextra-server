@@ -5,6 +5,7 @@ import (
 	"gorm.io/gorm"
 	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/common/snowflake"
+	"reflect"
 )
 
 type BaseService interface {
@@ -129,10 +130,12 @@ func AddCond(db *gorm.DB, args ...interface{}) error {
 }
 
 func (s *DefaultService) Create(modelData models.ModelData) error {
-	data, ok := modelData.(*models.BaseModel)
-	if !ok {
+	modelDataRef := reflect.ValueOf(modelData)
+	baseModelValue := modelDataRef.Elem().FieldByName("BaseModel")
+	if !(modelDataRef.Kind() == reflect.Ptr && baseModelValue.IsValid()) {
 		return errors.New("modelData类型错误")
 	}
+	data := baseModelValue.Addr().Interface().(*models.BaseModel)
 	data.Id = snowflake.NextId()
 	return s.DB.Model(s.Model).Create(modelData).Error
 }

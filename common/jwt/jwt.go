@@ -3,19 +3,23 @@ package jwt
 import (
 	"encoding/json"
 	"errors"
+	"protodesign.cn/kcserver/common/jwt/config"
 	"protodesign.cn/kcserver/utils/jwt"
+	"strings"
 	"time"
 )
 
 type Data struct {
-	Id       int64  `json:"id"`
+	Id       string `json:"id"`
 	Nickname string `json:"nickname"`
 }
 
-var jwtSecret string = "123456"
+func Init(filePath string) {
+	_ = config.LoadConfig(filePath)
+}
 
 func CreateJwt(jwtData *Data) (string, error) {
-	t, err := jwt.NewJwt(jwt.NewHS256Signer(jwtSecret))
+	t, err := jwt.NewJwt(jwt.NewHS256Signer(config.Config.Jwt.Secret))
 	if err != nil {
 		return "", err
 	}
@@ -33,7 +37,7 @@ func CreateJwt(jwtData *Data) (string, error) {
 }
 
 func ParseJwt(token string) (*Data, error) {
-	t, _ := jwt.NewJwt(jwt.NewHS256Signer(jwtSecret))
+	t, _ := jwt.NewJwt(jwt.NewHS256Signer(config.Config.Jwt.Secret))
 	payload, err := t.Parse(token)
 	if err != nil {
 		return nil, err
@@ -50,4 +54,11 @@ func ParseJwt(token string) (*Data, error) {
 		return nil, errors.New("无效token")
 	}
 	return &jwtData, nil
+}
+
+func GetJwtFromAuthorization(authorization string) string {
+	if !strings.HasPrefix(authorization, "Bearer ") {
+		return ""
+	}
+	return strings.TrimPrefix(authorization, "Bearer ")
 }

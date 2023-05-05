@@ -3,3 +3,7 @@ server:
 
 db:
   dsn: "root:_IpFCT^*pui~Mac7~0%SIicRq@Z6rtzE@tcp(db_1:3306)/kcserver?charset=utf8&parseTime=True&loc=Local"
+
+wx:
+  appid: "wx42bb87f7f2e86a6e"
+  secret: "fb1fe5995f6f297219f871703630b513"

@@ -6,6 +6,10 @@ import (
 
 type Configuration struct {
 	config.BaseConfiguration `yaml:",inline"`
+	Wx                       struct {
+		Appid  string `yaml:"appid"`
+		Secret string `yaml:"secret"`
+	} `yaml:"wx"`
 }
 
 var Config Configuration

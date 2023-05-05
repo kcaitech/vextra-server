@@ -257,6 +257,7 @@ func (that *Jwt) Parse(jwtString string) (res map[string]interface{}, err error)
 		return res, errors.New("payload base64解码失败")
 	}
 	that._payloadJson = string(temp)
+	that.payload.Data = map[string]interface{}{}
 	if err = json.Unmarshal(temp, &that.payload); err != nil {
 		return res, errors.New("payload json解码失败")
 	}

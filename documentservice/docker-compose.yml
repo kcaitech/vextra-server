@@ -7,6 +7,8 @@ services:
       dockerfile: ./documentservice/Dockerfile
     image: documentservice:latest
     container_name: documentservice
+    environment:
+      TZ: Asia/Shanghai
     networks:
       documentservice_net_1:
         ipv4_address: 172.24.0.2
@@ -17,8 +19,9 @@ services:
       - "10003:10003"
     volumes:
       - ./config/config.yaml:/app/config/config.yaml
-      - ../common/storage/config/config.yaml:/app/common/storage/config/config.yaml
+      - ../common/jwt/config/config.yaml:/app/common/jwt/config/config.yaml
       - ../common/snowflake/config/config.yaml:/app/common/snowflake/config/config.yaml
+      - ../common/storage/config/config.yaml:/app/common/storage/config/config.yaml
       - ./log/all.log:/app/log/all.log
 
 networks:
