@@ -11,6 +11,16 @@ type Response struct {
 	Data    interface{} `json:"data,omitempty"`
 }
 
+func Abort(c *gin.Context, code int, message string, data interface{}) Response {
+	resp := Response{
+		Code:    code,
+		Message: message,
+		Data:    data,
+	}
+	c.AbortWithStatusJSON(http.StatusOK, resp)
+	return resp
+}
+
 func Resp(c *gin.Context, code int, message string, data interface{}) Response {
 	resp := Response{
 		Code:    code,

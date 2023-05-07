@@ -9,7 +9,7 @@ import (
 	"protodesign.cn/kcserver/common/services"
 	"protodesign.cn/kcserver/common/storage"
 	"protodesign.cn/kcserver/utils/storage/base"
-	"protodesign.cn/kcserver/utils/strutil"
+	"protodesign.cn/kcserver/utils/str"
 	myTime "protodesign.cn/kcserver/utils/time"
 	"time"
 )
@@ -24,7 +24,7 @@ func GetDocumentAccessKey(c *gin.Context) {
 
 	documentService := services.NewDocumentService()
 
-	docId := strutil.DefaultToInt(c.Query("doc_id"), 0)
+	docId := str.DefaultToInt(c.Query("doc_id"), 0)
 	if docId == 0 {
 		response.BadRequest(c, "参数错误：doc_id")
 		return
@@ -33,7 +33,7 @@ func GetDocumentAccessKey(c *gin.Context) {
 	document := models.Document{}
 	err = documentService.GetById(docId, &document)
 	if err != nil {
-		response.BadRequest(c, "")
+		response.BadRequest(c, "文档不存在")
 		return
 	}
 
@@ -50,17 +50,22 @@ func GetDocumentAccessKey(c *gin.Context) {
 	if err != nil {
 		log.Println("生成密钥失败" + err.Error())
 		response.Fail(c, "生成密钥失败")
+		return
 	}
 
 	now := myTime.Time(time.Now())
 	documentAccessRecord := models.DocumentAccessRecord{}
 	err = documentService.DocumentAccessRecordService.Get(&documentAccessRecord, "document_id = ? and user_id = ?", docId, userId)
 	if err != nil {
-		_ = documentService.DocumentAccessRecordService.Create(&models.DocumentAccessRecord{
-			DocumentId:     docId,
-			UserId:         userId,
-			LastAccessTime: now,
-		})
+		if err != services.ErrRecordNotFound {
+			log.Println("documentAccessRecordService.Get错误：" + err.Error())
+		} else {
+			_ = documentService.DocumentAccessRecordService.Create(&models.DocumentAccessRecord{
+				DocumentId:     docId,
+				UserId:         userId,
+				LastAccessTime: now,
+			})
+		}
 	} else {
 		documentAccessRecord.LastAccessTime = now
 		_ = documentService.DocumentAccessRecordService.UpdatesById(documentAccessRecord.Id, &documentAccessRecord)

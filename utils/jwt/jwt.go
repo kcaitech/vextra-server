@@ -222,6 +222,8 @@ func (that *Jwt) General() (string, error) {
 	return that.jwtString, nil
 }
 
+var ErrTokenExpired = errors.New("jwt已过期")
+
 // Parse 验证并解析JWT，返回Payload中的自定义数据
 func (that *Jwt) Parse(jwtString string) (res map[string]interface{}, err error) {
 	// 分割
@@ -265,7 +267,7 @@ func (that *Jwt) Parse(jwtString string) (res map[string]interface{}, err error)
 	// 验证有效性
 	now := time.Now().Unix()
 	if that.payload.Exp != 0 && that.payload.Exp <= now {
-		return res, errors.New("token已过期")
+		return res, ErrTokenExpired
 	}
 	if that.payload.Nbf != 0 && that.payload.Nbf > now {
 		return res, errors.New("token未生效")

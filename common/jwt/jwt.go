@@ -40,7 +40,11 @@ func ParseJwt(token string) (*Data, error) {
 	t, _ := jwt.NewJwt(jwt.NewHS256Signer(config.Config.Jwt.Secret))
 	payload, err := t.Parse(token)
 	if err != nil {
-		return nil, err
+		if err == jwt.ErrTokenExpired {
+			return nil, err
+		} else {
+			return nil, errors.New("无效token")
+		}
 	}
 	data, ok := payload["data"]
 	if !ok {

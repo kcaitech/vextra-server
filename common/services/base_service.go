@@ -5,7 +5,8 @@ import (
 	"gorm.io/gorm"
 	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/common/snowflake"
-	"reflect"
+	"protodesign.cn/kcserver/utils/reflect"
+	"protodesign.cn/kcserver/utils/sliceutil"
 )
 
 type BaseService interface {
@@ -55,13 +56,13 @@ args:			[]OrderLimitArgs				返回按id倒序排序的前10条数据：\
 args:			[]JoinArgs						Document LEFT JOIN User：\
 []JoinArgs{\
 	JoinArgs{\
-		Join:"LEFT JOIN User ON Document.user_id = User.id",
-		Args:[]interface{}{},
+		Join:"LEFT JOIN User ON Document.user_id = User.id",\
+		Args:[]interface{}{},\
 }
 args:			[]SelectArgs					只返回特定字段：\
 []SelectArgs{\
 	SelectArgs{\
-		Select:"Document.*, User.name",
+		Select:"Document.*, User.name",\
 		Args:[]interface{}{}},\
 }
 */
@@ -102,10 +103,10 @@ func AddCond(db *gorm.DB, args ...interface{}) error {
 		case WhereArgs:
 			if !firstWhere {
 				db.Where(argv.Query, argv.Args...)
+				firstWhere = true
 			} else {
 				db.Or(argv.Query, argv.Args...)
 			}
-			firstWhere = true
 		case OrderLimitArgs:
 			if argv.Order != "" {
 				db.Order(argv.Order)
@@ -130,26 +131,34 @@ func AddCond(db *gorm.DB, args ...interface{}) error {
 }
 
 func (s *DefaultService) Create(modelData models.ModelData) error {
-	modelDataRef := reflect.ValueOf(modelData)
-	baseModelValue := modelDataRef.Elem().FieldByName("BaseModel")
-	if !(modelDataRef.Kind() == reflect.Ptr && baseModelValue.IsValid()) {
+	idPtr, ok := reflect.FieldByName(modelData, "Id").(*int64)
+	if !ok {
 		return errors.New("modelData类型错误")
 	}
-	data := baseModelValue.Addr().Interface().(*models.BaseModel)
-	data.Id = snowflake.NextId()
+	*idPtr = snowflake.NextId()
 	return s.DB.Model(s.Model).Create(modelData).Error
 }
+
+var ErrRecordNotFound = errors.New("记录不存在")
 
 func (s *DefaultService) Get(modelData models.ModelData, args ...interface{}) error {
 	db := s.DB.Model(s.Model)
 	if err := AddCond(db, args...); err != nil {
 		return err
 	}
-	return db.First(modelData).Error
+	if err := db.First(modelData).Error; !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	} else {
+		return ErrRecordNotFound
+	}
 }
 
 func (s *DefaultService) GetById(id int64, modelData models.ModelData) error {
-	return s.DB.Model(s.Model).Where("id = ?", id).First(modelData).Error
+	if err := s.DB.Model(s.Model).Where("id = ?", id).First(modelData).Error; !errors.Is(err, gorm.ErrRecordNotFound) {
+		return err
+	} else {
+		return ErrRecordNotFound
+	}
 }
 
 func (s *DefaultService) Find(modelDataList models.ModelListData, args ...interface{}) error {
@@ -160,8 +169,35 @@ func (s *DefaultService) Find(modelDataList models.ModelListData, args ...interf
 	return db.Find(modelDataList).Error
 }
 
+// HasWhere 判断是否存在搜索条件
+func HasWhere(args ...interface{}) bool {
+	// args首个元素为string或args中存在WhereArgs
+	return len(args) > 0 && (func() bool { _, ok := args[0].(string); return ok }() || len(sliceutil.Filter(func(item interface{}) bool {
+		_, ok := item.(WhereArgs)
+		return ok
+	}, args...)) > 0)
+}
+
+// AddIdCondIfNoWhere 如果没有传入搜索条件，则添加modelData中的Id字段作为搜索条件
+// 若原本就存在搜索条件，或成功添加Id条件，则返回true，否则返回false
+func AddIdCondIfNoWhere(modelData models.ModelData, args ...interface{}) bool {
+	// 如果没有传入搜索条件，则添加modelData中的Id字段作为搜索条件
+	if !HasWhere(args...) {
+		// 无传入Id
+		if idPtr, ok := reflect.FieldByName(modelData, "Id").(*int64); !ok || idPtr == nil || *idPtr <= 0 {
+			return false
+		} else {
+			args = append(args, WhereArgs{Query: "id = ?", Args: []interface{}{*idPtr}})
+		}
+	}
+	return true
+}
+
 func (s *DefaultService) Updates(modelData models.ModelData, args ...interface{}) error {
 	db := s.DB.Model(s.Model)
+	if !AddIdCondIfNoWhere(modelData, args...) {
+		return errors.New("无搜索条件")
+	}
 	if err := AddCond(db, args...); err != nil {
 		return err
 	}
@@ -174,6 +210,9 @@ func (s *DefaultService) UpdatesById(id int64, modelData models.ModelData) error
 
 func (s *DefaultService) Delete(args ...interface{}) error {
 	db := s.DB.Model(s.Model)
+	if !HasWhere(args...) {
+		return errors.New("无搜索条件")
+	}
 	if err := AddCond(db, args...); err != nil {
 		return err
 	}

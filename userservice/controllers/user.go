@@ -24,7 +24,7 @@ func UserInfo(c *gin.Context) {
 	userService := services.NewUserService()
 	user := &userInfoResp{}
 	if userService.GetById(userId, user) != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequest(c, "")
 		return
 	}
 

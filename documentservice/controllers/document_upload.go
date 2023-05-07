@@ -13,7 +13,7 @@ import (
 	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/common/services"
 	"protodesign.cn/kcserver/common/storage"
-	"protodesign.cn/kcserver/utils/strutil"
+	"protodesign.cn/kcserver/utils/str"
 )
 
 type tokenData struct {
@@ -104,7 +104,7 @@ func UploadHandler(c *gin.Context) {
 		paramsError("")
 		return
 	}
-	userId, err := strutil.ToInt(parseData.Id)
+	userId, err := str.ToInt(parseData.Id)
 	if err != nil {
 		paramsError("")
 		return

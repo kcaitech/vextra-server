@@ -10,19 +10,13 @@ import (
 func handler(c *gin.Context) {
 	token := jwt.GetJwtFromAuthorization(c.GetHeader("Authorization"))
 	if token == "" {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, response.Response{
-			Code:    http.StatusUnauthorized,
-			Message: "未登录",
-		})
+		response.Abort(c, http.StatusUnauthorized, "未登录", nil)
 		return
 	}
 
 	jwtData, err := jwt.ParseJwt(token)
 	if err != nil {
-		c.AbortWithStatusJSON(http.StatusUnauthorized, response.Response{
-			Code:    http.StatusUnauthorized,
-			Message: err.Error(),
-		})
+		response.Abort(c, http.StatusUnauthorized, err.Error(), nil)
 		return
 	}
 

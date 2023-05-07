@@ -92,7 +92,7 @@ func WxLogin(c *gin.Context) {
 		return
 	}
 
-	// CoAccessToken换取用户信息
+	// AccessToken换取用户信息
 	// 发起请求
 	queryParams = url.Values{}
 	queryParams.Set("access_token", wxAccessTokenResp.AccessToken)
@@ -131,8 +131,12 @@ func WxLogin(c *gin.Context) {
 	// 创建用户
 	user := &models.User{}
 	err = userService.Get(user, "wx_open_id = ?", wxAccessTokenResp.Openid)
-	if err != nil {
-		log.Println(err)
+	if err != nil && nil != services.ErrRecordNotFound {
+		log.Println("userService.Get错误：", err)
+		response.Fail(c, "登陆失败")
+		return
+	}
+	if err == services.ErrRecordNotFound {
 		t := Time(time.Now())
 		user = &models.User{
 			Nickname:                 wxUserInfoResp.Nickname,
@@ -149,7 +153,6 @@ func WxLogin(c *gin.Context) {
 			response.Fail(c, "登陆失败")
 			return
 		}
-
 	}
 	// 创建JWT
 	token, err := jwt.CreateJwt(&jwt.Data{
