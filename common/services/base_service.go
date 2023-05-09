@@ -7,6 +7,7 @@ import (
 	"protodesign.cn/kcserver/common/snowflake"
 	"protodesign.cn/kcserver/utils/reflect"
 	"protodesign.cn/kcserver/utils/sliceutil"
+	"protodesign.cn/kcserver/utils/str"
 )
 
 type BaseService interface {
@@ -172,7 +173,7 @@ func (s *DefaultService) Find(modelDataList models.ModelListData, args ...interf
 // HasWhere 判断是否存在搜索条件
 func HasWhere(args ...interface{}) bool {
 	// args首个元素为string或args中存在WhereArgs
-	return len(args) > 0 && (func() bool { _, ok := args[0].(string); return ok }() || len(sliceutil.Filter(func(item interface{}) bool {
+	return len(args) > 0 && (str.IsString(args[0]) || len(sliceutil.Filter(func(item interface{}) bool {
 		_, ok := item.(WhereArgs)
 		return ok
 	}, args...)) > 0)
@@ -184,10 +185,10 @@ func AddIdCondIfNoWhere(modelData models.ModelData, args ...interface{}) bool {
 	// 如果没有传入搜索条件，则添加modelData中的Id字段作为搜索条件
 	if !HasWhere(args...) {
 		// 无传入Id
-		if idPtr, ok := reflect.FieldByName(modelData, "Id").(*int64); !ok || idPtr == nil || *idPtr <= 0 {
+		if id := modelData.GetId(); id <= 0 {
 			return false
 		} else {
-			args = append(args, WhereArgs{Query: "id = ?", Args: []interface{}{*idPtr}})
+			args = append(args, WhereArgs{Query: "id = ?", Args: []interface{}{id}})
 		}
 	}
 	return true

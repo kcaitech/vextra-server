@@ -19,6 +19,7 @@ type client struct {
 func NewClient(config *base.ClientConfig) (base.Client, error) {
 	c, err := minio.New(config.Endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(config.AccessKeyID, config.SecretAccessKey, ""),
+		Region: config.Endpoint,
 		Secure: false,
 	})
 	if err != nil {
@@ -113,7 +114,7 @@ func (that *bucket) GenerateAccessKey(authPath string, authOp int, expires int) 
 		AccessKey:       that.client.config.StsAccessKeyID,
 		SecretKey:       that.client.config.StsSecretAccessKey,
 		Policy:          string(policy),
-		Location:        "",
+		Location:        that.client.config.Region,
 		DurationSeconds: expires,
 	})
 	if err != nil {

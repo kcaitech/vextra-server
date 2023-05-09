@@ -4,10 +4,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"protodesign.cn/kcserver/common/gin/auth"
 	"protodesign.cn/kcserver/common/gin/response"
+	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/common/services"
 )
 
 type userInfoResp struct {
+	models.DefaultModelData
 	Id       int64  `json:"id"`
 	Nickname string `json:"nickname"`
 	Avatar   string `json:"avatar"`

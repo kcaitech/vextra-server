@@ -13,6 +13,7 @@ type Client interface {
 type ClientConfig struct {
 	Provider           Provider `yaml:"provider"`
 	Endpoint           string   `yaml:"endpoint"`
+	Region             string   `yaml:"region"`
 	AccessKeyID        string   `yaml:"accessKeyID"`
 	SecretAccessKey    string   `yaml:"secretAccessKey"`
 	StsAccessKeyID     string   `yaml:"stsAccessKeyID"`
@@ -27,7 +28,6 @@ type Bucket interface {
 
 type BucketConfig struct {
 	BucketName string `yaml:"bucketName"`
-	Region     string `yaml:"region"`
 }
 
 type Config struct {

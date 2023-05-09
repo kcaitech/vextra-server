@@ -29,7 +29,6 @@ func Init(filePath string) (base.Bucket, error) {
 	}
 	Bucket = Client.NewBucket(&base.BucketConfig{
 		BucketName: providerConf.BucketName,
-		Region:     providerConf.Region,
 	})
 	return Bucket, nil
 }

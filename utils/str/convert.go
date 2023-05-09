@@ -19,3 +19,9 @@ func DefaultToInt(strVal string, defaultVal int64) int64 {
 	}
 	return intVal
 }
+
+// IsString 判断是否为字符串
+func IsString(value interface{}) bool {
+	_, ok := value.(string)
+	return ok
+}

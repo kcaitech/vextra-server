@@ -12,7 +12,7 @@ services:
       MINIO_SECRET_KEY: yFukp3vtIkUNck2XL3s2KOT4wyRPR71G
       MINIO_ROOT_USER: kcserver
       MINIO_ROOT_PASSWORD: kcai1212
-      MINIO_REGION:
+      MINIO_REGION: zhuhai-1
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 30s

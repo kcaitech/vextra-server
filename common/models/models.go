@@ -30,5 +30,27 @@ type BaseModel struct {
 	DeletedAt gorm.DeletedAt `gorm:"index" json:"deleted_at"`
 }
 
-type ModelData interface{}     // 指向具体Model的指针，例如：&User{}
-type ModelListData interface{} // 指向具体Model数组的指针，例如：&[]User{}
+// ModelData 指向具体Model的指针，例如：&User{}
+type ModelData interface {
+	GetId() int64
+	SetId(id int64)
+}
+
+func (data *BaseModel) GetId() int64 {
+	return data.Id
+}
+
+func (data *BaseModel) SetId(id int64) {
+	data.Id = id
+}
+
+type DefaultModelData struct{}
+
+func (data *DefaultModelData) GetId() int64 {
+	return 0
+}
+
+func (data *DefaultModelData) SetId(id int64) {}
+
+// ModelListData 指向具体Model数组的指针，例如：&[]User{}
+type ModelListData interface{}

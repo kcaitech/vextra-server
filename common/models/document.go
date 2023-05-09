@@ -17,5 +17,5 @@ type Document struct {
 	Path    string  `gorm:"size:64" json:"path"`
 	DocType DocType `gorm:"default:0" json:"doc_type"`
 	Name    string  `gorm:"size:64" json:"name"`
-	Size    uint    `gorm:"" json:"size"`
+	Size    uint64  `gorm:"" json:"size"`
 }
