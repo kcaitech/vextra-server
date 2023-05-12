@@ -39,8 +39,8 @@ type uploadData struct {
 	} `json:"data"`
 }
 
-// UploadHandler 上传文档
-func UploadHandler(c *gin.Context) {
+// UploadDocumentByUser 用户上传文档
+func UploadDocumentByUser(c *gin.Context) {
 	upgrader := websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool {
 			return true
@@ -378,7 +378,7 @@ func UploadHandler(c *gin.Context) {
 			return
 		}
 		var documentAccessRecord models.DocumentAccessRecord
-		err := documentAccessRecordService.Get(&documentAccessRecord, "user_id = ? AND document_id = ?", userId, docId)
+		err := documentAccessRecordService.Get(&documentAccessRecord, "user_id = ? and document_id = ?", userId, docId)
 		if err != nil && err != services.ErrRecordNotFound {
 			uploadError(err)
 			return

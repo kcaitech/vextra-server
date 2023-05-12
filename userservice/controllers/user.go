@@ -15,8 +15,8 @@ type userInfoResp struct {
 	Avatar   string `json:"avatar"`
 }
 
-// UserInfo 获取用户信息
-func UserInfo(c *gin.Context) {
+// GetUserInfo 获取用户信息
+func GetUserInfo(c *gin.Context) {
 	userId, err := auth.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)

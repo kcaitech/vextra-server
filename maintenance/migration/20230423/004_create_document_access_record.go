@@ -8,10 +8,9 @@ import (
 // DocumentAccessRecord 文档访问记录
 type DocumentAccessRecord struct {
 	BaseModel
-	Id             int64     `gorm:"primary_key" json:"id"`    // Id
-	UserId         int64     `gorm:"" json:"user_id"`          // 用户ID
-	DocumentId     int64     `gorm:"" json:"document_id"`      // 文档ID
-	LastAccessTime time.Time `gorm:"" json:"last_access_time"` // 上次访问时间
+	UserId         int64     `gorm:"" json:"user_id"`                                         // 用户ID
+	DocumentId     int64     `gorm:"" json:"document_id"`                                     // 文档ID
+	LastAccessTime time.Time `gorm:"autoCreateTime;type:datetime(6)" json:"last_access_time"` // 上次访问时间
 }
 
 func DocumentAccessRecordUp(db *gorm.DB) error {

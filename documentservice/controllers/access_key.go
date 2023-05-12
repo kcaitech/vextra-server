@@ -24,20 +24,25 @@ func GetDocumentAccessKey(c *gin.Context) {
 
 	documentService := services.NewDocumentService()
 
-	docId := str.DefaultToInt(c.Query("doc_id"), 0)
-	if docId == 0 {
+	documentId := str.DefaultToInt(c.Query("doc_id"), 0)
+	if documentId == 0 {
 		response.BadRequest(c, "参数错误：doc_id")
 		return
 	}
 
 	document := models.Document{}
-	err = documentService.GetById(docId, &document)
+	err = documentService.GetById(documentId, &document)
 	if err != nil {
 		response.BadRequest(c, "文档不存在")
 		return
 	}
 
-	if document.UserId != userId {
+	var permType models.PermType
+	if err := documentService.GetDocumentPermissionByDocumentAndUserId(&permType, documentId, userId); err != nil {
+		response.Fail(c, "")
+		return
+	}
+	if permType <= models.PermTypeNone {
 		response.Forbidden(c, "")
 		return
 	}
@@ -55,13 +60,13 @@ func GetDocumentAccessKey(c *gin.Context) {
 
 	now := myTime.Time(time.Now())
 	documentAccessRecord := models.DocumentAccessRecord{}
-	err = documentService.DocumentAccessRecordService.Get(&documentAccessRecord, "document_id = ? and user_id = ?", docId, userId)
+	err = documentService.DocumentAccessRecordService.Get(&documentAccessRecord, "document_id = ? and user_id = ?", documentId, userId)
 	if err != nil {
 		if err != services.ErrRecordNotFound {
 			log.Println("documentAccessRecordService.Get错误：" + err.Error())
 		} else {
 			_ = documentService.DocumentAccessRecordService.Create(&models.DocumentAccessRecord{
-				DocumentId:     docId,
+				DocumentId:     documentId,
 				UserId:         userId,
 				LastAccessTime: now,
 			})

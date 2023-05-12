@@ -5,9 +5,9 @@ import (
 	"protodesign.cn/kcserver/utils/time"
 )
 
+// User 用户
 type User struct {
 	BaseModel
-	Id                       int64     `gorm:"primary_key" json:"id"`
 	Nickname                 string    `gorm:"size:64" json:"nickname"`
 	WxOpenId                 string    `gorm:"unique;size:64" json:"wx_open_id"`
 	WxAccessToken            string    `gorm:"size:255" json:"wx_access_token"`

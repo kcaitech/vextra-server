@@ -39,6 +39,12 @@ type SelectArgs struct {
 	Args   []interface{}
 }
 
+type GroupArgs struct {
+	Group string
+}
+
+type Unscoped struct{} // 不自动加入软删除字段
+
 /*
 参数说明
 --参数名-----------类型-----------------------------示例--
@@ -47,23 +53,23 @@ modelDataList：	*[]models.BaseModel 			&[]models.User{}
 args：			[>=2]{string, ...interface{}}	"id = ?", 1
 args：			[]WhereArgs						返回id=1且type=1或3<=id<=5且type=2的数据：\
 []WhereArgs {\
-	WhereArgs{Query:"id = ? AND type = ?", Args:[]interface{}{1,1}},\
-	WhereArgs{Query:"id >= ? AND id <= ? AND type = ?", Args:[]interface{}{3,5,2}},\
+	WhereArgs{Query:"id = ? and type = ?", Args:[]interface{}{1,1}},\
+	WhereArgs{Query:"id >= ? and id <= ? and type = ?", Args:[]interface{}{3,5,2}},\
 }
 args:			[]OrderLimitArgs				返回按id倒序排序的前10条数据：\
 []OrderLimitArgs{\
-	OrderLimitArgs{Order:"id DESC", Limit:10},\
+	OrderLimitArgs{Order:"id desc", Limit:10},\
 }
-args:			[]JoinArgs						Document LEFT JOIN User：\
+args:			[]JoinArgs						document left join user：\
 []JoinArgs{\
 	JoinArgs{\
-		Join:"LEFT JOIN User ON Document.user_id = User.id",\
+		Join:"left join user on document.user_id = user.id",\
 		Args:[]interface{}{},\
 }
 args:			[]SelectArgs					只返回特定字段：\
 []SelectArgs{\
 	SelectArgs{\
-		Select:"Document.*, User.name",\
+		Select:"document.*, user.name",\
 		Args:[]interface{}{}},\
 }
 */
@@ -88,6 +94,12 @@ func AddCond(db *gorm.DB, args ...interface{}) error {
 			}
 			if !ok {
 				_, ok = arg.(SelectArgs)
+			}
+			if !ok {
+				_, ok = arg.(GroupArgs)
+			}
+			if !ok {
+				_, ok = arg.(Unscoped)
 			}
 			if ok {
 				break
@@ -123,6 +135,12 @@ func AddCond(db *gorm.DB, args ...interface{}) error {
 			if argv.Select != "" {
 				db.Select(argv.Select, argv.Args...)
 			}
+		case GroupArgs:
+			if argv.Group != "" {
+				db.Group(argv.Group)
+			}
+		case Unscoped:
+			db.Unscoped()
 		default:
 			return errors.New("参数格式错误")
 		}
@@ -195,18 +213,47 @@ func AddIdCondIfNoWhere(modelData models.ModelData, args ...interface{}) bool {
 }
 
 func (s *DefaultService) Updates(modelData models.ModelData, args ...interface{}) error {
-	db := s.DB.Model(s.Model)
 	if !AddIdCondIfNoWhere(modelData, args...) {
 		return errors.New("无搜索条件")
 	}
+	db := s.DB.Model(s.Model)
 	if err := AddCond(db, args...); err != nil {
 		return err
 	}
-	return db.Updates(modelData).Error
+	tx := db.Updates(modelData)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	if tx.RowsAffected == 0 {
+		return ErrRecordNotFound
+	}
+	return nil
 }
 
 func (s *DefaultService) UpdatesById(id int64, modelData models.ModelData) error {
-	return s.DB.Model(s.Model).Where("id = ?", id).Updates(modelData).Error
+	return s.Updates(modelData, "id = ?", id)
+}
+
+func (s *DefaultService) UpdateColumns(values interface{}, args ...interface{}) error {
+	if len(args) == 0 {
+		return errors.New("无搜索条件")
+	}
+	db := s.DB.Model(s.Model)
+	if err := AddCond(db, args...); err != nil {
+		return err
+	}
+	tx := db.UpdateColumns(values)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	if tx.RowsAffected == 0 {
+		return ErrRecordNotFound
+	}
+	return nil
+}
+
+func (s *DefaultService) UpdateColumnsById(id int64, values interface{}) error {
+	return s.UpdateColumns(values, "id = ?", id)
 }
 
 func (s *DefaultService) Delete(args ...interface{}) error {
@@ -217,9 +264,33 @@ func (s *DefaultService) Delete(args ...interface{}) error {
 	if err := AddCond(db, args...); err != nil {
 		return err
 	}
-	return db.Delete(s.Model).Error
+	tx := db.Delete(s.Model)
+	if tx.Error != nil {
+		return tx.Error
+	}
+	if tx.RowsAffected == 0 {
+		return ErrRecordNotFound
+	}
+	return nil
 }
 
 func (s *DefaultService) DeleteById(id int64) error {
-	return s.DB.Model(s.Model).Where("id = ?", id).Delete(s.Model).Error
+	return s.Delete("id = ?", id)
+}
+
+// HardDelete 硬删除
+func (s *DefaultService) HardDelete(args ...interface{}) error {
+	return s.Delete(append(args, Unscoped{}))
+}
+
+func (s *DefaultService) HardDeleteById(id int64) error {
+	return s.HardDelete("id = ?", id)
+}
+
+func (s *DefaultService) Count(count *int64, args ...interface{}) error {
+	db := s.DB.Model(s.Model)
+	if err := AddCond(db, args...); err != nil {
+		return err
+	}
+	return db.Count(count).Error
 }

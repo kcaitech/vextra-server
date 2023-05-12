@@ -20,6 +20,7 @@ func TestTimeMarshal(t *testing.T) {
 		t.Fatal(err)
 	}
 	log.Println(string(dataJson))
+	log.Println(Time(time.Now()).String())
 }
 
 func TestTimeUnmarshalJSON(t *testing.T) {

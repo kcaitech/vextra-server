@@ -17,18 +17,18 @@ import (
 	"time"
 )
 
-type wxLoginRequest struct {
+type wxLoginReq struct {
 	Code string `json:"code" binding:"required"`
 }
 
-type wxLoginResponse struct {
+type wxLoginResp struct {
 	Id       int64  `json:"id"`
 	Nickname string `json:"nickname"`
 	Token    string `json:"token"`
 	Avatar   string `json:"avatar"`
 }
 
-type wxAccessTokenResponse struct {
+type wxAccessTokenResp struct {
 	AccessToken  string `json:"access_token"`
 	ExpiresIn    int    `json:"expires_in"`
 	RefreshToken string `json:"refresh_token"`
@@ -37,7 +37,7 @@ type wxAccessTokenResponse struct {
 	Unionid      string `json:"unionid"`
 }
 
-type wxUserInfoResponse struct {
+type wxUserInfoResp struct {
 	Openid     string   `json:"openid"`
 	Nickname   string   `json:"nickname"`
 	Sex        int      `json:"sex"`
@@ -51,8 +51,8 @@ type wxUserInfoResponse struct {
 
 // WxLogin 微信登录
 func WxLogin(c *gin.Context) {
-	var loginRes wxLoginRequest
-	if err := c.ShouldBindJSON(&loginRes); err != nil {
+	var req wxLoginReq
+	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, err.Error())
 		return
 	}
@@ -62,7 +62,7 @@ func WxLogin(c *gin.Context) {
 	queryParams := url.Values{}
 	queryParams.Set("appid", config.Config.Wx.Appid)
 	queryParams.Set("secret", config.Config.Wx.Secret)
-	queryParams.Set("code", loginRes.Code)
+	queryParams.Set("code", req.Code)
 	queryParams.Set("grant_type", "authorization_code")
 	resp, err := http.Get("https://api.weixin.qq.com/sns/oauth2/access_token" + "?" + queryParams.Encode())
 	if err != nil {
@@ -79,7 +79,7 @@ func WxLogin(c *gin.Context) {
 		return
 	}
 	// json解析
-	var wxAccessTokenResp wxAccessTokenResponse
+	var wxAccessTokenResp wxAccessTokenResp
 	err = json.Unmarshal(body, &wxAccessTokenResp)
 	if err != nil {
 		log.Println(err)
@@ -113,7 +113,7 @@ func WxLogin(c *gin.Context) {
 		return
 	}
 	// json解析
-	var wxUserInfoResp wxUserInfoResponse
+	var wxUserInfoResp wxUserInfoResp
 	err = json.Unmarshal(body, &wxUserInfoResp)
 	if err != nil {
 		log.Println(err)
@@ -164,7 +164,7 @@ func WxLogin(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, wxLoginResponse{
+	response.Success(c, wxLoginResp{
 		Id:       user.Id,
 		Nickname: user.Nickname,
 		Token:    token,

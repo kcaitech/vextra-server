@@ -125,7 +125,7 @@ func (that *bucket) GenerateAccessKey(authPath string, authOp int, expires int) 
 		return nil, err
 	}
 	value := base.AccessKeyValue{
-		AccessKeyID:     v.AccessKeyID,
+		AccessKey:       v.AccessKeyID,
 		SecretAccessKey: v.SecretAccessKey,
 		SessionToken:    v.SessionToken,
 		SignerType:      int(v.SignerType),

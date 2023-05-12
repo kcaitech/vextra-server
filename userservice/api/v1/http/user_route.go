@@ -8,6 +8,6 @@ import (
 func loadUserRoutes(api *gin.RouterGroup) {
 	router := api.Group("/users")
 	{
-		router.GET("/info", controllers.UserInfo)
+		router.GET("/info", controllers.GetUserInfo)
 	}
 }

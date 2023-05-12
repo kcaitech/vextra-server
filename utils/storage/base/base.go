@@ -51,10 +51,10 @@ func (that *DefaultBucket) PubObjectByte(objectName string, content []byte) (*Up
 }
 
 type AccessKeyValue struct {
-	AccessKeyID     string
-	SecretAccessKey string
-	SessionToken    string
-	SignerType      int
+	AccessKey       string `json:"access_key"`
+	SecretAccessKey string `json:"secret_access_key"`
+	SessionToken    string `json:"session_token"`
+	SignerType      int    `json:"signer_type"`
 }
 
 const (
