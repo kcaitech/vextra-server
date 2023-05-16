@@ -112,14 +112,14 @@ type header struct {
 
 // Payload JWT Payload部分
 type Payload struct {
-	Iss  string                 `json:"iss,omitempty"`  // 发行人
-	Sub  string                 `json:"sub,omitempty"`  // 主题
-	Aud  string                 `json:"aud,omitempty"`  // 用户
-	Exp  int64                  `json:"exp,omitempty"`  // 过期时间（时间戳，秒）
-	Nbf  int64                  `json:"nbf,omitempty"`  // 生效时间（时间戳，秒）
-	Iat  int64                  `json:"iat"`            // 签发时间（时间戳，秒）
-	Jti  string                 `json:"jti,omitempty"`  // jwt id
-	Data map[string]interface{} `json:"data,omitempty"` // 自定义数据
+	Iss  string         `json:"iss,omitempty"`  // 发行人
+	Sub  string         `json:"sub,omitempty"`  // 主题
+	Aud  string         `json:"aud,omitempty"`  // 用户
+	Exp  int64          `json:"exp,omitempty"`  // 过期时间（时间戳，秒）
+	Nbf  int64          `json:"nbf,omitempty"`  // 生效时间（时间戳，秒）
+	Iat  int64          `json:"iat"`            // 签发时间（时间戳，秒）
+	Jti  string         `json:"jti,omitempty"`  // jwt id
+	Data map[string]any `json:"data,omitempty"` // 自定义数据
 }
 
 type Jwt struct {
@@ -145,7 +145,7 @@ func NewJwt(encryptor signer) (Jwt, error) {
 		encryptor: encryptor,
 		payload: Payload{
 			Iat:  time.Now().Unix(), // 签发时间
-			Data: map[string]interface{}{},
+			Data: map[string]any{},
 		},
 	}, nil
 }
@@ -176,14 +176,14 @@ func (that *Jwt) SetRegisteredClaims(payload Payload) {
 }
 
 // UpdateData 往Payload中添加多条数据（claim）
-func (that *Jwt) UpdateData(data map[string]interface{}) {
+func (that *Jwt) UpdateData(data map[string]any) {
 	for k, v := range data {
 		that.payload.Data[k] = v
 	}
 }
 
 // AddData 往Payload中添加一条数据（claim）
-func (that *Jwt) AddData(key string, value interface{}) {
+func (that *Jwt) AddData(key string, value any) {
 	that.payload.Data[key] = value
 }
 
@@ -225,7 +225,7 @@ func (that *Jwt) General() (string, error) {
 var ErrTokenExpired = errors.New("jwt已过期")
 
 // Parse 验证并解析JWT，返回Payload中的自定义数据
-func (that *Jwt) Parse(jwtString string) (res map[string]interface{}, err error) {
+func (that *Jwt) Parse(jwtString string) (res map[string]any, err error) {
 	// 分割
 	splitRes := strings.Split(jwtString, ".")
 	if len(splitRes) != 3 {
@@ -259,7 +259,7 @@ func (that *Jwt) Parse(jwtString string) (res map[string]interface{}, err error)
 		return res, errors.New("payload base64解码失败")
 	}
 	that._payloadJson = string(temp)
-	that.payload.Data = map[string]interface{}{}
+	that.payload.Data = map[string]any{}
 	if err = json.Unmarshal(temp, &that.payload); err != nil {
 		return res, errors.New("payload json解码失败")
 	}

@@ -36,7 +36,7 @@ func (t Time) String() string {
 	return time.Time(t).Format(timeFormat)
 }
 
-func (t *Time) Scan(data interface{}) error {
+func (t *Time) Scan(data any) error {
 	value, ok := data.(time.Time)
 	if !ok {
 		return errors.New(fmt.Sprintf("%v不能被转换为Time", data))

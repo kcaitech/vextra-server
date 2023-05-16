@@ -16,7 +16,7 @@ func loadUserRoutes(api *gin.RouterGroup) {
 				Id:       "1",
 				Nickname: "1",
 			})
-			response.Success(c, map[string]interface{}{
+			response.Success(c, map[string]any{
 				"token":    token,
 				"id":       1,
 				"nickname": "1",

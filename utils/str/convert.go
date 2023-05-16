@@ -21,7 +21,11 @@ func DefaultToInt(strVal string, defaultVal int64) int64 {
 }
 
 // IsString 判断是否为字符串
-func IsString(value interface{}) bool {
+func IsString(value any) bool {
 	_, ok := value.(string)
 	return ok
+}
+
+func IntToString(intVal int64) string {
+	return strconv.FormatInt(intVal, 10)
 }

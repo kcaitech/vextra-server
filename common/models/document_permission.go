@@ -36,3 +36,11 @@ type DocumentPermission struct {
 	GranteeId    int64        `gorm:"uniqueIndex:unique_index" json:"grantee_id"`               // 受让人ID
 	PermType     PermType     `gorm:"default:1" json:"perm_type"`                               // 权限类型
 }
+
+func (model *DocumentPermission) MarshalJSON() ([]byte, error) {
+	return MarshalJSON(model)
+}
+
+func (model *DocumentPermission) UnmarshalJSON(data []byte) error {
+	return UnmarshalJSON(model, data)
+}

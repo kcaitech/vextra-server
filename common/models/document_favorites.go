@@ -7,3 +7,11 @@ type DocumentFavorites struct {
 	DocumentId int64 `gorm:"index;uniqueIndex:idx_userid_documentid" json:"document_id"`
 	IsFavorite bool  `gorm:"" json:"is_favorite"`
 }
+
+func (model *DocumentFavorites) MarshalJSON() ([]byte, error) {
+	return MarshalJSON(model)
+}
+
+func (model *DocumentFavorites) UnmarshalJSON(data []byte) error {
+	return UnmarshalJSON(model, data)
+}

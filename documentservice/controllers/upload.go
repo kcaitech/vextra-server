@@ -93,7 +93,7 @@ func UploadDocumentByUser(c *gin.Context) {
 		log.Println("参数错误：" + msg)
 		closeConn(msg)
 	}
-	done := func(data map[string]interface{}) {
+	done := func(data map[string]any) {
 		if hasClose {
 			return
 		}
@@ -123,22 +123,22 @@ func UploadDocumentByUser(c *gin.Context) {
 	size += uint64(len(content))
 	var headerDataVal headerData
 	if err := json.Unmarshal(content, &headerDataVal); err != nil {
-		paramsError("")
+		paramsError("headerData")
 		return
 	}
 	// 获取用户信息
 	parseData, err := ParseJwt(headerDataVal.Token)
 	if err != nil {
-		paramsError("")
+		paramsError("Token")
 		return
 	}
 	userId, err := str.ToInt(parseData.Id)
 	if err != nil {
-		paramsError("")
+		paramsError("Id")
 		return
 	}
 	if userId <= 0 {
-		paramsError("")
+		paramsError("Id")
 		return
 	}
 	// 获取文档信息
@@ -395,7 +395,7 @@ func UploadDocumentByUser(c *gin.Context) {
 		}
 	}
 
-	done(map[string]interface{}{
+	done(map[string]any{
 		"doc_id": fmt.Sprintf("%d", docId),
 	})
 }

@@ -19,7 +19,7 @@ func GetUserDocumentList(c *gin.Context) {
 	var resp []services.DocumentQueryResItem
 	if err := services.NewDocumentService().Find(&resp, "document.user_id = ?", userId,
 		services.JoinArgs{Join: "inner join user on user.id = document.user_id"},
-		services.SelectArgs{Select: "document.*, user.*"},
+		services.SelectArgs{Select: "user.*, document.*"},
 	); err != nil {
 		response.Fail(c, "")
 		return

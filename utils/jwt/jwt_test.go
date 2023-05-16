@@ -14,7 +14,7 @@ func TestHS256(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	jwt.UpdateData(map[string]interface{}{
+	jwt.UpdateData(map[string]any{
 		"userName": "Jfeng",
 	})
 	jwt.AddData("age", 27)
@@ -43,7 +43,7 @@ func TestRS256(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	jwt.UpdateData(map[string]interface{}{
+	jwt.UpdateData(map[string]any{
 		"userName": "Jfeng",
 	})
 	jwt.AddData("age", 27)
@@ -65,7 +65,7 @@ func TestRegisteredClaims(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	jwt.UpdateData(map[string]interface{}{
+	jwt.UpdateData(map[string]any{
 		"userName": "Jfeng",
 	})
 	jwt.AddData("age", 27)

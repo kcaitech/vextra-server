@@ -5,15 +5,12 @@ import (
 )
 
 type UserService struct {
-	DefaultService
+	*DefaultService
 }
 
 func NewUserService() *UserService {
 	that := &UserService{
-		DefaultService: DefaultService{
-			DB:    models.DB,
-			Model: &models.User{},
-		},
+		DefaultService: NewDefaultService(&models.User{}),
 	}
 	that.That = that
 	return that

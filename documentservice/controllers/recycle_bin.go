@@ -31,6 +31,10 @@ func GetUserRecycleBinDocumentList(c *gin.Context) {
 	response.Success(c, resp)
 }
 
+type RestoreUserRecycleBinDocumentReq struct {
+	RecycleBinId string `json:"recycle_bin_id" binding:"required"`
+}
+
 // RestoreUserRecycleBinDocument 恢复用户回收站内的某份文档
 func RestoreUserRecycleBinDocument(c *gin.Context) {
 	userId, err := auth.GetUserId(c)
@@ -38,13 +42,18 @@ func RestoreUserRecycleBinDocument(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	documentId := str.DefaultToInt(c.Query("recycle_bin_id"), 0)
+	var req RestoreUserRecycleBinDocumentReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "")
+		return
+	}
+	documentId := str.DefaultToInt(req.RecycleBinId, 0)
 	if documentId <= 0 {
 		response.BadRequest(c, "参数错误：recycle_bin_id")
 		return
 	}
 	if err := services.NewDocumentService().UpdateColumns(
-		map[string]interface{}{"deleted_at": nil},
+		map[string]any{"deleted_at": nil},
 		"user_id = ? and id = ? and deleted_at is not null and purged_at is null", userId, documentId,
 		services.Unscoped{},
 	); err != nil && err != services.ErrRecordNotFound {
@@ -67,7 +76,7 @@ func DeleteUserRecycleBinDocument(c *gin.Context) {
 		return
 	}
 	if err := services.NewDocumentService().UpdateColumns(
-		map[string]interface{}{"purged_at": myTime.Time(time.Now())},
+		map[string]any{"purged_at": myTime.Time(time.Now())},
 		"user_id = ? and id = ? and deleted_at is not null", userId, documentId,
 		services.Unscoped{},
 	); err != nil && err != services.ErrRecordNotFound {

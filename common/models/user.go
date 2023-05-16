@@ -1,7 +1,6 @@
 package models
 
 import (
-	"gorm.io/gorm"
 	"protodesign.cn/kcserver/utils/time"
 )
 
@@ -17,6 +16,10 @@ type User struct {
 	Avatar                   string    `gorm:"size:256" json:"avatar"`
 }
 
-func (u *User) BeforeCreate(db *gorm.DB) error {
-	return nil
+func (model *User) MarshalJSON() ([]byte, error) {
+	return MarshalJSON(model)
+}
+
+func (model *User) UnmarshalJSON(data []byte) error {
+	return UnmarshalJSON(model, data)
 }

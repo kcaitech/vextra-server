@@ -15,7 +15,7 @@ type BaseConfiguration struct {
 	} `yaml:"db"`
 }
 
-func LoadConfig(filePath string, config interface{}) {
+func LoadConfig(filePath string, config any) {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		log.Fatalf("读取配置文件失败: %v", err)

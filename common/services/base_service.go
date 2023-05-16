@@ -9,20 +9,39 @@ import (
 	"protodesign.cn/kcserver/utils/reflect"
 	"protodesign.cn/kcserver/utils/sliceutil"
 	"protodesign.cn/kcserver/utils/str"
+	myTime "protodesign.cn/kcserver/utils/time"
+	"time"
 )
 
 type BaseService interface {
+	GetTable() string
 }
 
 type DefaultService struct {
 	DB    *gorm.DB
 	That  BaseService
 	Model models.ModelData
+	Table string
+}
+
+func (s *DefaultService) GetTable() string {
+	return s.Table
+}
+
+func NewDefaultService(model models.ModelData) *DefaultService {
+	s := DefaultService{
+		DB:    models.DB,
+		Model: model,
+	}
+	db := models.DB.Model(model)
+	_ = db.Statement.Parse(&model)
+	s.Table = db.Statement.Table
+	return &s
 }
 
 type WhereArgs struct {
 	Query string
-	Args  []interface{}
+	Args  []any
 }
 
 type OrderLimitArgs struct {
@@ -32,12 +51,12 @@ type OrderLimitArgs struct {
 
 type JoinArgs struct {
 	Join string
-	Args []interface{}
+	Args []any
 }
 
 type SelectArgs struct {
 	Select string
-	Args   []interface{}
+	Args   []any
 }
 
 type GroupArgs struct {
@@ -46,9 +65,15 @@ type GroupArgs struct {
 
 type Unscoped struct{} // 不自动加入软删除字段
 
+// As 指定表的别名
+type As struct {
+	BaseService BaseService
+	Alias       string
+}
+
 func MergeWhereArgs(connector string, whereArgs []*WhereArgs) *WhereArgs {
 	var query string
-	var args []interface{}
+	var args []any
 	for _, whereArg := range whereArgs {
 		if whereArg.Query == "" {
 			continue
@@ -186,8 +211,8 @@ modelDataList：	*[]models.BaseModel 			&[]models.User{}
 args：			[>=2]{string, ...interface{}}	"id = ?", 1
 args：			[]WhereArgs						返回id=1且type=1或3<=id<=5且type=2的数据：\
 []WhereArgs {\
-	WhereArgs{Query:"id = ? and type = ?", Args:[]interface{}{1,1}},\
-	WhereArgs{Query:"id >= ? and id <= ? and type = ?", Args:[]interface{}{3,5,2}},\
+	WhereArgs{Query:"id = ? and type = ?", Args:[]any{1,1}},\
+	WhereArgs{Query:"id >= ? and id <= ? and type = ?", Args:[]any{3,5,2}},\
 }
 args:			[]OrderLimitArgs				返回按id倒序排序的前10条数据：\
 []OrderLimitArgs{\
@@ -197,17 +222,17 @@ args:			[]JoinArgs						document left join user：\
 []JoinArgs{\
 	JoinArgs{\
 		Join:"left join user on document.user_id = user.id",\
-		Args:[]interface{}{},\
+		Args:[]any{},\
 }
 args:			[]SelectArgs					只返回特定字段：\
 []SelectArgs{\
 	SelectArgs{\
 		Select:"document.*, user.name",\
-		Args:[]interface{}{}},\
+		Args:[]any{}},\
 }
 */
 
-func AddCond(db *gorm.DB, args ...interface{}) error {
+func AddCond(db *gorm.DB, args ...any) error {
 	if len(args) == 0 {
 		return nil
 	}
@@ -246,6 +271,9 @@ func AddCond(db *gorm.DB, args ...interface{}) error {
 			if !ok {
 				_, ok = arg.(Unscoped)
 			}
+			if !ok {
+				_, ok = arg.(As)
+			}
 			if ok {
 				break
 			}
@@ -256,7 +284,7 @@ func AddCond(db *gorm.DB, args ...interface{}) error {
 	}
 
 	firstWhere := false
-	addWhereCond := func(query string, args ...interface{}) {
+	addWhereCond := func(query string, args ...any) {
 		if !firstWhere {
 			db.Where(query, args...)
 			firstWhere = true
@@ -311,6 +339,10 @@ func AddCond(db *gorm.DB, args ...interface{}) error {
 			}
 		case Unscoped:
 			db.Unscoped()
+		case As:
+			if argv.BaseService != nil && argv.Alias != "" {
+				db.Table(fmt.Sprintf("%s as %s", argv.BaseService.GetTable(), argv.Alias))
+			}
 		default:
 			return errors.New("参数格式错误")
 		}
@@ -330,7 +362,7 @@ func (s *DefaultService) Create(modelData models.ModelData) error {
 
 var ErrRecordNotFound = errors.New("记录不存在")
 
-func (s *DefaultService) Get(modelData models.ModelData, args ...interface{}) error {
+func (s *DefaultService) Get(modelData models.ModelData, args ...any) error {
 	db := s.DB.Model(s.Model)
 	if err := AddCond(db, args...); err != nil {
 		return err
@@ -350,7 +382,7 @@ func (s *DefaultService) GetById(id int64, modelData models.ModelData) error {
 	}
 }
 
-func (s *DefaultService) Find(modelDataList models.ModelListData, args ...interface{}) error {
+func (s *DefaultService) Find(modelDataList models.ModelListData, args ...any) error {
 	db := s.DB.Model(s.Model)
 	if err := AddCond(db, args...); err != nil {
 		return err
@@ -359,9 +391,9 @@ func (s *DefaultService) Find(modelDataList models.ModelListData, args ...interf
 }
 
 // HasWhere 判断是否存在搜索条件
-func HasWhere(args ...interface{}) bool {
+func HasWhere(args ...any) bool {
 	// args首个元素为string或args中存在WhereArgs
-	return len(args) > 0 && (str.IsString(args[0]) || len(sliceutil.Filter(func(item interface{}) bool {
+	return len(args) > 0 && (str.IsString(args[0]) || len(sliceutil.Filter(func(item any) bool {
 		_, ok := item.(WhereArgs)
 		return ok
 	}, args...)) > 0)
@@ -369,24 +401,24 @@ func HasWhere(args ...interface{}) bool {
 
 // AddIdCondIfNoWhere 如果没有传入搜索条件，则添加modelData中的Id字段作为搜索条件
 // 若原本就存在搜索条件，或成功添加Id条件，则返回true，否则返回false
-func AddIdCondIfNoWhere(modelData models.ModelData, args ...interface{}) bool {
+func AddIdCondIfNoWhere(modelData models.ModelData, args ...any) bool {
 	// 如果没有传入搜索条件，则添加modelData中的Id字段作为搜索条件
 	if !HasWhere(args...) {
 		// 无传入Id
 		if id := modelData.GetId(); id <= 0 {
 			return false
 		} else {
-			args = append(args, WhereArgs{Query: "id = ?", Args: []interface{}{id}})
+			args = append(args, WhereArgs{Query: "id = ?", Args: []any{id}})
 		}
 	}
 	return true
 }
 
-func (s *DefaultService) Updates(modelData models.ModelData, args ...interface{}) error {
+func (s *DefaultService) Updates(modelData models.ModelData, args ...any) error {
 	if !AddIdCondIfNoWhere(modelData, args...) {
 		return errors.New("无搜索条件")
 	}
-	db := s.DB.Model(s.Model)
+	db := s.DB.Model(s.Model).Select("*")
 	if err := AddCond(db, args...); err != nil {
 		return err
 	}
@@ -404,7 +436,7 @@ func (s *DefaultService) UpdatesById(id int64, modelData models.ModelData) error
 	return s.Updates(modelData, "id = ?", id)
 }
 
-func (s *DefaultService) UpdateColumns(values interface{}, args ...interface{}) error {
+func (s *DefaultService) UpdateColumns(values map[string]any, args ...any) error {
 	if len(args) == 0 {
 		return errors.New("无搜索条件")
 	}
@@ -412,6 +444,7 @@ func (s *DefaultService) UpdateColumns(values interface{}, args ...interface{}) 
 	if err := AddCond(db, args...); err != nil {
 		return err
 	}
+	values["updated_at"] = myTime.Time(time.Now())
 	tx := db.UpdateColumns(values)
 	if tx.Error != nil {
 		return tx.Error
@@ -422,11 +455,11 @@ func (s *DefaultService) UpdateColumns(values interface{}, args ...interface{}) 
 	return nil
 }
 
-func (s *DefaultService) UpdateColumnsById(id int64, values interface{}) error {
+func (s *DefaultService) UpdateColumnsById(id int64, values map[string]any) error {
 	return s.UpdateColumns(values, "id = ?", id)
 }
 
-func (s *DefaultService) Delete(args ...interface{}) error {
+func (s *DefaultService) Delete(args ...any) error {
 	db := s.DB.Model(s.Model)
 	if !HasWhere(args...) {
 		return errors.New("无搜索条件")
@@ -449,7 +482,7 @@ func (s *DefaultService) DeleteById(id int64) error {
 }
 
 // HardDelete 硬删除
-func (s *DefaultService) HardDelete(args ...interface{}) error {
+func (s *DefaultService) HardDelete(args ...any) error {
 	return s.Delete(append(args, Unscoped{}))
 }
 
@@ -457,10 +490,18 @@ func (s *DefaultService) HardDeleteById(id int64) error {
 	return s.HardDelete("id = ?", id)
 }
 
-func (s *DefaultService) Count(count *int64, args ...interface{}) error {
+func (s *DefaultService) Count(count *int64, args ...any) error {
 	db := s.DB.Model(s.Model)
 	if err := AddCond(db, args...); err != nil {
 		return err
 	}
 	return db.Count(count).Error
+}
+
+func (s *DefaultService) Exist(args ...any) (bool, error) {
+	var count int64
+	if err := s.Count(&count, args...); err != nil {
+		return false, err
+	}
+	return count > 0, nil
 }

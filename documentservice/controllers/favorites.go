@@ -21,7 +21,7 @@ func GetUserDocumentFavoritesList(c *gin.Context) {
 
 type SetUserDocumentFavoriteStatusReq struct {
 	DocId  string `json:"doc_id" binding:"required"`
-	Status bool   `json:"status" binding:"required"`
+	Status bool   `json:"status"`
 }
 
 // SetUserDocumentFavoriteStatus 设置用户对某份文档的收藏状态
@@ -41,7 +41,12 @@ func SetUserDocumentFavoriteStatus(c *gin.Context) {
 		response.BadRequest(c, "参数错误：doc_id")
 		return
 	}
-	documentFavoritesService := services.NewDocumentService().DocumentFavoritesService
+	documentService := services.NewDocumentService()
+	if exist, err := documentService.Exist("id = ?", documentId); !exist || err != nil {
+		response.BadRequest(c, "文档不存在")
+		return
+	}
+	documentFavoritesService := documentService.DocumentFavoritesService
 	documentFavorites := models.DocumentFavorites{}
 	if err := documentFavoritesService.Get(
 		&documentFavorites,

@@ -25,3 +25,11 @@ type Document struct {
 	Size     uint64    `gorm:"" json:"size"`
 	PurgedAt time.Time `gorm:"" json:"purged_at"`
 }
+
+func (model *Document) MarshalJSON() ([]byte, error) {
+	return MarshalJSON(model)
+}
+
+func (model *Document) UnmarshalJSON(data []byte) error {
+	return UnmarshalJSON(model, data)
+}

@@ -6,12 +6,12 @@ import (
 )
 
 type Response struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Data    any    `json:"data,omitempty"`
 }
 
-func Abort(c *gin.Context, code int, message string, data interface{}) Response {
+func Abort(c *gin.Context, code int, message string, data any) Response {
 	resp := Response{
 		Code:    code,
 		Message: message,
@@ -21,7 +21,7 @@ func Abort(c *gin.Context, code int, message string, data interface{}) Response 
 	return resp
 }
 
-func Resp(c *gin.Context, code int, message string, data interface{}) Response {
+func Resp(c *gin.Context, code int, message string, data any) Response {
 	resp := Response{
 		Code:    code,
 		Message: message,
@@ -31,7 +31,7 @@ func Resp(c *gin.Context, code int, message string, data interface{}) Response {
 	return resp
 }
 
-func Success(c *gin.Context, data interface{}) Response {
+func Success(c *gin.Context, data any) Response {
 	return Resp(c, 0, "成功", data)
 }
 

@@ -2,21 +2,21 @@ package sliceutil
 
 import "reflect"
 
-func ConvertToInterfaceSlice(s interface{}) []interface{} {
+func ConvertToInterfaceSlice(s any) []any {
 	sValue := reflect.ValueOf(s)
 	if !(sValue.IsValid() && (sValue.Kind() == reflect.Slice || sValue.Kind() == reflect.Array)) {
 		return nil
 	}
 	length := sValue.Len()
-	result := make([]interface{}, length)
+	result := make([]any, length)
 	for i := 0; i < length; i++ {
 		result[i] = sValue.Index(i).Interface()
 	}
 	return result
 }
 
-func Filter(fn func(item interface{}) bool, args ...interface{}) []interface{} {
-	result := make([]interface{}, 0, len(args))
+func Filter(fn func(item any) bool, args ...any) []any {
+	result := make([]any, 0, len(args))
 	for _, item := range args {
 		if fn(item) {
 			result = append(result, item)

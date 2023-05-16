@@ -95,9 +95,9 @@ func (that *bucket) GenerateAccessKey(authPath string, authOp int, expires int) 
 			authOpListDistinct[authOpValue] = true
 		}
 	}
-	policy, err := json.Marshal(map[string]interface{}{
+	policy, err := json.Marshal(map[string]any{
 		"Version": "2012-10-17",
-		"Statement": []map[string]interface{}{
+		"Statement": []map[string]any{
 			{
 				"Action": authOpList,
 				"Effect": "Allow",

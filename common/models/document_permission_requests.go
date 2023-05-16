@@ -23,3 +23,11 @@ type DocumentPermissionRequests struct {
 	ApplicantNotes   string     `gorm:"size:256" json:"applicant_notes"`
 	ProcessorNotes   string     `gorm:"size:256" json:"processor_notes"`
 }
+
+func (model *DocumentPermissionRequests) MarshalJSON() ([]byte, error) {
+	return MarshalJSON(model)
+}
+
+func (model *DocumentPermissionRequests) UnmarshalJSON(data []byte) error {
+	return UnmarshalJSON(model, data)
+}
