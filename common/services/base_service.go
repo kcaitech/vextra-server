@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"gorm.io/gorm"
 	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/common/snowflake"
@@ -45,6 +46,138 @@ type GroupArgs struct {
 
 type Unscoped struct{} // 不自动加入软删除字段
 
+func MergeWhereArgs(connector string, whereArgs []*WhereArgs) *WhereArgs {
+	var query string
+	var args []interface{}
+	for _, whereArg := range whereArgs {
+		if whereArg.Query == "" {
+			continue
+		}
+		if query == "" {
+			query = fmt.Sprintf("(%s)", whereArg.Query)
+		} else {
+			query = fmt.Sprintf("((%s) %s (%s))", query, connector, whereArg.Query)
+		}
+		args = append(args, whereArg.Args...)
+	}
+	return &WhereArgs{Query: query, Args: args}
+}
+
+func MergeWhereArgsAnd(whereArgs []*WhereArgs) *WhereArgs {
+	return MergeWhereArgs("and", whereArgs)
+}
+
+func MergeWhereArgsOr(whereArgs []*WhereArgs) *WhereArgs {
+	return MergeWhereArgs("or", whereArgs)
+}
+
+func NotWhereArgs(whereArgs *WhereArgs) *WhereArgs {
+	return &WhereArgs{Query: fmt.Sprintf("(not (%s))", whereArgs.Query), Args: whereArgs.Args}
+}
+
+type WhereNodeType uint8
+
+const (
+	WhereNodeTypeAnd WhereNodeType = iota
+	WhereNodeTypeOr
+	WhereNodeTypeNot
+	WhereNodeTypeValue
+)
+
+// WhereNode Where逻辑树节点
+type WhereNode struct {
+	Type      WhereNodeType
+	Left      *WhereNode
+	Right     *WhereNode
+	WhereArgs *WhereArgs
+	Error     error
+}
+
+func joinErrors(err0 error, err1 error) error {
+	var err error
+	if err0 != nil || err1 != nil {
+		if err0 != nil && err1 != nil {
+			err = errors.Join(err0, err1)
+		} else if err0 != nil {
+			err = err0
+		} else {
+			err = err1
+		}
+	}
+	return err
+}
+
+func (n *WhereNode) Calc() (*WhereArgs, error) {
+	valL, errL := n.Left.Calc()
+	valR, errR := n.Right.Calc()
+	err := joinErrors(errL, errR)
+	switch n.Type {
+	case WhereNodeTypeAnd:
+		if err != nil {
+			return &WhereArgs{}, err
+		}
+		return MergeWhereArgsAnd([]*WhereArgs{valL, valR}), nil
+	case WhereNodeTypeOr:
+		if err != nil {
+			return &WhereArgs{}, err
+		}
+		return MergeWhereArgsOr([]*WhereArgs{valL, valR}), nil
+	case WhereNodeTypeNot:
+		if errL != nil {
+			return &WhereArgs{}, errL
+		}
+		return NotWhereArgs(valL), nil
+	case WhereNodeTypeValue:
+		return n.WhereArgs, nil
+	}
+	return &WhereArgs{}, errors.New("不支持的WhereNodeType")
+}
+
+func ConvertToWhereNode(val any) (*WhereNode, error) {
+	switch v := val.(type) {
+	case *WhereNode:
+		return v, nil
+	case WhereNode:
+		return &v, nil
+	case *WhereArgs:
+		return &WhereNode{Type: WhereNodeTypeValue, WhereArgs: v}, nil
+	case WhereArgs:
+		return &WhereNode{Type: WhereNodeTypeValue, WhereArgs: &v}, nil
+	}
+	return nil, errors.New("参数错误：仅支持*WhereNode, WhereNode, *WhereArgs, WhereArgs类型")
+}
+
+func WhereNodeAnd(node0 any, node1 any) *WhereNode {
+	left, errL := ConvertToWhereNode(node0)
+	right, errR := ConvertToWhereNode(node1)
+	err := joinErrors(errL, errR)
+	return &WhereNode{Type: WhereNodeTypeAnd, Left: left, Right: right, Error: err}
+}
+
+func WhereNodeOr(node0 any, node1 any) *WhereNode {
+	left, errL := ConvertToWhereNode(node0)
+	right, errR := ConvertToWhereNode(node1)
+	err := joinErrors(errL, errR)
+	return &WhereNode{Type: WhereNodeTypeOr, Left: left, Right: right, Error: err}
+}
+
+func WhereNodeNot(node any) *WhereNode {
+	left, err := ConvertToWhereNode(node)
+	return &WhereNode{Type: WhereNodeTypeNot, Left: left, Error: err}
+}
+
+func (n *WhereNode) And(node any) *WhereNode {
+	return WhereNodeAnd(n, node)
+}
+
+func (n *WhereNode) Or(node any) *WhereNode {
+	return WhereNodeOr(n, node)
+}
+
+func (n *WhereNode) Not() *WhereNode {
+	return WhereNodeNot(n)
+}
+
 /*
 参数说明
 --参数名-----------类型-----------------------------示例--
@@ -87,6 +220,18 @@ func AddCond(db *gorm.DB, args ...interface{}) error {
 		for _, arg := range args[1:] {
 			_, ok := arg.(WhereArgs)
 			if !ok {
+				_, ok = arg.(*WhereArgs)
+			}
+			if !ok {
+				_, ok = arg.([]WhereArgs)
+			}
+			if !ok {
+				_, ok = arg.([]*WhereArgs)
+			}
+			if !ok {
+				_, ok = arg.(WhereNode)
+			}
+			if !ok {
 				_, ok = arg.(OrderLimitArgs)
 			}
 			if !ok {
@@ -111,15 +256,40 @@ func AddCond(db *gorm.DB, args ...interface{}) error {
 	}
 
 	firstWhere := false
+	addWhereCond := func(query string, args ...interface{}) {
+		if !firstWhere {
+			db.Where(query, args...)
+			firstWhere = true
+		} else {
+			db.Or(query, args...)
+		}
+	}
+
 	for _, arg := range othersArgs {
 		switch argv := arg.(type) {
 		case WhereArgs:
-			if !firstWhere {
-				db.Where(argv.Query, argv.Args...)
-				firstWhere = true
-			} else {
-				db.Or(argv.Query, argv.Args...)
+			addWhereCond(argv.Query, argv.Args...)
+		case *WhereArgs:
+			addWhereCond(argv.Query, argv.Args...)
+		case []WhereArgs:
+			whereArgs := MergeWhereArgsAnd(
+				sliceutil.MapT(func(item WhereArgs) *WhereArgs {
+					return &item
+				}, argv...),
+			)
+			addWhereCond(whereArgs.Query, whereArgs.Args...)
+		case []*WhereArgs:
+			whereArgs := MergeWhereArgsAnd(argv)
+			addWhereCond(whereArgs.Query, whereArgs.Args...)
+		case WhereNode:
+			if argv.Error != nil {
+				return argv.Error
 			}
+			whereArgs, err := argv.Calc()
+			if err != nil {
+				return err
+			}
+			addWhereCond(whereArgs.Query, whereArgs.Args...)
 		case OrderLimitArgs:
 			if argv.Order != "" {
 				db.Order(argv.Order)

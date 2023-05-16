@@ -15,12 +15,30 @@ func ConvertToInterfaceSlice(s interface{}) []interface{} {
 	return result
 }
 
-func Filter(fn func(item interface{}) bool, s ...interface{}) []interface{} {
-	result := make([]interface{}, 0, len(s))
-	for _, item := range s {
+func Filter(fn func(item interface{}) bool, args ...interface{}) []interface{} {
+	result := make([]interface{}, 0, len(args))
+	for _, item := range args {
 		if fn(item) {
 			result = append(result, item)
 		}
+	}
+	return result
+}
+
+func FilterT[T any](fn func(item T) bool, args ...T) []T {
+	result := make([]T, 0, len(args))
+	for _, item := range args {
+		if fn(item) {
+			result = append(result, item)
+		}
+	}
+	return result
+}
+
+func MapT[T any, V any](fn func(item T) V, args ...T) []V {
+	result := make([]V, 0, len(args))
+	for _, item := range args {
+		result = append(result, fn(item))
 	}
 	return result
 }
