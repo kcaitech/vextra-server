@@ -50,7 +50,12 @@ func StructToMap(structData any, mapData map[string]any) {
 	for i, num := 0, structDataValue.NumField(); i < num; i++ {
 		field := structDataValue.Field(i)
 		typeField := structDataValue.Type().Field(i)
-		if typeField.Anonymous && field.Kind() == reflect.Struct {
+		// 跳过非公开字段
+		if typeField.PkgPath != "" {
+			continue
+		}
+		// if typeField.Anonymous
+		if field.Kind() == reflect.Struct {
 			StructToMap(field.Interface(), mapData)
 			continue
 		}

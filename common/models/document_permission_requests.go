@@ -27,7 +27,3 @@ type DocumentPermissionRequests struct {
 func (model *DocumentPermissionRequests) MarshalJSON() ([]byte, error) {
 	return MarshalJSON(model)
 }
-
-func (model *DocumentPermissionRequests) UnmarshalJSON(data []byte) error {
-	return UnmarshalJSON(model, data)
-}

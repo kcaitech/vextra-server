@@ -48,14 +48,47 @@ func (data *BaseModel) SetId(id int64) {
 	data.Id = id
 }
 
-func MarshalJSON(model ModelData) ([]byte, error) {
-	modelMap := make(map[string]any)
-	myReflect.StructToMap(model, modelMap)
-	for key, value := range modelMap {
-		if valueInt, ok := value.(int64); ok {
-			modelMap[key] = str.IntToString(valueInt)
-		}
+func StructToMap(structData any, mapData map[string]any) {
+	structDataValue := reflect.ValueOf(structData)
+	if !structDataValue.IsValid() {
+		return
 	}
+	if structDataValue.Kind() == reflect.Ptr {
+		structDataValue = myReflect.EnterPointer(structDataValue)
+	}
+	if !structDataValue.IsValid() || structDataValue.Kind() != reflect.Struct {
+		return
+	}
+	for i, num := 0, structDataValue.NumField(); i < num; i++ {
+		field := structDataValue.Field(i)
+		typeField := structDataValue.Type().Field(i)
+		// 跳过非公开字段
+		if typeField.PkgPath != "" {
+			continue
+		}
+		name := typeField.Name
+		if jsonName := typeField.Tag.Get("json"); jsonName != "" {
+			name = jsonName
+		}
+		anonymous := typeField.Tag.Get("anonymous")
+		if (typeField.Anonymous || anonymous == "true") && field.Kind() == reflect.Struct {
+			mapData1 := make(map[string]any)
+			mapData[name] = mapData1
+			StructToMap(field.Interface(), mapData1)
+			continue
+		}
+		// 如果是int64，则转换为字符串
+		if field.Kind() == reflect.Int64 {
+			mapData[name] = str.IntToString(field.Int())
+			continue
+		}
+		mapData[name] = field.Interface()
+	}
+}
+
+func MarshalJSON(model any) ([]byte, error) {
+	modelMap := make(map[string]any)
+	StructToMap(model, modelMap)
 	return json.Marshal(modelMap)
 }
 
@@ -92,7 +125,7 @@ func mapToStruct(mapData map[string]any, structData any) {
 	}
 }
 
-func UnmarshalJSON(model ModelData, data []byte) error {
+func UnmarshalJSON(model any, data []byte) error {
 	var modelMap map[string]any
 	err := json.Unmarshal(data, &modelMap)
 	if err != nil {

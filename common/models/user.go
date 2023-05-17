@@ -19,7 +19,3 @@ type User struct {
 func (model *User) MarshalJSON() ([]byte, error) {
 	return MarshalJSON(model)
 }
-
-func (model *User) UnmarshalJSON(data []byte) error {
-	return UnmarshalJSON(model, data)
-}

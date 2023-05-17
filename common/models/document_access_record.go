@@ -13,7 +13,3 @@ type DocumentAccessRecord struct {
 func (model *DocumentAccessRecord) MarshalJSON() ([]byte, error) {
 	return MarshalJSON(model)
 }
-
-func (model *DocumentAccessRecord) UnmarshalJSON(data []byte) error {
-	return UnmarshalJSON(model, data)
-}

@@ -11,7 +11,3 @@ type DocumentFavorites struct {
 func (model *DocumentFavorites) MarshalJSON() ([]byte, error) {
 	return MarshalJSON(model)
 }
-
-func (model *DocumentFavorites) UnmarshalJSON(data []byte) error {
-	return UnmarshalJSON(model, data)
-}

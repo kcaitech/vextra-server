@@ -30,6 +30,6 @@ func (model *Document) MarshalJSON() ([]byte, error) {
 	return MarshalJSON(model)
 }
 
-func (model *Document) UnmarshalJSON(data []byte) error {
-	return UnmarshalJSON(model, data)
-}
+//func (model *Document) UnmarshalJSON(data []byte) error {
+//	return UnmarshalJSON(model, data)
+//}

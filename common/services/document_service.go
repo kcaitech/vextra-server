@@ -1,6 +1,7 @@
 package services
 
 import (
+	"gorm.io/gorm"
 	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/utils/time"
 )
@@ -26,9 +27,26 @@ func NewDocumentService() *DocumentService {
 }
 
 type DocumentQueryResItem struct {
-	User       models.User     `gorm:"embedded" json:"user"`
-	Document   models.Document `gorm:"embedded" json:"document"`
-	IsFavorite bool            `json:"is_favorite"`
+	User struct {
+		Id       int64  `json:"id"`
+		Nickname string `json:"nickname"`
+		Avatar   string `json:"avatar"`
+	} `gorm:"embedded" json:"user" anonymous:"true"`
+	Document struct {
+		Id        int64          `json:"id"`
+		CreatedAt time.Time      `json:"created_at"`
+		DeletedAt gorm.DeletedAt `json:"deleted_at"`
+		UserId    int64          `json:"user_id"`
+		Path      string         `json:"path"`
+		DocType   models.DocType `json:"doc_type"`
+		Name      string         `json:"name"`
+		Size      uint64         `json:"size"`
+	} `gorm:"embedded" json:"document" anonymous:"true"`
+	IsFavorite bool `json:"is_favorite"`
+}
+
+func (model *DocumentQueryResItem) MarshalJSON() ([]byte, error) {
+	return models.MarshalJSON(model)
 }
 
 type AccessRecordQueryResItem struct {
@@ -71,6 +89,10 @@ type DocumentSharesQueryRes struct {
 	LastAccessTime time.Time       `json:"last_access_time"`
 	PermType       models.PermType `json:"perm_type"`
 	Id             int64           `json:"id"`
+}
+
+func (model *DocumentSharesQueryRes) MarshalJSON() ([]byte, error) {
+	return models.MarshalJSON(model)
 }
 
 // FindSharesByUserId 查询用户加入的文档分享列表
@@ -234,6 +256,10 @@ type PermissionRequestsQueryResItem struct {
 	DocumentQueryResItem
 	DocumentPermissionRequests models.DocumentPermissionRequests `gorm:"embedded" json:"apply"`
 	PermType                   models.PermType                   `json:"perm_type"`
+}
+
+func (model *PermissionRequestsQueryResItem) MarshalJSON() ([]byte, error) {
+	return models.MarshalJSON(model)
 }
 
 // FindPermissionRequests 获取用户创建的文档的权限申请列表
