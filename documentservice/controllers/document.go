@@ -16,16 +16,7 @@ func GetUserDocumentList(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	var resp []services.DocumentQueryResItem
-	if err := services.NewDocumentService().Find(&resp, "document.user_id = ?", userId,
-		services.JoinArgs{Join: "inner join user on user.id = document.user_id"},
-		services.SelectArgs{Select: "user.*, document.*"},
-	); err != nil {
-		response.Fail(c, "")
-		return
-	}
-
-	response.Success(c, resp)
+	response.Success(c, services.NewDocumentService().FindDocumentByUserId(userId))
 }
 
 // DeleteUserDocument 删除用户的某份文档
@@ -63,8 +54,11 @@ func GetUserDocumentInfo(c *gin.Context) {
 	}
 	permType := models.PermType(str.DefaultToInt(c.Query("perm_type"), 0))
 	if permType < models.PermTypeReadOnly || permType > models.PermTypeEditable {
-		response.BadRequest(c, "参数错误：perm_type")
-		return
+		permType = models.PermTypeNone
 	}
-	response.Success(c, services.NewDocumentService().GetDocumentInfoByDocumentAndUserId(documentId, userId, permType))
+	if result := services.NewDocumentService().GetDocumentInfoByDocumentAndUserId(documentId, userId, permType); result == nil {
+		response.BadRequest(c, "文档不存在")
+	} else {
+		response.Success(c, result)
+	}
 }

@@ -25,13 +25,13 @@ func DeleteUserDocumentAccessRecord(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	documentId := str.DefaultToInt(c.Query("doc_id"), 0)
-	if documentId <= 0 {
-		response.BadRequest(c, "参数错误：doc_id")
+	accessRecordId := str.DefaultToInt(c.Query("access_record_id"), 0)
+	if accessRecordId <= 0 {
+		response.BadRequest(c, "参数错误：access_record_id")
 		return
 	}
 	if err := services.NewDocumentService().DocumentAccessRecordService.HardDelete(
-		"user_id = ? and document_id = ?", userId, documentId,
+		"user_id = ? and id = ?", userId, accessRecordId,
 	); err != nil && err != services.ErrRecordNotFound {
 		response.Fail(c, "删除错误")
 		return

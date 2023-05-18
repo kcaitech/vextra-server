@@ -102,7 +102,7 @@ func GetDocumentSharesList(c *gin.Context) {
 	documentService := services.NewDocumentService()
 	var count int64
 	if err := documentService.Count(&count, "id = ? and user_id = ?", documentId, userId); err != nil || count <= 0 {
-		response.Unauthorized(c)
+		response.Forbidden(c, "")
 		return
 	}
 	response.Success(c, documentService.FindSharesByDocumentId(documentId))
@@ -215,7 +215,7 @@ func ApplyDocumentPermission(c *gin.Context) {
 		return
 	}
 	documentInfoQueryRes := documentService.GetDocumentInfoByDocumentAndUserId(documentId, userId, permType)
-	if permType <= documentInfoQueryRes.PermType {
+	if permType <= documentInfoQueryRes.DocumentPermission.PermType {
 		response.BadRequest(c, "已拥有权限")
 		return
 	}
@@ -223,7 +223,7 @@ func ApplyDocumentPermission(c *gin.Context) {
 		response.BadRequest(c, "申请次数已达上限")
 		return
 	}
-	if documentInfoQueryRes.SharesCount >= 5 && documentInfoQueryRes.PermType == 0 {
+	if documentInfoQueryRes.SharesCount >= 5 && documentInfoQueryRes.DocumentPermission.PermType == 0 {
 		response.BadRequest(c, "分享数量已达上限")
 		return
 	}
@@ -343,7 +343,7 @@ func GetUserDocumentPerm(c *gin.Context) {
 	}
 	result := UserDocumentPermResp{}
 	if err := services.NewDocumentService().GetDocumentPermissionByDocumentAndUserId(&result.PermType, documentId, userId); err != nil {
-		response.Fail(c, "")
+		response.BadRequest(c, "文档不存在")
 		return
 	}
 	response.Success(c, result)

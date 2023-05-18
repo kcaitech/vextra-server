@@ -2,6 +2,7 @@ package models
 
 import (
 	"encoding/json"
+	"fmt"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -11,6 +12,7 @@ import (
 	"protodesign.cn/kcserver/utils/str"
 	"protodesign.cn/kcserver/utils/time"
 	"reflect"
+	"strings"
 )
 
 var DB *gorm.DB
@@ -25,6 +27,7 @@ func Init(config *config.BaseConfiguration) {
 	if err != nil {
 		log.Fatalf("连接数据库失败: %v", err)
 	}
+	//DB = DB.Debug()
 }
 
 type BaseModel struct {
@@ -62,13 +65,12 @@ func StructToMap(structData any, mapData map[string]any) {
 	for i, num := 0, structDataValue.NumField(); i < num; i++ {
 		field := structDataValue.Field(i)
 		typeField := structDataValue.Type().Field(i)
-		// 跳过非公开字段
-		if typeField.PkgPath != "" {
+		if !typeField.IsExported() {
 			continue
 		}
 		name := typeField.Name
-		if jsonName := typeField.Tag.Get("json"); jsonName != "" {
-			name = jsonName
+		if jsonNameSplitRes := strings.Split(typeField.Tag.Get("json"), ","); len(jsonNameSplitRes) > 0 {
+			name = strings.TrimSpace(jsonNameSplitRes[0])
 		}
 		anonymous := typeField.Tag.Get("anonymous")
 		if (typeField.Anonymous || anonymous == "true") && field.Kind() == reflect.Struct {
@@ -145,3 +147,59 @@ func (data *DefaultModelData) SetId(id int64) {}
 
 // ModelListData 指向具体Model数组的指针，例如：&[]User{}
 type ModelListData any
+
+func GetTableName(model any) string {
+	db := DB.Model(model)
+	_ = db.Statement.Parse(&model)
+	return db.Statement.Table
+}
+
+func GetTableFieldNames(model any) []string {
+	db := DB.Model(model)
+	_ = db.Statement.Parse(&model)
+	fieldNames := make([]string, 0, len(db.Statement.Schema.Fields))
+	for _, field := range db.Statement.Schema.Fields {
+		fieldNames = append(fieldNames, field.DBName)
+	}
+	return fieldNames
+}
+
+func GetTableFieldNamesStr(model any) []string {
+	db := DB.Model(model)
+	_ = db.Statement.Parse(&model)
+	tableName := db.Statement.Table
+	fieldNames := make([]string, 0, len(db.Statement.Schema.Fields))
+	for _, field := range db.Statement.Schema.Fields {
+		fieldNames = append(fieldNames, fmt.Sprintf("%s.%s", tableName, field.DBName))
+	}
+	return fieldNames
+}
+
+func GetTableFieldNamesAliasByPrefix(model any, prefix string) []string {
+	db := DB.Model(model)
+	_ = db.Statement.Parse(&model)
+	tableName := db.Statement.Table
+	fieldNames := make([]string, 0, len(db.Statement.Schema.Fields))
+	for _, field := range db.Statement.Schema.Fields {
+		fieldNames = append(fieldNames, fmt.Sprintf("%s.%s as %s", tableName, field.DBName, prefix+field.DBName))
+	}
+	return fieldNames
+}
+
+func GetTableFieldNamesStrAliasByPrefix(model any, prefix string) string {
+	return strings.Join(GetTableFieldNamesAliasByPrefix(model, prefix), ",")
+}
+
+func GetTableFieldNamesStrAliasByDefaultPrefix(model any, connector string) string {
+	if connector == "" {
+		connector = "_"
+	}
+	db := DB.Model(model)
+	_ = db.Statement.Parse(&model)
+	tableName := db.Statement.Table
+	fieldNames := make([]string, 0, len(db.Statement.Schema.Fields))
+	for _, field := range db.Statement.Schema.Fields {
+		fieldNames = append(fieldNames, fmt.Sprintf("%s.%s as %s", tableName, field.DBName, tableName+connector+field.DBName))
+	}
+	return strings.Join(fieldNames, ",")
+}

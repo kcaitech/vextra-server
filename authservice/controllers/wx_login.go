@@ -131,7 +131,7 @@ func WxLogin(c *gin.Context) {
 	// 创建用户
 	user := &models.User{}
 	err = userService.Get(user, "wx_open_id = ?", wxAccessTokenResp.Openid)
-	if err != nil && nil != services.ErrRecordNotFound {
+	if err != nil && err != services.ErrRecordNotFound {
 		log.Println("userService.Get错误：", err)
 		response.Fail(c, "登陆失败")
 		return

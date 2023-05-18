@@ -6,10 +6,12 @@ import (
 	"gorm.io/gorm"
 	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/common/snowflake"
-	"protodesign.cn/kcserver/utils/reflect"
+	myReflect "protodesign.cn/kcserver/utils/reflect"
 	"protodesign.cn/kcserver/utils/sliceutil"
 	"protodesign.cn/kcserver/utils/str"
 	myTime "protodesign.cn/kcserver/utils/time"
+	"reflect"
+	"strings"
 	"time"
 )
 
@@ -18,14 +20,47 @@ type BaseService interface {
 }
 
 type DefaultService struct {
-	DB    *gorm.DB
-	That  BaseService
-	Model models.ModelData
-	Table string
+	DB              *gorm.DB
+	That            BaseService
+	Model           models.ModelData
+	Table           string
+	FieldNames      []string
+	TableFieldNames []string
 }
 
 func (s *DefaultService) GetTable() string {
 	return s.Table
+}
+
+func (s *DefaultService) GetFieldNames() []string {
+	return s.FieldNames
+}
+
+func (s *DefaultService) GetTableFieldNames() []string {
+	return s.TableFieldNames
+}
+
+func (s *DefaultService) GetFieldNamesStr() string {
+	return strings.Join(s.FieldNames, ",")
+}
+
+func (s *DefaultService) GetTableFieldNamesStr() string {
+	return strings.Join(s.TableFieldNames, ",")
+}
+
+func (s *DefaultService) GetTableFieldNamesStrAliasByPrefix(prefix string) string {
+	var tableFieldNames []string
+	for _, tableFieldName := range s.FieldNames {
+		tableFieldNames = append(tableFieldNames, fmt.Sprintf("%s.%s as %s", s.Table, tableFieldName, prefix+tableFieldName))
+	}
+	return strings.Join(tableFieldNames, ",")
+}
+
+func (s *DefaultService) GetTableFieldNamesStrAliasByDefaultPrefix(connector string) string {
+	if connector == "" {
+		connector = "_"
+	}
+	return s.GetTableFieldNamesStrAliasByPrefix(s.Table + connector)
 }
 
 func NewDefaultService(model models.ModelData) *DefaultService {
@@ -36,6 +71,10 @@ func NewDefaultService(model models.ModelData) *DefaultService {
 	db := models.DB.Model(model)
 	_ = db.Statement.Parse(&model)
 	s.Table = db.Statement.Table
+	for _, field := range db.Statement.Schema.Fields {
+		s.FieldNames = append(s.FieldNames, field.DBName)
+		s.TableFieldNames = append(s.TableFieldNames, fmt.Sprintf("%s.%s", s.Table, field.DBName))
+	}
 	return &s
 }
 
@@ -69,6 +108,11 @@ type Unscoped struct{} // 不自动加入软删除字段
 type As struct {
 	BaseService BaseService
 	Alias       string
+}
+
+// Wrap 对多个参数的包装
+type Wrap struct {
+	Args []any
 }
 
 func MergeWhereArgs(connector string, whereArgs []*WhereArgs) *WhereArgs {
@@ -203,6 +247,23 @@ func (n *WhereNode) Not() *WhereNode {
 	return WhereNodeNot(n)
 }
 
+func MergeSelectArgs(selectArgs []*SelectArgs) *SelectArgs {
+	var _select string
+	var args []any
+	for _, selectArg := range selectArgs {
+		if selectArg.Select == "" {
+			continue
+		}
+		if _select == "" {
+			_select = selectArg.Select
+		} else {
+			_select += fmt.Sprintf(",%s", selectArg.Select)
+		}
+		args = append(args, selectArg.Args...)
+	}
+	return &SelectArgs{Select: _select, Args: args}
+}
+
 /*
 参数说明
 --参数名-----------类型-----------------------------示例--
@@ -243,36 +304,18 @@ func AddCond(db *gorm.DB, args ...any) error {
 	if ok {
 		var i int
 		for _, arg := range args[1:] {
-			_, ok := arg.(WhereArgs)
-			if !ok {
-				_, ok = arg.(*WhereArgs)
-			}
-			if !ok {
-				_, ok = arg.([]WhereArgs)
-			}
-			if !ok {
-				_, ok = arg.([]*WhereArgs)
-			}
-			if !ok {
-				_, ok = arg.(WhereNode)
-			}
-			if !ok {
-				_, ok = arg.(OrderLimitArgs)
-			}
-			if !ok {
-				_, ok = arg.(JoinArgs)
-			}
-			if !ok {
-				_, ok = arg.(SelectArgs)
-			}
-			if !ok {
-				_, ok = arg.(GroupArgs)
-			}
-			if !ok {
-				_, ok = arg.(Unscoped)
-			}
-			if !ok {
-				_, ok = arg.(As)
+			ok := false
+			switch arg.(type) {
+			case WhereArgs, *WhereArgs, []WhereArgs, []*WhereArgs,
+				WhereNode, *WhereNode,
+				OrderLimitArgs, *OrderLimitArgs,
+				JoinArgs, *JoinArgs,
+				SelectArgs, *SelectArgs, []SelectArgs, *[]SelectArgs,
+				GroupArgs, *GroupArgs,
+				Unscoped, *Unscoped,
+				As, *As,
+				Wrap, *Wrap:
+				ok = true
 			}
 			if ok {
 				break
@@ -293,58 +336,132 @@ func AddCond(db *gorm.DB, args ...any) error {
 		}
 	}
 
-	for _, arg := range othersArgs {
-		switch argv := arg.(type) {
-		case WhereArgs:
-			addWhereCond(argv.Query, argv.Args...)
-		case *WhereArgs:
-			addWhereCond(argv.Query, argv.Args...)
-		case []WhereArgs:
-			whereArgs := MergeWhereArgsAnd(
-				sliceutil.MapT(func(item WhereArgs) *WhereArgs {
-					return &item
-				}, argv...),
-			)
-			addWhereCond(whereArgs.Query, whereArgs.Args...)
-		case []*WhereArgs:
-			whereArgs := MergeWhereArgsAnd(argv)
-			addWhereCond(whereArgs.Query, whereArgs.Args...)
-		case WhereNode:
-			if argv.Error != nil {
-				return argv.Error
+	selectArgsList := make([]*SelectArgs, 0)
+
+	var calc func(args []any) error
+	calc = func(args []any) error {
+		for _, arg := range args {
+			switch argv := arg.(type) {
+			case WhereArgs:
+				addWhereCond(argv.Query, argv.Args...)
+			case *WhereArgs:
+				addWhereCond(argv.Query, argv.Args...)
+			case []WhereArgs:
+				whereArgs := MergeWhereArgsAnd(
+					sliceutil.MapT(func(item WhereArgs) *WhereArgs {
+						return &item
+					}, argv...),
+				)
+				addWhereCond(whereArgs.Query, whereArgs.Args...)
+			case []*WhereArgs:
+				whereArgs := MergeWhereArgsAnd(argv)
+				addWhereCond(whereArgs.Query, whereArgs.Args...)
+			case WhereNode:
+				if argv.Error != nil {
+					return argv.Error
+				}
+				whereArgs, err := argv.Calc()
+				if err != nil {
+					return err
+				}
+				addWhereCond(whereArgs.Query, whereArgs.Args...)
+			case *WhereNode:
+				if argv.Error != nil {
+					return argv.Error
+				}
+				whereArgs, err := argv.Calc()
+				if err != nil {
+					return err
+				}
+				addWhereCond(whereArgs.Query, whereArgs.Args...)
+			case OrderLimitArgs:
+				if argv.Order != "" {
+					db.Order(argv.Order)
+				}
+				if argv.Limit > 0 {
+					db.Limit(argv.Limit)
+				}
+			case *OrderLimitArgs:
+				if argv.Order != "" {
+					db.Order(argv.Order)
+				}
+				if argv.Limit > 0 {
+					db.Limit(argv.Limit)
+				}
+			case JoinArgs:
+				if argv.Join != "" {
+					db.Joins(argv.Join, argv.Args...)
+				}
+			case *JoinArgs:
+				if argv.Join != "" {
+					db.Joins(argv.Join, argv.Args...)
+				}
+			case SelectArgs:
+				if argv.Select != "" {
+					selectArgsList = append(selectArgsList, &argv)
+					//db.Select(argv.Select, argv.Args...)
+				}
+			case *SelectArgs:
+				if argv.Select != "" {
+					selectArgsList = append(selectArgsList, argv)
+				}
+			case []SelectArgs:
+				for _, selectArgs := range argv {
+					if selectArgs.Select != "" {
+						selectArgsList = append(selectArgsList, &selectArgs)
+					}
+				}
+			case []*SelectArgs:
+				for _, selectArgs := range argv {
+					if selectArgs.Select != "" {
+						selectArgsList = append(selectArgsList, selectArgs)
+					}
+				}
+			case GroupArgs:
+				if argv.Group != "" {
+					db.Group(argv.Group)
+				}
+			case *GroupArgs:
+				if argv.Group != "" {
+					db.Group(argv.Group)
+				}
+			case Unscoped, *Unscoped:
+				db.Unscoped()
+			case As:
+				if argv.BaseService != nil && argv.Alias != "" {
+					db.Table(fmt.Sprintf("%s as %s", argv.BaseService.GetTable(), argv.Alias))
+				}
+			case *As:
+				if argv.BaseService != nil && argv.Alias != "" {
+					db.Table(fmt.Sprintf("%s as %s", argv.BaseService.GetTable(), argv.Alias))
+				}
+			case Wrap:
+				if argv.Args != nil {
+					if err := calc(argv.Args); err != nil {
+						return err
+					}
+				}
+			case *Wrap:
+				if argv.Args != nil {
+					if err := calc(argv.Args); err != nil {
+						return err
+					}
+				}
+			default:
+				return errors.New("参数格式错误")
 			}
-			whereArgs, err := argv.Calc()
-			if err != nil {
-				return err
-			}
-			addWhereCond(whereArgs.Query, whereArgs.Args...)
-		case OrderLimitArgs:
-			if argv.Order != "" {
-				db.Order(argv.Order)
-			}
-			if argv.Limit > 0 {
-				db.Limit(argv.Limit)
-			}
-		case JoinArgs:
-			if argv.Join != "" {
-				db.Joins(argv.Join, argv.Args...)
-			}
-		case SelectArgs:
-			if argv.Select != "" {
-				db.Select(argv.Select, argv.Args...)
-			}
-		case GroupArgs:
-			if argv.Group != "" {
-				db.Group(argv.Group)
-			}
-		case Unscoped:
-			db.Unscoped()
-		case As:
-			if argv.BaseService != nil && argv.Alias != "" {
-				db.Table(fmt.Sprintf("%s as %s", argv.BaseService.GetTable(), argv.Alias))
-			}
-		default:
-			return errors.New("参数格式错误")
+		}
+		return nil
+	}
+
+	if err := calc(othersArgs); err != nil {
+		return err
+	}
+
+	if len(selectArgsList) > 0 {
+		allSelectArgs := MergeSelectArgs(selectArgsList)
+		if allSelectArgs.Select != "" {
+			db.Select(allSelectArgs.Select, allSelectArgs.Args...)
 		}
 	}
 
@@ -352,7 +469,7 @@ func AddCond(db *gorm.DB, args ...any) error {
 }
 
 func (s *DefaultService) Create(modelData models.ModelData) error {
-	idPtr, ok := reflect.FieldByName(modelData, "Id").(*int64)
+	idPtr, ok := myReflect.FieldByName(modelData, "Id").(*int64)
 	if !ok {
 		return errors.New("modelData类型错误")
 	}
@@ -367,10 +484,10 @@ func (s *DefaultService) Get(modelData models.ModelData, args ...any) error {
 	if err := AddCond(db, args...); err != nil {
 		return err
 	}
-	if err := db.First(modelData).Error; !errors.Is(err, gorm.ErrRecordNotFound) {
-		return err
-	} else {
+	if err := db.First(modelData).Error; errors.Is(err, gorm.ErrRecordNotFound) {
 		return ErrRecordNotFound
+	} else {
+		return err
 	}
 }
 
@@ -504,4 +621,79 @@ func (s *DefaultService) Exist(args ...any) (bool, error) {
 		return false, err
 	}
 	return count > 0, nil
+}
+
+// GenerateSelectArgs 根据modelData生成SelectArgs
+func GenerateSelectArgs(modelData any, selectArgsList *[]*SelectArgs, connector string) {
+	if connector == "" {
+		connector = "_"
+	}
+	modelDataValue := reflect.ValueOf(modelData)
+	if !modelDataValue.IsValid() {
+		return
+	}
+	if modelDataValue.Kind() == reflect.Ptr {
+		modelDataValue = myReflect.EnterPointer(modelDataValue)
+	}
+	if !modelDataValue.IsValid() || modelDataValue.Kind() != reflect.Struct {
+		return
+	}
+	modelDataType := modelDataValue.Type()
+	for i, num := 0, modelDataValue.NumField(); i < num; i++ {
+		field := modelDataValue.Field(i)
+		typeField := modelDataType.Field(i)
+		if !typeField.IsExported() {
+			continue
+		}
+		if field.Kind() == reflect.Ptr {
+			field = myReflect.EnterPointer(field)
+		}
+		if field.Kind() != reflect.Struct {
+			continue
+		}
+		// 匿名字段递归调用
+		if typeField.Anonymous || typeField.Tag.Get("anonymous") == "true" {
+			GenerateSelectArgs(field.Interface(), selectArgsList, connector)
+		}
+		// 无table标签，跳过
+		tableName := typeField.Tag.Get("table")
+		if tableName == "" {
+			continue
+		}
+		// 非匿名struct且具有table标签，获取内部所有公开字段
+		var GetFieldNames func(field reflect.Value, fieldNames *[]string)
+		GetFieldNames = func(field reflect.Value, fieldNames *[]string) {
+			fieldType := field.Type()
+			for i, num := 0, field.NumField(); i < num; i++ {
+				fieldTypeField := fieldType.Field(i)
+				if !fieldTypeField.IsExported() {
+					continue
+				}
+				// 匿名而且是结构体的字段
+				if fieldTypeField.Anonymous && fieldTypeField.Type.Kind() == reflect.Struct {
+					GetFieldNames(field.Field(i), fieldNames)
+					continue
+				}
+				var name string
+				columnName := fieldTypeField.Tag.Get("column")
+				if columnName != "" {
+					name = columnName
+				} else {
+					name = str.CamelToSnake(fieldTypeField.Name)
+				}
+				*fieldNames = append(*fieldNames, name)
+			}
+		}
+		fieldNames := make([]string, 0, field.NumField())
+		GetFieldNames(field, &fieldNames)
+		if len(fieldNames) == 0 {
+			continue
+		}
+		// 生成selectArgs
+		fieldAliasNames := make([]string, 0, len(fieldNames))
+		for _, fieldName := range fieldNames {
+			fieldAliasNames = append(fieldAliasNames, fmt.Sprintf("%s.%s as %s", tableName, fieldName, tableName+connector+fieldName))
+		}
+		*selectArgsList = append(*selectArgsList, &SelectArgs{strings.Join(fieldAliasNames, ","), nil})
+	}
 }

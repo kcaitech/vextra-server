@@ -50,8 +50,7 @@ func StructToMap(structData any, mapData map[string]any) {
 	for i, num := 0, structDataValue.NumField(); i < num; i++ {
 		field := structDataValue.Field(i)
 		typeField := structDataValue.Type().Field(i)
-		// 跳过非公开字段
-		if typeField.PkgPath != "" {
+		if !typeField.IsExported() {
 			continue
 		}
 		// if typeField.Anonymous

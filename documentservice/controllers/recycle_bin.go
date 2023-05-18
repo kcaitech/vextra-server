@@ -17,22 +17,11 @@ func GetUserRecycleBinDocumentList(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-
-	var resp []services.DocumentQueryResItem
-	if err := services.NewDocumentService().Find(&resp, "document.user_id = ? and document.deleted_at is not null and purged_at is null", userId,
-		services.JoinArgs{Join: "inner join user on user.id = document.user_id"},
-		services.SelectArgs{Select: "document.*, user.*"},
-		services.Unscoped{},
-	); err != nil {
-		response.Fail(c, "")
-		return
-	}
-
-	response.Success(c, resp)
+	response.Success(c, services.NewDocumentService().FindRecycleBinByUserId(userId))
 }
 
 type RestoreUserRecycleBinDocumentReq struct {
-	RecycleBinId string `json:"recycle_bin_id" binding:"required"`
+	DocId string `json:"doc_id" binding:"required"`
 }
 
 // RestoreUserRecycleBinDocument 恢复用户回收站内的某份文档
@@ -47,9 +36,9 @@ func RestoreUserRecycleBinDocument(c *gin.Context) {
 		response.BadRequest(c, "")
 		return
 	}
-	documentId := str.DefaultToInt(req.RecycleBinId, 0)
+	documentId := str.DefaultToInt(req.DocId, 0)
 	if documentId <= 0 {
-		response.BadRequest(c, "参数错误：recycle_bin_id")
+		response.BadRequest(c, "参数错误：doc_id")
 		return
 	}
 	if err := services.NewDocumentService().UpdateColumns(
@@ -70,9 +59,9 @@ func DeleteUserRecycleBinDocument(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	documentId := str.DefaultToInt(c.Query("recycle_bin_id"), 0)
+	documentId := str.DefaultToInt(c.Query("doc_id"), 0)
 	if documentId <= 0 {
-		response.BadRequest(c, "参数错误：recycle_bin_id")
+		response.BadRequest(c, "参数错误：doc_id")
 		return
 	}
 	if err := services.NewDocumentService().UpdateColumns(
