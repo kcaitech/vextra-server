@@ -101,13 +101,12 @@ type AccessRecordQueryResItem struct {
 
 // FindRecycleBinByUserId 查询用户的回收站列表
 func (s *DocumentService) FindRecycleBinByUserId(userId int64) *[]AccessRecordQueryResItem {
-	selectArgsList := make([]*SelectArgs, 0)
-	GenerateSelectArgs(&AccessRecordQueryResItem{}, &selectArgsList, "__")
+	selectArgsList := GenerateSelectArgs(&AccessRecordQueryResItem{}, "")
 	var result []AccessRecordQueryResItem
 	_ = s.Find(
 		&result,
 		&WhereArgs{"document.user_id = ? and document.deleted_at is not null and purged_at is null", []any{userId}},
-		&JoinArgs{Join: "inner join user on user.id = document.user_id"},
+		&JoinArgs{"inner join user on user.id = document.user_id", nil},
 		&JoinArgs{"left join document_access_record on document_access_record.user_id = document.user_id and document_access_record.document_id = document.id", nil},
 		selectArgsList,
 		&OrderLimitArgs{"document_access_record.last_access_time desc", 0},
@@ -123,13 +122,12 @@ type AccessRecordAndFavoritesQueryResItem struct {
 
 // FindDocumentByUserId 查询用户的文档列表
 func (s *DocumentService) FindDocumentByUserId(userId int64) *[]AccessRecordAndFavoritesQueryResItem {
-	selectArgsList := make([]*SelectArgs, 0)
-	GenerateSelectArgs(&AccessRecordAndFavoritesQueryResItem{}, &selectArgsList, "__")
+	selectArgsList := GenerateSelectArgs(&AccessRecordAndFavoritesQueryResItem{}, "")
 	var result []AccessRecordAndFavoritesQueryResItem
 	_ = s.Find(
 		&result,
 		&WhereArgs{"document.user_id = ?", []any{userId}},
-		&JoinArgs{Join: "inner join user on user.id = document.user_id"},
+		&JoinArgs{"inner join user on user.id = document.user_id", nil},
 		&JoinArgs{"left join document_favorites on document_favorites.user_id = document.user_id and document_favorites.document_id = document.id", nil},
 		&JoinArgs{"left join document_access_record on document_access_record.user_id = document.user_id and document_access_record.document_id = document.id", nil},
 		selectArgsList,
@@ -140,8 +138,7 @@ func (s *DocumentService) FindDocumentByUserId(userId int64) *[]AccessRecordAndF
 
 // FindAccessRecordsByUserId 查询用户的访问记录
 func (s *DocumentService) FindAccessRecordsByUserId(userId int64) *[]AccessRecordAndFavoritesQueryResItem {
-	selectArgsList := make([]*SelectArgs, 0)
-	GenerateSelectArgs(&AccessRecordAndFavoritesQueryResItem{}, &selectArgsList, "__")
+	selectArgsList := GenerateSelectArgs(&AccessRecordAndFavoritesQueryResItem{}, "")
 	var result []AccessRecordAndFavoritesQueryResItem
 	_ = s.DocumentAccessRecordService.Find(
 		&result,
@@ -161,8 +158,7 @@ func (s *DocumentService) FindAccessRecordsByUserId(userId int64) *[]AccessRecor
 
 // FindFavoritesByUserId 查询用户的收藏列表
 func (s *DocumentService) FindFavoritesByUserId(userId int64) *[]AccessRecordAndFavoritesQueryResItem {
-	selectArgsList := make([]*SelectArgs, 0)
-	GenerateSelectArgs(&AccessRecordAndFavoritesQueryResItem{}, &selectArgsList, "__")
+	selectArgsList := GenerateSelectArgs(&AccessRecordAndFavoritesQueryResItem{}, "")
 	var result []AccessRecordAndFavoritesQueryResItem
 	_ = s.DocumentFavoritesService.Find(
 		&result,
@@ -185,8 +181,7 @@ type DocumentSharesAndFavoritesQueryRes struct {
 
 // FindSharesByUserId 查询用户加入的文档分享列表
 func (s *DocumentService) FindSharesByUserId(userId int64) *[]DocumentSharesAndFavoritesQueryRes {
-	selectArgsList := make([]*SelectArgs, 0)
-	GenerateSelectArgs(&DocumentSharesAndFavoritesQueryRes{}, &selectArgsList, "__")
+	selectArgsList := GenerateSelectArgs(&DocumentSharesAndFavoritesQueryRes{}, "")
 	var result []DocumentSharesAndFavoritesQueryRes
 	_ = s.DocumentPermissionService.Find(
 		&result,
@@ -215,8 +210,7 @@ type DocumentSharesQueryRes struct {
 
 // FindSharesByDocumentId 查询某个文档对所有用户的分享列表
 func (s *DocumentService) FindSharesByDocumentId(documentId int64) *[]DocumentSharesQueryRes {
-	selectArgsList := make([]*SelectArgs, 0)
-	GenerateSelectArgs(&DocumentSharesQueryRes{}, &selectArgsList, "__")
+	selectArgsList := GenerateSelectArgs(&DocumentSharesQueryRes{}, "")
 	var result []DocumentSharesQueryRes
 	_ = s.DocumentPermissionService.Find(
 		&result,
@@ -246,8 +240,7 @@ type DocumentInfoQueryRes struct {
 
 // GetDocumentInfoByDocumentAndUserId 查询某个文档对某个用户的信息
 func (s *DocumentService) GetDocumentInfoByDocumentAndUserId(documentId int64, userId int64, permType models.PermType) *DocumentInfoQueryRes {
-	selectArgsList := make([]*SelectArgs, 0)
-	GenerateSelectArgs(&DocumentInfoQueryRes{}, &selectArgsList, "__")
+	selectArgsList := GenerateSelectArgs(&DocumentInfoQueryRes{}, "")
 	var result DocumentInfoQueryRes
 	if err := s.Get(
 		&result,
@@ -291,8 +284,8 @@ func (s *DocumentService) GetDocumentInfoByDocumentAndUserId(documentId int64, u
 	)
 	var whereArgsList []*WhereArgs
 	whereArgsList = append(whereArgsList, &WhereArgs{
-		"user_id = ? and document_id = ? and grantee_type = ?",
-		[]any{models.ResourceTypeDoc, documentId, models.GranteeTypeExternal},
+		"user_id = ? and document_id = ?",
+		[]any{userId, documentId},
 	})
 	if permType != models.PermTypeNone {
 		whereArgsList = append(whereArgsList, &WhereArgs{
@@ -365,8 +358,7 @@ type PermissionRequestsQueryResItem struct {
 
 // FindPermissionRequests 获取用户创建的文档的权限申请列表
 func (s *DocumentService) FindPermissionRequests(userId int64, documentId int64, startTime string) *[]PermissionRequestsQueryResItem {
-	selectArgsList := make([]*SelectArgs, 0)
-	GenerateSelectArgs(&PermissionRequestsQueryResItem{}, &selectArgsList, "__")
+	selectArgsList := GenerateSelectArgs(&PermissionRequestsQueryResItem{}, "")
 	var result []PermissionRequestsQueryResItem
 	whereArgs := WhereArgs{Query: "document.user_id = ?", Args: []any{userId}}
 	if documentId != 0 {

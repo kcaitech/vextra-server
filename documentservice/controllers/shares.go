@@ -206,7 +206,7 @@ func ApplyDocumentPermission(c *gin.Context) {
 		return
 	}
 	if document.DocType != models.DocTypeShareable {
-		response.Unauthorized(c)
+		response.Forbidden(c, "")
 		return
 	}
 	permType := req.PermType
@@ -250,13 +250,12 @@ func GetDocumentPermissionRequestsList(c *gin.Context) {
 	if documentId <= 0 {
 		documentId = 0
 	}
-	var startTime *myTime.Time
+	startTimeStr := ""
 	startTimeInt := str.DefaultToInt(c.Query("start_time"), 0)
 	if startTimeInt > 0 {
-		t := myTime.Time(time.UnixMilli(startTimeInt))
-		startTime = &t
+		startTimeStr = myTime.Time(time.UnixMilli(startTimeInt)).String()
 	}
-	response.Success(c, services.NewDocumentService().FindPermissionRequests(userId, documentId, startTime.String()))
+	response.Success(c, services.NewDocumentService().FindPermissionRequests(userId, documentId, startTimeStr))
 }
 
 // ReviewDocumentPermissionRequest 权限申请审核

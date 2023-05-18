@@ -192,7 +192,7 @@ func GetTableFieldNamesStrAliasByPrefix(model any, prefix string) string {
 
 func GetTableFieldNamesStrAliasByDefaultPrefix(model any, connector string) string {
 	if connector == "" {
-		connector = "_"
+		connector = "__"
 	}
 	db := DB.Model(model)
 	_ = db.Statement.Parse(&model)

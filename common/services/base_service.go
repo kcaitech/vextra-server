@@ -58,7 +58,7 @@ func (s *DefaultService) GetTableFieldNamesStrAliasByPrefix(prefix string) strin
 
 func (s *DefaultService) GetTableFieldNamesStrAliasByDefaultPrefix(connector string) string {
 	if connector == "" {
-		connector = "_"
+		connector = "__"
 	}
 	return s.GetTableFieldNamesStrAliasByPrefix(s.Table + connector)
 }
@@ -399,7 +399,6 @@ func AddCond(db *gorm.DB, args ...any) error {
 			case SelectArgs:
 				if argv.Select != "" {
 					selectArgsList = append(selectArgsList, &argv)
-					//db.Select(argv.Select, argv.Args...)
 				}
 			case *SelectArgs:
 				if argv.Select != "" {
@@ -576,6 +575,7 @@ func (s *DefaultService) UpdateColumnsById(id int64, values map[string]any) erro
 	return s.UpdateColumns(values, "id = ?", id)
 }
 
+// Delete 软删除
 func (s *DefaultService) Delete(args ...any) error {
 	db := s.DB.Model(s.Model)
 	if !HasWhere(args...) {
@@ -600,7 +600,7 @@ func (s *DefaultService) DeleteById(id int64) error {
 
 // HardDelete 硬删除
 func (s *DefaultService) HardDelete(args ...any) error {
-	return s.Delete(append(args, Unscoped{}))
+	return s.Delete(append(args, Unscoped{})...)
 }
 
 func (s *DefaultService) HardDeleteById(id int64) error {
@@ -623,10 +623,9 @@ func (s *DefaultService) Exist(args ...any) (bool, error) {
 	return count > 0, nil
 }
 
-// GenerateSelectArgs 根据modelData生成SelectArgs
-func GenerateSelectArgs(modelData any, selectArgsList *[]*SelectArgs, connector string) {
+func generateSelectArgs(modelData any, selectArgsList *[]*SelectArgs, connector string) {
 	if connector == "" {
-		connector = "_"
+		connector = "__"
 	}
 	modelDataValue := reflect.ValueOf(modelData)
 	if !modelDataValue.IsValid() {
@@ -653,7 +652,7 @@ func GenerateSelectArgs(modelData any, selectArgsList *[]*SelectArgs, connector 
 		}
 		// 匿名字段递归调用
 		if typeField.Anonymous || typeField.Tag.Get("anonymous") == "true" {
-			GenerateSelectArgs(field.Interface(), selectArgsList, connector)
+			generateSelectArgs(field.Interface(), selectArgsList, connector)
 		}
 		// 无table标签，跳过
 		tableName := typeField.Tag.Get("table")
@@ -696,4 +695,11 @@ func GenerateSelectArgs(modelData any, selectArgsList *[]*SelectArgs, connector 
 		}
 		*selectArgsList = append(*selectArgsList, &SelectArgs{strings.Join(fieldAliasNames, ","), nil})
 	}
+}
+
+// GenerateSelectArgs 根据modelData生成SelectArgs
+func GenerateSelectArgs(modelData any, connector string) *[]*SelectArgs {
+	selectArgsList := make([]*SelectArgs, 0)
+	generateSelectArgs(modelData, &selectArgsList, connector)
+	return &selectArgsList
 }
