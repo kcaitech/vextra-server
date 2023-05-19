@@ -51,7 +51,7 @@ func SetUserDocumentFavoriteStatus(c *gin.Context) {
 	if err := documentFavoritesService.Get(
 		&documentFavorites,
 		"document_favorites.user_id = ? and document_favorites.document_id = ? and document.deleted_at is null", userId, documentId,
-		services.JoinArgs{Join: "inner join document on document.id = document_favorites.document_id"},
+		services.JoinArgsRaw{Join: "inner join document on document.id = document_favorites.document_id"},
 		services.SelectArgs{Select: "document_favorites.*"},
 	); err != nil {
 		if err != services.ErrRecordNotFound {

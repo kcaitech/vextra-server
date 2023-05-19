@@ -128,7 +128,7 @@ func SetDocumentSharePermission(c *gin.Context) {
 	if err := services.NewDocumentService().DocumentPermissionService.UpdateColumns(
 		map[string]any{"document_permission.perm_type": permType},
 		"document_permission.resource_type = ? and document_permission.id", models.ResourceTypeDoc, permissionId,
-		services.JoinArgs{Join: "inner join document on document.id = document_permission.resource_id", Args: nil},
+		services.JoinArgsRaw{Join: "inner join document on document.id = document_permission.resource_id", Args: nil},
 		services.WhereArgs{Query: "document.user_id = ?", Args: []any{userId}},
 	); err != nil {
 		if err == services.ErrRecordNotFound {
@@ -155,7 +155,7 @@ func DeleteDocumentSharePermission(c *gin.Context) {
 	}
 	if err := services.NewDocumentService().DocumentPermissionService.HardDelete(
 		"document_permission.resource_type = ? and document_permission.id", models.ResourceTypeDoc, permissionId,
-		services.JoinArgs{Join: "inner join document on document.id = document_permission.resource_id", Args: nil},
+		services.JoinArgsRaw{Join: "inner join document on document.id = document_permission.resource_id", Args: nil},
 		services.WhereArgs{Query: "document.user_id = ?", Args: []any{userId}},
 	); err != nil {
 		if err == services.ErrRecordNotFound {
@@ -171,7 +171,7 @@ func DeleteDocumentSharePermission(c *gin.Context) {
 type ApplyDocumentPermissionReq struct {
 	DocId          string          `json:"doc_id" binding:"required"`
 	PermType       models.PermType `json:"perm_type"`
-	ApplicantNotes string          `json:"applicant_notes" binding:"required"`
+	ApplicantNotes string          `json:"applicant_notes"`
 }
 
 // ApplyDocumentPermission 申请文档权限
@@ -258,6 +258,11 @@ func GetDocumentPermissionRequestsList(c *gin.Context) {
 	response.Success(c, services.NewDocumentService().FindPermissionRequests(userId, documentId, startTimeStr))
 }
 
+type ReviewDocumentPermissionRequestReq struct {
+	ApplyId      string `json:"apply_id" binding:"required"`
+	ApprovalCode uint8  `json:"approval_code"`
+}
+
 // ReviewDocumentPermissionRequest 权限申请审核
 func ReviewDocumentPermissionRequest(c *gin.Context) {
 	userId, err := auth.GetUserId(c)
@@ -265,13 +270,18 @@ func ReviewDocumentPermissionRequest(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	documentPermissionRequestsId := str.DefaultToInt(c.Query("apply_id"), 0)
+	var req ReviewDocumentPermissionRequestReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "")
+		return
+	}
+	documentPermissionRequestsId := str.DefaultToInt(req.ApplyId, 0)
 	if documentPermissionRequestsId <= 0 {
 		response.BadRequest(c, "参数错误：apply_id")
 		return
 	}
-	approvalCode := str.DefaultToInt(c.Query("approval_code"), 0)
-	if approvalCode < 0 || approvalCode > 1 {
+	approvalCode := req.ApprovalCode
+	if approvalCode != 0 && approvalCode != 1 {
 		response.BadRequest(c, "参数错误：approval_code")
 		return
 	}
@@ -281,10 +291,10 @@ func ReviewDocumentPermissionRequest(c *gin.Context) {
 		&documentPermissionRequest,
 		"document_permission_requests.id = ? and document_permission_requests.status = ? and document.user_id = ?",
 		documentPermissionRequestsId, models.StatusTypePending, userId,
-		services.JoinArgs{Join: "inner join document on document.id = document_permission_requests.document_id", Args: nil},
+		services.JoinArgsRaw{Join: "inner join document on document.id = document_permission_requests.document_id", Args: nil},
 	); err != nil {
 		if err == services.ErrRecordNotFound {
-			response.Unauthorized(c)
+			response.Forbidden(c, "")
 		} else {
 			response.Fail(c, "查询错误")
 		}

@@ -29,5 +29,6 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 		router.DELETE("/shares", controllers.DeleteDocumentSharePermission)
 		router.POST("/shares/apply", controllers.ApplyDocumentPermission)
 		router.GET("/shares/apply", controllers.GetDocumentPermissionRequestsList)
+		router.POST("/shares/apply/audit", controllers.ReviewDocumentPermissionRequest)
 	}
 }

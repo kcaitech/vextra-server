@@ -106,8 +106,8 @@ func (s *DocumentService) FindRecycleBinByUserId(userId int64) *[]AccessRecordQu
 	_ = s.Find(
 		&result,
 		&WhereArgs{"document.user_id = ? and document.deleted_at is not null and purged_at is null", []any{userId}},
-		&JoinArgs{"inner join user on user.id = document.user_id", nil},
-		&JoinArgs{"left join document_access_record on document_access_record.user_id = document.user_id and document_access_record.document_id = document.id", nil},
+		&JoinArgsRaw{"inner join user on user.id = document.user_id", nil},
+		&JoinArgsRaw{"left join document_access_record on document_access_record.user_id = document.user_id and document_access_record.document_id = document.id", nil},
 		selectArgsList,
 		&OrderLimitArgs{"document_access_record.last_access_time desc", 0},
 		&Unscoped{},
@@ -127,9 +127,9 @@ func (s *DocumentService) FindDocumentByUserId(userId int64) *[]AccessRecordAndF
 	_ = s.Find(
 		&result,
 		&WhereArgs{"document.user_id = ?", []any{userId}},
-		&JoinArgs{"inner join user on user.id = document.user_id", nil},
-		&JoinArgs{"left join document_favorites on document_favorites.user_id = document.user_id and document_favorites.document_id = document.id", nil},
-		&JoinArgs{"left join document_access_record on document_access_record.user_id = document.user_id and document_access_record.document_id = document.id", nil},
+		&JoinArgsRaw{"inner join user on user.id = document.user_id", nil},
+		&JoinArgsRaw{"left join document_favorites on document_favorites.user_id = document.user_id and document_favorites.document_id = document.id", nil},
+		&JoinArgsRaw{"left join document_access_record on document_access_record.user_id = document.user_id and document_access_record.document_id = document.id", nil},
 		selectArgsList,
 		&OrderLimitArgs{"document_access_record.last_access_time desc", 0},
 	)
@@ -138,19 +138,21 @@ func (s *DocumentService) FindDocumentByUserId(userId int64) *[]AccessRecordAndF
 
 // FindAccessRecordsByUserId 查询用户的访问记录
 func (s *DocumentService) FindAccessRecordsByUserId(userId int64) *[]AccessRecordAndFavoritesQueryResItem {
-	selectArgsList := GenerateSelectArgs(&AccessRecordAndFavoritesQueryResItem{}, "")
 	var result []AccessRecordAndFavoritesQueryResItem
 	_ = s.DocumentAccessRecordService.Find(
 		&result,
-		&WhereArgs{"document_access_record.user_id = ? and document.deleted_at is null", []any{userId}},
-		&JoinArgs{"inner join user on user.id = document_access_record.user_id", nil},
-		&JoinArgs{"inner join document on document.id = document_access_record.document_id", nil},
-		&JoinArgs{"left join document_favorites on document_favorites.user_id = document_access_record.user_id and document_favorites.document_id = document_access_record.document_id", nil},
+		&WhereArgs{Query: "document_access_record.user_id = ? and document.deleted_at is null", Args: []any{userId}},
+		&JoinArgs{Table: "user", Type: JoinTypeInner, On: []JoinArgsOn{{Field: "id", JoinField: "user_id", JoinTable: "document_access_record"}}},
+		&JoinArgs{Table: "document", Type: JoinTypeInner, On: []JoinArgsOn{{Field: "id", JoinField: "document_id", JoinTable: "document_access_record"}}},
+		&JoinArgs{Table: "document_favorites", Type: JoinTypeLeft, On: []JoinArgsOn{{Field: "user_id", JoinField: "user_id", JoinTable: "document_access_record"}, {Field: "document_id", JoinField: "document_id", JoinTable: "document_access_record"}}},
+		//&JoinArgsRaw{"inner join user on user.id = document_access_record.user_id", nil},
+		//&JoinArgsRaw{"inner join document on document.id = document_access_record.document_id", nil},
+		//&JoinArgsRaw{"left join document_favorites on document_favorites.user_id = document_access_record.user_id and document_favorites.document_id = document_access_record.document_id", nil},
 		//&SelectArgs{models.GetTableFieldNamesStrAliasByDefaultPrefix(&models.User{}, "__"), nil},
 		//&SelectArgs{s.GetTableFieldNamesStrAliasByDefaultPrefix("__"), nil},
 		//&SelectArgs{s.DocumentFavoritesService.GetTableFieldNamesStrAliasByDefaultPrefix("__"), nil},
 		//&SelectArgs{s.DocumentAccessRecordService.GetTableFieldNamesStrAliasByDefaultPrefix("__"), nil},
-		selectArgsList,
+		GenerateSelectArgs(&AccessRecordAndFavoritesQueryResItem{}, ""),
 		&OrderLimitArgs{"document_access_record.last_access_time desc", 0},
 	)
 	return &result
@@ -163,9 +165,9 @@ func (s *DocumentService) FindFavoritesByUserId(userId int64) *[]AccessRecordAnd
 	_ = s.DocumentFavoritesService.Find(
 		&result,
 		WhereArgs{"document_favorites.user_id = ? and document.deleted_at is null and is_favorite = 1", []any{userId}},
-		JoinArgs{"inner join user on user.id = document_favorites.user_id", nil},
-		JoinArgs{"inner join document on document.id = document_favorites.document_id", nil},
-		JoinArgs{"left join document_access_record on document_access_record.user_id = document_favorites.user_id and document_access_record.document_id = document_favorites.document_id", nil},
+		JoinArgsRaw{"inner join user on user.id = document_favorites.user_id", nil},
+		JoinArgsRaw{"inner join document on document.id = document_favorites.document_id", nil},
+		JoinArgsRaw{"left join document_access_record on document_access_record.user_id = document_favorites.user_id and document_access_record.document_id = document_favorites.document_id", nil},
 		//SelectArgs{"user.*, document.*, document_favorites.is_favorite, document_access_record.last_access_time", nil},
 		selectArgsList,
 		OrderLimitArgs{"document_access_record.last_access_time desc", 0},
@@ -192,10 +194,10 @@ func (s *DocumentService) FindSharesByUserId(userId int64) *[]DocumentSharesAndF
 				" and document.deleted_at is null",
 			[]any{models.ResourceTypeDoc, models.GranteeTypeExternal, userId},
 		},
-		JoinArgs{"inner join user on user.id = document_permission.grantee_id", nil},
-		JoinArgs{"inner join document on document.id = document_permission.resource_id", nil},
-		JoinArgs{"left join document_access_record on document_access_record.user_id = document_permission.grantee_id and document_access_record.document_id = document_permission.resource_id", nil},
-		JoinArgs{"left join document_favorites on document_favorites.user_id = document_permission.grantee_id and document_favorites.document_id = document_permission.resource_id", nil},
+		JoinArgsRaw{"inner join user on user.id = document_permission.grantee_id", nil},
+		JoinArgsRaw{"inner join document on document.id = document_permission.resource_id", nil},
+		JoinArgsRaw{"left join document_access_record on document_access_record.user_id = document_permission.grantee_id and document_access_record.document_id = document_permission.resource_id", nil},
+		JoinArgsRaw{"left join document_favorites on document_favorites.user_id = document_permission.grantee_id and document_favorites.document_id = document_permission.resource_id", nil},
 		//SelectArgs{"user.*, document.*, document_favorites.is_favorite, document_access_record.last_access_time, document_permission.perm_type, document_permission.id", nil},
 		selectArgsList,
 		OrderLimitArgs{"document_access_record.last_access_time desc", 0},
@@ -221,8 +223,8 @@ func (s *DocumentService) FindSharesByDocumentId(documentId int64) *[]DocumentSh
 				" and document.deleted_at is null",
 			[]any{models.ResourceTypeDoc, documentId, models.GranteeTypeExternal},
 		},
-		JoinArgs{"inner join user on user.id = document_permission.grantee_id", nil},
-		JoinArgs{"inner join document on document.id = document_permission.resource_id", nil},
+		JoinArgsRaw{"inner join user on user.id = document_permission.grantee_id", nil},
+		JoinArgsRaw{"inner join document on document.id = document_permission.resource_id", nil},
 		//SelectArgs{"user.*, document.*, document_permission.perm_type, document_permission.id", nil},
 		selectArgsList,
 		OrderLimitArgs{"document_permission.id desc", 0},
@@ -245,9 +247,9 @@ func (s *DocumentService) GetDocumentInfoByDocumentAndUserId(documentId int64, u
 	if err := s.Get(
 		&result,
 		"document.id = ?", documentId,
-		JoinArgs{"inner join user on user.id = document.user_id", nil},
-		JoinArgs{"left join document_access_record on document_access_record.document_id = document.id and document_access_record.user_id = ?", []any{userId}},
-		JoinArgs{
+		JoinArgsRaw{"inner join user on user.id = document.user_id", nil},
+		JoinArgsRaw{"left join document_access_record on document_access_record.document_id = document.id and document_access_record.user_id = ?", []any{userId}},
+		JoinArgsRaw{
 			"left join document_permission on" +
 				" document_permission.resource_type = ?" +
 				" and document_permission.resource_id = ?" +
@@ -255,7 +257,7 @@ func (s *DocumentService) GetDocumentInfoByDocumentAndUserId(documentId int64, u
 				" and document_permission.grantee_id = ?",
 			[]any{models.ResourceTypeDoc, documentId, models.GranteeTypeExternal, userId},
 		},
-		JoinArgs{"left join document_favorites on document_favorites.user_id = document.user_id and document_favorites.document_id = document.id", nil},
+		JoinArgsRaw{"left join document_favorites on document_favorites.user_id = document.user_id and document_favorites.document_id = document.id", nil},
 		//SelectArgs{"user.*, document.*, document_favorites.is_favorite, document_permission.perm_type", nil},
 		selectArgsList,
 		OrderLimitArgs{"document_access_record.last_access_time desc", 0},
@@ -360,7 +362,7 @@ type PermissionRequestsQueryResItem struct {
 func (s *DocumentService) FindPermissionRequests(userId int64, documentId int64, startTime string) *[]PermissionRequestsQueryResItem {
 	selectArgsList := GenerateSelectArgs(&PermissionRequestsQueryResItem{}, "")
 	var result []PermissionRequestsQueryResItem
-	whereArgs := WhereArgs{Query: "document.user_id = ?", Args: []any{userId}}
+	whereArgs := WhereArgs{Query: "document_permission_requests.status = 0 and document.user_id = ?", Args: []any{userId}}
 	if documentId != 0 {
 		whereArgs.Query += " and document.id = ?"
 		whereArgs.Args = append(whereArgs.Args, documentId)
@@ -372,8 +374,8 @@ func (s *DocumentService) FindPermissionRequests(userId int64, documentId int64,
 	_ = s.DocumentPermissionRequestsService.Find(
 		&result,
 		whereArgs,
-		JoinArgs{"inner join user on user.id = document_permission_requests.user_id", nil},
-		JoinArgs{"inner join document on document.id = document_permission_requests.document_id", nil},
+		JoinArgsRaw{"inner join user on user.id = document_permission_requests.user_id", nil},
+		JoinArgsRaw{"inner join document on document.id = document_permission_requests.document_id", nil},
 		//SelectArgs{"user.*, document.*, document_permission_requests.*, document_permission.perm_type", nil},
 		selectArgsList,
 		OrderLimitArgs{"document_permission_requests.id desc", 0},

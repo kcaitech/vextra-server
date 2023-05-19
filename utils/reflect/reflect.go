@@ -5,7 +5,14 @@ import (
 )
 
 // EnterPointer 进入指针指向的对象
-func EnterPointer(pointer reflect.Value) reflect.Value {
+func EnterPointer(pointer reflect.Type) reflect.Type {
+	if pointer.Kind() == reflect.Ptr {
+		pointer = pointer.Elem()
+	}
+	return pointer
+}
+
+func EnterPointerByValue(pointer reflect.Value) reflect.Value {
 	if pointer.IsValid() && pointer.Kind() == reflect.Ptr {
 		value := pointer.Elem()
 		if !value.IsValid() {
@@ -23,7 +30,7 @@ func FieldByName(structData any, fieldName string) any {
 		return nil
 	}
 	if modelDataValue.Kind() == reflect.Ptr {
-		modelDataValue = EnterPointer(modelDataValue)
+		modelDataValue = EnterPointerByValue(modelDataValue)
 	}
 	if !modelDataValue.IsValid() || modelDataValue.Kind() != reflect.Struct {
 		return nil
@@ -42,7 +49,7 @@ func StructToMap(structData any, mapData map[string]any) {
 		return
 	}
 	if structDataValue.Kind() == reflect.Ptr {
-		structDataValue = EnterPointer(structDataValue)
+		structDataValue = EnterPointerByValue(structDataValue)
 	}
 	if !structDataValue.IsValid() || structDataValue.Kind() != reflect.Struct {
 		return
@@ -73,7 +80,7 @@ func MapToStruct(mapData map[string]any, structData any) {
 		return
 	}
 	if structDataValue.Kind() == reflect.Ptr {
-		structDataValue = EnterPointer(structDataValue)
+		structDataValue = EnterPointerByValue(structDataValue)
 	}
 	if !structDataValue.IsValid() || structDataValue.Kind() != reflect.Struct {
 		return

@@ -57,7 +57,7 @@ func StructToMap(structData any, mapData map[string]any) {
 		return
 	}
 	if structDataValue.Kind() == reflect.Ptr {
-		structDataValue = myReflect.EnterPointer(structDataValue)
+		structDataValue = myReflect.EnterPointerByValue(structDataValue)
 	}
 	if !structDataValue.IsValid() || structDataValue.Kind() != reflect.Struct {
 		return
@@ -74,9 +74,7 @@ func StructToMap(structData any, mapData map[string]any) {
 		}
 		anonymous := typeField.Tag.Get("anonymous")
 		if (typeField.Anonymous || anonymous == "true") && field.Kind() == reflect.Struct {
-			mapData1 := make(map[string]any)
-			mapData[name] = mapData1
-			StructToMap(field.Interface(), mapData1)
+			StructToMap(field.Interface(), mapData)
 			continue
 		}
 		// 如果是int64，则转换为字符串
@@ -100,7 +98,7 @@ func mapToStruct(mapData map[string]any, structData any) {
 		return
 	}
 	if structDataValue.Kind() == reflect.Ptr {
-		structDataValue = myReflect.EnterPointer(structDataValue)
+		structDataValue = myReflect.EnterPointerByValue(structDataValue)
 	}
 	if !structDataValue.IsValid() || structDataValue.Kind() != reflect.Struct {
 		return
