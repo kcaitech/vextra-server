@@ -109,6 +109,11 @@ func GetDocumentSharesList(c *gin.Context) {
 	response.Success(c, documentService.FindSharesByDocumentId(documentId))
 }
 
+type SetDocumentSharePermissionReq struct {
+	ShareId  string          `json:"share_id" binding:"required"`
+	PermType models.PermType `json:"perm_type"`
+}
+
 // SetDocumentSharePermission 修改分享权限
 func SetDocumentSharePermission(c *gin.Context) {
 	userId, err := auth.GetUserId(c)
@@ -116,29 +121,36 @@ func SetDocumentSharePermission(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	permissionId := str.DefaultToInt(c.Query("share_id"), 0)
+	var req SetDocumentSharePermissionReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "")
+		return
+	}
+	permissionId := str.DefaultToInt(req.ShareId, 0)
 	if permissionId <= 0 {
 		response.BadRequest(c, "参数错误：share_id")
 		return
 	}
-	permType := models.PermType(str.DefaultToInt(c.Query("perm_type"), 0))
+	permType := req.PermType
 	if permType < models.PermTypeReadOnly || permType > models.PermTypeEditable {
 		response.BadRequest(c, "参数错误：perm_type")
 		return
 	}
-	if err := services.NewDocumentService().DocumentPermissionService.UpdateColumns(
-		map[string]any{"document_permission.perm_type": permType},
-		"document_permission.resource_type = ? and document_permission.id", models.ResourceTypeDoc, permissionId,
-		services.JoinArgsRaw{Join: "inner join document on document.id = document_permission.resource_id", Args: nil},
-		services.WhereArgs{Query: "document.user_id = ?", Args: []any{userId}},
-	); err != nil {
-		if err == services.ErrRecordNotFound {
-			response.Unauthorized(c)
-		} else {
+	documentPermissionService := services.NewDocumentService().DocumentPermissionService
+	var count int64
+	if err := documentPermissionService.Count(
+		&count,
+		&services.JoinArgsRaw{Join: "inner join document on document.id = document_permission.resource_id", Args: nil},
+		&services.WhereArgs{Query: "document_permission.resource_type = ? and document_permission.id = ? and document.user_id = ?", Args: []any{models.ResourceTypeDoc, permissionId, userId}},
+	); err != nil || count <= 0 {
+		if err != nil {
 			response.Fail(c, "更新错误")
+		} else {
+			response.Unauthorized(c)
 		}
 		return
 	}
+	_ = services.NewDocumentService().DocumentPermissionService.UpdateColumns(map[string]any{"perm_type": permType}, "id = ?", permissionId)
 	response.Success(c, "")
 }
 
@@ -154,18 +166,21 @@ func DeleteDocumentSharePermission(c *gin.Context) {
 		response.BadRequest(c, "参数错误：share_id")
 		return
 	}
-	if err := services.NewDocumentService().DocumentPermissionService.HardDelete(
-		"document_permission.resource_type = ? and document_permission.id", models.ResourceTypeDoc, permissionId,
-		services.JoinArgsRaw{Join: "inner join document on document.id = document_permission.resource_id", Args: nil},
-		services.WhereArgs{Query: "document.user_id = ?", Args: []any{userId}},
-	); err != nil {
-		if err == services.ErrRecordNotFound {
-			response.Unauthorized(c)
-		} else {
+	documentPermissionService := services.NewDocumentService().DocumentPermissionService
+	var count int64
+	if err := documentPermissionService.Count(
+		&count,
+		&services.JoinArgsRaw{Join: "inner join document on document.id = document_permission.resource_id", Args: nil},
+		&services.WhereArgs{Query: "document_permission.resource_type = ? and document_permission.id = ? and document.user_id = ?", Args: []any{models.ResourceTypeDoc, permissionId, userId}},
+	); err != nil || count <= 0 {
+		if err != nil {
 			response.Fail(c, "删除错误")
+		} else {
+			response.Unauthorized(c)
 		}
 		return
 	}
+	_ = services.NewDocumentService().DocumentPermissionService.HardDelete("id = ?", permissionId)
 	response.Success(c, "")
 }
 

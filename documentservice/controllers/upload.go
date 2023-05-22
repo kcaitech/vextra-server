@@ -73,6 +73,12 @@ func UploadDocumentByUser(c *gin.Context) {
 		if hasClose {
 			return
 		}
+		data := map[string]any{
+			"code":    "error",
+			"message": msg,
+		}
+		message, _ := json.Marshal(data)
+		conn.WriteMessage(websocket.TextMessage, message)
 		log.Println("数据格式错误：" + msg)
 		closeConn("数据格式错误")
 	}
@@ -80,6 +86,12 @@ func UploadDocumentByUser(c *gin.Context) {
 		if hasClose {
 			return
 		}
+		data := map[string]any{
+			"code":    "error",
+			"message": "对象上传错误",
+		}
+		message, _ := json.Marshal(data)
+		conn.WriteMessage(websocket.TextMessage, message)
 		log.Println("对象上传错误：" + err.Error())
 		closeConn("对象上传错误")
 	}
@@ -90,6 +102,12 @@ func UploadDocumentByUser(c *gin.Context) {
 		if msg == "" {
 			msg = "参数错误"
 		}
+		data := map[string]any{
+			"code":    "error",
+			"message": msg,
+		}
+		message, _ := json.Marshal(data)
+		conn.WriteMessage(websocket.TextMessage, message)
 		log.Println("参数错误：" + msg)
 		closeConn(msg)
 	}
@@ -151,7 +169,12 @@ func UploadDocumentByUser(c *gin.Context) {
 			paramsError("文档不存在")
 			return
 		}
-		if document.UserId != userId {
+		var permType models.PermType
+		if err := documentService.GetDocumentPermissionByDocumentAndUserId(&permType, docId, userId); err != nil {
+			uploadError(err)
+			return
+		}
+		if permType <= models.PermTypeReadOnly {
 			paramsError("无编辑权限")
 			return
 		}
