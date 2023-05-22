@@ -5,9 +5,8 @@ import (
 	"protodesign.cn/kcserver/apigateway/middlewares"
 )
 
-const Host = "192.168.0.10"
-
-//const Host = "192.168.2.6"
+// const Host = "192.168.0.10"
+const Host = "192.168.0.18"
 
 func LoadRoutes(router *gin.Engine) {
 	apiGroup := router.Group("/api/v1")

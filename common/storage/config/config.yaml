@@ -2,7 +2,7 @@ storage:
   provider: "minio"
 
 minio:
-  endpoint: "host.docker.internal:9000"
+  endpoint: "192.168.0.18:9000"
   region: "zhuhai-1"
   accessKeyID: "Gathooh88mba5H3y2"
   secretAccessKey: "yFukp3vtIkUNck2XL3s2KOT4wyRPR71G2"

@@ -5,6 +5,8 @@ services:
     image: quay.io/minio/minio
     command: server /data --console-address ":9001"
     container_name: minio
+    networks:
+      minio_net_1:
     restart: always
     environment:
       TZ: Asia/Shanghai
@@ -23,3 +25,7 @@ services:
     ports:
       - "9000:9000"
       - "9001:9001"
+
+networks:
+  minio_net_1:
+    external: true

@@ -19,7 +19,7 @@ type client struct {
 func NewClient(config *base.ClientConfig) (base.Client, error) {
 	c, err := minio.New(config.Endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(config.AccessKeyID, config.SecretAccessKey, ""),
-		Region: config.Endpoint,
+		Region: config.Region,
 		Secure: false,
 	})
 	if err != nil {

@@ -6,6 +6,7 @@ import (
 	"protodesign.cn/kcserver/common/gin/response"
 	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/common/services"
+	"protodesign.cn/kcserver/utils/sliceutil"
 	"protodesign.cn/kcserver/utils/str"
 	myTime "protodesign.cn/kcserver/utils/time"
 	"time"
@@ -255,7 +256,16 @@ func GetDocumentPermissionRequestsList(c *gin.Context) {
 	if startTimeInt > 0 {
 		startTimeStr = myTime.Time(time.UnixMilli(startTimeInt)).String()
 	}
-	response.Success(c, services.NewDocumentService().FindPermissionRequests(userId, documentId, startTimeStr))
+	documentService := services.NewDocumentService()
+	result := documentService.FindPermissionRequests(userId, documentId, startTimeStr)
+	permissionRequestsIdList := sliceutil.MapT(func(item services.PermissionRequestsQueryResItem) int64 {
+		return item.DocumentPermissionRequests.Id
+	}, *result...)
+	_ = documentService.UpdatesIgnoreZero(
+		&models.DocumentPermissionRequests{FirstDisplayedAt: myTime.Time(time.Now())},
+		"id in ?", permissionRequestsIdList,
+	)
+	response.Success(c, result)
 }
 
 type ReviewDocumentPermissionRequestReq struct {

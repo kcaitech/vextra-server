@@ -11,6 +11,7 @@ import (
 	"protodesign.cn/kcserver/utils/str"
 	myTime "protodesign.cn/kcserver/utils/time"
 	"reflect"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -331,7 +332,7 @@ func AddCond(db *gorm.DB, args ...any) error {
 				WhereNode, *WhereNode,
 				OrderLimitArgs, *OrderLimitArgs,
 				JoinArgsRaw, *JoinArgsRaw,
-				JoinArgs, *JoinArgs,
+				JoinArgs, *JoinArgs, []JoinArgs, []*JoinArgs, *[]JoinArgs, *[]*JoinArgs,
 				SelectArgs, *SelectArgs, []SelectArgs, *[]SelectArgs, []*SelectArgs, *[]*SelectArgs,
 				GroupArgs, *GroupArgs,
 				Unscoped, *Unscoped,
@@ -446,7 +447,7 @@ func AddCond(db *gorm.DB, args ...any) error {
 		return nil
 	}
 
-	calcJoinArgs := func(arg any) error {
+	_calcJoinArgs := func(arg any) error {
 		var argv JoinArgs
 		var ok bool
 		if argv, ok = arg.(JoinArgs); !ok {
@@ -483,6 +484,40 @@ func AddCond(db *gorm.DB, args ...any) error {
 			return errors.New("JoinArgs.OnArgs错误")
 		}
 		db.Joins(fmt.Sprintf("%s %s on %s", argv.Type, argv.Table, strings.Join(onList, " and ")), argv.OnArgs...)
+		return nil
+	}
+
+	calcJoinArgs := func(arg any) error {
+		switch argv := arg.(type) {
+		case JoinArgs, *JoinArgs:
+			if err := _calcJoinArgs(argv); err != nil {
+				return err
+			}
+		case []JoinArgs:
+			for _, joinArgs := range argv {
+				if err := _calcJoinArgs(joinArgs); err != nil {
+					return err
+				}
+			}
+		case []*JoinArgs:
+			for _, joinArgs := range argv {
+				if err := _calcJoinArgs(joinArgs); err != nil {
+					return err
+				}
+			}
+		case *[]JoinArgs:
+			for _, joinArgs := range *argv {
+				if err := _calcJoinArgs(joinArgs); err != nil {
+					return err
+				}
+			}
+		case *[]*JoinArgs:
+			for _, joinArgs := range *argv {
+				if err := _calcJoinArgs(joinArgs); err != nil {
+					return err
+				}
+			}
+		}
 		return nil
 	}
 
@@ -580,7 +615,7 @@ func AddCond(db *gorm.DB, args ...any) error {
 				if err := calcJoinArgsRaw(argv); err != nil {
 					return err
 				}
-			case JoinArgs, *JoinArgs:
+			case JoinArgs, *JoinArgs, []JoinArgs, []*JoinArgs, *[]JoinArgs, *[]*JoinArgs:
 				if err := calcJoinArgs(argv); err != nil {
 					return err
 				}
@@ -646,6 +681,9 @@ var ErrRecordNotFound = errors.New("记录不存在")
 
 func (s *DefaultService) Get(modelData models.ModelData, args ...any) error {
 	db := s.DB.Model(s.Model)
+	paramArgs := GetParamArgsFromArgs(&args)
+	args = append(args, GenerateJoinArgs(modelData, s.Table, paramArgs))
+	args = append(args, GenerateSelectArgs(modelData, ""))
 	if err := AddCond(db, args...); err != nil {
 		return err
 	}
@@ -666,6 +704,9 @@ func (s *DefaultService) GetById(id int64, modelData models.ModelData) error {
 
 func (s *DefaultService) Find(modelDataList models.ModelListData, args ...any) error {
 	db := s.DB.Model(s.Model)
+	paramArgs := GetParamArgsFromArgs(&args)
+	args = append(args, GenerateJoinArgs(modelDataList, s.Table, paramArgs))
+	args = append(args, GenerateSelectArgs(modelDataList, ""))
 	if err := AddCond(db, args...); err != nil {
 		return err
 	}
@@ -696,11 +737,17 @@ func AddIdCondIfNoWhere(modelData models.ModelData, args ...any) bool {
 	return true
 }
 
-func (s *DefaultService) Updates(modelData models.ModelData, args ...any) error {
+func (s *DefaultService) updates(modelData models.ModelData, ignoreZero bool, args ...any) error {
 	if !AddIdCondIfNoWhere(modelData, args...) {
 		return errors.New("无搜索条件")
 	}
-	db := s.DB.Model(s.Model).Select("*")
+	db := s.DB.Model(s.Model)
+	paramArgs := GetParamArgsFromArgs(&args)
+	args = append(args, GenerateJoinArgs(modelData, s.Table, paramArgs))
+	args = append(args, GenerateSelectArgs(modelData, ""))
+	if !ignoreZero {
+		db.Select("*")
+	}
 	if err := AddCond(db, args...); err != nil {
 		return err
 	}
@@ -712,6 +759,14 @@ func (s *DefaultService) Updates(modelData models.ModelData, args ...any) error 
 		return ErrRecordNotFound
 	}
 	return nil
+}
+
+func (s *DefaultService) Updates(modelData models.ModelData, args ...any) error {
+	return s.updates(modelData, false, args...)
+}
+
+func (s *DefaultService) UpdatesIgnoreZero(modelData models.ModelData, args ...any) error {
+	return s.updates(modelData, true, args...)
 }
 
 func (s *DefaultService) UpdatesById(id int64, modelData models.ModelData) error {
@@ -789,14 +844,8 @@ func (s *DefaultService) Exist(args ...any) (bool, error) {
 	return count > 0, nil
 }
 
-// 根据modelData生成SelectArgs
-// 迭代modelData的字段：
-// 匿名字段递归调用
-// 非匿名字段且带有table标签的struct类型字段，获取其内部的所有非匿名公开字段，对于其内部的匿名公开struct字段则递归获取
-func generateSelectArgs(dataType reflect.Type, selectArgsList *[]*SelectArgs, connector string) {
-	if connector == "" {
-		connector = "__"
-	}
+// 迭代dataType的字段，匿名字段递归调用，非匿名struct字段调用回调处理函数
+func iterateDataTypeFields(dataType reflect.Type, handler func(typeField reflect.StructField, typeFieldType reflect.Type)) {
 	modelDataType := myReflect.EnterPointer(dataType)
 	if modelDataType.Kind() == reflect.Slice {
 		modelDataType = modelDataType.Elem()
@@ -815,12 +864,27 @@ func generateSelectArgs(dataType reflect.Type, selectArgsList *[]*SelectArgs, co
 		}
 		// 匿名字段递归调用
 		if typeField.Anonymous || typeField.Tag.Get("anonymous") == "true" {
-			generateSelectArgs(typeField.Type, selectArgsList, connector)
+			iterateDataTypeFields(typeField.Type, handler)
 		}
+		handler(typeField, typeFieldType)
+	}
+}
+
+// 根据dataType生成SelectArgs
+// 迭代dataType的字段：
+//
+//	匿名字段递归调用
+//	非匿名字段且带有table标签的struct类型字段：
+//		获取其内部的所有非匿名公开字段，对于其内部的匿名公开struct字段则递归获取
+func generateSelectArgs(dataType reflect.Type, connector string, selectArgsList *[]*SelectArgs) {
+	if connector == "" {
+		connector = "__"
+	}
+	iterateDataTypeFields(dataType, func(typeField reflect.StructField, typeFieldType reflect.Type) {
 		// 无table标签，跳过
 		tableName := typeField.Tag.Get("table")
 		if tableName == "" {
-			continue
+			return
 		}
 		// 非匿名struct且具有table标签，获取内部所有公开字段
 		var GetExportedFieldNames func(fieldType reflect.Type, fieldNames *[]string)
@@ -847,7 +911,7 @@ func generateSelectArgs(dataType reflect.Type, selectArgsList *[]*SelectArgs, co
 		fieldNames := make([]string, 0, typeFieldType.NumField())
 		GetExportedFieldNames(typeFieldType, &fieldNames)
 		if len(fieldNames) == 0 {
-			continue
+			return
 		}
 		// 生成selectArgs
 		fieldAliasNames := make([]string, 0, len(fieldNames))
@@ -855,12 +919,184 @@ func generateSelectArgs(dataType reflect.Type, selectArgsList *[]*SelectArgs, co
 			fieldAliasNames = append(fieldAliasNames, fmt.Sprintf("%s.%s as %s", tableName, fieldName, tableName+connector+fieldName))
 		}
 		*selectArgsList = append(*selectArgsList, &SelectArgs{strings.Join(fieldAliasNames, ","), nil})
-	}
+	})
 }
 
 // GenerateSelectArgs 根据modelData生成SelectArgs
 func GenerateSelectArgs(modelData any, connector string) *[]*SelectArgs {
 	selectArgsList := make([]*SelectArgs, 0)
-	generateSelectArgs(reflect.TypeOf(modelData), &selectArgsList, connector)
+	generateSelectArgs(reflect.TypeOf(modelData), connector, &selectArgsList)
 	return &selectArgsList
+}
+
+// 根据dataType生成JoinArgs
+// 迭代dataType的字段：
+//
+//	匿名字段递归调用
+//	非匿名字段且带有join标签的struct类型字段：
+//		解析join标签，生成JoinArgs
+func generateJoinArgs(dataType reflect.Type, mainTable string, paramArgs ParamArgs, joinArgsList *[]*JoinArgs) {
+	iterateDataTypeFields(dataType, func(typeField reflect.StructField, typeFieldType reflect.Type) {
+		// 无join标签，跳过
+		join := typeField.Tag.Get("join")
+		if join == "" {
+			return
+		}
+		// 非匿名struct且具有join标签，解析join标签，生成JoinArgs
+		splitRes := strings.Split(join, ";")
+		if len(splitRes) < 3 {
+			return
+		}
+		table := splitRes[0]
+		joinType := JoinType(splitRes[1])
+		if table == "" || joinType == "" {
+			return
+		}
+		if table == mainTable {
+			return
+		}
+		switch joinType {
+		case "inner":
+			joinType = JoinTypeInner
+		case "left":
+			joinType = JoinTypeLeft
+		case "right":
+			joinType = JoinTypeRight
+		default:
+			return
+		}
+		joinTableFieldHandler := func(value string) (joinField string, joinTable string, joinArgs any, res bool) {
+			joinTableFieldSplitRes := strings.Split(value, ".")
+			if len(joinTableFieldSplitRes) == 1 {
+				joinField = joinTableFieldSplitRes[0]
+			} else if len(joinTableFieldSplitRes) >= 2 {
+				joinTable = joinTableFieldSplitRes[0]
+				joinField = joinTableFieldSplitRes[1]
+			}
+			res = false
+			if strings.HasPrefix(joinField, "?") {
+				joinFieldParamArgAny, ok := paramArgs[joinField]
+				if ok {
+					joinField = "?"
+					joinTable = "?"
+					joinArgs = joinFieldParamArgAny
+					res = true
+				}
+				return
+			}
+			if strings.HasPrefix(joinField, "#") {
+				joinFieldParamArgAny, ok := paramArgs[joinField]
+				if joinFieldParamArg, ok1 := joinFieldParamArgAny.(string); ok && ok1 {
+					joinField = joinFieldParamArg
+				} else {
+					return
+				}
+			}
+			if strings.HasPrefix(joinTable, "#") {
+				joinTableParamArgAny, ok := paramArgs[joinTable]
+				if joinTableParamArg, ok1 := joinTableParamArgAny.(string); ok && ok1 {
+					joinTable = joinTableParamArg
+				} else {
+					return
+				}
+			}
+			res = true
+			return
+		}
+		joinOnArgs := make([]any, 0)
+		onList := make([]JoinArgsOn, 0, len(splitRes)-2)
+		for _, onStr := range splitRes[2:] {
+			joinArgsOn := JoinArgsOn{}
+			onSplitRes := strings.Split(onStr, ",")
+			if joinArgsOn.Field = onSplitRes[0]; joinArgsOn.Field == "" {
+				continue
+			}
+			if len(onSplitRes) >= 2 {
+				matches := regexp.MustCompile(`\[(.*?)]`).FindAllStringSubmatch(onSplitRes[1], -1)
+				ok := false
+				var joinOnArg any
+				if len(matches) > 0 {
+					matchRes := matches[0][1]
+					matchResSplitRes := strings.Split(matchRes, " ")
+					for _, matchResItem := range matchResSplitRes {
+						var joinField, joinTable string
+						joinField, joinTable, joinOnArg, ok = joinTableFieldHandler(matchResItem)
+						if !ok {
+							continue
+						}
+						joinArgsOn.JoinField = joinField
+						joinArgsOn.JoinTable = joinTable
+						break
+					}
+				}
+				if !ok {
+					joinArgsOn.JoinField, joinArgsOn.JoinTable, joinOnArg, ok = joinTableFieldHandler(onSplitRes[1])
+				}
+				if joinOnArg != nil {
+					joinOnArgs = append(joinOnArgs, joinOnArg)
+				}
+			}
+			if joinArgsOn.JoinField == "" {
+				joinArgsOn.JoinField = joinArgsOn.Field
+			}
+			if len(onSplitRes) >= 3 {
+				joinArgsOn.JoinTable = onSplitRes[2]
+			}
+			if joinArgsOn.JoinTable == "" {
+				joinArgsOn.JoinTable = mainTable
+			}
+			if joinArgsOn.JoinTable == "" {
+				continue
+			}
+			onList = append(onList, joinArgsOn)
+		}
+		if len(onList) == 0 {
+			return
+		}
+		*joinArgsList = append(*joinArgsList, &JoinArgs{Table: table, Type: joinType, On: onList, OnArgs: joinOnArgs})
+	})
+}
+
+// GenerateJoinArgs 根据modelData生成JoinArgs
+func GenerateJoinArgs(modelData any, mainTable string, paramArgs ParamArgs) *[]*JoinArgs {
+	joinArgsList := make([]*JoinArgs, 0)
+	generateJoinArgs(reflect.TypeOf(modelData), mainTable, paramArgs, &joinArgsList)
+	return &joinArgsList
+}
+
+type ParamArgs map[string]any
+
+// MergeParamArgs 合并多个ParamArgs
+func (that ParamArgs) MergeParamArgs(paramArgsList ...ParamArgs) ParamArgs {
+	if len(paramArgsList) == 0 {
+		return that
+	}
+	for _, paramArgs := range paramArgsList {
+		for k, v := range paramArgs {
+			that[k] = v
+		}
+	}
+	return that
+}
+
+// GetParamArgsFromArgs 从args中获取ParamArgs，同时删除args中的ParamArgs
+func GetParamArgsFromArgs(args *[]any) ParamArgs {
+	paramArgs := ParamArgs{}
+	newArgs := make([]any, 0, len(*args))
+	for _, arg := range *args {
+		var p ParamArgs
+		var ok bool
+		if p, ok = arg.(ParamArgs); !ok {
+			if p1, ok := arg.(*ParamArgs); ok {
+				p = *p1
+			}
+		}
+		if p == nil {
+			newArgs = append(newArgs, arg)
+			continue
+		}
+		paramArgs.MergeParamArgs(p)
+	}
+	*args = newArgs
+	return paramArgs
 }
