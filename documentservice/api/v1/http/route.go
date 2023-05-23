@@ -1,8 +1,11 @@
 package http
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+	"protodesign.cn/kcserver/common"
+)
 
 func LoadRoutes(router *gin.Engine) {
-	apiGroup := router.Group("/api/v1")
+	apiGroup := router.Group(common.ApiVersionPath)
 	loadDocumentRoutes(apiGroup)
 }

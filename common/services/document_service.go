@@ -85,38 +85,27 @@ func (model *DocumentPermissionRequests) MarshalJSON() ([]byte, error) {
 }
 
 type DocumentQueryResItem struct {
-	User     User     `gorm:"embedded;embeddedPrefix:user__" json:"user" table:"user" join:"user;inner;id,#user_id"`
-	Document Document `gorm:"embedded;embeddedPrefix:document__" json:"document" table:"document" join:"document;inner;id,#document_id"`
+	Document Document `gorm:"embedded;embeddedPrefix:document__" json:"document" table:"document" join:"document;inner;id,[#document_id document_id]"`
+	User     User     `gorm:"embedded;embeddedPrefix:user__" json:"user" table:"user" join:"user;inner;id,[#user_id document.user_id]"`
 }
 
-type DocumentAndFavoritesQueryResItem struct {
+type AccessRecordAndFavoritesQueryResItem struct {
 	DocumentQueryResItem
-	DocumentFavorites DocumentFavorites `gorm:"embedded;embeddedPrefix:document_favorites__" json:"document_favorites" table:"document_favorites" join:"document_favorites;left;document_id,document.id;user_id,[?document_favorites_user_id document.user_id]"`
-	//DocumentFavorites DocumentFavorites `gorm:"embedded;embeddedPrefix:document_favorites__" json:"document_favorites" table:"document_favorites"`
-}
-
-type AccessRecordQueryResItem struct {
-	DocumentQueryResItem
-	DocumentAccessRecord DocumentAccessRecord `gorm:"embedded;embeddedPrefix:document_access_record__" json:"document_access_record" table:"document_access_record"`
+	DocumentFavorites    DocumentFavorites    `gorm:"embedded;embeddedPrefix:document_favorites__" json:"document_favorites" table:"document_favorites" join:"document_favorites;left;document_id,document.id;user_id,?user_id"`
+	DocumentAccessRecord DocumentAccessRecord `gorm:"embedded;embeddedPrefix:document_access_record__" json:"document_access_record" table:"document_access_record" join:"document_access_record;left;user_id,?user_id;document_id,document.id"`
 }
 
 // FindRecycleBinByUserId 查询用户的回收站列表
-func (s *DocumentService) FindRecycleBinByUserId(userId int64) *[]AccessRecordQueryResItem {
-	var result []AccessRecordQueryResItem
+func (s *DocumentService) FindRecycleBinByUserId(userId int64) *[]AccessRecordAndFavoritesQueryResItem {
+	var result []AccessRecordAndFavoritesQueryResItem
 	_ = s.Find(
 		&result,
+		&ParamArgs{"?user_id": userId},
 		&WhereArgs{"document.user_id = ? and document.deleted_at is not null and purged_at is null", []any{userId}},
-		ParamArgs{"#user_id": "user_id"},
-		&JoinArgsRaw{"left join document_access_record on document_access_record.user_id = document.user_id and document_access_record.document_id = document.id", nil},
 		&OrderLimitArgs{"document_access_record.last_access_time desc", 0},
 		&Unscoped{},
 	)
 	return &result
-}
-
-type AccessRecordAndFavoritesQueryResItem struct {
-	DocumentAndFavoritesQueryResItem
-	DocumentAccessRecord DocumentAccessRecord `gorm:"embedded;embeddedPrefix:document_access_record__" json:"document_access_record" table:"document_access_record" join:"document_access_record;left;user_id,document.user_id;document_id,document.id"`
 }
 
 // FindDocumentByUserId 查询用户的文档列表
@@ -124,9 +113,8 @@ func (s *DocumentService) FindDocumentByUserId(userId int64) *[]AccessRecordAndF
 	var result []AccessRecordAndFavoritesQueryResItem
 	_ = s.Find(
 		&result,
-		&JoinArgs{Table: "document_favorites", Type: JoinTypeLeft, On: []JoinArgsOn{{Field: "document_id", JoinField: "id", JoinTable: "document"}, {Field: "user_id", JoinField: "user_id", JoinTable: "document"}}},
+		&ParamArgs{"?user_id": userId},
 		&WhereArgs{"document.user_id = ?", []any{userId}},
-		ParamArgs{"#user_id": "user_id"},
 		&OrderLimitArgs{"document_access_record.last_access_time desc", 0},
 	)
 	return &result
@@ -137,8 +125,7 @@ func (s *DocumentService) FindAccessRecordsByUserId(userId int64) *[]AccessRecor
 	var result []AccessRecordAndFavoritesQueryResItem
 	_ = s.DocumentAccessRecordService.Find(
 		&result,
-		ParamArgs{"#user_id": "user_id", "#document_id": "document_id"},
-		&JoinArgs{Table: "document_favorites", Type: JoinTypeLeft, On: []JoinArgsOn{{Field: "document_id", JoinField: "document_id", JoinTable: "document_access_record"}, {Field: "user_id", JoinField: "user_id", JoinTable: "document_access_record"}}},
+		&ParamArgs{"?user_id": userId},
 		&WhereArgs{Query: "document_access_record.user_id = ? and document.deleted_at is null", Args: []any{userId}},
 		&OrderLimitArgs{"document_access_record.last_access_time desc", 0},
 	)
@@ -150,17 +137,16 @@ func (s *DocumentService) FindFavoritesByUserId(userId int64) *[]AccessRecordAnd
 	var result []AccessRecordAndFavoritesQueryResItem
 	_ = s.DocumentFavoritesService.Find(
 		&result,
-		WhereArgs{"document_favorites.user_id = ? and document.deleted_at is null and is_favorite = 1", []any{userId}},
-		ParamArgs{"#user_id": "user_id", "#document_id": "document_id"},
-		OrderLimitArgs{"document_access_record.last_access_time desc", 0},
+		&ParamArgs{"?user_id": userId},
+		&WhereArgs{"document_favorites.user_id = ? and document.deleted_at is null and document_favorites.is_favorite = 1", []any{userId}},
+		&OrderLimitArgs{"document_access_record.last_access_time desc", 0},
 	)
 	return &result
 }
 
 type DocumentSharesAndFavoritesQueryRes struct {
-	DocumentAndFavoritesQueryResItem
-	DocumentAccessRecord DocumentAccessRecord `gorm:"embedded;embeddedPrefix:document_access_record__" json:"document_access_record" table:"document_access_record"`
-	DocumentPermission   DocumentPermission   `gorm:"embedded;embeddedPrefix:document_permission__" json:"share_info" table:"document_permission"`
+	AccessRecordAndFavoritesQueryResItem
+	DocumentPermission DocumentPermission `gorm:"embedded;embeddedPrefix:document_permission__" json:"document_permission" table:"document_permission" join:"document_permission;left;resource_type,?resource_type;resource_id,?resource_id;grantee_type,?grantee_type;grantee_id,?user_id"`
 }
 
 // FindSharesByUserId 查询用户加入的文档分享列表
@@ -168,24 +154,22 @@ func (s *DocumentService) FindSharesByUserId(userId int64) *[]DocumentSharesAndF
 	var result []DocumentSharesAndFavoritesQueryRes
 	_ = s.DocumentPermissionService.Find(
 		&result,
-		WhereArgs{
+		&ParamArgs{"#document_id": "resource_id", "?user_id": userId},
+		&WhereArgs{
 			"document_permission.resource_type = ?" +
 				" and document_permission.grantee_type = ?" +
 				" and document_permission.grantee_id = ?" +
 				" and document.deleted_at is null",
 			[]any{models.ResourceTypeDoc, models.GranteeTypeExternal, userId},
 		},
-		ParamArgs{"#user_id": "grantee_id", "#document_id": "resource_id"},
-		&JoinArgs{Table: "document_favorites", Type: JoinTypeLeft, On: []JoinArgsOn{{Field: "document_id", JoinField: "resource_id", JoinTable: "document_permission"}, {Field: "user_id", JoinField: "grantee_id", JoinTable: "document_permission"}}},
-		JoinArgsRaw{"left join document_access_record on document_access_record.user_id = document_permission.grantee_id and document_access_record.document_id = document_permission.resource_id", nil},
-		OrderLimitArgs{"document_access_record.last_access_time desc", 0},
+		&OrderLimitArgs{"document_access_record.last_access_time desc", 0},
 	)
 	return &result
 }
 
 type DocumentSharesQueryRes struct {
 	DocumentQueryResItem
-	DocumentPermission DocumentPermission `gorm:"embedded;embeddedPrefix:document_permission__" json:"share_info" table:"document_permission"`
+	DocumentPermission DocumentPermission `gorm:"embedded;embeddedPrefix:document_permission__" json:"document_permission" table:"document_permission" join:"document_permission;left;resource_type,?resource_type;resource_id,?resource_id;grantee_type,?grantee_type;grantee_id,?user_id"`
 }
 
 // FindSharesByDocumentId 查询某个文档对所有用户的分享列表
@@ -193,26 +177,25 @@ func (s *DocumentService) FindSharesByDocumentId(documentId int64) *[]DocumentSh
 	var result []DocumentSharesQueryRes
 	_ = s.DocumentPermissionService.Find(
 		&result,
-		WhereArgs{
+		&ParamArgs{"#user_id": "document_permission.grantee_id"},
+		&WhereArgs{
 			"document_permission.resource_type = ?" +
 				" and document_permission.resource_id = ?" +
 				" and document_permission.grantee_type = ?" +
 				" and document.deleted_at is null",
 			[]any{models.ResourceTypeDoc, documentId, models.GranteeTypeExternal},
 		},
-		ParamArgs{"#user_id": "grantee_id", "#document_id": "resource_id"},
-		//SelectArgs{"user.*, document.*, document_permission.perm_type, document_permission.id", nil},
-		OrderLimitArgs{"document_permission.id desc", 0},
+		&ParamArgs{"#document_id": "resource_id"},
+		&OrderLimitArgs{"document_permission.id desc", 0},
 	)
 	return &result
 }
 
 type DocumentInfoQueryRes struct {
 	models.DefaultModelData
-	DocumentAndFavoritesQueryResItem
-	DocumentPermission DocumentPermission `gorm:"embedded;embeddedPrefix:document_permission__" json:"document_permission" table:"document_permission"`
-	SharesCount        int64              `json:"shares_count"`
-	ApplicationCount   int64              `json:"application_count"`
+	DocumentSharesAndFavoritesQueryRes
+	SharesCount      int64 `json:"shares_count"`
+	ApplicationCount int64 `json:"application_count"`
 }
 
 // GetDocumentInfoByDocumentAndUserId 查询某个文档对某个用户的信息
@@ -221,18 +204,8 @@ func (s *DocumentService) GetDocumentInfoByDocumentAndUserId(documentId int64, u
 	if err := s.Get(
 		&result,
 		"document.id = ?", documentId,
-		ParamArgs{"#user_id": "user_id", "?document_favorites_user_id": userId},
-		JoinArgsRaw{"left join document_access_record on document_access_record.document_id = document.id and document_access_record.user_id = ?", []any{userId}},
-		JoinArgsRaw{"left join document_favorites on document_favorites.document_id = document.id and document_favorites.user_id = ?", []any{userId}},
-		JoinArgsRaw{
-			"left join document_permission on" +
-				" document_permission.resource_type = ?" +
-				" and document_permission.resource_id = ?" +
-				" and document_permission.grantee_type = ?" +
-				" and document_permission.grantee_id = ?",
-			[]any{models.ResourceTypeDoc, documentId, models.GranteeTypeExternal, userId},
-		},
-		OrderLimitArgs{"document_access_record.last_access_time desc", 0},
+		&ParamArgs{"?user_id": userId, "?resource_type": models.ResourceTypeDoc, "?resource_id": documentId, "?grantee_type": models.GranteeTypeExternal},
+		&OrderLimitArgs{"document_access_record.last_access_time desc", 0},
 	); err != nil {
 		return nil
 	}
@@ -335,21 +308,18 @@ type PermissionRequestsQueryResItem struct {
 // FindPermissionRequests 获取用户所创建文档的权限申请列表
 func (s *DocumentService) FindPermissionRequests(userId int64, documentId int64, startTime string) *[]PermissionRequestsQueryResItem {
 	var result []PermissionRequestsQueryResItem
-	whereArgs := WhereArgs{Query: "document_permission_requests.status = 0 and document.user_id = ?", Args: []any{userId}}
+	whereArgsList := []WhereArgs{{Query: "document.user_id = ?", Args: []any{userId}}}
 	if documentId != 0 {
-		whereArgs.Query += " and document.id = ?"
-		whereArgs.Args = append(whereArgs.Args, documentId)
+		whereArgsList = append(whereArgsList, WhereArgs{Query: "document.id = ?", Args: []any{documentId}})
 	}
 	if startTime != "" {
-		whereArgs.Query += " and document_permission_requests.created_at >= ? and document_permission_requests.first_displayed_at is null"
-		whereArgs.Args = append(whereArgs.Args, startTime)
+		whereArgsList = append(whereArgsList, WhereArgs{Query: "document_permission_requests.status = 0 and document_permission_requests.created_at >= ? and document_permission_requests.first_displayed_at is null", Args: []any{startTime}})
 	}
 	_ = s.DocumentPermissionRequestsService.Find(
 		&result,
-		whereArgs,
-		ParamArgs{"#user_id": "user_id", "#document_id": "document_id"},
-		//SelectArgs{"user.*, document.*, document_permission_requests.*, document_permission.perm_type", nil},
-		OrderLimitArgs{"document_permission_requests.id desc", 0},
+		&ParamArgs{"#user_id": "document_permission_requests.user_id"},
+		whereArgsList,
+		&OrderLimitArgs{"document_permission_requests.id desc", 0},
 	)
 	return &result
 }

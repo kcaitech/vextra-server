@@ -477,8 +477,10 @@ func AddCond(db *gorm.DB, args ...any) error {
 				if on.JoinTable != "" {
 					on.JoinTable = ""
 				}
+			} else {
+				on.JoinTable += "."
 			}
-			onList = append(onList, fmt.Sprintf("%s.%s=%s.%s", argv.Table, on.Field, on.JoinTable, on.JoinField))
+			onList = append(onList, fmt.Sprintf("%s.%s=%s%s", argv.Table, on.Field, on.JoinTable, on.JoinField))
 		}
 		if len(argv.OnArgs) != argsNum {
 			return errors.New("JoinArgs.OnArgs错误")
@@ -872,10 +874,8 @@ func iterateDataTypeFields(dataType reflect.Type, handler func(typeField reflect
 
 // 根据dataType生成SelectArgs
 // 迭代dataType的字段：
-//
-//	匿名字段递归调用
-//	非匿名字段且带有table标签的struct类型字段：
-//		获取其内部的所有非匿名公开字段，对于其内部的匿名公开struct字段则递归获取
+// 匿名字段递归调用
+// 非匿名字段且带有table标签的struct类型字段：获取其内部的所有非匿名公开字段，对于其内部的匿名公开struct字段则递归获取
 func generateSelectArgs(dataType reflect.Type, connector string, selectArgsList *[]*SelectArgs) {
 	if connector == "" {
 		connector = "__"
@@ -930,11 +930,9 @@ func GenerateSelectArgs(modelData any, connector string) *[]*SelectArgs {
 }
 
 // 根据dataType生成JoinArgs
-// 迭代dataType的字段：
-//
-//	匿名字段递归调用
-//	非匿名字段且带有join标签的struct类型字段：
-//		解析join标签，生成JoinArgs
+// 迭代dataType的字段
+// 匿名字段递归调用
+// 非匿名字段且带有join标签的struct类型字段：解析join标签，生成JoinArgs
 func generateJoinArgs(dataType reflect.Type, mainTable string, paramArgs ParamArgs, joinArgsList *[]*JoinArgs) {
 	iterateDataTypeFields(dataType, func(typeField reflect.StructField, typeFieldType reflect.Type) {
 		// 无join标签，跳过
@@ -1039,8 +1037,10 @@ func generateJoinArgs(dataType reflect.Type, mainTable string, paramArgs ParamAr
 			if joinArgsOn.JoinField == "" {
 				joinArgsOn.JoinField = joinArgsOn.Field
 			}
-			if len(onSplitRes) >= 3 {
-				joinArgsOn.JoinTable = onSplitRes[2]
+			joinTableFieldSplitRes := strings.Split(joinArgsOn.JoinField, ".")
+			if len(joinTableFieldSplitRes) >= 2 {
+				joinArgsOn.JoinTable = joinTableFieldSplitRes[0]
+				joinArgsOn.JoinField = joinTableFieldSplitRes[1]
 			}
 			if joinArgsOn.JoinTable == "" {
 				joinArgsOn.JoinTable = mainTable
