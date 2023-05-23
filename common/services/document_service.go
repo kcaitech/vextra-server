@@ -3,6 +3,7 @@ package services
 import (
 	"gorm.io/gorm"
 	"protodesign.cn/kcserver/common/models"
+	"protodesign.cn/kcserver/utils/sliceutil"
 	"protodesign.cn/kcserver/utils/time"
 )
 
@@ -194,8 +195,9 @@ func (s *DocumentService) FindSharesByDocumentId(documentId int64) *[]DocumentSh
 type DocumentInfoQueryRes struct {
 	models.DefaultModelData
 	DocumentSharesAndFavoritesQueryRes
-	SharesCount      int64 `json:"shares_count"`
-	ApplicationCount int64 `json:"application_count"`
+	DocumentPermissionRequests []DocumentPermissionRequests `json:"apply_list"`
+	SharesCount                int64                        `json:"shares_count"`
+	ApplicationCount           int64                        `json:"application_count"`
 }
 
 // GetDocumentInfoByDocumentAndUserId 查询某个文档对某个用户的信息
@@ -229,18 +231,22 @@ func (s *DocumentService) GetDocumentInfoByDocumentAndUserId(documentId int64, u
 		"resource_type = ? and resource_id = ? and grantee_type = ?",
 		models.ResourceTypeDoc, documentId, models.GranteeTypeExternal,
 	)
-	var whereArgsList []*WhereArgs
-	whereArgsList = append(whereArgsList, &WhereArgs{
+	whereArgsList := []*WhereArgs{{
 		"user_id = ? and document_id = ?",
 		[]any{userId, documentId},
-	})
+	}}
 	if permType != models.PermTypeNone {
 		whereArgsList = append(whereArgsList, &WhereArgs{
 			"perm_type = ?",
 			[]any{permType},
 		})
 	}
-	_ = s.DocumentPermissionRequestsService.Count(&result.ApplicationCount, whereArgsList)
+	_ = s.DocumentPermissionRequestsService.Find(&result.DocumentPermissionRequests, "user_id = ? and document_id = ?", userId, documentId)
+	if permType != models.PermTypeNone {
+		result.ApplicationCount = int64(len(sliceutil.FilterT(func(item DocumentPermissionRequests) bool {
+			return item.PermType == permType
+		}, result.DocumentPermissionRequests...)))
+	}
 	return &result
 }
 

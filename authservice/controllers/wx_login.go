@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/gin-gonic/gin"
 	"io"
 	"log"
@@ -14,6 +13,7 @@ import (
 	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/common/services"
 	. "protodesign.cn/kcserver/utils/time"
+	"strconv"
 	"time"
 )
 
@@ -22,7 +22,7 @@ type wxLoginReq struct {
 }
 
 type wxLoginResp struct {
-	Id       int64  `json:"id"`
+	Id       string `json:"id"`
 	Nickname string `json:"nickname"`
 	Token    string `json:"token"`
 	Avatar   string `json:"avatar"`
@@ -156,7 +156,7 @@ func WxLogin(c *gin.Context) {
 	}
 	// 创建JWT
 	token, err := jwt.CreateJwt(&jwt.Data{
-		Id:       fmt.Sprintf("%d", user.Id),
+		Id:       strconv.FormatInt(user.Id, 10),
 		Nickname: user.Nickname,
 	})
 	if err != nil {
@@ -165,7 +165,7 @@ func WxLogin(c *gin.Context) {
 	}
 
 	response.Success(c, wxLoginResp{
-		Id:       user.Id,
+		Id:       strconv.FormatInt(user.Id, 10),
 		Nickname: user.Nickname,
 		Token:    token,
 		Avatar:   user.Avatar,
