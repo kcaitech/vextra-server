@@ -381,7 +381,7 @@ func UploadDocumentByUser(c *gin.Context) {
 		newDocument := models.Document{
 			UserId:  userId,
 			Path:    docPath,
-			DocType: models.DocTypePrivate,
+			DocType: models.DocTypeShareable,
 			Name:    documentMeta.Name,
 			Size:    size,
 		}
