@@ -716,31 +716,31 @@ func (s *DefaultService) Find(modelDataList models.ModelListData, args ...any) e
 }
 
 // HasWhere 判断是否存在搜索条件
-func HasWhere(args ...any) bool {
+func HasWhere(args *[]any) bool {
 	// args首个元素为string或args中存在WhereArgs
-	return len(args) > 0 && (str.IsString(args[0]) || len(sliceutil.Filter(func(item any) bool {
+	return len(*args) > 0 && (str.IsString((*args)[0]) || len(sliceutil.Filter(func(item any) bool {
 		_, ok := item.(WhereArgs)
 		return ok
-	}, args...)) > 0)
+	}, *args...)) > 0)
 }
 
 // AddIdCondIfNoWhere 如果没有传入搜索条件，则添加modelData中的Id字段作为搜索条件
 // 若原本就存在搜索条件，或成功添加Id条件，则返回true，否则返回false
-func AddIdCondIfNoWhere(modelData models.ModelData, args ...any) bool {
+func AddIdCondIfNoWhere(modelData models.ModelData, args *[]any) bool {
 	// 如果没有传入搜索条件，则添加modelData中的Id字段作为搜索条件
-	if !HasWhere(args...) {
+	if !HasWhere(args) {
 		// 无传入Id
 		if id := modelData.GetId(); id <= 0 {
 			return false
 		} else {
-			args = append(args, WhereArgs{Query: "id = ?", Args: []any{id}})
+			*args = append(*args, WhereArgs{Query: "id = ?", Args: []any{id}})
 		}
 	}
 	return true
 }
 
 func (s *DefaultService) updates(modelData models.ModelData, ignoreZero bool, args ...any) error {
-	if !AddIdCondIfNoWhere(modelData, args...) {
+	if !AddIdCondIfNoWhere(modelData, &args) {
 		return errors.New("无搜索条件")
 	}
 	db := s.DB.Model(s.Model)
@@ -764,15 +764,19 @@ func (s *DefaultService) updates(modelData models.ModelData, ignoreZero bool, ar
 }
 
 func (s *DefaultService) Updates(modelData models.ModelData, args ...any) error {
-	return s.updates(modelData, false, args...)
-}
-
-func (s *DefaultService) UpdatesIgnoreZero(modelData models.ModelData, args ...any) error {
 	return s.updates(modelData, true, args...)
 }
 
 func (s *DefaultService) UpdatesById(id int64, modelData models.ModelData) error {
 	return s.Updates(modelData, "id = ?", id)
+}
+
+func (s *DefaultService) UpdatesZero(modelData models.ModelData, args ...any) error {
+	return s.updates(modelData, false, args...)
+}
+
+func (s *DefaultService) UpdatesZeroById(id int64, modelData models.ModelData) error {
+	return s.UpdatesZero(modelData, "id = ?", id)
 }
 
 func (s *DefaultService) UpdateColumns(values map[string]any, args ...any) error {
@@ -801,7 +805,7 @@ func (s *DefaultService) UpdateColumnsById(id int64, values map[string]any) erro
 // Delete 软删除
 func (s *DefaultService) Delete(args ...any) error {
 	db := s.DB.Model(s.Model)
-	if !HasWhere(args...) {
+	if !HasWhere(&args) {
 		return errors.New("无搜索条件")
 	}
 	if err := AddCond(db, args...); err != nil {

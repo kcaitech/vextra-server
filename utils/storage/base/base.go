@@ -27,7 +27,8 @@ type Bucket interface {
 }
 
 type BucketConfig struct {
-	BucketName string `yaml:"bucketName"`
+	BucketName      string `yaml:"bucketName"`
+	FilesBucketName string `yaml:"filesBucketName"`
 }
 
 type Config struct {

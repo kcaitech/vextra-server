@@ -12,13 +12,28 @@ import (
 	"protodesign.cn/kcserver/common/jwt"
 	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/common/services"
+	"protodesign.cn/kcserver/utils/sliceutil"
+	"protodesign.cn/kcserver/utils/str"
 	. "protodesign.cn/kcserver/utils/time"
-	"strconv"
 	"time"
 )
 
 type wxLoginReq struct {
-	Code string `json:"code" binding:"required"`
+	Code       string `json:"code" binding:"required"`
+	InviteCode string `json:"invite_code" binding:"required"`
+}
+
+var InviteCodeList = []string{
+	"fo3yblC5",
+	"2gampt0q",
+	"d2z8ARv6",
+	"5oO63m7R",
+	"eDKn3m9P",
+	"69B833mt",
+	"rT4bKQ3h",
+	"QlIYCRWf",
+	"3pvn803r",
+	"84L0w5dS",
 }
 
 type wxLoginResp struct {
@@ -56,7 +71,12 @@ func WxLogin(c *gin.Context) {
 		response.BadRequest(c, err.Error())
 		return
 	}
-
+	if len(sliceutil.FilterT(func(code string) bool {
+		return req.InviteCode == code
+	}, InviteCodeList...)) == 0 {
+		response.BadRequest(c, "邀请码错误")
+		return
+	}
 	// Code换取AccessToken
 	// 发起请求
 	queryParams := url.Values{}
@@ -146,6 +166,7 @@ func WxLogin(c *gin.Context) {
 			WxRefreshToken:           wxAccessTokenResp.RefreshToken,
 			WxRefreshTokenCreateTime: t,
 			Avatar:                   wxUserInfoResp.Headimgurl,
+			Uid:                      str.GetUid(),
 		}
 		err := userService.Create(user)
 		if err != nil {
@@ -153,10 +174,22 @@ func WxLogin(c *gin.Context) {
 			response.Fail(c, "登陆失败")
 			return
 		}
+		go func(user *models.User, avatarUrl string) {
+			resp, err := http.Get(avatarUrl)
+			if err != nil {
+				log.Println("下载头像失败：", err)
+				return
+			}
+			defer resp.Body.Close()
+			if _, err := services.NewUserService().UploadAvatar(user, resp.Body, resp.ContentLength, resp.Header.Get("Content-Type")); err != nil {
+				log.Println("上传头像失败：", err)
+				return
+			}
+		}(user, wxUserInfoResp.Headimgurl)
 	}
 	// 创建JWT
 	token, err := jwt.CreateJwt(&jwt.Data{
-		Id:       strconv.FormatInt(user.Id, 10),
+		Id:       str.IntToString(user.Id),
 		Nickname: user.Nickname,
 	})
 	if err != nil {
@@ -165,7 +198,7 @@ func WxLogin(c *gin.Context) {
 	}
 
 	response.Success(c, wxLoginResp{
-		Id:       strconv.FormatInt(user.Id, 10),
+		Id:       str.IntToString(user.Id),
 		Nickname: user.Nickname,
 		Token:    token,
 		Avatar:   user.Avatar,

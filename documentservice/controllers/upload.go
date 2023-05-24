@@ -396,7 +396,7 @@ func UploadDocumentByUser(c *gin.Context) {
 			LastAccessTime: now,
 		})
 	} else {
-		if err := documentService.UpdatesById(docId, &document); err != nil {
+		if err := documentService.UpdatesZeroById(docId, &document); err != nil {
 			uploadError(err)
 			return
 		}
@@ -414,7 +414,7 @@ func UploadDocumentByUser(c *gin.Context) {
 			})
 		} else {
 			documentAccessRecord.LastAccessTime = now
-			_ = documentAccessRecordService.UpdatesById(documentAccessRecord.Id, &documentAccessRecord)
+			_ = documentAccessRecordService.UpdatesZeroById(documentAccessRecord.Id, &documentAccessRecord)
 		}
 	}
 

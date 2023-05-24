@@ -1,7 +1,12 @@
 package services
 
 import (
+	"errors"
+	"fmt"
+	"io"
 	"protodesign.cn/kcserver/common/models"
+	"protodesign.cn/kcserver/common/storage"
+	"protodesign.cn/kcserver/utils/str"
 )
 
 type UserService struct {
@@ -23,4 +28,42 @@ func (s *UserService) GetByNickname(nickname string) (*models.User, error) {
 		return nil, err
 	}
 	return &modelData, nil
+}
+
+func (s *UserService) UploadAvatar(user *models.User, file io.Reader, fileSize int64, contentType string) (string, error) {
+	if fileSize > 1024*1024*5 {
+		return "", errors.New("文件大小不能超过5MB")
+	}
+	var suffix string
+	switch contentType {
+	case "image/jpeg":
+		suffix = "jpg"
+	case "image/png":
+		suffix = "png"
+	case "image/gif":
+		suffix = "gif"
+	case "image/bmp":
+		suffix = "bmp"
+	case "image/tiff":
+		suffix = "tif"
+	case "image/webp":
+		suffix = "webp"
+	default:
+		return "", errors.New(fmt.Sprintf("不支持的文件类型：%s", contentType))
+	}
+	if user.Uid == "" {
+		user.Uid = str.GetUid()
+	}
+	fileName := fmt.Sprintf("%s.%s", str.GetUid(), suffix)
+	avatarPath := fmt.Sprintf("/users/%s/avatar/%s", user.Uid, fileName)
+	if _, err := storage.FilesBucket.PubObject(avatarPath, file, fileSize, contentType); err != nil {
+		return "", errors.New("上传文件失败")
+	}
+	user.Avatar = avatarPath
+	if s.UpdateColumnsById(user.Id, map[string]any{
+		"avatar": avatarPath,
+	}) != nil {
+		return "", errors.New("更新错误")
+	}
+	return avatarPath, nil
 }

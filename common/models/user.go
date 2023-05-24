@@ -14,6 +14,7 @@ type User struct {
 	WxRefreshToken           string    `gorm:"size:255" json:"wx_refresh_token"`
 	WxRefreshTokenCreateTime time.Time `gorm:"type:datetime(6)" json:"wx_refresh_token_create_time"`
 	Avatar                   string    `gorm:"size:256" json:"avatar"`
+	Uid                      string    `gorm:"unique;size:64" json:"uid"`
 }
 
 func (model *User) MarshalJSON() ([]byte, error) {

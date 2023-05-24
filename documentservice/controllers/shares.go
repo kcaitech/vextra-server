@@ -81,7 +81,7 @@ func SetDocumentShareType(c *gin.Context) {
 		return
 	}
 	document.DocType = docType
-	if err := documentService.UpdatesById(documentId, &document); err != nil {
+	if err := documentService.UpdatesZeroById(documentId, &document); err != nil {
 		response.Fail(c, "更新错误")
 		return
 	}
@@ -276,7 +276,7 @@ func GetDocumentPermissionRequestsList(c *gin.Context) {
 	permissionRequestsIdList := sliceutil.MapT(func(item services.PermissionRequestsQueryResItem) int64 {
 		return item.DocumentPermissionRequests.Id
 	}, *result...)
-	_ = documentService.UpdatesIgnoreZero(
+	_ = documentService.Updates(
 		&models.DocumentPermissionRequests{FirstDisplayedAt: myTime.Time(time.Now())},
 		"id in ?", permissionRequestsIdList,
 	)
@@ -330,7 +330,7 @@ func ReviewDocumentPermissionRequest(c *gin.Context) {
 	} else if approvalCode == 1 {
 		documentPermissionRequest.Status = models.StatusTypeApproved
 	}
-	if err := documentService.DocumentPermissionRequestsService.UpdatesById(documentPermissionRequestsId, &documentPermissionRequest); err != nil {
+	if err := documentService.DocumentPermissionRequestsService.UpdatesZeroById(documentPermissionRequestsId, &documentPermissionRequest); err != nil {
 		response.Fail(c, "更新错误")
 		return
 	}

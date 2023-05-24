@@ -11,7 +11,7 @@ import (
 )
 
 func Init() {
-	if _, err := storage.Init(""); err != nil {
+	if err := storage.Init(""); err != nil {
 		log.Fatalln("storage初始化失败：" + err.Error())
 	}
 }

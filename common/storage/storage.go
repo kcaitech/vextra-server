@@ -9,8 +9,9 @@ import (
 
 var Client base.Client
 var Bucket base.Bucket
+var FilesBucket base.Bucket
 
-func Init(filePath string) (base.Bucket, error) {
+func Init(filePath string) error {
 	conf := config.LoadConfig(filePath)
 
 	var providerConf base.Config
@@ -18,17 +19,20 @@ func Init(filePath string) (base.Bucket, error) {
 	case base.MINIO:
 		providerConf = conf.Minio
 	default:
-		return nil, errors.New("不支持的provider")
+		return errors.New("不支持的provider")
 	}
 
 	providerConf.ClientConfig.Provider = conf.Storage.Provider
 
 	var err error
 	if Client, err = storage.NewClient(&providerConf.ClientConfig); err != nil {
-		return nil, err
+		return err
 	}
 	Bucket = Client.NewBucket(&base.BucketConfig{
 		BucketName: providerConf.BucketName,
 	})
-	return Bucket, nil
+	FilesBucket = Client.NewBucket(&base.BucketConfig{
+		BucketName: providerConf.FilesBucketName,
+	})
+	return nil
 }

@@ -9,3 +9,4 @@ minio:
   stsAccessKeyID: "Gathooh88mba5H3y1"
   stsSecretAccessKey: "yFukp3vtIkUNck2XL3s2KOT4wyRPR71G1"
   bucketName: "document"
+  filesBucketName: "files"

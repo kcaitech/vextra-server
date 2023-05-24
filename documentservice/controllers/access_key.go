@@ -73,7 +73,7 @@ func GetDocumentAccessKey(c *gin.Context) {
 		}
 	} else {
 		documentAccessRecord.LastAccessTime = now
-		_ = documentService.DocumentAccessRecordService.UpdatesById(documentAccessRecord.Id, &documentAccessRecord)
+		_ = documentService.DocumentAccessRecordService.UpdatesZeroById(documentAccessRecord.Id, &documentAccessRecord)
 	}
 
 	response.Success(c, accessKey)
