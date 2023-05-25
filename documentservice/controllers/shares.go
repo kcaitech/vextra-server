@@ -81,9 +81,23 @@ func SetDocumentShareType(c *gin.Context) {
 		return
 	}
 	document.DocType = docType
-	if err := documentService.UpdatesZeroById(documentId, &document); err != nil {
+	if err := documentService.UpdatesById(documentId, &document); err != nil {
 		response.Fail(c, "更新错误")
 		return
+	}
+	if docType == models.DocTypePublicReadable || docType == models.DocTypePublicCommentable || docType == models.DocTypePublicEditable {
+		var permType models.PermType
+		switch docType {
+		case models.DocTypePublicReadable:
+			permType = models.PermTypeReadOnly
+		case models.DocTypePublicCommentable:
+			permType = models.PermTypeCommentable
+		case models.DocTypePublicEditable:
+			permType = models.PermTypeEditable
+		}
+		_ = documentService.DocumentPermissionService.UpdateColumns(map[string]any{
+			"perm_type": permType,
+		}, "resource_type = ? and resource_id = ? and grantee_type = ? and perm_source_type = ?", models.ResourceTypeDoc, documentId, models.GranteeTypeExternal, models.PermSourceTypeDefault)
 	}
 	response.Success(c, "")
 }
@@ -150,7 +164,11 @@ func SetDocumentSharePermission(c *gin.Context) {
 		}
 		return
 	}
-	_ = services.NewDocumentService().DocumentPermissionService.UpdateColumns(map[string]any{"perm_type": permType}, "id = ?", permissionId)
+	_ = services.NewDocumentService().DocumentPermissionService.UpdateColumns(
+		map[string]any{"perm_type": permType, "perm_source_type": models.PermSourceTypeCustom},
+		"id = ?",
+		permissionId,
+	)
 	response.Success(c, "")
 }
 
@@ -276,7 +294,7 @@ func GetDocumentPermissionRequestsList(c *gin.Context) {
 	permissionRequestsIdList := sliceutil.MapT(func(item services.PermissionRequestsQueryResItem) int64 {
 		return item.DocumentPermissionRequests.Id
 	}, *result...)
-	_ = documentService.Updates(
+	_ = documentService.UpdatesIgnoreZero(
 		&models.DocumentPermissionRequests{FirstDisplayedAt: myTime.Time(time.Now())},
 		"id in ?", permissionRequestsIdList,
 	)
@@ -330,13 +348,13 @@ func ReviewDocumentPermissionRequest(c *gin.Context) {
 	} else if approvalCode == 1 {
 		documentPermissionRequest.Status = models.StatusTypeApproved
 	}
-	if err := documentService.DocumentPermissionRequestsService.UpdatesZeroById(documentPermissionRequestsId, &documentPermissionRequest); err != nil {
+	if err := documentService.DocumentPermissionRequestsService.UpdatesById(documentPermissionRequestsId, &documentPermissionRequest); err != nil {
 		response.Fail(c, "更新错误")
 		return
 	}
 	if approvalCode == 1 {
 		var permType models.PermType
-		_ = documentService.GetSelfDocumentPermissionByDocumentAndUserId(
+		_ = documentService.GetSelfPermTypeByDocumentAndUserId(
 			&permType,
 			documentPermissionRequest.DocumentId,
 			documentPermissionRequest.UserId,
@@ -346,11 +364,12 @@ func ReviewDocumentPermissionRequest(c *gin.Context) {
 			return
 		}
 		if err := documentService.DocumentPermissionService.Create(&models.DocumentPermission{
-			ResourceType: models.ResourceTypeDoc,
-			ResourceId:   documentPermissionRequest.DocumentId,
-			GranteeType:  models.GranteeTypeExternal,
-			GranteeId:    documentPermissionRequest.UserId,
-			PermType:     documentPermissionRequest.PermType,
+			ResourceType:   models.ResourceTypeDoc,
+			ResourceId:     documentPermissionRequest.DocumentId,
+			GranteeType:    models.GranteeTypeExternal,
+			GranteeId:      documentPermissionRequest.UserId,
+			PermType:       documentPermissionRequest.PermType,
+			PermSourceType: models.PermSourceTypeCustom,
 		}); err != nil {
 			response.Fail(c, "新建错误")
 			return
@@ -376,7 +395,7 @@ func GetUserDocumentPerm(c *gin.Context) {
 		return
 	}
 	result := UserDocumentPermResp{}
-	if err := services.NewDocumentService().GetDocumentPermissionByDocumentAndUserId(&result.PermType, documentId, userId); err != nil {
+	if err := services.NewDocumentService().GetPermTypeByDocumentAndUserId(&result.PermType, documentId, userId); err != nil {
 		response.BadRequest(c, "文档不存在")
 		return
 	}

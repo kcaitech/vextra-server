@@ -38,13 +38,27 @@ func GetDocumentAccessKey(c *gin.Context) {
 	}
 
 	var permType models.PermType
-	if err := documentService.GetDocumentPermissionByDocumentAndUserId(&permType, documentId, userId); err != nil {
+	var isCreator bool
+	var documentPermission *models.DocumentPermission
+	if documentPermission, isCreator, err = documentService.GetDocumentPermissionByDocumentAndUserId(&permType, documentId, userId); err != nil {
 		response.Fail(c, "")
 		return
 	}
 	if permType <= models.PermTypeNone {
 		response.Forbidden(c, "")
 		return
+	}
+	if documentPermission == nil && !isCreator {
+		if err := documentService.DocumentPermissionService.Create(&models.DocumentPermission{
+			ResourceType: models.ResourceTypeDoc,
+			ResourceId:   documentId,
+			GranteeType:  models.GranteeTypeExternal,
+			GranteeId:    userId,
+			PermType:     permType,
+		}); err != nil {
+			response.Fail(c, "权限创建失败")
+			return
+		}
 	}
 
 	accessKey, err := storage.Bucket.GenerateAccessKey(
@@ -58,6 +72,7 @@ func GetDocumentAccessKey(c *gin.Context) {
 		return
 	}
 
+	// 插入/更新访问记录
 	now := myTime.Time(time.Now())
 	documentAccessRecord := models.DocumentAccessRecord{}
 	err = documentService.DocumentAccessRecordService.Get(&documentAccessRecord, "document_id = ? and user_id = ?", documentId, userId)
@@ -73,7 +88,7 @@ func GetDocumentAccessKey(c *gin.Context) {
 		}
 	} else {
 		documentAccessRecord.LastAccessTime = now
-		_ = documentService.DocumentAccessRecordService.UpdatesZeroById(documentAccessRecord.Id, &documentAccessRecord)
+		_ = documentService.DocumentAccessRecordService.UpdatesById(documentAccessRecord.Id, &documentAccessRecord)
 	}
 
 	response.Success(c, accessKey)

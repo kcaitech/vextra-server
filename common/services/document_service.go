@@ -216,30 +216,27 @@ func (s *DocumentService) GetDocumentInfoByDocumentAndUserId(documentId int64, u
 	} else if result.Document.DocType == models.DocTypePrivate {
 		result.DocumentPermission.PermType = models.PermTypeNone
 	}
-	if result.DocumentPermission.PermType == models.PermTypeNone {
-		switch result.Document.DocType {
-		case models.DocTypePublicReadable:
-			result.DocumentPermission.PermType = models.PermTypeReadOnly
-		case models.DocTypePublicCommentable:
-			result.DocumentPermission.PermType = models.PermTypeCommentable
-		case models.DocTypePublicEditable:
-			result.DocumentPermission.PermType = models.PermTypeEditable
-		}
-	}
 	_ = s.DocumentPermissionService.Count(
 		&result.SharesCount,
 		"resource_type = ? and resource_id = ? and grantee_type = ?",
 		models.ResourceTypeDoc, documentId, models.GranteeTypeExternal,
 	)
-	whereArgsList := []*WhereArgs{{
-		"user_id = ? and document_id = ?",
-		[]any{userId, documentId},
-	}}
-	if permType != models.PermTypeNone {
-		whereArgsList = append(whereArgsList, &WhereArgs{
-			"perm_type = ?",
-			[]any{permType},
-		})
+	if result.DocumentPermission.PermType == models.PermTypeNone {
+		_ = s.DocumentPermissionService.Count(
+			&result.SharesCount,
+			"resource_type = ? and resource_id = ? and grantee_type = ?",
+			models.ResourceTypeDoc, documentId, models.GranteeTypeExternal,
+		)
+		if result.SharesCount < 5 {
+			switch result.Document.DocType {
+			case models.DocTypePublicReadable:
+				result.DocumentPermission.PermType = models.PermTypeReadOnly
+			case models.DocTypePublicCommentable:
+				result.DocumentPermission.PermType = models.PermTypeCommentable
+			case models.DocTypePublicEditable:
+				result.DocumentPermission.PermType = models.PermTypeEditable
+			}
+		}
 	}
 	_ = s.DocumentPermissionRequestsService.Find(&result.DocumentPermissionRequests, "user_id = ? and document_id = ?", userId, documentId)
 	if permType != models.PermTypeNone {
@@ -250,8 +247,8 @@ func (s *DocumentService) GetDocumentInfoByDocumentAndUserId(documentId int64, u
 	return &result
 }
 
-// GetSelfDocumentPermissionByDocumentAndUserId 获取用户对文档的权限（不包含文档本身的公共权限）
-func (s *DocumentService) GetSelfDocumentPermissionByDocumentAndUserId(permType *models.PermType, documentId int64, userId int64) error {
+// GetSelfPermTypeByDocumentAndUserId 获取用户对文档的权限（不包含文档本身的公共权限）
+func (s *DocumentService) GetSelfPermTypeByDocumentAndUserId(permType *models.PermType, documentId int64, userId int64) error {
 	var document models.Document
 	if err := s.GetById(documentId, &document); err != nil {
 		return err
@@ -272,28 +269,42 @@ func (s *DocumentService) GetSelfDocumentPermissionByDocumentAndUserId(permType 
 	return nil
 }
 
-// GetDocumentPermissionByDocumentAndUserId 获取用户对文档的权限（包含文档本身的公共权限）
-func (s *DocumentService) GetDocumentPermissionByDocumentAndUserId(permType *models.PermType, documentId int64, userId int64) error {
+// GetDocumentPermissionByDocumentAndUserId 获取用户的文档权限记录和用户的文档权限（包含文档本身的公共权限）
+// 第二个返回参数为“是否为文档创建人”
+func (s *DocumentService) GetDocumentPermissionByDocumentAndUserId(permType *models.PermType, documentId int64, userId int64) (*models.DocumentPermission, bool, error) {
 	var document models.Document
 	if err := s.GetById(documentId, &document); err != nil {
-		return err
+		return nil, false, err
 	}
-	if document.UserId == userId {
-		*permType = models.PermTypeEditable
-		return nil
-	}
-	var documentPermission models.DocumentPermission
+	documentPermission := &models.DocumentPermission{}
 	if err := s.DocumentPermissionService.Get(
-		&documentPermission,
+		documentPermission,
 		"resource_type = ? and resource_id = ? and grantee_type = ? and grantee_id = ?",
 		models.ResourceTypeDoc, documentId, models.GranteeTypeExternal, userId,
 	); err != nil && err != ErrRecordNotFound {
-		return err
+		return nil, false, err
+	} else if err == ErrRecordNotFound {
+		documentPermission = nil
+	}
+	if document.UserId == userId {
+		*permType = models.PermTypeEditable
+		return documentPermission, true, nil
 	}
 	*permType = documentPermission.PermType
 	if document.DocType == models.DocTypePrivate {
 		*permType = models.PermTypeNone
 	} else if *permType == models.PermTypeNone {
+		var sharesCount int64
+		if err := s.DocumentPermissionService.Count(
+			&sharesCount,
+			"resource_type = ? and resource_id = ? and grantee_type = ?",
+			models.ResourceTypeDoc, documentId, models.GranteeTypeExternal,
+		); err != nil {
+			return nil, false, err
+		}
+		if sharesCount >= 5 {
+			return nil, false, nil
+		}
 		switch document.DocType {
 		case models.DocTypePublicReadable:
 			*permType = models.PermTypeReadOnly
@@ -302,6 +313,14 @@ func (s *DocumentService) GetDocumentPermissionByDocumentAndUserId(permType *mod
 		case models.DocTypePublicEditable:
 			*permType = models.PermTypeEditable
 		}
+	}
+	return documentPermission, false, nil
+}
+
+// GetPermTypeByDocumentAndUserId 获取用户对文档的权限（包含文档本身的公共权限）
+func (s *DocumentService) GetPermTypeByDocumentAndUserId(permType *models.PermType, documentId int64, userId int64) error {
+	if _, _, err := s.GetDocumentPermissionByDocumentAndUserId(permType, documentId, userId); err != nil {
+		return err
 	}
 	return nil
 }

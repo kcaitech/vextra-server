@@ -764,19 +764,19 @@ func (s *DefaultService) updates(modelData models.ModelData, ignoreZero bool, ar
 }
 
 func (s *DefaultService) Updates(modelData models.ModelData, args ...any) error {
-	return s.updates(modelData, true, args...)
+	return s.updates(modelData, false, args...)
 }
 
 func (s *DefaultService) UpdatesById(id int64, modelData models.ModelData) error {
 	return s.Updates(modelData, "id = ?", id)
 }
 
-func (s *DefaultService) UpdatesZero(modelData models.ModelData, args ...any) error {
-	return s.updates(modelData, false, args...)
+func (s *DefaultService) UpdatesIgnoreZero(modelData models.ModelData, args ...any) error {
+	return s.updates(modelData, true, args...)
 }
 
-func (s *DefaultService) UpdatesZeroById(id int64, modelData models.ModelData) error {
-	return s.UpdatesZero(modelData, "id = ?", id)
+func (s *DefaultService) UpdatesIgnoreZeroById(id int64, modelData models.ModelData) error {
+	return s.UpdatesIgnoreZero(modelData, "id = ?", id)
 }
 
 func (s *DefaultService) UpdateColumns(values map[string]any, args ...any) error {

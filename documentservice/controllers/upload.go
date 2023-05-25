@@ -170,7 +170,7 @@ func UploadDocumentByUser(c *gin.Context) {
 			return
 		}
 		var permType models.PermType
-		if err := documentService.GetDocumentPermissionByDocumentAndUserId(&permType, docId, userId); err != nil {
+		if err := documentService.GetPermTypeByDocumentAndUserId(&permType, docId, userId); err != nil {
 			uploadError(err)
 			return
 		}
@@ -396,7 +396,7 @@ func UploadDocumentByUser(c *gin.Context) {
 			LastAccessTime: now,
 		})
 	} else {
-		if err := documentService.UpdatesZeroById(docId, &document); err != nil {
+		if err := documentService.UpdatesById(docId, &document); err != nil {
 			uploadError(err)
 			return
 		}
@@ -414,7 +414,7 @@ func UploadDocumentByUser(c *gin.Context) {
 			})
 		} else {
 			documentAccessRecord.LastAccessTime = now
-			_ = documentAccessRecordService.UpdatesZeroById(documentAccessRecord.Id, &documentAccessRecord)
+			_ = documentAccessRecordService.UpdatesById(documentAccessRecord.Id, &documentAccessRecord)
 		}
 	}
 
