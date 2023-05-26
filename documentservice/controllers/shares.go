@@ -335,15 +335,21 @@ func ReviewDocumentPermissionRequest(c *gin.Context) {
 	var documentPermissionRequest models.DocumentPermissionRequests
 	if err := documentService.DocumentPermissionRequestsService.Get(
 		&documentPermissionRequest,
-		"document_permission_requests.id = ? and document_permission_requests.status = ? and document.user_id = ?",
-		documentPermissionRequestsId, models.StatusTypePending, userId,
-		services.JoinArgsRaw{Join: "inner join document on document.id = document_permission_requests.document_id", Args: nil},
+		&services.JoinArgsRaw{Join: "inner join document on document.id = document_permission_requests.document_id", Args: nil},
+		&services.WhereArgs{
+			Query: "document_permission_requests.id = ? and document_permission_requests.status = ? and document.user_id = ?",
+			Args:  []interface{}{documentPermissionRequestsId, models.StatusTypePending, userId},
+		},
 	); err != nil {
 		if err == services.ErrRecordNotFound {
 			response.Forbidden(c, "")
 		} else {
 			response.Fail(c, "查询错误")
 		}
+		return
+	}
+	if documentPermissionRequest.PermType < models.PermTypeReadOnly || documentPermissionRequest.PermType > models.PermTypeEditable {
+		response.BadRequest(c, "参数错误：documentPermissionRequest.PermType")
 		return
 	}
 	if approvalCode == 0 {
@@ -357,25 +363,38 @@ func ReviewDocumentPermissionRequest(c *gin.Context) {
 	}
 	if approvalCode == 1 {
 		var permType models.PermType
-		_ = documentService.GetSelfPermTypeByDocumentAndUserId(
+		documentPermission, _, err := documentService.GetDocumentPermissionByDocumentAndUserId(
 			&permType,
 			documentPermissionRequest.DocumentId,
 			documentPermissionRequest.UserId,
 		)
-		if documentPermissionRequest.PermType <= permType {
-			response.Success(c, "")
+		if err != nil {
+			response.Fail(c, "查询错误")
 			return
 		}
-		if err := documentService.DocumentPermissionService.Create(&models.DocumentPermission{
-			ResourceType:   models.ResourceTypeDoc,
-			ResourceId:     documentPermissionRequest.DocumentId,
-			GranteeType:    models.GranteeTypeExternal,
-			GranteeId:      documentPermissionRequest.UserId,
-			PermType:       documentPermissionRequest.PermType,
-			PermSourceType: models.PermSourceTypeCustom,
-		}); err != nil {
-			response.Fail(c, "新建错误")
-			return
+		if documentPermission == nil {
+			if err := documentService.DocumentPermissionService.Create(&models.DocumentPermission{
+				ResourceType:   models.ResourceTypeDoc,
+				ResourceId:     documentPermissionRequest.DocumentId,
+				GranteeType:    models.GranteeTypeExternal,
+				GranteeId:      documentPermissionRequest.UserId,
+				PermType:       documentPermissionRequest.PermType,
+				PermSourceType: models.PermSourceTypeCustom,
+			}); err != nil {
+				response.Fail(c, "新建错误")
+				return
+			}
+		} else {
+			if documentPermissionRequest.PermType <= permType {
+				response.Success(c, "")
+				return
+			} else {
+				documentPermission.PermType = documentPermissionRequest.PermType
+				if err := documentService.DocumentPermissionService.UpdatesById(documentPermission.Id, documentPermission); err != nil {
+					response.Fail(c, "更新错误")
+					return
+				}
+			}
 		}
 	}
 	response.Success(c, "")

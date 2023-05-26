@@ -76,8 +76,9 @@ func (model *DocumentAccessRecord) MarshalJSON() ([]byte, error) {
 }
 
 type DocumentPermission struct {
-	Id       int64           `json:"id"`
-	PermType models.PermType `json:"perm_type"`
+	Id             int64                 `json:"id"`
+	PermType       models.PermType       `json:"perm_type"`
+	PermSourceType models.PermSourceType `json:"perm_source_type"`
 }
 
 func (model *DocumentPermission) MarshalJSON() ([]byte, error) {

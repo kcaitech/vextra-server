@@ -19,8 +19,9 @@ import (
 )
 
 type wxLoginReq struct {
-	Code       string `json:"code" binding:"required"`
-	InviteCode string `json:"invite_code" binding:"required"`
+	Code string `json:"code" binding:"required"`
+	//InviteCode string `json:"invite_code" binding:"required"`
+	InviteCode string `json:"invite_code"`
 }
 
 var InviteCodeList = []string{
@@ -71,6 +72,7 @@ func WxLogin(c *gin.Context) {
 		response.BadRequest(c, err.Error())
 		return
 	}
+	req.InviteCode = "fo3yblC5"
 	if len(sliceutil.FilterT(func(code string) bool {
 		return req.InviteCode == code
 	}, InviteCodeList...)) == 0 {
