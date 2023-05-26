@@ -2,9 +2,11 @@ package services
 
 import (
 	"gorm.io/gorm"
+	"protodesign.cn/kcserver/common"
 	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/utils/sliceutil"
 	"protodesign.cn/kcserver/utils/time"
+	"strings"
 )
 
 type DocumentService struct {
@@ -33,8 +35,11 @@ type User struct {
 	Avatar   string `json:"avatar"`
 }
 
-func (model *User) MarshalJSON() ([]byte, error) {
-	return models.MarshalJSON(model)
+func (user *User) MarshalJSON() ([]byte, error) {
+	if strings.HasPrefix(user.Avatar, "/") {
+		user.Avatar = common.StorageHost + user.Avatar
+	}
+	return models.MarshalJSON(user)
 }
 
 type Document struct {
@@ -195,9 +200,9 @@ func (s *DocumentService) FindSharesByDocumentId(documentId int64) *[]DocumentSh
 type DocumentInfoQueryRes struct {
 	models.DefaultModelData
 	DocumentSharesAndFavoritesQueryRes
-	DocumentPermissionRequests []DocumentPermissionRequests `json:"apply_list"`
-	SharesCount                int64                        `json:"shares_count"`
-	ApplicationCount           int64                        `json:"application_count"`
+	DocumentPermissionRequests []DocumentPermissionRequests `gorm:"-" json:"apply_list"`
+	SharesCount                int64                        `gorm:"-" json:"shares_count"`
+	ApplicationCount           int64                        `gorm:"-" json:"application_count"`
 }
 
 // GetDocumentInfoByDocumentAndUserId 查询某个文档对某个用户的信息

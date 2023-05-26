@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"github.com/gin-gonic/gin"
+	"log"
 	"protodesign.cn/kcserver/common/gin/auth"
 	"protodesign.cn/kcserver/common/gin/response"
 	"protodesign.cn/kcserver/common/models"
@@ -294,10 +295,12 @@ func GetDocumentPermissionRequestsList(c *gin.Context) {
 	permissionRequestsIdList := sliceutil.MapT(func(item services.PermissionRequestsQueryResItem) int64 {
 		return item.DocumentPermissionRequests.Id
 	}, *result...)
-	_ = documentService.UpdatesIgnoreZero(
+	if err := documentService.DocumentPermissionRequestsService.UpdatesIgnoreZero(
 		&models.DocumentPermissionRequests{FirstDisplayedAt: myTime.Time(time.Now())},
 		"id in ?", permissionRequestsIdList,
-	)
+	); err != nil {
+		log.Println(err)
+	}
 	response.Success(c, result)
 }
 
