@@ -290,7 +290,10 @@ func (s *DocumentService) GetDocumentPermissionByDocumentAndUserId(permType *mod
 		*permType = models.PermTypeEditable
 		return documentPermission, true, nil
 	}
-	*permType = documentPermission.PermType
+	*permType = models.PermTypeNone
+	if documentPermission != nil {
+		*permType = documentPermission.PermType
+	}
 	if document.DocType == models.DocTypePrivate {
 		*permType = models.PermTypeNone
 	} else if *permType == models.PermTypeNone {
