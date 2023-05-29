@@ -1,11 +1,11 @@
-package migration
+package mysql
 
 import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 	"log"
-	"migration/config"
+	"mysql/config"
 )
 
 var DB *gorm.DB

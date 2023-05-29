@@ -62,3 +62,39 @@ func GetUserDocumentInfo(c *gin.Context) {
 		response.Success(c, result)
 	}
 }
+
+type SetDocumentNameReq struct {
+	DocId string `json:"doc_id" binding:"required"`
+	Name  string `json:"name" binding:"required"`
+}
+
+// SetDocumentName 设置文档名称
+func SetDocumentName(c *gin.Context) {
+	userId, err := auth.GetUserId(c)
+	if err != nil {
+		response.Unauthorized(c)
+		return
+	}
+	var req SetDocumentNameReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "")
+		return
+	}
+	documentId := str.DefaultToInt(req.DocId, 0)
+	if documentId <= 0 {
+		response.BadRequest(c, "参数错误：doc_id")
+		return
+	}
+	if err = services.NewDocumentService().UpdateColumns(
+		map[string]any{"name": req.Name},
+		"user_id = ? and id = ?", userId, documentId,
+	); err != nil && err != services.ErrRecordNotFound {
+		response.Fail(c, "删除错误")
+		return
+	}
+	if err == services.ErrRecordNotFound {
+		response.Forbidden(c, "")
+		return
+	}
+	response.Success(c, "")
+}

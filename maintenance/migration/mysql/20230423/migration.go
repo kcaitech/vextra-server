@@ -2,44 +2,49 @@ package main
 
 import (
 	"log"
-	"migration"
-	"migration/config"
+	"mysql"
+	"mysql/config"
 )
 
 func main() {
 	log.Println("开始运行")
 	var conf config.BaseConfiguration
 	config.LoadConfig("./config/config.yaml", &conf)
-	migration.Init(&conf)
+	mysql.Init(&conf)
 
 	var err error
 	log.Println("开始迁移User表")
-	if err = UserUp(migration.DB); err != nil {
+	if err = UserUp(mysql.DB); err != nil {
 		log.Fatalln("数据库迁移错误：" + err.Error())
 	}
 
 	log.Println("开始迁移Document表")
-	if err = DocumentUp(migration.DB); err != nil {
+	if err = DocumentUp(mysql.DB); err != nil {
 		log.Fatalln("数据库迁移错误：" + err.Error())
 	}
 
 	log.Println("开始迁移DocumentPermission表")
-	if err = DocumentPermissionUp(migration.DB); err != nil {
+	if err = DocumentPermissionUp(mysql.DB); err != nil {
 		log.Fatalln("数据库迁移错误：" + err.Error())
 	}
 
 	log.Println("开始迁移DocumentAccessRecord表")
-	if err = DocumentAccessRecordUp(migration.DB); err != nil {
+	if err = DocumentAccessRecordUp(mysql.DB); err != nil {
 		log.Fatalln("数据库迁移错误：" + err.Error())
 	}
 
 	log.Println("开始迁移DocumentFavorites表")
-	if err = DocumentFavoritesUp(migration.DB); err != nil {
+	if err = DocumentFavoritesUp(mysql.DB); err != nil {
 		log.Fatalln("数据库迁移错误：" + err.Error())
 	}
 
 	log.Println("开始迁移DocumentPermissionRequests表")
-	if err = DocumentPermissionRequestsUp(migration.DB); err != nil {
+	if err = DocumentPermissionRequestsUp(mysql.DB); err != nil {
+		log.Fatalln("数据库迁移错误：" + err.Error())
+	}
+
+	log.Println("开始迁移InviteCode表")
+	if err = InviteCodeUp(mysql.DB); err != nil {
 		log.Fatalln("数据库迁移错误：" + err.Error())
 	}
 

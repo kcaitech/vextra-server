@@ -15,6 +15,7 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 		router.PUT("/favorites", controllers.SetUserDocumentFavoriteStatus)
 		router.GET("/", controllers.GetUserDocumentList)
 		router.DELETE("/", controllers.DeleteUserDocument)
+		router.PUT("/name", controllers.SetDocumentName)
 		router.GET("/shares", controllers.GetUserDocumentSharesList)
 		router.DELETE("/share", controllers.DeleteUserShare)
 		router.GET("/recycle_bin", controllers.GetUserRecycleBinDocumentList)

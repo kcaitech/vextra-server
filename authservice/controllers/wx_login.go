@@ -72,13 +72,6 @@ func WxLogin(c *gin.Context) {
 		response.BadRequest(c, err.Error())
 		return
 	}
-	req.InviteCode = "fo3yblC5"
-	if len(sliceutil.FilterT(func(code string) bool {
-		return req.InviteCode == code
-	}, InviteCodeList...)) == 0 {
-		response.BadRequest(c, "邀请码错误")
-		return
-	}
 	// Code换取AccessToken
 	// 发起请求
 	queryParams := url.Values{}
@@ -150,7 +143,6 @@ func WxLogin(c *gin.Context) {
 
 	userService := services.NewUserService()
 
-	// 创建用户
 	user := &models.User{}
 	err = userService.Get(user, "wx_open_id = ?", wxAccessTokenResp.Openid)
 	if err != nil && err != services.ErrRecordNotFound {
@@ -159,6 +151,19 @@ func WxLogin(c *gin.Context) {
 		return
 	}
 	if err == services.ErrRecordNotFound {
+		// 邀请码校验
+		if len(sliceutil.FilterT(func(code string) bool {
+			return req.InviteCode == code
+		}, InviteCodeList...)) == 0 {
+			response.BadRequest(c, "邀请码错误")
+			return
+		}
+		// 开启事务
+		tx := models.DB.Begin()
+		userService.DB = tx
+		inviteCodeService := services.NewInviteCodeService()
+		inviteCodeService.DB = tx
+		// 创建用户
 		t := Time(time.Now())
 		user = &models.User{
 			Nickname:                 wxUserInfoResp.Nickname,
@@ -176,6 +181,22 @@ func WxLogin(c *gin.Context) {
 			response.Fail(c, "登陆失败")
 			return
 		}
+		// 邀请码校验
+		if inviteCodeService.Create(&models.InviteCode{
+			Code:   req.InviteCode,
+			UserId: user.Id,
+		}) != err {
+			tx.Rollback()
+			log.Println("创建邀请码记录失败：", err)
+			response.BadRequest(c, "邀请码错误")
+			return
+		}
+		if tx.Commit().Error != nil {
+			log.Println("事务提交失败：", err)
+			response.Fail(c, "登陆失败")
+			return
+		}
+		// 下载微信头像
 		go func(user *models.User, avatarUrl string) {
 			resp, err := http.Get(avatarUrl)
 			if err != nil {
