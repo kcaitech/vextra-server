@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"protodesign.cn/kcserver/authservice/config"
+	"protodesign.cn/kcserver/common"
 	"protodesign.cn/kcserver/common/gin/response"
 	"protodesign.cn/kcserver/common/jwt"
 	"protodesign.cn/kcserver/common/models"
@@ -15,6 +16,7 @@ import (
 	"protodesign.cn/kcserver/utils/sliceutil"
 	"protodesign.cn/kcserver/utils/str"
 	. "protodesign.cn/kcserver/utils/time"
+	"strings"
 	"time"
 )
 
@@ -42,6 +44,15 @@ type wxLoginResp struct {
 	Nickname string `json:"nickname"`
 	Token    string `json:"token"`
 	Avatar   string `json:"avatar"`
+}
+
+func (resp *wxLoginResp) MarshalJSON() ([]byte, error) {
+	if strings.HasPrefix(resp.Avatar, "/") {
+		resp.Avatar = common.StorageHost + resp.Avatar
+	}
+	return json.Marshal(struct {
+		wxLoginResp
+	}{wxLoginResp: *resp})
 }
 
 type wxAccessTokenResp struct {
@@ -220,7 +231,7 @@ func WxLogin(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, wxLoginResp{
+	response.Success(c, &wxLoginResp{
 		Id:       str.IntToString(user.Id),
 		Nickname: user.Nickname,
 		Token:    token,
