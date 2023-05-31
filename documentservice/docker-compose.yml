@@ -23,6 +23,7 @@ services:
       - ../common/jwt/config/config.yaml:/app/common/jwt/config/config.yaml
       - ../common/snowflake/config/config.yaml:/app/common/snowflake/config/config.yaml
       - ../common/storage/config/config.yaml:/app/common/storage/config/config.yaml
+      - ../common/mongo/config/config.yaml:/app/common/mongo/config/config.yaml
       - ./log/all.log:/app/log/all.log
 
 networks:

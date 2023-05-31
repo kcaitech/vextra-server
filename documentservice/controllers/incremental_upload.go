@@ -4,35 +4,32 @@ import (
 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"go.mongodb.org/mongo-driver/bson"
 	"io"
 	"log"
 	"net/http"
 	"protodesign.cn/kcserver/common/gin/response"
 	. "protodesign.cn/kcserver/common/jwt"
 	"protodesign.cn/kcserver/common/models"
+	"protodesign.cn/kcserver/common/mongo"
 	"protodesign.cn/kcserver/common/services"
+	"protodesign.cn/kcserver/utils/sliceutil"
 	"protodesign.cn/kcserver/utils/str"
 )
 
 // IncrementalUpload 增量上传
 func IncrementalUpload(c *gin.Context) {
-	type headerData struct {
-		Token string `json:"token"`
-		DocId string `json:"doc_id"`
+	type headerDataType struct {
+		Token     string `json:"token"`
+		DocId     string `json:"doc_id"`
+		VersionId string `json:"version_id"`
 	}
 
-	type opData struct {
-		Code string `json:"code"`
-		Data struct {
-			DocumentMeta     json.RawMessage   `json:"document_meta"`
-			Pages            json.RawMessage   `json:"pages"`
-			PageRefartboards []json.RawMessage `json:"page_refartboards"`
-			PageRefsyms      []json.RawMessage `json:"page_refsyms"`
-			Artboards        json.RawMessage   `json:"artboards"`
-			ArtboardsRefsyms []json.RawMessage `json:"artboard_refsyms"`
-			Symbols          json.RawMessage   `json:"symbols"`
-			MediaNames       []string          `json:"media_names"`
-		} `json:"data"`
+	type CmdType map[string]any
+
+	type commitDataType struct {
+		Type string    `json:"type"`
+		Cmds []CmdType `json:"cmds"`
 	}
 
 	upgrader := websocket.Upgrader{
@@ -111,7 +108,7 @@ func IncrementalUpload(c *gin.Context) {
 		return
 	}
 	size += uint64(len(content))
-	var headerDataVal headerData
+	var headerDataVal headerDataType
 	if err := json.Unmarshal(content, &headerDataVal); err != nil {
 		paramsError("headerData")
 		return
@@ -122,11 +119,7 @@ func IncrementalUpload(c *gin.Context) {
 		paramsError("Token")
 		return
 	}
-	userId, err := str.ToInt(parseData.Id)
-	if err != nil {
-		paramsError("Id")
-		return
-	}
+	userId := str.DefaultToInt(parseData.Id, 0)
 	if userId <= 0 {
 		paramsError("Id")
 		return
@@ -142,6 +135,58 @@ func IncrementalUpload(c *gin.Context) {
 	if documentService.GetById(docId, &document) != nil {
 		paramsError("文档不存在")
 		return
+	}
+
+	_ = conn.WriteMessage(websocket.TextMessage, []byte("success"))
+
+	type documentDataType struct {
+		Id         string  `bson:"_id"`
+		DocumentId string  `bson:"document_id"`
+		UserId     string  `bson:"user_id"`
+		OriginalId string  `bson:"original_id"`
+		Cmd        CmdType `bson:"cmd"`
+	}
+
+	collection := mongo.DB.Collection("document")
+
+	documentUpdateList := []documentDataType{}
+	if cur, err := collection.Find(nil, bson.M{"document_id": headerDataVal.DocId}); err == nil {
+		if err := cur.All(nil, &documentUpdateList); err == nil && len(documentUpdateList) > 0 {
+			updateDataList := sliceutil.MapT(func(item documentDataType) CmdType {
+				item.Cmd["_serverId"] = item.Id
+				item.Cmd["documentId"] = item.DocumentId
+				item.Cmd["userId"] = item.UserId
+				item.Cmd["originalId"] = item.OriginalId
+				return item.Cmd
+			}, documentUpdateList...)
+			_ = conn.WriteJSON(&commitDataType{
+				Type: "update",
+				Cmds: updateDataList,
+			})
+		}
+	}
+
+	for {
+		commitDataVal := commitDataType{}
+		err := conn.ReadJSON(&commitDataVal)
+		if err != nil {
+			connError()
+			return
+		}
+		if commitDataVal.Type != "commit" {
+			continue
+		}
+		cmds := sliceutil.MapT(func(cmd CmdType) any {
+			return CmdType{
+				"document_id": headerDataVal.DocId,
+				"user_id":     parseData.Id,
+				"original_id": cmd["_unitId"],
+				"cmd":         cmd,
+			}
+		}, commitDataVal.Cmds...)
+		if _, err := collection.InsertMany(nil, cmds); err != nil {
+			log.Println("mongo插入失败", err)
+		}
 	}
 
 }

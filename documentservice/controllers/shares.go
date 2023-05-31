@@ -292,14 +292,16 @@ func GetDocumentPermissionRequestsList(c *gin.Context) {
 	}
 	documentService := services.NewDocumentService()
 	result := documentService.FindPermissionRequests(userId, documentId, startTimeStr)
-	permissionRequestsIdList := sliceutil.MapT(func(item services.PermissionRequestsQueryResItem) int64 {
-		return item.DocumentPermissionRequests.Id
-	}, *result...)
-	if err := documentService.DocumentPermissionRequestsService.UpdatesIgnoreZero(
-		&models.DocumentPermissionRequests{FirstDisplayedAt: myTime.Time(time.Now())},
-		"id in ?", permissionRequestsIdList,
-	); err != nil {
-		log.Println(err)
+	if len(*result) > 0 {
+		permissionRequestsIdList := sliceutil.MapT(func(item services.PermissionRequestsQueryResItem) int64 {
+			return item.DocumentPermissionRequests.Id
+		}, *result...)
+		if err := documentService.DocumentPermissionRequestsService.UpdatesIgnoreZero(
+			&models.DocumentPermissionRequests{FirstDisplayedAt: myTime.Time(time.Now())},
+			"id in ?", permissionRequestsIdList,
+		); err != nil {
+			log.Println(err)
+		}
 	}
 	response.Success(c, result)
 }

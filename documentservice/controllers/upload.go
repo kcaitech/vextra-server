@@ -20,27 +20,27 @@ import (
 	"time"
 )
 
-type headerData struct {
-	Token string `json:"token"`
-	DocId string `json:"doc_id"`
-}
-
-type uploadData struct {
-	Code string `json:"code"`
-	Data struct {
-		DocumentMeta     json.RawMessage   `json:"document_meta"`
-		Pages            json.RawMessage   `json:"pages"`
-		PageRefartboards []json.RawMessage `json:"page_refartboards"`
-		PageRefsyms      []json.RawMessage `json:"page_refsyms"`
-		Artboards        json.RawMessage   `json:"artboards"`
-		ArtboardsRefsyms []json.RawMessage `json:"artboard_refsyms"`
-		Symbols          json.RawMessage   `json:"symbols"`
-		MediaNames       []string          `json:"media_names"`
-	} `json:"data"`
-}
-
 // UploadDocumentByUser 用户上传文档
 func UploadDocumentByUser(c *gin.Context) {
+	type headerData struct {
+		Token string `json:"token"`
+		DocId string `json:"doc_id"`
+	}
+
+	type uploadData struct {
+		Code string `json:"code"`
+		Data struct {
+			DocumentMeta     json.RawMessage   `json:"document_meta"`
+			Pages            json.RawMessage   `json:"pages"`
+			PageRefartboards []json.RawMessage `json:"page_refartboards"`
+			PageRefsyms      []json.RawMessage `json:"page_refsyms"`
+			Artboards        json.RawMessage   `json:"artboards"`
+			ArtboardsRefsyms []json.RawMessage `json:"artboard_refsyms"`
+			Symbols          json.RawMessage   `json:"symbols"`
+			MediaNames       []string          `json:"media_names"`
+		} `json:"data"`
+	}
+
 	upgrader := websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool {
 			return true
@@ -150,11 +150,7 @@ func UploadDocumentByUser(c *gin.Context) {
 		paramsError("Token")
 		return
 	}
-	userId, err := str.ToInt(parseData.Id)
-	if err != nil {
-		paramsError("Id")
-		return
-	}
+	userId := str.DefaultToInt(parseData.Id, 0)
 	if userId <= 0 {
 		paramsError("Id")
 		return

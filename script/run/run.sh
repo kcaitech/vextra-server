@@ -25,7 +25,7 @@ function FindIndex() {
 }
 
 function RunService() {
-  local serviceList1=("mysql" "minio")
+  local serviceList1=("mysql" "minio" "mongo")
   local position=$(FindIndex "$1" "${serviceList1[@]}")
   if [ $position -ne -1 ]; then
     cd "$baseDir/docker_compose/$1"

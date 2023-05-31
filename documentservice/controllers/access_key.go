@@ -75,7 +75,7 @@ func GetDocumentAccessKey(c *gin.Context) {
 	// 插入/更新访问记录
 	now := myTime.Time(time.Now())
 	documentAccessRecord := models.DocumentAccessRecord{}
-	err = documentService.DocumentAccessRecordService.Get(&documentAccessRecord, "document_id = ? and user_id = ?", documentId, userId)
+	err = documentService.DocumentAccessRecordService.Get(&documentAccessRecord, "document_id = ? and user_id = ?", documentId, userId, &services.Unscoped{})
 	if err != nil {
 		if err != services.ErrRecordNotFound {
 			log.Println("documentAccessRecordService.Get错误：" + err.Error())
@@ -87,8 +87,10 @@ func GetDocumentAccessKey(c *gin.Context) {
 			})
 		}
 	} else {
-		documentAccessRecord.LastAccessTime = now
-		_ = documentService.DocumentAccessRecordService.UpdatesById(documentAccessRecord.Id, &documentAccessRecord)
+		_ = documentService.DocumentAccessRecordService.UpdateColumns(map[string]any{
+			"last_access_time": now,
+			"deleted_at":       nil,
+		}, "id = ?", documentAccessRecord.Id, &services.Unscoped{})
 	}
 
 	response.Success(c, accessKey)

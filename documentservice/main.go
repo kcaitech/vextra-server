@@ -5,6 +5,7 @@ import (
 	"log"
 	"protodesign.cn/kcserver/common/gin/start"
 	myInit "protodesign.cn/kcserver/common/init"
+	"protodesign.cn/kcserver/common/mongo"
 	"protodesign.cn/kcserver/common/storage"
 	httpApi "protodesign.cn/kcserver/documentservice/api/v1/http"
 	myConfig "protodesign.cn/kcserver/documentservice/config"
@@ -13,6 +14,9 @@ import (
 func Init() {
 	if err := storage.Init(""); err != nil {
 		log.Fatalln("storage初始化失败：" + err.Error())
+	}
+	if err := mongo.Init(""); err != nil {
+		log.Fatalln("mongo初始化失败：" + err.Error())
 	}
 }
 
