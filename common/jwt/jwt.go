@@ -26,8 +26,8 @@ func CreateJwt(jwtData *Data) (string, error) {
 	t.AddData("data", *jwtData)
 	now := time.Now()
 	t.SetRegisteredClaims(jwt.Payload{
-		Exp: now.Add(time.Hour * 24 * 7).Unix(), // 过期时间
-		Nbf: now.Unix(),                         // 生效时间
+		Exp: now.Add(time.Hour * time.Duration(config.Config.Jwt.ExpireHour)).Unix(), // 过期时间
+		Nbf: now.Unix(),                                                              // 生效时间
 	})
 	token, err := t.General()
 	if err != nil {

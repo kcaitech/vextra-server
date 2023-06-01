@@ -1,2 +1,3 @@
 jwt:
   secret: "123456"
+  expire_hour: 168 # 过期时间（小时）（7天）
