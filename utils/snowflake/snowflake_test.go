@@ -7,9 +7,9 @@ import (
 
 func TestRace(t *testing.T) {
 	snowFlake, _ := NewSnowFlake(1)
-	var id int64
+	idList := make([]int64, 0, 40000)
 	for i := 0; i < 40000; i++ {
-		id = snowFlake.NextId()
+		idList = append(idList, snowFlake.NextId()&16383)
 	}
-	log.Println(id)
+	log.Println(idList[16383-2 : 16383+2])
 }

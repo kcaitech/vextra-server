@@ -9,8 +9,8 @@ import (
 
 const (
 	epoch          int64 = 1672502400000               // 2023-01-01 00:00:00.000
-	workerIdBits   uint8 = 10                          // 机器ID的位数
-	sequenceBits   uint8 = 22 - workerIdBits           // 序列号的位数
+	workerIdBits   uint8 = 9                           // 机器ID的位数
+	sequenceBits   uint8 = 14                          // 序列号的位数
 	maxWorkerId    int64 = -1 ^ (-1 << workerIdBits)   // 机器ID的最大值
 	maxSequence    int64 = -1 ^ (-1 << sequenceBits)   // 序列号的最大值
 	workerIdShift  uint8 = sequenceBits                // 机器ID左移位数
@@ -44,7 +44,7 @@ func (snowFlake *SnowFlake) NextId() int64 {
 		timestamp = snowFlake.wait()
 	}
 
-	if snowFlake.lastTimestamp == timestamp {
+	if timestamp == snowFlake.lastTimestamp {
 		snowFlake.sequence = (snowFlake.sequence + 1) & maxSequence
 		// 序列号溢出，等待下一毫秒
 		if snowFlake.sequence == 0 {

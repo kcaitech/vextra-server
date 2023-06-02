@@ -13,6 +13,7 @@ import (
 	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/common/mongo"
 	"protodesign.cn/kcserver/common/services"
+	"protodesign.cn/kcserver/common/snowflake"
 	"protodesign.cn/kcserver/utils/sliceutil"
 	"protodesign.cn/kcserver/utils/str"
 )
@@ -140,11 +141,9 @@ func IncrementalUpload(c *gin.Context) {
 	_ = conn.WriteMessage(websocket.TextMessage, []byte("success"))
 
 	type documentDataType struct {
-		Id         string  `bson:"_id"`
-		DocumentId string  `bson:"document_id"`
-		UserId     string  `bson:"user_id"`
-		OriginalId string  `bson:"original_id"`
-		Cmd        CmdType `bson:"cmd"`
+		Id     int64   `bson:"_id"`
+		UserId string  `bson:"user_id"`
+		Cmd    CmdType `bson:"cmd"`
 	}
 
 	collection := mongo.DB.Collection("document")
@@ -153,10 +152,8 @@ func IncrementalUpload(c *gin.Context) {
 	if cur, err := collection.Find(nil, bson.M{"document_id": headerDataVal.DocId}); err == nil {
 		if err := cur.All(nil, &documentUpdateList); err == nil && len(documentUpdateList) > 0 {
 			updateDataList := sliceutil.MapT(func(item documentDataType) CmdType {
-				item.Cmd["_serverId"] = item.Id
-				item.Cmd["documentId"] = item.DocumentId
+				item.Cmd["_serverId"] = str.IntToString(item.Id)
 				item.Cmd["userId"] = item.UserId
-				item.Cmd["originalId"] = item.OriginalId
 				return item.Cmd
 			}, documentUpdateList...)
 			_ = conn.WriteJSON(&commitDataType{
@@ -178,9 +175,10 @@ func IncrementalUpload(c *gin.Context) {
 		}
 		cmds := sliceutil.MapT(func(cmd CmdType) any {
 			return CmdType{
+				"_id":         snowflake.NextId(),
 				"document_id": headerDataVal.DocId,
 				"user_id":     parseData.Id,
-				"original_id": cmd["_unitId"],
+				"unit_id":     cmd["_unitId"],
 				"cmd":         cmd,
 			}
 		}, commitDataVal.Cmds...)
