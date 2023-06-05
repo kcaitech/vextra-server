@@ -35,5 +35,7 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 		router.GET("/comments", controllers.GetDocumentComment)
 		router.POST("/comment", controllers.PostUserComment)
 		router.PUT("/comment", controllers.PutUserComment)
+		router.DELETE("/comment", controllers.DeleteUserComment)
+		router.PUT("/comment/status", controllers.SetUserCommentStatus)
 	}
 }
