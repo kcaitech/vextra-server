@@ -53,3 +53,7 @@ func (t Time) Value() (driver.Value, error) {
 	}
 	return timeData, nil
 }
+
+func (t Time) IsZero() bool {
+	return time.Time(t).IsZero()
+}

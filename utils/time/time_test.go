@@ -30,4 +30,6 @@ func TestTimeUnmarshalJSON(t *testing.T) {
 		t.Fatal(err)
 	}
 	log.Println(myTime)
+	log.Println(Time{}.IsZero())
+	log.Println(myTime.Time.IsZero())
 }
