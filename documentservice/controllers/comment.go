@@ -81,7 +81,7 @@ func GetDocumentComment(c *gin.Context) {
 	if cur, err := commentCollection.Find(nil, reqParams); err == nil {
 		_ = cur.All(nil, &documentCommentList)
 	}
-	response.Success(c, documentCommentList)
+	response.Success(c, &documentCommentList)
 }
 
 func PostUserComment(c *gin.Context) {
@@ -117,7 +117,7 @@ func PostUserComment(c *gin.Context) {
 		log.Println("mongo插入失败", err)
 		response.Fail(c, "评论失败")
 	}
-	response.Success(c, userComment)
+	response.Success(c, &userComment)
 }
 
 var errNoPermission = errors.New("无权限")
@@ -181,11 +181,11 @@ func PutUserComment(c *gin.Context) {
 		return
 	}
 	commentCollection := mongo.DB.Collection("comment")
-	if _, err := commentCollection.UpdateByID(nil, userComment.Id, bson.M{"$set": &userComment}); err != nil {
+	if _, err := commentCollection.UpdateOne(nil, bson.M{"id": userComment.Id}, bson.M{"$set": &userComment}); err != nil {
 		log.Println("mongo更新失败", err)
 		response.Fail(c, "更新失败")
 	}
-	response.Success(c, userComment)
+	response.Success(c, &userComment)
 }
 
 func DeleteUserComment(c *gin.Context) {
@@ -284,9 +284,9 @@ func SetUserCommentStatus(c *gin.Context) {
 		}
 	}
 	commentCollection := mongo.DB.Collection("comment")
-	if _, err := commentCollection.UpdateByID(nil, userComment.Id, bson.M{"$set": &userComment}); err != nil {
+	if _, err := commentCollection.UpdateOne(nil, bson.M{"id": userComment.Id}, bson.M{"$set": &userComment}); err != nil {
 		log.Println("mongo更新失败", err)
 		response.Fail(c, "更新失败")
 	}
-	response.Success(c, userComment)
+	response.Success(c, &userComment)
 }
