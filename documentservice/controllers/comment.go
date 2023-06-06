@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"log"
+	"protodesign.cn/kcserver/common"
 	"protodesign.cn/kcserver/common/gin/auth"
 	"protodesign.cn/kcserver/common/gin/response"
 	"protodesign.cn/kcserver/common/models"
@@ -14,6 +16,7 @@ import (
 	"protodesign.cn/kcserver/common/snowflake"
 	"protodesign.cn/kcserver/utils/str"
 	myTime "protodesign.cn/kcserver/utils/time"
+	"strings"
 	"time"
 )
 
@@ -24,6 +27,20 @@ const (
 	UserCommentStatusResolved
 )
 
+type UserType struct {
+	models.DefaultModelData
+	Id       string `json:"id" bson:"id,omitempty"`
+	Nickname string `json:"nickname" bson:"nickname,omitempty"`
+	Avatar   string `json:"avatar" bson:"avatar,omitempty"`
+}
+
+func (user *UserType) MarshalJSON() ([]byte, error) {
+	if strings.HasPrefix(user.Avatar, "/") {
+		user.Avatar = common.StorageHost + user.Avatar
+	}
+	return models.MarshalJSON(user)
+}
+
 type UserComment struct {
 	Id              string            `json:"id" bson:"_id"`
 	ParentId        string            `json:"parent_id" bson:"parent_id"`
@@ -33,7 +50,7 @@ type UserComment struct {
 	ShapeId         string            `json:"shape_id" bson:"shape_id" binding:"required"`
 	TargetShapeId   string            `json:"target_shape_id" bson:"target_shape_id" binding:"required"`
 	ShapeFrame      map[string]any    `json:"shape_frame" bson:"shape_frame"`
-	UserId          string            `json:"user_id" bson:"user_id"`
+	User            UserType          `json:"user" bson:"user"`
 	CreatedAt       string            `json:"created_at" bson:"created_at"`
 	RecordCreatedAt string            `json:"record_created_at" bson:"record_created_at"`
 	Content         string            `json:"content" bson:"content" binding:"required"`
@@ -78,7 +95,9 @@ func GetDocumentComment(c *gin.Context) {
 		reqParams["status"] = UserCommentStatus(str.DefaultToInt(c.Query("status"), 0))
 	}
 	commentCollection := mongo.DB.Collection("comment")
-	if cur, err := commentCollection.Find(nil, reqParams); err == nil {
+	findOptions := options.Find()
+	findOptions.SetSort(bson.D{{"record_created_at", -1}, {"_id", -1}})
+	if cur, err := commentCollection.Find(nil, reqParams, findOptions); err == nil {
 		_ = cur.All(nil, &documentCommentList)
 	}
 	response.Success(c, &documentCommentList)
@@ -106,7 +125,7 @@ func PostUserComment(c *gin.Context) {
 		return
 	}
 	userComment.Id = str.IntToString(snowflake.NextId())
-	userComment.UserId = str.IntToString(userId)
+	_ = services.NewUserService().GetById(userId, &userComment.User)
 	userComment.CreatedAt = myTime.Time(time.Now()).String()
 	if _, err := myTime.Parse(userComment.CreatedAt); err != nil {
 		userComment.RecordCreatedAt = userComment.CreatedAt
@@ -176,7 +195,7 @@ func PutUserComment(c *gin.Context) {
 			return
 		}
 	}
-	if comment.UserId != str.IntToString(userId) {
+	if comment.User.Id != str.IntToString(userId) {
 		response.Forbidden(c, "")
 		return
 	}
@@ -210,7 +229,7 @@ func DeleteUserComment(c *gin.Context) {
 		}
 	}
 	commentCollection := mongo.DB.Collection("comment")
-	if comment.UserId != str.IntToString(userId) {
+	if comment.User.Id != str.IntToString(userId) {
 		if str.DefaultToInt(comment.ParentId, 0) <= 0 {
 			response.Forbidden(c, "")
 			return
@@ -226,7 +245,7 @@ func DeleteUserComment(c *gin.Context) {
 			response.Fail(c, "文档数据错误")
 			return
 		}
-		if comment.UserId != str.IntToString(userId) {
+		if comment.User.Id != str.IntToString(userId) {
 			response.Forbidden(c, "")
 			return
 		}
@@ -276,7 +295,7 @@ func SetUserCommentStatus(c *gin.Context) {
 		response.Fail(c, "当前状态不可修改")
 		return
 	}
-	if comment.UserId != str.IntToString(userId) {
+	if comment.User.Id != str.IntToString(userId) {
 		var count int64
 		if services.NewDocumentService().Count(&count, "id = ? and user_id = ?", comment.DocumentId, userId) != nil || count <= 0 {
 			response.Forbidden(c, "")
