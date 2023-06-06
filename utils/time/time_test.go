@@ -2,6 +2,7 @@ package time
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"testing"
 	"time"
@@ -32,4 +33,20 @@ func TestTimeUnmarshalJSON(t *testing.T) {
 	log.Println(myTime)
 	log.Println(Time{}.IsZero())
 	log.Println(myTime.Time.IsZero())
+}
+
+func TestTimeParse(t *testing.T) {
+	t0 := &Time{}
+	if err := t0.Parse("2023-04-25 16:15:00.133846"); err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(t0)
+	if err := t0.Parse("2023-04-25 16:15:00"); err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(t0)
+	if err := t0.Parse("2023-04-25"); err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(t0)
 }

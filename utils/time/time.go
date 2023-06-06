@@ -9,9 +9,14 @@ import (
 
 type Time time.Time
 
-const timeFormat = "2006-01-02 15:04:05.000000"
+var timeFormatList = []string{
+	"2006-01-02 15:04:05.000000",
+	"2006-01-02 15:04:05",
+	"2006-01-02",
+}
 
 func (t Time) MarshalJSON() ([]byte, error) {
+	timeFormat := timeFormatList[0]
 	data := make([]byte, 0, len(timeFormat)+2)
 	data = append(data, '"')
 	data = time.Time(t).AppendFormat(data, timeFormat)
@@ -19,12 +24,12 @@ func (t Time) MarshalJSON() ([]byte, error) {
 	return data, nil
 }
 
-func (t *Time) UnmarshalJSON(data []byte) error {
+func (t *Time) parse(data string, format string) error {
 	location, err := time.LoadLocation("Asia/Shanghai")
 	if err != nil {
 		location = time.Local
 	}
-	parseTime, err := time.ParseInLocation(`"`+timeFormat+`"`, string(data), location)
+	parseTime, err := time.ParseInLocation(format, data, location)
 	if err != nil {
 		return err
 	}
@@ -32,8 +37,45 @@ func (t *Time) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+func (t *Time) Parse(data string) error {
+	errList := make([]error, 0, len(timeFormatList))
+	for _, timeFormat := range timeFormatList {
+		if err := t.parse(data, timeFormat); err == nil {
+			return nil
+		} else {
+			errList = append(errList, err)
+		}
+	}
+	return errors.Join(errList...)
+}
+
+func Parse(data string) (*Time, error) {
+	errList := make([]error, 0, len(timeFormatList))
+	for _, timeFormat := range timeFormatList {
+		t := &Time{}
+		if err := t.parse(data, timeFormat); err != nil {
+			errList = append(errList, err)
+		} else {
+			return t, nil
+		}
+	}
+	return nil, errors.Join(errList...)
+}
+
+func (t *Time) UnmarshalJSON(data []byte) error {
+	errList := make([]error, 0, len(timeFormatList))
+	for _, timeFormat := range timeFormatList {
+		if err := t.parse(string(data), `"`+timeFormat+`"`); err != nil {
+			errList = append(errList, err)
+		} else {
+			return nil
+		}
+	}
+	return errors.Join(errList...)
+}
+
 func (t Time) String() string {
-	return time.Time(t).Format(timeFormat)
+	return time.Time(t).Format(timeFormatList[0])
 }
 
 func (t *Time) Scan(data any) error {
