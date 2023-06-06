@@ -21,8 +21,8 @@ import (
 )
 
 type wxLoginReq struct {
-	Code string `json:"code" binding:"required"`
-	//InviteCode string `json:"invite_code" binding:"required"`
+	Id         string `json:"id"`
+	Code       string `json:"code" binding:"required"`
 	InviteCode string `json:"invite_code"`
 }
 
@@ -83,6 +83,33 @@ func WxLogin(c *gin.Context) {
 		response.BadRequest(c, err.Error())
 		return
 	}
+
+	userService := services.NewUserService()
+
+	if req.Id != "" {
+		user := &models.User{}
+		if err := userService.Get(user, "id = ? and wx_login_code = ?", req.Id, req.Code); err != nil {
+			response.BadRequest(c, "参数错误：id")
+			return
+		}
+		// 创建JWT
+		token, err := jwt.CreateJwt(&jwt.Data{
+			Id:       str.IntToString(user.Id),
+			Nickname: user.Nickname,
+		})
+		if err != nil {
+			response.Fail(c, err.Error())
+			return
+		}
+		response.Success(c, &wxLoginResp{
+			Id:       str.IntToString(user.Id),
+			Nickname: user.Nickname,
+			Token:    token,
+			Avatar:   user.Avatar,
+		})
+		return
+	}
+
 	// Code换取AccessToken
 	// 发起请求
 	queryParams := url.Values{}
@@ -152,8 +179,6 @@ func WxLogin(c *gin.Context) {
 		return
 	}
 
-	userService := services.NewUserService()
-
 	user := &models.User{}
 	err = userService.Get(user, "wx_open_id = ?", wxAccessTokenResp.Openid)
 	if err != nil && err != services.ErrRecordNotFound {
@@ -162,18 +187,6 @@ func WxLogin(c *gin.Context) {
 		return
 	}
 	if err == services.ErrRecordNotFound {
-		// 邀请码校验
-		if len(sliceutil.FilterT(func(code string) bool {
-			return req.InviteCode == code
-		}, InviteCodeList...)) == 0 {
-			response.BadRequest(c, "邀请码错误")
-			return
-		}
-		// 开启事务
-		tx := models.DB.Begin()
-		userService.DB = tx
-		inviteCodeService := services.NewInviteCodeService()
-		inviteCodeService.DB = tx
 		// 创建用户
 		t := Time(time.Now())
 		user = &models.User{
@@ -185,25 +198,11 @@ func WxLogin(c *gin.Context) {
 			WxRefreshTokenCreateTime: t,
 			Avatar:                   wxUserInfoResp.Headimgurl,
 			Uid:                      str.GetUid(),
+			WxLoginCode:              req.Code,
 		}
 		err := userService.Create(user)
 		if err != nil {
 			log.Println(err)
-			response.Fail(c, "登陆失败")
-			return
-		}
-		// 邀请码校验
-		if inviteCodeService.Create(&models.InviteCode{
-			Code:   req.InviteCode,
-			UserId: user.Id,
-		}) != err {
-			tx.Rollback()
-			log.Println("创建邀请码记录失败：", err)
-			response.BadRequest(c, "邀请码错误")
-			return
-		}
-		if tx.Commit().Error != nil {
-			log.Println("事务提交失败：", err)
 			response.Fail(c, "登陆失败")
 			return
 		}
@@ -220,6 +219,31 @@ func WxLogin(c *gin.Context) {
 				return
 			}
 		}(user, wxUserInfoResp.Headimgurl)
+	}
+	if !user.IsActivated {
+		// 邀请码校验
+		if len(sliceutil.FilterT(func(code string) bool {
+			return req.InviteCode == code
+		}, InviteCodeList...)) == 0 {
+			//response.BadRequest(c, "邀请码错误")
+			response.Resp(c, http.StatusBadRequest, "邀请码错误", map[string]interface{}{"id": user.Id})
+			return
+		}
+		if services.NewInviteCodeService().Create(&models.InviteCode{
+			Code:   req.InviteCode,
+			UserId: user.Id,
+		}) != err {
+			log.Println("创建邀请码记录失败：", err)
+			//response.BadRequest(c, "邀请码错误")
+			response.Resp(c, http.StatusBadRequest, "邀请码错误", map[string]interface{}{"id": str.IntToString(user.Id)})
+			return
+		}
+		// 激活用户
+		user.IsActivated = true
+		if err := userService.Updates(user); err != nil {
+			response.Fail(c, "登陆失败")
+			return
+		}
 	}
 	// 创建JWT
 	token, err := jwt.CreateJwt(&jwt.Data{
