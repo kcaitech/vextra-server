@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"io"
 	"log"
 	"net/http"
@@ -16,6 +17,7 @@ import (
 	"protodesign.cn/kcserver/common/snowflake"
 	"protodesign.cn/kcserver/utils/sliceutil"
 	"protodesign.cn/kcserver/utils/str"
+	"time"
 )
 
 // IncrementalUpload 增量上传
@@ -53,6 +55,7 @@ func IncrementalUpload(c *gin.Context) {
 			msg,
 		))
 		hasClose = true
+		conn.Close()
 	}
 	connError := func() {
 		if hasClose {
@@ -109,13 +112,13 @@ func IncrementalUpload(c *gin.Context) {
 		return
 	}
 	size += uint64(len(content))
-	var headerDataVal headerDataType
-	if err := json.Unmarshal(content, &headerDataVal); err != nil {
+	var headerData headerDataType
+	if err := json.Unmarshal(content, &headerData); err != nil {
 		paramsError("headerData")
 		return
 	}
 	// 获取用户信息
-	parseData, err := ParseJwt(headerDataVal.Token)
+	parseData, err := ParseJwt(headerData.Token)
 	if err != nil {
 		paramsError("Token")
 		return
@@ -126,7 +129,7 @@ func IncrementalUpload(c *gin.Context) {
 		return
 	}
 	// 获取文档信息
-	docId := str.DefaultToInt(headerDataVal.DocId, 0)
+	docId := str.DefaultToInt(headerData.DocId, 0)
 	if docId <= 0 {
 		paramsError("docId")
 		return
@@ -146,43 +149,69 @@ func IncrementalUpload(c *gin.Context) {
 		Cmd    CmdType `bson:"cmd"`
 	}
 
-	collection := mongo.DB.Collection("document")
+	documentCollection := mongo.DB.Collection("document")
 
-	documentUpdateList := []documentDataType{}
-	if cur, err := collection.Find(nil, bson.M{"document_id": headerDataVal.DocId}); err == nil {
-		if err := cur.All(nil, &documentUpdateList); err == nil && len(documentUpdateList) > 0 {
-			updateDataList := sliceutil.MapT(func(item documentDataType) CmdType {
-				item.Cmd["_serverId"] = str.IntToString(item.Id)
-				item.Cmd["userId"] = item.UserId
-				return item.Cmd
-			}, documentUpdateList...)
-			_ = conn.WriteJSON(&commitDataType{
-				Type: "update",
-				Cmds: updateDataList,
-			})
+	var lastId int64
+	pullUpdate := func() bool {
+		documentUpdateList := []documentDataType{}
+		findOptions := options.Find()
+		findOptions.SetSort(bson.D{{"_id", 1}})
+		filter := bson.M{"document_id": headerData.DocId}
+		if lastId > 0 {
+			filter["_id"] = bson.M{"$gt": lastId}
 		}
+		log.Println()
+		if cur, err := documentCollection.Find(nil, filter, findOptions); err == nil {
+			if err := cur.All(nil, &documentUpdateList); err == nil {
+				if len(documentUpdateList) == 0 {
+					return true
+				}
+				updateDataList := sliceutil.MapT(func(item documentDataType) CmdType {
+					item.Cmd["serverId"] = str.IntToString(item.Id)
+					item.Cmd["userId"] = item.UserId
+					return item.Cmd
+				}, documentUpdateList...)
+				_ = conn.WriteJSON(&commitDataType{
+					Type: "update",
+					Cmds: updateDataList,
+				})
+				lastId = documentUpdateList[len(documentUpdateList)-1].Id
+				return true
+			}
+		}
+		return false
 	}
+	pullUpdate()
+	go func() {
+		for {
+			time.Sleep(time.Second * 1)
+			if !pullUpdate() {
+				connError()
+				return
+			}
+		}
+	}()
 
 	for {
-		commitDataVal := commitDataType{}
-		err := conn.ReadJSON(&commitDataVal)
+		commitData := commitDataType{}
+		err := conn.ReadJSON(&commitData)
 		if err != nil {
 			connError()
 			return
 		}
-		if commitDataVal.Type != "commit" {
+		if commitData.Type != "commit" {
 			continue
 		}
 		cmds := sliceutil.MapT(func(cmd CmdType) any {
 			return CmdType{
 				"_id":         snowflake.NextId(),
-				"document_id": headerDataVal.DocId,
+				"document_id": headerData.DocId,
 				"user_id":     parseData.Id,
-				"unit_id":     cmd["_unitId"],
+				"unit_id":     cmd["unitId"],
 				"cmd":         cmd,
 			}
-		}, commitDataVal.Cmds...)
-		if _, err := collection.InsertMany(nil, cmds); err != nil {
+		}, commitData.Cmds...)
+		if _, err := documentCollection.InsertMany(nil, cmds); err != nil {
 			log.Println("mongo插入失败", err)
 		}
 	}
