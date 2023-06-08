@@ -4,20 +4,14 @@ import (
 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"io"
 	"log"
 	"net/http"
 	"protodesign.cn/kcserver/common/gin/response"
 	. "protodesign.cn/kcserver/common/jwt"
 	"protodesign.cn/kcserver/common/models"
-	"protodesign.cn/kcserver/common/mongo"
 	"protodesign.cn/kcserver/common/services"
-	"protodesign.cn/kcserver/common/snowflake"
-	"protodesign.cn/kcserver/utils/sliceutil"
 	"protodesign.cn/kcserver/utils/str"
-	"time"
 )
 
 // IncrementalUpload 增量上传
@@ -40,22 +34,22 @@ func IncrementalUpload(c *gin.Context) {
 			return true
 		},
 	}
-	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	userConn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		response.Fail(c, "建立ws连接失败："+err.Error())
 		return
 	}
-	defer conn.Close()
+	defer userConn.Close()
 
 	// 连接已经关闭的标识
 	hasClose := false
 	closeConn := func(msg string) {
-		conn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(
+		userConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(
 			websocket.CloseNormalClosure,
 			msg,
 		))
 		hasClose = true
-		conn.Close()
+		userConn.Close()
 	}
 	connError := func() {
 		if hasClose {
@@ -73,7 +67,7 @@ func IncrementalUpload(c *gin.Context) {
 			"message": msg,
 		}
 		message, _ := json.Marshal(data)
-		conn.WriteMessage(websocket.TextMessage, message)
+		userConn.WriteMessage(websocket.TextMessage, message)
 		log.Println("数据格式错误：" + msg)
 		closeConn("数据格式错误")
 	}
@@ -89,7 +83,7 @@ func IncrementalUpload(c *gin.Context) {
 			"message": msg,
 		}
 		message, _ := json.Marshal(data)
-		conn.WriteMessage(websocket.TextMessage, message)
+		userConn.WriteMessage(websocket.TextMessage, message)
 		log.Println("参数错误：" + msg)
 		closeConn(msg)
 	}
@@ -97,7 +91,7 @@ func IncrementalUpload(c *gin.Context) {
 	var size uint64
 
 	// 获取Token
-	messageType, reader, err := conn.NextReader()
+	messageType, reader, err := userConn.NextReader()
 	if err != nil {
 		connError()
 		return
@@ -141,79 +135,136 @@ func IncrementalUpload(c *gin.Context) {
 		return
 	}
 
-	_ = conn.WriteMessage(websocket.TextMessage, []byte("success"))
-
-	type documentDataType struct {
-		Id     int64   `bson:"_id"`
-		UserId string  `bson:"user_id"`
-		Cmd    CmdType `bson:"cmd"`
+	documentServerConn, _, err := websocket.DefaultDialer.Dial("ws://192.168.0.10:10010", nil)
+	if err != nil {
+		log.Println("文档服务器连接失败", err)
+		connError()
+		return
 	}
+	defer documentServerConn.Close()
 
-	documentCollection := mongo.DB.Collection("document")
-
-	var lastId int64
-	pullUpdate := func() bool {
-		documentUpdateList := []documentDataType{}
-		findOptions := options.Find()
-		findOptions.SetSort(bson.D{{"_id", 1}})
-		filter := bson.M{"document_id": headerData.DocId}
-		if lastId > 0 {
-			filter["_id"] = bson.M{"$gt": lastId}
-		}
-		log.Println()
-		if cur, err := documentCollection.Find(nil, filter, findOptions); err == nil {
-			if err := cur.All(nil, &documentUpdateList); err == nil {
-				if len(documentUpdateList) == 0 {
-					return true
-				}
-				updateDataList := sliceutil.MapT(func(item documentDataType) CmdType {
-					item.Cmd["serverId"] = str.IntToString(item.Id)
-					item.Cmd["userId"] = item.UserId
-					return item.Cmd
-				}, documentUpdateList...)
-				_ = conn.WriteJSON(&commitDataType{
-					Type: "update",
-					Cmds: updateDataList,
-				})
-				lastId = documentUpdateList[len(documentUpdateList)-1].Id
-				return true
-			}
-		}
-		return false
+	data, err := json.Marshal(map[string]any{
+		"documentId": document.Id,
+		"userId":     userId,
+	})
+	if err != nil {
+		log.Println("数据格式化失败", err)
+		connError()
+		documentServerConn.Close()
+		return
 	}
-	pullUpdate()
+	_ = documentServerConn.WriteMessage(websocket.TextMessage, data)
+
+	_ = userConn.WriteMessage(websocket.TextMessage, []byte("success"))
+
+	// 创建一个从客户端读取并写入到后端的管道
 	go func() {
 		for {
-			time.Sleep(time.Second * 1)
-			if !pullUpdate() {
+			msgType, message, err := userConn.ReadMessage()
+			if err != nil {
+				log.Println("客户端连接读取异常", err)
 				connError()
-				return
+				documentServerConn.Close()
+				break
+			}
+			err = documentServerConn.WriteMessage(msgType, message)
+			if err != nil {
+				log.Println("文件服务器连接写入异常", err)
+				connError()
+				documentServerConn.Close()
+				break
 			}
 		}
 	}()
 
+	// 创建一个从后端读取并写入到客户端的管道
 	for {
-		commitData := commitDataType{}
-		err := conn.ReadJSON(&commitData)
+		msgType, message, err := documentServerConn.ReadMessage()
 		if err != nil {
+			log.Println("文件服务器连接读取异常", err)
 			connError()
-			return
+			documentServerConn.Close()
+			break
 		}
-		if commitData.Type != "commit" {
-			continue
-		}
-		cmds := sliceutil.MapT(func(cmd CmdType) any {
-			return CmdType{
-				"_id":         snowflake.NextId(),
-				"document_id": headerData.DocId,
-				"user_id":     parseData.Id,
-				"unit_id":     cmd["unitId"],
-				"cmd":         cmd,
-			}
-		}, commitData.Cmds...)
-		if _, err := documentCollection.InsertMany(nil, cmds); err != nil {
-			log.Println("mongo插入失败", err)
+		err = userConn.WriteMessage(msgType, message)
+		if err != nil {
+			log.Println("客户端连接写入异常", err)
+			connError()
+			documentServerConn.Close()
+			break
 		}
 	}
+
+	//type documentDataType struct {
+	//	Id     int64   `bson:"_id"`
+	//	UserId string  `bson:"user_id"`
+	//	Cmd    CmdType `bson:"cmd"`
+	//}
+	//
+	//documentCollection := mongo.DB.Collection("document")
+	//
+	//var lastId int64
+	//pullUpdate := func() bool {
+	//	documentUpdateList := []documentDataType{}
+	//	findOptions := options.Find()
+	//	findOptions.SetSort(bson.D{{"_id", 1}})
+	//	filter := bson.M{"document_id": headerData.DocId}
+	//	if lastId > 0 {
+	//		filter["_id"] = bson.M{"$gt": lastId}
+	//	}
+	//	if cur, err := documentCollection.Find(nil, filter, findOptions); err == nil {
+	//		if err := cur.All(nil, &documentUpdateList); err == nil {
+	//			if len(documentUpdateList) == 0 {
+	//				return true
+	//			}
+	//			updateDataList := sliceutil.MapT(func(item documentDataType) CmdType {
+	//				item.Cmd["serverId"] = str.IntToString(item.Id)
+	//				item.Cmd["userId"] = item.UserId
+	//				return item.Cmd
+	//			}, documentUpdateList...)
+	//			_ = userConn.WriteJSON(&commitDataType{
+	//				Type: "update",
+	//				Cmds: updateDataList,
+	//			})
+	//			lastId = documentUpdateList[len(documentUpdateList)-1].Id
+	//			return true
+	//		}
+	//	}
+	//	return false
+	//}
+	//pullUpdate()
+	//go func() {
+	//	for {
+	//		time.Sleep(time.Second * 1)
+	//		if !pullUpdate() {
+	//			connError()
+	//			return
+	//		}
+	//	}
+	//}()
+	//
+	//for {
+	//	commitData := commitDataType{}
+	//	err := userConn.ReadJSON(&commitData)
+	//	if err != nil {
+	//		connError()
+	//		return
+	//	}
+	//	if commitData.Type != "commit" {
+	//		continue
+	//	}
+	//	cmds := sliceutil.MapT(func(cmd CmdType) any {
+	//		return CmdType{
+	//			"_id":         snowflake.NextId(),
+	//			"document_id": headerData.DocId,
+	//			"user_id":     parseData.Id,
+	//			"unit_id":     cmd["unitId"],
+	//			"cmd":         cmd,
+	//		}
+	//	}, commitData.Cmds...)
+	//	if _, err := documentCollection.InsertMany(nil, cmds); err != nil {
+	//		log.Println("mongo插入失败", err)
+	//	}
+	//}
 
 }
