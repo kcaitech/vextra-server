@@ -24,6 +24,8 @@ type Bucket interface {
 	PubObject(objectName string, reader io.Reader, objectSize int64, contentType string) (*UploadInfo, error)
 	PubObjectByte(objectName string, content []byte) (*UploadInfo, error)
 	GenerateAccessKey(authPath string, authOp int, expires int) (*AccessKeyValue, error)
+	CopyObject(srcPath string, destPath string) (*UploadInfo, error)
+	CopyDirectory(srcDirPath string, destDirPath string) (*UploadInfo, error)
 }
 
 type BucketConfig struct {
@@ -49,6 +51,14 @@ func (that *DefaultBucket) PubObject(objectName string, reader io.Reader, object
 
 func (that *DefaultBucket) PubObjectByte(objectName string, content []byte) (*UploadInfo, error) {
 	return that.That.PubObject(objectName, bytes.NewReader(content), int64(len(content)), "")
+}
+
+func (that *DefaultBucket) CopyObject(srcPath string, destPath string) (*UploadInfo, error) {
+	return nil, errors.New("CopyObject方法未实现")
+}
+
+func (that *DefaultBucket) CopyDirectory(srcDirPath string, destDirPath string) (*UploadInfo, error) {
+	return nil, errors.New("CopyDirectory方法未实现")
 }
 
 type AccessKeyValue struct {

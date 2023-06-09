@@ -169,7 +169,7 @@ func IncrementalUpload(c *gin.Context) {
 			}
 			err = documentServerConn.WriteMessage(msgType, message)
 			if err != nil {
-				log.Println("文件服务器连接写入异常", err)
+				log.Println("文档服务器连接写入异常", err)
 				connError()
 				documentServerConn.Close()
 				break
@@ -181,7 +181,7 @@ func IncrementalUpload(c *gin.Context) {
 	for {
 		msgType, message, err := documentServerConn.ReadMessage()
 		if err != nil {
-			log.Println("文件服务器连接读取异常", err)
+			log.Println("文档服务器连接读取异常", err)
 			connError()
 			documentServerConn.Close()
 			break

@@ -3,9 +3,11 @@ package minio
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"io"
+	"log"
 	"protodesign.cn/kcserver/utils/storage/base"
 	"strconv"
 	"strings"
@@ -47,7 +49,6 @@ func (that *client) NewBucket(config *base.BucketConfig) base.Bucket {
 }
 
 func (that *bucket) PubObject(objectName string, reader io.Reader, objectSize int64, contentType string) (*base.UploadInfo, error) {
-	var uploadInfo *base.UploadInfo
 	if contentType == "" {
 		contentType = "application/octet-stream"
 		splitRes := strings.Split(objectName, ".")
@@ -71,7 +72,7 @@ func (that *bucket) PubObject(objectName string, reader io.Reader, objectSize in
 	if err != nil {
 		return nil, err
 	}
-	return uploadInfo, nil
+	return &base.UploadInfo{}, nil
 }
 
 var authOpMap = map[int]string{
@@ -131,4 +132,39 @@ func (that *bucket) GenerateAccessKey(authPath string, authOp int, expires int) 
 		SignerType:      int(v.SignerType),
 	}
 	return &value, err
+}
+
+func (that *bucket) CopyObject(srcPath string, destPath string) (*base.UploadInfo, error) {
+	_, err := that.client.client.CopyObject(
+		context.Background(),
+		minio.CopyDestOptions{
+			Bucket: that.config.BucketName,
+			Object: destPath,
+		},
+		minio.CopySrcOptions{
+			Bucket: that.config.BucketName,
+			Object: srcPath,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &base.UploadInfo{}, nil
+}
+
+func (that *bucket) CopyDirectory(srcDirPath string, destDirPath string) (*base.UploadInfo, error) {
+	if srcDirPath == "" || srcDirPath == "/" || destDirPath == "" || destDirPath == "/" {
+		return nil, errors.New("路径不能为空")
+	}
+	for objectInfo := range that.client.client.ListObjects(context.Background(), that.config.BucketName, minio.ListObjectsOptions{
+		Prefix:    srcDirPath,
+		Recursive: true,
+	}) {
+		if objectInfo.Err != nil {
+			log.Println("ListObjects异常：", objectInfo.Err)
+			continue
+		}
+		_, _ = that.CopyObject(objectInfo.Key, strings.Replace(objectInfo.Key, srcDirPath, destDirPath, 1))
+	}
+	return &base.UploadInfo{}, nil
 }

@@ -671,11 +671,7 @@ func AddCond(db *gorm.DB, args ...any) error {
 }
 
 func (s *DefaultService) Create(modelData models.ModelData) error {
-	idPtr, ok := myReflect.FieldByName(modelData, "Id").(*int64)
-	if !ok {
-		return errors.New("modelData类型错误")
-	}
-	*idPtr = snowflake.NextId()
+	modelData.SetId(snowflake.NextId())
 	return s.DB.Model(s.Model).Create(modelData).Error
 }
 
