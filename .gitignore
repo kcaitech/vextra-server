@@ -10,3 +10,4 @@
 /documentservice/log
 
 **/go.sum
+/docker_compose/nginx/cert/
