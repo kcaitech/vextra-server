@@ -156,7 +156,7 @@ func WxLogin(c *gin.Context) {
 			response.Fail(c, "登陆失败")
 			return
 		}
-		if wxUserInfoResp.Nickname == "" || wxUserInfoResp.Headimgurl == "" {
+		if wxUserInfoResp.Nickname == "" {
 			log.Println("Nickname或Headimgurl为空")
 			response.Fail(c, "登陆失败")
 			return
