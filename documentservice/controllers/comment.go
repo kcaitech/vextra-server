@@ -75,7 +75,9 @@ func GetDocumentComment(c *gin.Context) {
 		return
 	}
 	documentCommentList := make([]UserComment, 0)
-	reqParams := bson.M{}
+	reqParams := bson.M{
+		"document_id": documentId,
+	}
 	if pageId := c.Query("page_id"); pageId != "" {
 		reqParams["page_id"] = pageId
 	}
@@ -290,10 +292,6 @@ func SetUserCommentStatus(c *gin.Context) {
 			response.BadRequest(c, err.Error())
 			return
 		}
-	}
-	if comment.Status != UserCommentStatusCreated {
-		response.Fail(c, "当前状态不可修改")
-		return
 	}
 	if comment.User.Id != str.IntToString(userId) {
 		var count int64
