@@ -3,12 +3,15 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
-	"github.com/gorilla/websocket"
 	"io"
 	"log"
 	"net/http"
+	"sync"
+	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/gorilla/websocket"
 	"protodesign.cn/kcserver/common/gin/response"
 	. "protodesign.cn/kcserver/common/jwt"
 	"protodesign.cn/kcserver/common/models"
@@ -16,8 +19,6 @@ import (
 	"protodesign.cn/kcserver/common/storage"
 	"protodesign.cn/kcserver/utils/str"
 	myTime "protodesign.cn/kcserver/utils/time"
-	"sync"
-	"time"
 )
 
 // UploadDocumentByUser 用户上传文档
@@ -30,14 +31,10 @@ func UploadDocumentByUser(c *gin.Context) {
 	type uploadData struct {
 		Code string `json:"code"`
 		Data struct {
-			DocumentMeta     json.RawMessage   `json:"document_meta"`
-			Pages            json.RawMessage   `json:"pages"`
-			PageRefartboards []json.RawMessage `json:"page_refartboards"`
-			PageRefsyms      []json.RawMessage `json:"page_refsyms"`
-			Artboards        json.RawMessage   `json:"artboards"`
-			ArtboardsRefsyms []json.RawMessage `json:"artboard_refsyms"`
-			Symbols          json.RawMessage   `json:"symbols"`
-			MediaNames       []string          `json:"media_names"`
+			DocumentMeta json.RawMessage `json:"document_meta"`
+			Pages        json.RawMessage `json:"pages"`
+			DocumentSyms json.RawMessage `json:"document_syms"`
+			MediaNames   []string        `json:"media_names"`
 		} `json:"data"`
 	}
 
@@ -215,21 +212,21 @@ func UploadDocumentByUser(c *gin.Context) {
 		dataFormatError("uploadData.Data.Pages格式错误 " + err.Error())
 		return
 	}
-	pageRefsyms := data.Data.PageRefsyms
-	pageRefartboards := data.Data.PageRefartboards
-	if len(pages) != len(pageRefsyms) || len(pages) != len(pageRefartboards) {
-		dataFormatError("uploadData.Data.Pages和PageRefartboards、PageRefsyms长度不对应")
-		return
-	}
+	// pageRefsyms := data.Data.PageRefsyms
+	// pageRefartboards := data.Data.PageRefartboards
+	// if len(pages) != len(pageRefsyms) || len(pages) != len(pageRefartboards) {
+	// 	dataFormatError("uploadData.Data.Pages和PageRefartboards、PageRefsyms长度不对应")
+	// 	return
+	// }
 	// 上传pages、page-symrefs、page-artboardrefs目录
 	for i := 0; i < len(pages); i++ {
 		pageId := pages[i].Id
 		pagePath := docPath + "/pages/" + pageId + ".json"
 		pageContent := pagesRaw[i]
-		pageRefsymsPath := docPath + "/page-symrefs/" + pageId + ".json"
-		pageRefsymsContent := pageRefsyms[i]
-		pageRefartboardPath := docPath + "/page-artboardrefs/" + pageId + ".json"
-		pageRefartboardContent := pageRefartboards[i]
+		// pageRefsymsPath := docPath + "/page-symrefs/" + pageId + ".json"
+		// pageRefsymsContent := pageRefsyms[i]
+		// pageRefartboardPath := docPath + "/page-artboardrefs/" + pageId + ".json"
+		// pageRefartboardContent := pageRefartboards[i]
 
 		uploadWaitGroup.Add(1)
 		go func() {
@@ -238,83 +235,83 @@ func UploadDocumentByUser(c *gin.Context) {
 				uploadError(err)
 				return
 			}
-			if _, err = storage.Bucket.PubObjectByte(pageRefsymsPath, pageRefsymsContent); err != nil {
-				uploadError(err)
-				return
-			}
-			if _, err = storage.Bucket.PubObjectByte(pageRefartboardPath, pageRefartboardContent); err != nil {
-				uploadError(err)
-				return
-			}
+			// if _, err = storage.Bucket.PubObjectByte(pageRefsymsPath, pageRefsymsContent); err != nil {
+			// 	uploadError(err)
+			// 	return
+			// }
+			// if _, err = storage.Bucket.PubObjectByte(pageRefartboardPath, pageRefartboardContent); err != nil {
+			// 	uploadError(err)
+			// 	return
+			// }
 		}()
 	}
 
-	// artboards部分
-	var artboards []struct {
-		Id string `json:"id"`
-	}
-	if err := json.Unmarshal(data.Data.Artboards, &artboards); err != nil {
-		dataFormatError("uploadData.Data.Artboards内有元素缺少Id " + err.Error())
-		return
-	}
-	var artboardsRaw []json.RawMessage
-	if err := json.Unmarshal(data.Data.Artboards, &artboardsRaw); err != nil {
-		dataFormatError("uploadData.Data.Artboards格式错误 " + err.Error())
-		return
-	}
-	artboardsRefsyms := data.Data.ArtboardsRefsyms
-	if len(artboards) != len(artboardsRefsyms) {
-		dataFormatError("uploadData.Data.Artboards和ArtboardsRefsyms长度不对应")
-		return
-	}
+	// // artboards部分
+	// var artboards []struct {
+	// 	Id string `json:"id"`
+	// }
+	// if err := json.Unmarshal(data.Data.Artboards, &artboards); err != nil {
+	// 	dataFormatError("uploadData.Data.Artboards内有元素缺少Id " + err.Error())
+	// 	return
+	// }
+	// var artboardsRaw []json.RawMessage
+	// if err := json.Unmarshal(data.Data.Artboards, &artboardsRaw); err != nil {
+	// 	dataFormatError("uploadData.Data.Artboards格式错误 " + err.Error())
+	// 	return
+	// }
+	// artboardsRefsyms := data.Data.ArtboardsRefsyms
+	// if len(artboards) != len(artboardsRefsyms) {
+	// 	dataFormatError("uploadData.Data.Artboards和ArtboardsRefsyms长度不对应")
+	// 	return
+	// }
 	// 上传artboards、artboards-refsyms目录
-	for i := 0; i < len(artboards); i++ {
-		artboardId := artboards[i].Id
-		artboardPath := docPath + "/artboards/" + artboardId + ".json"
-		artboardContent := artboardsRaw[i]
-		artboardRefsymsPath := docPath + "/artboards-refsyms/" + artboardId + ".json"
-		artboardRefsymsContent := artboardsRefsyms[i]
-		uploadWaitGroup.Add(1)
-		go func() {
-			defer uploadWaitGroup.Done()
-			if _, err = storage.Bucket.PubObjectByte(artboardPath, artboardContent); err != nil {
-				uploadError(err)
-				return
-			}
-			if _, err = storage.Bucket.PubObjectByte(artboardRefsymsPath, artboardRefsymsContent); err != nil {
-				uploadError(err)
-				return
-			}
-		}()
-	}
+	// for i := 0; i < len(artboards); i++ {
+	// 	artboardId := artboards[i].Id
+	// 	artboardPath := docPath + "/artboards/" + artboardId + ".json"
+	// 	artboardContent := artboardsRaw[i]
+	// 	artboardRefsymsPath := docPath + "/artboards-refsyms/" + artboardId + ".json"
+	// 	artboardRefsymsContent := artboardsRefsyms[i]
+	// 	uploadWaitGroup.Add(1)
+	// 	go func() {
+	// 		defer uploadWaitGroup.Done()
+	// 		if _, err = storage.Bucket.PubObjectByte(artboardPath, artboardContent); err != nil {
+	// 			uploadError(err)
+	// 			return
+	// 		}
+	// 		if _, err = storage.Bucket.PubObjectByte(artboardRefsymsPath, artboardRefsymsContent); err != nil {
+	// 			uploadError(err)
+	// 			return
+	// 		}
+	// 	}()
+	// }
 
-	// symbols部分
-	var symbols []struct {
-		Id string `json:"id"`
-	}
-	if err := json.Unmarshal(data.Data.Symbols, &symbols); err != nil {
-		dataFormatError("uploadData.Data.Symbols内有元素缺少Id " + err.Error())
-		return
-	}
-	var symbolsRaw []json.RawMessage
-	if err := json.Unmarshal(data.Data.Symbols, &symbolsRaw); err != nil {
-		dataFormatError("uploadData.Data.Symbols格式错误 " + err.Error())
-		return
-	}
-	// 上传symbols目录
-	for i := 0; i < len(symbols); i++ {
-		symbolId := symbols[i].Id
-		symbolContent := symbolsRaw[i]
-		path := docPath + "/symbols/" + symbolId + ".json"
-		uploadWaitGroup.Add(1)
-		go func() {
-			defer uploadWaitGroup.Done()
-			if _, err = storage.Bucket.PubObjectByte(path, symbolContent); err != nil {
-				uploadError(err)
-				return
-			}
-		}()
-	}
+	// // symbols部分
+	// var symbols []struct {
+	// 	Id string `json:"id"`
+	// }
+	// if err := json.Unmarshal(data.Data.Symbols, &symbols); err != nil {
+	// 	dataFormatError("uploadData.Data.Symbols内有元素缺少Id " + err.Error())
+	// 	return
+	// }
+	// var symbolsRaw []json.RawMessage
+	// if err := json.Unmarshal(data.Data.Symbols, &symbolsRaw); err != nil {
+	// 	dataFormatError("uploadData.Data.Symbols格式错误 " + err.Error())
+	// 	return
+	// }
+	// // 上传symbols目录
+	// for i := 0; i < len(symbols); i++ {
+	// 	symbolId := symbols[i].Id
+	// 	symbolContent := symbolsRaw[i]
+	// 	path := docPath + "/symbols/" + symbolId + ".json"
+	// 	uploadWaitGroup.Add(1)
+	// 	go func() {
+	// 		defer uploadWaitGroup.Done()
+	// 		if _, err = storage.Bucket.PubObjectByte(path, symbolContent); err != nil {
+	// 			uploadError(err)
+	// 			return
+	// 		}
+	// 	}()
+	// }
 
 	// medias部分
 	nextMedia := func() []byte {
@@ -359,6 +356,13 @@ func UploadDocumentByUser(c *gin.Context) {
 	// 上传document-meta.json
 	path := docPath + "/document-meta.json"
 	if _, err = storage.Bucket.PubObjectByte(path, data.Data.DocumentMeta); err != nil {
+		uploadError(err)
+		return
+	}
+
+	// 上传document-syms.json
+	symsPath := docPath + "/document-syms.json"
+	if _, err = storage.Bucket.PubObjectByte(symsPath, data.Data.DocumentSyms); err != nil {
 		uploadError(err)
 		return
 	}
