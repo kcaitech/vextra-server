@@ -135,7 +135,7 @@ func IncrementalUpload(c *gin.Context) {
 		return
 	}
 
-	documentServerConn, _, err := websocket.DefaultDialer.Dial("ws://192.168.0.10:10010", nil)
+	documentServerConn, _, err := websocket.DefaultDialer.Dial("ws://192.168.0.18:10010", nil)
 	if err != nil {
 		log.Println("文档服务器连接失败", err)
 		connError()
