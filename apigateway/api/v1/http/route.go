@@ -17,4 +17,5 @@ func LoadRoutes(router *gin.Engine) {
 	loadLoginRoutes(apiGroup)
 	loadUserRoutes(apiGroup)
 	loadDocumentRoutes(apiGroup)
+	loadApiGatewayRoutes(apiGroup)
 }
