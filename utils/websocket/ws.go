@@ -4,6 +4,7 @@ import (
 	"errors"
 	gws "github.com/gorilla/websocket"
 	"net/http"
+	"sync"
 )
 
 var ErrClosed = errors.New("连接已关闭")
@@ -18,8 +19,16 @@ const (
 
 type Ws struct {
 	ws          *gws.Conn
+	wsWriteLock sync.Mutex
+	wsReadLock  sync.Mutex
 	isClose     bool
 	handleClose func(int, string)
+}
+
+func newWs(ws *gws.Conn) *Ws {
+	return &Ws{
+		ws: ws,
+	}
 }
 
 func Upgrade(w http.ResponseWriter, r *http.Request, responseHeader http.Header) (*Ws, error) {
@@ -32,9 +41,15 @@ func Upgrade(w http.ResponseWriter, r *http.Request, responseHeader http.Header)
 	if err != nil {
 		return nil, err
 	}
-	return &Ws{
-		ws: conn,
-	}, nil
+	return newWs(conn), nil
+}
+
+func NewClient(url string, requestHeader http.Header) (*Ws, error) {
+	conn, _, err := gws.DefaultDialer.Dial(url, requestHeader)
+	if err != nil {
+		return nil, err
+	}
+	return newWs(conn), nil
 }
 
 func (ws *Ws) SetCloseHandler(handler func(code int, text string)) {
@@ -51,21 +66,57 @@ func (ws *Ws) SetCloseHandler(handler func(code int, text string)) {
 	})
 }
 
-func (ws *Ws) WriteMessage(messageType MessageType, data []byte) error {
+func (ws *Ws) Lock() {
+	ws.wsWriteLock.Lock()
+	ws.wsReadLock.Lock()
+}
+
+func (ws *Ws) unlockWriteLock() {
+	defer func() {
+		recover()
+	}()
+	ws.wsWriteLock.Unlock()
+}
+
+func (ws *Ws) unlockReadLock() {
+	defer func() {
+		recover()
+	}()
+	ws.wsReadLock.Unlock()
+}
+
+func (ws *Ws) Unlock() {
+	ws.unlockWriteLock()
+	ws.unlockReadLock()
+}
+
+func (ws *Ws) WriteMessageLock(needLock bool, messageType MessageType, data []byte) error {
+	if needLock {
+		ws.wsWriteLock.Lock()
+		defer ws.wsWriteLock.Unlock()
+	}
 	if ws.isClose {
 		return ErrClosed
 	}
 	return ws.ws.WriteMessage(int(messageType), data)
 }
 
-func (ws *Ws) WriteJSON(v any) error {
+func (ws *Ws) WriteJSONLock(needLock bool, v any) error {
+	if needLock {
+		ws.wsWriteLock.Lock()
+		defer ws.wsWriteLock.Unlock()
+	}
 	if ws.isClose {
 		return ErrClosed
 	}
 	return ws.ws.WriteJSON(v)
 }
 
-func (ws *Ws) ReadMessage() (MessageType, []byte, error) {
+func (ws *Ws) ReadMessageLock(needLock bool) (MessageType, []byte, error) {
+	if needLock {
+		ws.wsReadLock.Lock()
+		defer ws.wsReadLock.Unlock()
+	}
 	messageType, data, err := ws.ws.ReadMessage()
 	if err != nil {
 		return MessageTypeNone, data, err
@@ -79,11 +130,31 @@ func (ws *Ws) ReadMessage() (MessageType, []byte, error) {
 	return ws.ReadMessage()
 }
 
-func (ws *Ws) ReadJSON(v any) error {
+func (ws *Ws) ReadJSONLock(needLock bool, v any) error {
+	if needLock {
+		ws.wsReadLock.Lock()
+		defer ws.wsReadLock.Unlock()
+	}
 	if ws.isClose {
 		return ErrClosed
 	}
 	return ws.ws.ReadJSON(v)
+}
+
+func (ws *Ws) WriteMessage(messageType MessageType, data []byte) error {
+	return ws.WriteMessageLock(true, messageType, data)
+}
+
+func (ws *Ws) WriteJSON(v any) error {
+	return ws.WriteJSONLock(true, v)
+}
+
+func (ws *Ws) ReadMessage() (MessageType, []byte, error) {
+	return ws.ReadMessageLock(true)
+}
+
+func (ws *Ws) ReadJSON(v any) error {
+	return ws.ReadJSONLock(true, v)
 }
 
 func (ws *Ws) Close() {
