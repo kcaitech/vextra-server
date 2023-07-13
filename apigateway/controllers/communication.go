@@ -51,6 +51,7 @@ const (
 )
 
 type tunnelCmdDataType struct {
+	TunnelId string             `json:"tunnel_id"`
 	DataType tunnelDataTypeType `json:"data_type"`
 	Data     json.RawMessage    `json:"data"`
 }
@@ -116,16 +117,38 @@ func Communication(c *gin.Context) {
 	defer ws.Close()
 
 	tunnelMap := make(map[string]*tunnelType)
-	getTunnelByCmdData := func(cmdData cmdDataType) (string, *tunnelType) {
+	getTunnelIdByCmdData := func(cmdData cmdDataType) (string, bool) {
 		v, ok := cmdData["tunnel_id"]
 		tunnelId, ok1 := v.(string)
 		if !ok || !ok1 || tunnelId == "" {
-			log.Println("tunnelId错误", ok, ok1, tunnelId)
+			return "", false
+		}
+		return tunnelId, true
+	}
+	getTunnelById := func(tunnelId string) *tunnelType {
+		tunnel, ok := tunnelMap[tunnelId]
+		if tunnelId == "" || !ok {
+			log.Println("tunnel不存在", tunnelId)
+			return nil
+		}
+		return tunnel
+	}
+	getTunnelByCmdData := func(cmdData cmdDataType) (string, *tunnelType) {
+		tunnelId, ok := getTunnelIdByCmdData(cmdData)
+		if !ok {
+			log.Println("tunnelId错误")
 			return "", nil
 		}
-		tunnel, ok := tunnelMap[tunnelId]
-		if !ok {
-			log.Println("tunnel不存在", tunnelId)
+		tunnel := getTunnelById(tunnelId)
+		if tunnel == nil {
+			return "", nil
+		}
+		return tunnelId, tunnel
+	}
+	getTunnelByTunnelCmdData := func(tunnelCmdData tunnelCmdDataType) (string, *tunnelType) {
+		tunnelId := tunnelCmdData.TunnelId
+		tunnel := getTunnelById(tunnelId)
+		if tunnel == nil {
 			return "", nil
 		}
 		return tunnelId, tunnel
@@ -158,6 +181,7 @@ func Communication(c *gin.Context) {
 		log.Println("Token错误", err)
 		return
 	}
+	userIdStr := jwtParseData.Id
 	userId := str.DefaultToInt(jwtParseData.Id, 0)
 	if userId <= 0 {
 		serverCmd.Message = "UserId错误"
@@ -183,6 +207,13 @@ func Communication(c *gin.Context) {
 			CmdId:   cmdId,
 		}
 		if err := ws.ReadJSON(&cmdData); err != nil {
+			if err == websocket.ErrClosed {
+				for _, tunnelSession := range tunnelMap {
+					tunnelSession.ServerWs.Close()
+				}
+				log.Println("ws连接关闭", err)
+				return
+			}
 			serverCmd.Message = "cmdData结构错误"
 			_ = ws.WriteJSON(&serverCmd)
 			log.Println("cmdData结构错误", err)
@@ -197,8 +228,11 @@ func Communication(c *gin.Context) {
 		} else {
 			v = &tunnelCmdDataData
 		}
+		if len(cmdData.Data) == 0 {
+			cmdData.Data = []byte("{}")
+		}
 		if err := json.Unmarshal(cmdData.Data, v); err != nil {
-			serverCmd.Message = "cmdData结构错误"
+			serverCmd.Message = "cmdData.Data结构错误"
 			_ = ws.WriteJSON(&serverCmd)
 			log.Println("cmdData.Data结构错误", err)
 			continue
@@ -214,11 +248,30 @@ func Communication(c *gin.Context) {
 		case clientCmdTypeOpenTunnel:
 			switch cmdData.TunnelType {
 			case tunnelTypeDocOp:
+				data, ok := cmdDataData["data"]
+				mapData, ok1 := data.(map[string]any)
+				documentId, ok2 := mapData["document_id"].(string)
+				if !ok || !ok1 || !ok2 || documentId == "" {
+					serverCmd.Message = "通道建立失败，documentId错误"
+					_ = ws.WriteJSON(&serverCmd)
+					log.Println("document ws建立失败，documentId错误", ok, ok1, ok2, documentId)
+					continue
+				}
 				serverWs, err := websocket.NewClient("ws://192.168.0.18:10010", nil)
 				if err != nil {
 					serverCmd.Message = "通道建立失败"
 					_ = ws.WriteJSON(&serverCmd)
 					log.Println("document ws建立失败", err)
+					continue
+				}
+				if err := serverWs.WriteJSON(map[string]any{
+					"documentId": documentId,
+					"userId":     userIdStr,
+				}); err != nil {
+					serverCmd.Message = "通道建立失败"
+					_ = ws.WriteJSON(&serverCmd)
+					log.Println("document ws建立失败（鉴权）", err)
+					continue
 				}
 				tunnelId := uuid.New().String()
 				tunnelMap[tunnelId] = &tunnelType{
@@ -299,14 +352,7 @@ func Communication(c *gin.Context) {
 			serverCmd.Status = cmdStatusTypeSuccess
 			_ = ws.WriteJSON(&serverCmd)
 		case clientCmdTypeTunnelData:
-			tunnelId, tunnel := getTunnelByCmdData(cmdDataData)
-			if cmdData.Status != cmdStatusTypeSuccess {
-				// todo
-				log.Println("tunnel通讯异常，关闭tunnel", tunnelId, cmdData.Message)
-				tunnel.ServerWs.Close()
-				delete(tunnelMap, tunnelId)
-				continue
-			}
+			tunnelId, tunnel := getTunnelByTunnelCmdData(tunnelCmdDataData)
 			serverCmd.Data["tunnel_id"] = tunnelId
 			if tunnel == nil {
 				serverCmd.Message = "tunnel_id错误"

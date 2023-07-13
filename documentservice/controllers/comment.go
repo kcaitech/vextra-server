@@ -151,8 +151,8 @@ func checkUserPermission(userId int64, commentId string) (*UserComment, error) {
 	}
 	var comment UserComment
 	if err := commentRes.Decode(&comment); err != nil {
-		fmt.Println("文档数据错误", err)
-		return nil, errors.New("文档数据错误")
+		fmt.Println("评论数据错误", err)
+		return nil, errors.New("评论数据错误")
 	}
 	var permType models.PermType
 	if err := services.NewDocumentService().GetPermTypeByDocumentAndUserId(&permType, str.DefaultToInt(comment.DocumentId, 0), userId); err != nil || permType < models.PermTypeCommentable {

@@ -117,12 +117,14 @@ func IncrementalUpload(c *gin.Context) {
 		paramsError("Token")
 		return
 	}
-	userId := str.DefaultToInt(parseData.Id, 0)
+	userIdStr := parseData.Id
+	userId := str.DefaultToInt(userIdStr, 0)
 	if userId <= 0 {
 		paramsError("Id")
 		return
 	}
 	// 获取文档信息
+	docIdStr := headerData.DocId
 	docId := str.DefaultToInt(headerData.DocId, 0)
 	if docId <= 0 {
 		paramsError("docId")
@@ -144,8 +146,8 @@ func IncrementalUpload(c *gin.Context) {
 	defer documentServerConn.Close()
 
 	data, err := json.Marshal(map[string]any{
-		"documentId": document.Id,
-		"userId":     userId,
+		"documentId": docIdStr,
+		"userId":     userIdStr,
 	})
 	if err != nil {
 		log.Println("数据格式化失败", err)
