@@ -7,6 +7,7 @@ import (
 	"log"
 	"protodesign.cn/kcserver/common/gin/response"
 	"protodesign.cn/kcserver/common/jwt"
+	"protodesign.cn/kcserver/utils/my_map"
 	"protodesign.cn/kcserver/utils/str"
 	"protodesign.cn/kcserver/utils/websocket"
 )
@@ -42,7 +43,7 @@ func Communication(c *gin.Context) {
 	}
 	defer ws.Close()
 
-	tunnelMap := make(map[string]*Tunnel)
+	tunnelMap := my_map.NewSyncMap[string, *Tunnel]()
 	getTunnelIdByCmdData := func(cmdData CmdData) (string, bool) {
 		v, ok := cmdData["tunnel_id"]
 		tunnelId, ok1 := v.(string)
@@ -52,7 +53,7 @@ func Communication(c *gin.Context) {
 		return tunnelId, true
 	}
 	getTunnelById := func(tunnelId string) *Tunnel {
-		tunnel, ok := tunnelMap[tunnelId]
+		tunnel, ok := tunnelMap.Get(tunnelId)
 		if tunnelId == "" || !ok {
 			log.Println("tunnel不存在", tunnelId)
 			return nil
@@ -82,9 +83,10 @@ func Communication(c *gin.Context) {
 
 	ws.SetCloseHandler(func(code int, text string) {
 		log.Println("ws连接关闭", code, text)
-		for _, tunnelSession := range tunnelMap {
+		tunnelMap.Range(func(_ string, tunnelSession *Tunnel) bool {
 			tunnelSession.ServerWs.Close()
-		}
+			return true
+		})
 	})
 
 	header := Header{}
@@ -133,9 +135,10 @@ func Communication(c *gin.Context) {
 		}
 		if err := ws.ReadJSON(&clientCmd); err != nil {
 			if err == websocket.ErrClosed {
-				for _, tunnelSession := range tunnelMap {
+				tunnelMap.Range(func(_ string, tunnelSession *Tunnel) bool {
 					tunnelSession.ServerWs.Close()
-				}
+					return true
+				})
 				log.Println("ws连接关闭", err)
 				return
 			}
@@ -190,10 +193,10 @@ func Communication(c *gin.Context) {
 				continue
 			}
 			tunnelId := tunnel.Id
-			tunnelMap[tunnelId] = tunnel
+			tunnelMap.Set(tunnelId, tunnel)
 			// todo 关闭前的处理
 			tunnel.ServerWs.SetCloseHandler(func(code int, text string) {
-				delete(tunnelMap, tunnelId)
+				tunnelMap.Delete(tunnelId)
 				_ = ws.WriteJSON(&ServerCmd{
 					CmdType: ServerCmdTypeCloseTunnel,
 					CmdId:   uuid.New().String(),
@@ -209,7 +212,7 @@ func Communication(c *gin.Context) {
 				continue
 			}
 			tunnel.ServerWs.Close()
-			delete(tunnelMap, tunnelId)
+			tunnelMap.Delete(tunnelId)
 			serverCmd.Status = CmdStatusSuccess
 			_ = ws.WriteJSON(&serverCmd)
 		case ClientCmdTypeTunnelData:
