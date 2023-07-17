@@ -2,7 +2,7 @@ package http
 
 import (
 	"github.com/gin-gonic/gin"
-	"protodesign.cn/kcserver/apigateway/controllers"
+	"protodesign.cn/kcserver/apigateway/controllers/communication"
 	"protodesign.cn/kcserver/apigateway/middlewares"
 	"strings"
 )
@@ -14,6 +14,6 @@ func loadApiGatewayRoutes(api *gin.RouterGroup) {
 		return !strings.HasSuffix(c.Request.URL.Path, "/communication")
 	}))
 	{
-		authorized.GET("/communication", controllers.Communication)
+		authorized.GET("/communication", communication.Communication)
 	}
 }

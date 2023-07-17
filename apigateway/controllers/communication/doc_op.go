@@ -1,0 +1,95 @@
+package communication
+
+import (
+	"github.com/google/uuid"
+	"log"
+	"protodesign.cn/kcserver/common"
+	"protodesign.cn/kcserver/common/models"
+	"protodesign.cn/kcserver/common/services"
+	"protodesign.cn/kcserver/utils/str"
+	"protodesign.cn/kcserver/utils/websocket"
+)
+
+func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd ServerCmd, data Data) *Tunnel {
+	clientCmdDataData, ok := clientCmdData["data"].(map[string]any)
+	documentIdStr, ok1 := clientCmdDataData["document_id"].(string)
+	userId, ok2 := data["userId"].(int64)
+	if !ok || !ok1 || documentIdStr == "" || !ok2 || userId <= 0 {
+		serverCmd.Message = "通道建立失败，参数错误"
+		_ = clientWs.WriteJSON(&serverCmd)
+		log.Println("document ws建立失败，参数错误", ok, ok1, ok2, documentIdStr, userId)
+		return nil
+	}
+
+	// 获取文档信息
+	documentId := str.DefaultToInt(documentIdStr, 0)
+	if documentId <= 0 {
+		serverCmd.Message = "通道建立失败，documentId错误"
+		_ = clientWs.WriteJSON(&serverCmd)
+		log.Println("document ws建立失败，documentId错误", documentId)
+		return nil
+	}
+	documentService := services.NewDocumentService()
+	var document models.Document
+	if documentService.GetById(documentId, &document) != nil {
+		serverCmd.Message = "通道建立失败，文档不存在"
+		_ = clientWs.WriteJSON(&serverCmd)
+		log.Println("document ws建立失败，文档不存在", documentId)
+		return nil
+	}
+	// 权限校验
+	var permType models.PermType
+	if err := services.NewDocumentService().GetPermTypeByDocumentAndUserId(&permType, documentId, userId); err != nil || permType < models.PermTypeReadOnly {
+		serverCmd.Message = "通道建立失败"
+		if err != nil {
+			serverCmd.Message += "，无权限"
+		}
+		_ = clientWs.WriteJSON(&serverCmd)
+		log.Println("document ws建立失败，权限校验错误", err, permType)
+		return nil
+	}
+
+	serverWs, err := websocket.NewClient("ws://"+common.DocOpHost, nil)
+	if err != nil {
+		serverCmd.Message = "通道建立失败"
+		_ = clientWs.WriteJSON(&serverCmd)
+		log.Println("document ws建立失败", err)
+		return nil
+	}
+	if err := serverWs.WriteJSON(Data{
+		"documentId": documentIdStr,
+		"userId":     str.IntToString(userId),
+	}); err != nil {
+		serverCmd.Message = "通道建立失败"
+		_ = clientWs.WriteJSON(&serverCmd)
+		log.Println("document ws建立失败（鉴权）", err)
+		return nil
+	}
+
+	tunnelId := uuid.New().String()
+	tunnel := &Tunnel{
+		Id:       tunnelId,
+		ServerWs: serverWs,
+		ClientWs: clientWs,
+	}
+	// 转发客户端数据到服务端
+	tunnel.ReceiveFromClient = func(tunnelDataType TunnelDataType, data []byte, serverCmd ServerCmd) {
+		if permType >= models.PermTypeEditable {
+			err := tunnel.ServerWs.WriteMessage(websocket.MessageType(tunnelDataType), data)
+			if err != nil {
+				serverCmd.Message = "数据发送失败"
+				_ = clientWs.WriteJSON(&serverCmd)
+				log.Println("数据发送失败", err)
+				return
+			}
+			serverCmd.Status = CmdStatusSuccess
+		} else {
+			serverCmd.Message = "无权限"
+		}
+		_ = clientWs.WriteJSON(&serverCmd)
+	}
+	// 转发服务端数据到客户端
+	go tunnel.DefaultServerToClient()
+
+	return tunnel
+}

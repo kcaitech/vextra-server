@@ -6,10 +6,6 @@ import (
 	"protodesign.cn/kcserver/common"
 )
 
-const Host = "192.168.0.10"
-
-//const Host = "192.168.0.18"
-
 func LoadRoutes(router *gin.Engine) {
 	router.RedirectTrailingSlash = false
 	apiGroup := router.Group(common.ApiVersionPath)

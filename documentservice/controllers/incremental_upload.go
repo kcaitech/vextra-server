@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"protodesign.cn/kcserver/common"
 	"protodesign.cn/kcserver/common/gin/response"
 	. "protodesign.cn/kcserver/common/jwt"
 	"protodesign.cn/kcserver/common/models"
@@ -137,7 +138,7 @@ func IncrementalUpload(c *gin.Context) {
 		return
 	}
 
-	documentServerConn, _, err := websocket.DefaultDialer.Dial("ws://192.168.0.18:10010", nil)
+	documentServerConn, _, err := websocket.DefaultDialer.Dial("ws://"+common.DocOpHost, nil)
 	if err != nil {
 		log.Println("文档服务器连接失败", err)
 		connError()

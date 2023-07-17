@@ -212,106 +212,21 @@ func UploadDocumentByUser(c *gin.Context) {
 		dataFormatError("uploadData.Data.Pages格式错误 " + err.Error())
 		return
 	}
-	// pageRefsyms := data.Data.PageRefsyms
-	// pageRefartboards := data.Data.PageRefartboards
-	// if len(pages) != len(pageRefsyms) || len(pages) != len(pageRefartboards) {
-	// 	dataFormatError("uploadData.Data.Pages和PageRefartboards、PageRefsyms长度不对应")
-	// 	return
-	// }
 	// 上传pages、page-symrefs、page-artboardrefs目录
 	for i := 0; i < len(pages); i++ {
 		pageId := pages[i].Id
 		pagePath := docPath + "/pages/" + pageId + ".json"
 		pageContent := pagesRaw[i]
-		// pageRefsymsPath := docPath + "/page-symrefs/" + pageId + ".json"
-		// pageRefsymsContent := pageRefsyms[i]
-		// pageRefartboardPath := docPath + "/page-artboardrefs/" + pageId + ".json"
-		// pageRefartboardContent := pageRefartboards[i]
 
 		uploadWaitGroup.Add(1)
-		go func() {
+		go func(pagePath string, pageContent json.RawMessage) {
 			defer uploadWaitGroup.Done()
 			if _, err = storage.Bucket.PubObjectByte(pagePath, pageContent); err != nil {
 				uploadError(err)
 				return
 			}
-			// if _, err = storage.Bucket.PubObjectByte(pageRefsymsPath, pageRefsymsContent); err != nil {
-			// 	uploadError(err)
-			// 	return
-			// }
-			// if _, err = storage.Bucket.PubObjectByte(pageRefartboardPath, pageRefartboardContent); err != nil {
-			// 	uploadError(err)
-			// 	return
-			// }
-		}()
+		}(pagePath, pageContent)
 	}
-
-	// // artboards部分
-	// var artboards []struct {
-	// 	Id string `json:"id"`
-	// }
-	// if err := json.Unmarshal(data.Data.Artboards, &artboards); err != nil {
-	// 	dataFormatError("uploadData.Data.Artboards内有元素缺少Id " + err.Error())
-	// 	return
-	// }
-	// var artboardsRaw []json.RawMessage
-	// if err := json.Unmarshal(data.Data.Artboards, &artboardsRaw); err != nil {
-	// 	dataFormatError("uploadData.Data.Artboards格式错误 " + err.Error())
-	// 	return
-	// }
-	// artboardsRefsyms := data.Data.ArtboardsRefsyms
-	// if len(artboards) != len(artboardsRefsyms) {
-	// 	dataFormatError("uploadData.Data.Artboards和ArtboardsRefsyms长度不对应")
-	// 	return
-	// }
-	// 上传artboards、artboards-refsyms目录
-	// for i := 0; i < len(artboards); i++ {
-	// 	artboardId := artboards[i].Id
-	// 	artboardPath := docPath + "/artboards/" + artboardId + ".json"
-	// 	artboardContent := artboardsRaw[i]
-	// 	artboardRefsymsPath := docPath + "/artboards-refsyms/" + artboardId + ".json"
-	// 	artboardRefsymsContent := artboardsRefsyms[i]
-	// 	uploadWaitGroup.Add(1)
-	// 	go func() {
-	// 		defer uploadWaitGroup.Done()
-	// 		if _, err = storage.Bucket.PubObjectByte(artboardPath, artboardContent); err != nil {
-	// 			uploadError(err)
-	// 			return
-	// 		}
-	// 		if _, err = storage.Bucket.PubObjectByte(artboardRefsymsPath, artboardRefsymsContent); err != nil {
-	// 			uploadError(err)
-	// 			return
-	// 		}
-	// 	}()
-	// }
-
-	// // symbols部分
-	// var symbols []struct {
-	// 	Id string `json:"id"`
-	// }
-	// if err := json.Unmarshal(data.Data.Symbols, &symbols); err != nil {
-	// 	dataFormatError("uploadData.Data.Symbols内有元素缺少Id " + err.Error())
-	// 	return
-	// }
-	// var symbolsRaw []json.RawMessage
-	// if err := json.Unmarshal(data.Data.Symbols, &symbolsRaw); err != nil {
-	// 	dataFormatError("uploadData.Data.Symbols格式错误 " + err.Error())
-	// 	return
-	// }
-	// // 上传symbols目录
-	// for i := 0; i < len(symbols); i++ {
-	// 	symbolId := symbols[i].Id
-	// 	symbolContent := symbolsRaw[i]
-	// 	path := docPath + "/symbols/" + symbolId + ".json"
-	// 	uploadWaitGroup.Add(1)
-	// 	go func() {
-	// 		defer uploadWaitGroup.Done()
-	// 		if _, err = storage.Bucket.PubObjectByte(path, symbolContent); err != nil {
-	// 			uploadError(err)
-	// 			return
-	// 		}
-	// 	}()
-	// }
 
 	// medias部分
 	nextMedia := func() []byte {
@@ -339,13 +254,13 @@ func UploadDocumentByUser(c *gin.Context) {
 			return
 		}
 		uploadWaitGroup.Add(1)
-		go func() {
+		go func(path string, media []byte) {
 			defer uploadWaitGroup.Done()
 			if _, err = storage.Bucket.PubObjectByte(path, media); err != nil {
 				uploadError(err)
 				return
 			}
-		}()
+		}(path, media)
 	}
 
 	uploadWaitGroup.Wait()

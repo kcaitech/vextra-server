@@ -4,6 +4,7 @@ import (
 	"errors"
 	gws "github.com/gorilla/websocket"
 	"net/http"
+	"protodesign.cn/kcserver/utils/str"
 	"sync"
 )
 
@@ -127,7 +128,7 @@ func (ws *Ws) ReadMessageLock(needLock bool) (MessageType, []byte, error) {
 	if ws.isClose {
 		return MessageTypeNone, data, ErrClosed
 	}
-	return ws.ReadMessage()
+	return MessageTypeNone, data, errors.New("不支持的消息类型：" + str.IntToString(int64(messageType)))
 }
 
 func (ws *Ws) ReadJSONLock(needLock bool, v any) error {
