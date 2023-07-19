@@ -37,6 +37,7 @@ func Upgrade(w http.ResponseWriter, r *http.Request, responseHeader http.Header)
 		CheckOrigin: func(r *http.Request) bool {
 			return true
 		},
+		EnableCompression: false,
 	}
 	conn, err := upgrader.Upgrade(w, r, responseHeader)
 	if err != nil {
@@ -96,7 +97,7 @@ func (ws *Ws) WriteMessageLock(needLock bool, messageType MessageType, data []by
 		ws.wsWriteLock.Lock()
 		defer ws.wsWriteLock.Unlock()
 	}
-	if ws.isClose {
+	if ws.isClose || ws.ws == nil {
 		return ErrClosed
 	}
 	return ws.ws.WriteMessage(int(messageType), data)
@@ -107,7 +108,7 @@ func (ws *Ws) WriteJSONLock(needLock bool, v any) error {
 		ws.wsWriteLock.Lock()
 		defer ws.wsWriteLock.Unlock()
 	}
-	if ws.isClose {
+	if ws.isClose || ws.ws == nil {
 		return ErrClosed
 	}
 	return ws.ws.WriteJSON(v)
@@ -117,6 +118,9 @@ func (ws *Ws) ReadMessageLock(needLock bool) (MessageType, []byte, error) {
 	if needLock {
 		ws.wsReadLock.Lock()
 		defer ws.wsReadLock.Unlock()
+	}
+	if ws.ws == nil {
+		return MessageTypeNone, nil, ErrClosed
 	}
 	messageType, data, err := ws.ws.ReadMessage()
 	if err != nil {
@@ -136,7 +140,7 @@ func (ws *Ws) ReadJSONLock(needLock bool, v any) error {
 		ws.wsReadLock.Lock()
 		defer ws.wsReadLock.Unlock()
 	}
-	if ws.isClose {
+	if ws.isClose || ws.ws == nil {
 		return ErrClosed
 	}
 	return ws.ws.ReadJSON(v)
@@ -159,7 +163,7 @@ func (ws *Ws) ReadJSON(v any) error {
 }
 
 func (ws *Ws) Close() {
-	if ws.isClose {
+	if ws.isClose || ws.ws == nil {
 		return
 	}
 	_ = ws.ws.Close()

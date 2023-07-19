@@ -1,7 +1,11 @@
 /.idea
 /docker_compose/nginx/kc_home
+/docker_compose/nginx/cert/
 /docker_compose/mysql/data
 /docker_compose/minio/data
+/docker_compose/kafka/data
+/docker_compose/kafka/logs
+/docker_compose/redis/data
 /id_ed25519
 
 /apigateway/log
@@ -10,4 +14,3 @@
 /documentservice/log
 
 **/go.sum
-/docker_compose/nginx/cert/

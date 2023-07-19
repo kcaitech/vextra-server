@@ -7,6 +7,7 @@ services:
       dockerfile: ./userservice/Dockerfile
     image: userservice:latest
     container_name: userservice
+    restart: always
     environment:
       TZ: Asia/Shanghai
     networks:

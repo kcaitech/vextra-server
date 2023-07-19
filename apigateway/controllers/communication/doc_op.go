@@ -1,6 +1,7 @@
 package communication
 
 import (
+	"errors"
 	"github.com/google/uuid"
 	"log"
 	"protodesign.cn/kcserver/common"
@@ -68,25 +69,22 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 
 	tunnelId := uuid.New().String()
 	tunnel := &Tunnel{
-		Id:       tunnelId,
-		ServerWs: serverWs,
-		ClientWs: clientWs,
+		Id:     tunnelId,
+		Server: serverWs,
+		Client: clientWs,
 	}
 	// 转发客户端数据到服务端
-	tunnel.ReceiveFromClient = func(tunnelDataType TunnelDataType, data []byte, serverCmd ServerCmd) {
+	tunnel.ReceiveFromClient = func(tunnelDataType TunnelDataType, data []byte, serverCmd ServerCmd) error {
 		if permType >= models.PermTypeEditable {
-			err := tunnel.ServerWs.WriteMessage(websocket.MessageType(tunnelDataType), data)
+			err := tunnel.Server.WriteMessage(websocket.MessageType(tunnelDataType), data)
 			if err != nil {
-				serverCmd.Message = "数据发送失败"
-				_ = clientWs.WriteJSON(&serverCmd)
 				log.Println("数据发送失败", err)
-				return
+				return errors.New("数据发送失败")
 			}
-			serverCmd.Status = CmdStatusSuccess
 		} else {
-			serverCmd.Message = "无权限"
+			return errors.New("无权限")
 		}
-		_ = clientWs.WriteJSON(&serverCmd)
+		return nil
 	}
 	// 转发服务端数据到客户端
 	go tunnel.DefaultServerToClient()

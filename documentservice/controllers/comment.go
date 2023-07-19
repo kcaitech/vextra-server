@@ -1,6 +1,8 @@
 package controllers
 
 import (
+	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/gin-gonic/gin"
@@ -12,6 +14,7 @@ import (
 	"protodesign.cn/kcserver/common/gin/response"
 	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/common/mongo"
+	"protodesign.cn/kcserver/common/redis"
 	"protodesign.cn/kcserver/common/services"
 	"protodesign.cn/kcserver/common/snowflake"
 	"protodesign.cn/kcserver/utils/str"
@@ -55,6 +58,19 @@ type UserComment struct {
 	RecordCreatedAt string            `json:"record_created_at" bson:"record_created_at"`
 	Content         string            `json:"content" bson:"content" binding:"required"`
 	Status          UserCommentStatus `json:"status" bson:"status"`
+}
+
+type UserCommentPublishType uint8
+
+const (
+	UserCommentPublishTypeAdd UserCommentPublishType = iota
+	UserCommentPublishTypeDel
+	UserCommentPublishTypeUpdate
+)
+
+type UserCommentPublishData struct {
+	Type    UserCommentPublishType
+	Comment *UserComment
 }
 
 func GetDocumentComment(c *gin.Context) {
@@ -138,12 +154,16 @@ func PostUserComment(c *gin.Context) {
 		log.Println("mongo插入失败", err)
 		response.Fail(c, "评论失败")
 	}
+	redis.Client.Publish(context.Background(), userComment.DocumentId, &UserCommentPublishData{
+		Type:    UserCommentPublishTypeAdd,
+		Comment: &userComment,
+	})
 	response.Success(c, &userComment)
 }
 
 var errNoPermission = errors.New("无权限")
 
-func checkUserPermission(userId int64, commentId string) (*UserComment, error) {
+func checkUserPermission(userId int64, commentId string, expectPermType models.PermType) (*UserComment, error) {
 	commentCollection := mongo.DB.Collection("comment")
 	commentRes := commentCollection.FindOne(nil, bson.M{"_id": commentId})
 	if commentRes.Err() != nil {
@@ -155,7 +175,7 @@ func checkUserPermission(userId int64, commentId string) (*UserComment, error) {
 		return nil, errors.New("评论数据错误")
 	}
 	var permType models.PermType
-	if err := services.NewDocumentService().GetPermTypeByDocumentAndUserId(&permType, str.DefaultToInt(comment.DocumentId, 0), userId); err != nil || permType < models.PermTypeCommentable {
+	if err := services.NewDocumentService().GetPermTypeByDocumentAndUserId(&permType, str.DefaultToInt(comment.DocumentId, 0), userId); err != nil || permType < expectPermType {
 		return nil, errNoPermission
 	}
 	return &comment, nil
@@ -187,7 +207,7 @@ func PutUserComment(c *gin.Context) {
 		response.BadRequest(c, "参数错误：id")
 		return
 	}
-	comment, err := checkUserPermission(userId, userComment.Id)
+	comment, err := checkUserPermission(userId, userComment.Id, models.PermTypeCommentable)
 	if err != nil {
 		if err == errNoPermission {
 			response.Forbidden(c, "")
@@ -197,7 +217,13 @@ func PutUserComment(c *gin.Context) {
 			return
 		}
 	}
-	if comment.User.Id != str.IntToString(userId) {
+	documentService := services.NewDocumentService()
+	var document models.Document
+	if documentService.GetById(str.DefaultToInt(comment.DocumentId, 0), &document) != nil {
+		response.BadRequest(c, "文档不存在")
+		return
+	}
+	if comment.User.Id != str.IntToString(userId) && document.UserId != userId {
 		response.Forbidden(c, "")
 		return
 	}
@@ -205,6 +231,12 @@ func PutUserComment(c *gin.Context) {
 	if _, err := commentCollection.UpdateByID(nil, userComment.Id, bson.M{"$set": &userComment}); err != nil {
 		log.Println("mongo更新失败", err)
 		response.Fail(c, "更新失败")
+	}
+	if publishData, err := json.Marshal(&UserCommentPublishData{
+		Type:    UserCommentPublishTypeUpdate,
+		Comment: comment,
+	}); err == nil {
+		redis.Client.Publish(context.Background(), comment.DocumentId, publishData)
 	}
 	response.Success(c, &userComment)
 }
@@ -220,7 +252,7 @@ func DeleteUserComment(c *gin.Context) {
 		response.BadRequest(c, "参数错误：comment_id")
 		return
 	}
-	comment, err := checkUserPermission(userId, commentId)
+	comment, err := checkUserPermission(userId, commentId, models.PermTypeCommentable)
 	if err != nil {
 		if err == errNoPermission {
 			response.Forbidden(c, "")
@@ -256,6 +288,10 @@ func DeleteUserComment(c *gin.Context) {
 		log.Println("mongo删除失败", err)
 		response.Fail(c, "删除失败")
 	}
+	redis.Client.Publish(context.Background(), comment.DocumentId, &UserCommentPublishData{
+		Type:    UserCommentPublishTypeDel,
+		Comment: comment,
+	})
 	response.Success(c, "")
 }
 
@@ -283,7 +319,7 @@ func SetUserCommentStatus(c *gin.Context) {
 		response.BadRequest(c, "参数错误：status")
 		return
 	}
-	comment, err := checkUserPermission(userId, userComment.Id)
+	comment, err := checkUserPermission(userId, userComment.Id, models.PermTypeCommentable)
 	if err != nil {
 		if err == errNoPermission {
 			response.Forbidden(c, "")
@@ -305,5 +341,9 @@ func SetUserCommentStatus(c *gin.Context) {
 		log.Println("mongo更新失败", err)
 		response.Fail(c, "更新失败")
 	}
+	redis.Client.Publish(context.Background(), comment.DocumentId, &UserCommentPublishData{
+		Type:    UserCommentPublishTypeUpdate,
+		Comment: comment,
+	})
 	response.Success(c, &userComment)
 }

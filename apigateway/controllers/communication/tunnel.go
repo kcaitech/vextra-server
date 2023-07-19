@@ -2,36 +2,51 @@ package communication
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/google/uuid"
 	"log"
 	"protodesign.cn/kcserver/utils/websocket"
 )
 
+type TunnelServer interface {
+	SetCloseHandler(handler func(code int, text string))
+	WriteMessage(messageType websocket.MessageType, data []byte) error
+	ReadMessage() (websocket.MessageType, []byte, error)
+	Close()
+}
+
+type TunnelClient interface {
+	WriteMessageLock(needLock bool, messageType websocket.MessageType, data []byte) error
+	WriteJSONLock(needLock bool, v any) error
+	Lock()
+	Unlock()
+}
+
 type Tunnel struct {
 	Id                string
-	ServerWs          *websocket.Ws
-	ClientWs          *websocket.Ws
-	ReceiveFromClient func(tunnelDataType TunnelDataType, data []byte, serverCmd ServerCmd)
+	Server            TunnelServer
+	Client            TunnelClient
+	ReceiveFromClient func(tunnelDataType TunnelDataType, data []byte, serverCmd ServerCmd) error
 }
 
 func (tunnel *Tunnel) DefaultServerToClient() {
 	needUnlock := false
 	defer func() {
-		tunnel.ServerWs.Close()
+		tunnel.Server.Close()
 		log.Println("document ws服务端关闭", tunnel.Id)
 		if needUnlock {
-			tunnel.ClientWs.Unlock()
+			tunnel.Client.Unlock()
 		}
 	}()
 	for {
-		tunnelType, data, err := tunnel.ServerWs.ReadMessage()
+		tunnelType, data, err := tunnel.Server.ReadMessage()
 		if err != nil {
 			log.Println("document ws服务端数据读取失败", err)
 			return
 		}
 		var tunnelData any = nil
 		if tunnelType == websocket.MessageTypeBinary {
-			tunnel.ClientWs.Lock()
+			tunnel.Client.Lock()
 			needUnlock = true
 		} else {
 			tunnelData = &CmdData{}
@@ -40,7 +55,7 @@ func (tunnel *Tunnel) DefaultServerToClient() {
 				return
 			}
 		}
-		if err := tunnel.ClientWs.WriteJSONLock(tunnelType != websocket.MessageTypeBinary, &ServerCmd{
+		if err := tunnel.Client.WriteJSONLock(tunnelType != websocket.MessageTypeBinary, &ServerCmd{
 			CmdType: ServerCmdTypeTunnelData,
 			CmdId:   uuid.New().String(),
 			Data:    CmdData{"tunnel_id": tunnel.Id, "data_type": tunnelType, "data": tunnelData},
@@ -49,24 +64,19 @@ func (tunnel *Tunnel) DefaultServerToClient() {
 			return
 		}
 		if tunnelType == websocket.MessageTypeBinary {
-			if err := tunnel.ClientWs.WriteMessageLock(false, websocket.MessageTypeBinary, data); err != nil {
+			if err := tunnel.Client.WriteMessageLock(false, websocket.MessageTypeBinary, data); err != nil {
 				log.Println("document ws客户端数据写入失败", err)
 				return
 			}
-			tunnel.ClientWs.Unlock()
+			tunnel.Client.Unlock()
 			needUnlock = false
 		}
 	}
 }
 
-func (tunnel *Tunnel) DefaultClientToServer(tunnelDataType TunnelDataType, data []byte, serverCmd ServerCmd) {
-	err := tunnel.ServerWs.WriteMessage(websocket.MessageType(tunnelDataType), data)
-	if err != nil {
-		serverCmd.Message = "数据发送失败"
-		_ = tunnel.ClientWs.WriteJSON(&serverCmd)
-		log.Println("数据发送失败", err)
-		return
+func (tunnel *Tunnel) DefaultClientToServer(tunnelDataType TunnelDataType, data []byte, serverCmd ServerCmd) error {
+	if tunnel.Server.WriteMessage(websocket.MessageType(tunnelDataType), data) != nil {
+		return errors.New("数据发送失败")
 	}
-	serverCmd.Status = CmdStatusSuccess
-	_ = tunnel.ClientWs.WriteJSON(&serverCmd)
+	return nil
 }

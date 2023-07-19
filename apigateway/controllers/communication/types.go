@@ -24,6 +24,7 @@ type TunnelType uint8
 const (
 	TunnelTypeDocOp             TunnelType = iota // 文档操作
 	TunnelTypeDocResourceUpload                   // 文档资源上传
+	TunnelTypeDocCommentOp                        // 文档评论操作
 )
 
 type Data map[string]any

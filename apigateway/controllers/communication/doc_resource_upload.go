@@ -45,9 +45,9 @@ func OpenDocResourceUploadTunnel(clientWs *websocket.Ws, clientCmdData CmdData, 
 
 	tunnelId := uuid.New().String()
 	tunnel := &Tunnel{
-		Id:       tunnelId,
-		ServerWs: serverWs,
-		ClientWs: clientWs,
+		Id:     tunnelId,
+		Server: serverWs,
+		Client: clientWs,
 	}
 	// 转发客户端数据到服务端
 	tunnel.ReceiveFromClient = tunnel.DefaultClientToServer

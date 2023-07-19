@@ -23,5 +23,8 @@ CreateLog userservice
 
 # 创建docker network
 docker network create --subnet=172.21.0.0/16 --gateway=172.21.0.1 db_net_1
+docker network create minio_net_1
+docker network create mongo_net_1
+docker network create redis_net_1
 
 cd $originalPath

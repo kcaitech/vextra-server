@@ -84,7 +84,7 @@ func Communication(c *gin.Context) {
 	ws.SetCloseHandler(func(code int, text string) {
 		log.Println("ws连接关闭", code, text)
 		tunnelMap.Range(func(_ string, tunnelSession *Tunnel) bool {
-			tunnelSession.ServerWs.Close()
+			tunnelSession.Server.Close()
 			return true
 		})
 	})
@@ -136,7 +136,7 @@ func Communication(c *gin.Context) {
 		if err := ws.ReadJSON(&clientCmd); err != nil {
 			if err == websocket.ErrClosed {
 				tunnelMap.Range(func(_ string, tunnelSession *Tunnel) bool {
-					tunnelSession.ServerWs.Close()
+					tunnelSession.Server.Close()
 					return true
 				})
 				log.Println("ws连接关闭", err)
@@ -180,6 +180,8 @@ func Communication(c *gin.Context) {
 				tunnel = OpenDocOpTunnel(ws, clientCmdData, serverCmd, Data{"userId": userId})
 			case TunnelTypeDocResourceUpload:
 				tunnel = OpenDocResourceUploadTunnel(ws, clientCmdData, serverCmd, Data{"userId": userId})
+			case TunnelTypeDocCommentOp:
+				tunnel = OpenDocCommentOpTunnel(ws, clientCmdData, serverCmd, Data{"userId": userId})
 			default:
 				serverCmd.Message = "tunnel_type错误"
 				log.Println("clientCmd.TunnelType错误", clientCmd.TunnelType)
@@ -195,7 +197,7 @@ func Communication(c *gin.Context) {
 			tunnelId := tunnel.Id
 			tunnelMap.Set(tunnelId, tunnel)
 			// todo 关闭前的处理
-			tunnel.ServerWs.SetCloseHandler(func(code int, text string) {
+			tunnel.Server.SetCloseHandler(func(code int, text string) {
 				tunnelMap.Delete(tunnelId)
 				_ = ws.WriteJSON(&ServerCmd{
 					CmdType: ServerCmdTypeCloseTunnel,
@@ -211,7 +213,7 @@ func Communication(c *gin.Context) {
 				_ = ws.WriteJSON(&serverCmd)
 				continue
 			}
-			tunnel.ServerWs.Close()
+			tunnel.Server.Close()
 			tunnelMap.Delete(tunnelId)
 			serverCmd.Status = CmdStatusSuccess
 			_ = ws.WriteJSON(&serverCmd)
@@ -229,7 +231,15 @@ func Communication(c *gin.Context) {
 				_ = ws.WriteJSON(&serverCmd)
 				continue
 			}
-			tunnel.ReceiveFromClient(tunnelDataType, data, serverCmd)
+			if err := tunnel.ReceiveFromClient(tunnelDataType, data, serverCmd); err != nil {
+				serverCmd.Message = err.Error()
+				_ = ws.WriteJSON(&serverCmd)
+				log.Println("数据发送失败", err)
+				continue
+			} else {
+				serverCmd.Status = CmdStatusSuccess
+				_ = ws.WriteJSON(&serverCmd)
+			}
 		default:
 			serverCmd.Message = "cmd_type错误"
 			_ = ws.WriteJSON(&serverCmd)

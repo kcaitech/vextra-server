@@ -7,6 +7,7 @@ services:
       dockerfile: ./documentservice/Dockerfile
     image: documentservice:latest
     container_name: documentservice
+    restart: always
     environment:
       TZ: Asia/Shanghai
     networks:
@@ -24,6 +25,7 @@ services:
       - ../common/snowflake/config/config.yaml:/app/common/snowflake/config/config.yaml
       - ../common/storage/config/config.yaml:/app/common/storage/config/config.yaml
       - ../common/mongo/config/config.yaml:/app/common/mongo/config/config.yaml
+      - ../common/redis/config/config.yaml:/app/common/redis/config/config.yaml
       - ./log/all.log:/app/log/all.log
 
 networks:
