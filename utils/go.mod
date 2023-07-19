@@ -6,6 +6,7 @@ require github.com/minio/minio-go/v7 v7.0.52
 
 require (
 	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.16.5 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.4 // indirect
@@ -24,6 +25,7 @@ require (
 )
 
 require (
+	github.com/aws/aws-sdk-go v1.44.302
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/websocket v1.5.0
 )

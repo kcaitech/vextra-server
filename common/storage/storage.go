@@ -18,6 +18,8 @@ func Init(filePath string) error {
 	switch conf.Storage.Provider {
 	case base.MINIO:
 		providerConf = conf.Minio
+	case base.S3:
+		providerConf = conf.S3
 	default:
 		return errors.New("不支持的provider")
 	}

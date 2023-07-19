@@ -10,6 +10,7 @@ type Configuration struct {
 		Provider base.Provider `yaml:"provider"`
 	} `yaml:"storage"`
 	Minio base.Config `yaml:"minio"`
+	S3    base.Config `yaml:"s3"`
 }
 
 var Config Configuration

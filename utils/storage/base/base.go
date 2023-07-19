@@ -23,7 +23,7 @@ type ClientConfig struct {
 type Bucket interface {
 	PubObject(objectName string, reader io.Reader, objectSize int64, contentType string) (*UploadInfo, error)
 	PubObjectByte(objectName string, content []byte) (*UploadInfo, error)
-	GenerateAccessKey(authPath string, authOp int, expires int) (*AccessKeyValue, error)
+	GenerateAccessKey(authPath string, authOp int, expires int, roleArn string, roleSessionName string) (*AccessKeyValue, error)
 	CopyObject(srcPath string, destPath string) (*UploadInfo, error)
 	CopyDirectory(srcDirPath string, destDirPath string) (*UploadInfo, error)
 }
@@ -39,6 +39,7 @@ type Config struct {
 }
 
 type UploadInfo struct {
+	VersionID string `json:"versionId"`
 }
 
 type DefaultBucket struct {

@@ -1,13 +1,15 @@
-package minio
+package s3
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
-	"github.com/minio/minio-go/v7"
-	"github.com/minio/minio-go/v7/pkg/credentials"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/aws/aws-sdk-go/service/sts"
 	"io"
-	"log"
 	"protodesign.cn/kcserver/utils/storage/base"
 	"strconv"
 	"strings"
@@ -15,21 +17,25 @@ import (
 
 type client struct {
 	config *base.ClientConfig
-	client *minio.Client
+	sess   *session.Session
+	client *s3.S3
 }
 
 func NewClient(config *base.ClientConfig) (base.Client, error) {
-	c, err := minio.New(config.Endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(config.AccessKeyID, config.SecretAccessKey, ""),
-		Region: config.Region,
-		Secure: false,
+	sess, err := session.NewSession(&aws.Config{
+		Endpoint:         aws.String(config.Endpoint),
+		Region:           aws.String(config.Region),
+		Credentials:      credentials.NewStaticCredentials(config.AccessKeyID, config.SecretAccessKey, ""),
+		DisableSSL:       aws.Bool(true),
+		S3ForcePathStyle: aws.Bool(true),
 	})
 	if err != nil {
 		return nil, err
 	}
 	return &client{
 		config: config,
-		client: c,
+		sess:   sess,
+		client: s3.New(sess),
 	}, nil
 }
 
@@ -59,21 +65,22 @@ func (that *bucket) PubObject(objectName string, reader io.Reader, objectSize in
 			}
 		}
 	}
-	result, err := that.client.client.PutObject(
-		context.Background(),
-		that.config.BucketName,
-		objectName,
-		reader,
-		objectSize,
-		minio.PutObjectOptions{
-			ContentType: contentType,
-		},
-	)
+	uploader := s3manager.NewUploader(that.client.sess)
+	result, err := uploader.Upload(&s3manager.UploadInput{
+		Bucket:      aws.String(that.config.BucketName),
+		Key:         aws.String(objectName),
+		Body:        reader,
+		ContentType: aws.String(contentType),
+	})
 	if err != nil {
 		return nil, err
 	}
+	versionID := ""
+	if result.VersionID != nil {
+		versionID = *result.VersionID
+	}
 	return &base.UploadInfo{
-		VersionID: result.VersionID,
+		VersionID: versionID,
 	}, nil
 }
 
@@ -113,43 +120,30 @@ func (that *bucket) GenerateAccessKey(authPath string, authOp int, expires int, 
 	if err != nil {
 		return nil, err
 	}
-	stsAssumeRole, err := credentials.NewSTSAssumeRole("http://"+that.client.config.Endpoint, credentials.STSAssumeRoleOptions{
-		AccessKey:       that.client.config.StsAccessKeyID,
-		SecretKey:       that.client.config.StsSecretAccessKey,
-		Policy:          string(policy),
-		Location:        that.client.config.Region,
-		DurationSeconds: expires,
-		RoleARN:         roleArn,
-		RoleSessionName: roleSessionName,
+	stsSvc := sts.New(that.client.sess)
+	result, err := stsSvc.AssumeRole(&sts.AssumeRoleInput{
+		RoleArn:         aws.String(roleArn), //"arn:aws:iam::123456789012:role/demo"
+		RoleSessionName: aws.String(roleSessionName),
+		Policy:          aws.String(string(policy)),
+		DurationSeconds: aws.Int64(int64(expires)),
 	})
 	if err != nil {
 		return nil, err
 	}
-	v, err := stsAssumeRole.Get()
-	if err != nil {
-		return nil, err
-	}
 	value := base.AccessKeyValue{
-		AccessKey:       v.AccessKeyID,
-		SecretAccessKey: v.SecretAccessKey,
-		SessionToken:    v.SessionToken,
-		SignerType:      int(v.SignerType),
+		AccessKey:       *result.Credentials.AccessKeyId,
+		SecretAccessKey: *result.Credentials.SecretAccessKey,
+		SessionToken:    *result.Credentials.SessionToken,
 	}
 	return &value, err
 }
 
 func (that *bucket) CopyObject(srcPath string, destPath string) (*base.UploadInfo, error) {
-	_, err := that.client.client.CopyObject(
-		context.Background(),
-		minio.CopyDestOptions{
-			Bucket: that.config.BucketName,
-			Object: destPath,
-		},
-		minio.CopySrcOptions{
-			Bucket: that.config.BucketName,
-			Object: srcPath,
-		},
-	)
+	_, err := that.client.client.CopyObject(&s3.CopyObjectInput{
+		CopySource: aws.String(that.config.BucketName + "/" + srcPath),
+		Bucket:     aws.String(that.config.BucketName),
+		Key:        aws.String(destPath),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -160,15 +154,17 @@ func (that *bucket) CopyDirectory(srcDirPath string, destDirPath string) (*base.
 	if srcDirPath == "" || srcDirPath == "/" || destDirPath == "" || destDirPath == "/" {
 		return nil, errors.New("路径不能为空")
 	}
-	for objectInfo := range that.client.client.ListObjects(context.Background(), that.config.BucketName, minio.ListObjectsOptions{
-		Prefix:    srcDirPath,
-		Recursive: true,
-	}) {
-		if objectInfo.Err != nil {
-			log.Println("ListObjects异常：", objectInfo.Err)
-			continue
+	if err := that.client.client.ListObjectsV2Pages(&s3.ListObjectsV2Input{
+		Bucket:    aws.String(that.config.BucketName),
+		Prefix:    aws.String(srcDirPath),
+		Delimiter: nil,
+	}, func(result *s3.ListObjectsV2Output, b bool) bool {
+		for _, objectInfo := range result.Contents {
+			_, _ = that.CopyObject(*objectInfo.Key, strings.Replace(*objectInfo.Key, srcDirPath, destDirPath, 1))
 		}
-		_, _ = that.CopyObject(objectInfo.Key, strings.Replace(objectInfo.Key, srcDirPath, destDirPath, 1))
+		return true
+	}); err != nil {
+		return nil, err
 	}
 	return &base.UploadInfo{}, nil
 }
