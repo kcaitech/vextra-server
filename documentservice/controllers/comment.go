@@ -70,7 +70,7 @@ const (
 
 type UserCommentPublishData struct {
 	Type    UserCommentPublishType `json:"type"`
-	Comment *UserComment           `json:"comment"`
+	Comment any                    `json:"comment"`
 }
 
 func GetDocumentComment(c *gin.Context) {
@@ -185,13 +185,13 @@ func checkUserPermission(userId int64, commentId string, expectPermType models.P
 
 type UserCommentUpdate struct {
 	Id            string         `json:"id" bson:"_id"`
-	ParentId      string         `json:"parent_id" bson:"parent_id"`
-	RootId        string         `json:"root_id" bson:"root_id"`
-	PageId        string         `json:"page_id" bson:"page_id,omitempty"`
-	ShapeId       string         `json:"shape_id" bson:"shape_id,omitempty"`
-	TargetShapeId string         `json:"target_shape_id" bson:"target_shape_id,omitempty"`
-	ShapeFrame    map[string]any `json:"shape_frame" bson:"shape_frame,omitempty"`
-	Content       string         `json:"content" bson:"content,omitempty"`
+	ParentId      string         `json:"parent_id,omitempty" bson:"parent_id"`
+	RootId        string         `json:"root_id,omitempty" bson:"root_id"`
+	PageId        string         `json:"page_id,omitempty" bson:"page_id,omitempty"`
+	ShapeId       string         `json:"shape_id,omitempty" bson:"shape_id,omitempty"`
+	TargetShapeId string         `json:"target_shape_id,omitempty" bson:"target_shape_id,omitempty"`
+	ShapeFrame    map[string]any `json:"shape_frame,omitempty" bson:"shape_frame,omitempty"`
+	Content       string         `json:"content,omitempty" bson:"content,omitempty"`
 }
 
 func PutUserComment(c *gin.Context) {
@@ -236,7 +236,7 @@ func PutUserComment(c *gin.Context) {
 	}
 	if publishData, err := json.Marshal(&UserCommentPublishData{
 		Type:    UserCommentPublishTypeUpdate,
-		Comment: comment,
+		Comment: &userComment,
 	}); err == nil {
 		redis.Client.Publish(context.Background(), comment.DocumentId, publishData)
 	}
@@ -291,8 +291,12 @@ func DeleteUserComment(c *gin.Context) {
 		response.Fail(c, "删除失败")
 	}
 	if publishData, err := json.Marshal(&UserCommentPublishData{
-		Type:    UserCommentPublishTypeDel,
-		Comment: comment,
+		Type: UserCommentPublishTypeDel,
+		Comment: &struct {
+			Id string `json:"id" bson:"_id"`
+		}{
+			Id: commentId,
+		},
 	}); err == nil {
 		redis.Client.Publish(context.Background(), comment.DocumentId, publishData)
 	}
@@ -347,7 +351,7 @@ func SetUserCommentStatus(c *gin.Context) {
 	}
 	if publishData, err := json.Marshal(&UserCommentPublishData{
 		Type:    UserCommentPublishTypeUpdate,
-		Comment: comment,
+		Comment: &userComment,
 	}); err == nil {
 		redis.Client.Publish(context.Background(), comment.DocumentId, publishData)
 	}
