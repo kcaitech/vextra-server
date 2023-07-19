@@ -69,8 +69,8 @@ const (
 )
 
 type UserCommentPublishData struct {
-	Type    UserCommentPublishType
-	Comment *UserComment
+	Type    UserCommentPublishType `json:"type"`
+	Comment *UserComment           `json:"comment"`
 }
 
 func GetDocumentComment(c *gin.Context) {
@@ -154,10 +154,12 @@ func PostUserComment(c *gin.Context) {
 		log.Println("mongo插入失败", err)
 		response.Fail(c, "评论失败")
 	}
-	redis.Client.Publish(context.Background(), userComment.DocumentId, &UserCommentPublishData{
+	if publishData, err := json.Marshal(&UserCommentPublishData{
 		Type:    UserCommentPublishTypeAdd,
 		Comment: &userComment,
-	})
+	}); err == nil {
+		redis.Client.Publish(context.Background(), userComment.DocumentId, publishData)
+	}
 	response.Success(c, &userComment)
 }
 
@@ -288,10 +290,12 @@ func DeleteUserComment(c *gin.Context) {
 		log.Println("mongo删除失败", err)
 		response.Fail(c, "删除失败")
 	}
-	redis.Client.Publish(context.Background(), comment.DocumentId, &UserCommentPublishData{
+	if publishData, err := json.Marshal(&UserCommentPublishData{
 		Type:    UserCommentPublishTypeDel,
 		Comment: comment,
-	})
+	}); err == nil {
+		redis.Client.Publish(context.Background(), comment.DocumentId, publishData)
+	}
 	response.Success(c, "")
 }
 
@@ -341,9 +345,11 @@ func SetUserCommentStatus(c *gin.Context) {
 		log.Println("mongo更新失败", err)
 		response.Fail(c, "更新失败")
 	}
-	redis.Client.Publish(context.Background(), comment.DocumentId, &UserCommentPublishData{
+	if publishData, err := json.Marshal(&UserCommentPublishData{
 		Type:    UserCommentPublishTypeUpdate,
 		Comment: comment,
-	})
+	}); err == nil {
+		redis.Client.Publish(context.Background(), comment.DocumentId, publishData)
+	}
 	response.Success(c, &userComment)
 }

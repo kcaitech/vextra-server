@@ -1,4 +1,4 @@
-package document_resource_upload
+package controllers
 
 import (
 	"github.com/gin-gonic/gin"
@@ -11,31 +11,31 @@ import (
 	"protodesign.cn/kcserver/utils/websocket"
 )
 
-type Data map[string]any
-
-type Header struct {
-	UserId     string `json:"user_id"`
-	DocumentId string `json:"document_id"`
-}
-
-type ResponseStatusType string
-
-const (
-	ResponseStatusSuccess ResponseStatusType = "success"
-	ResponseStatusFail    ResponseStatusType = "fail"
-)
-
-type Response struct {
-	Status  ResponseStatusType `json:"status,omitempty"`
-	Message string             `json:"message,omitempty"`
-	Data    Data               `json:"data,omitempty"`
-}
-
-type ResourceHeader struct {
-	Name string `json:"name"`
-}
-
 func UploadDocumentResource(c *gin.Context) {
+	type Data map[string]any
+
+	type Header struct {
+		UserId     string `json:"user_id"`
+		DocumentId string `json:"document_id"`
+	}
+
+	type ResponseStatusType string
+
+	const (
+		ResponseStatusSuccess ResponseStatusType = "success"
+		ResponseStatusFail    ResponseStatusType = "fail"
+	)
+
+	type Response struct {
+		Status  ResponseStatusType `json:"status,omitempty"`
+		Message string             `json:"message,omitempty"`
+		Data    Data               `json:"data,omitempty"`
+	}
+
+	type ResourceHeader struct {
+		Name string `json:"name"`
+	}
+
 	ws, err := websocket.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		response.Fail(c, "建立ws连接失败："+err.Error())

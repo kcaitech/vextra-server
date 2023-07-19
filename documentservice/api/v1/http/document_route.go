@@ -3,7 +3,6 @@ package http
 import (
 	"github.com/gin-gonic/gin"
 	"protodesign.cn/kcserver/documentservice/controllers"
-	"protodesign.cn/kcserver/documentservice/controllers/document_resource_upload"
 )
 
 func loadDocumentRoutes(api *gin.RouterGroup) {
@@ -11,7 +10,7 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 	{
 		router.GET("/upload", controllers.UploadDocumentByUser)
 		router.GET("/ws", controllers.IncrementalUpload)
-		router.GET("/resource_upload", document_resource_upload.UploadDocumentResource)
+		router.GET("/resource_upload", controllers.UploadDocumentResource)
 		router.GET("/access_records", controllers.GetUserDocumentAccessRecordsList)
 		router.DELETE("/access_record", controllers.DeleteUserDocumentAccessRecord)
 		router.GET("/favorites", controllers.GetUserDocumentFavoritesList)

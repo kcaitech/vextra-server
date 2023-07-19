@@ -12,10 +12,12 @@ type Header struct {
 type ClientCmdType uint8
 
 const (
-	ClientCmdTypeReturn      ClientCmdType = iota // 返回cmd执行结果
-	ClientCmdTypeOpenTunnel                       // 打开一条虚拟通道
-	ClientCmdTypeCloseTunnel                      // 关闭一条虚拟通道
-	ClientCmdTypeTunnelData                       // 虚拟通道数据
+	ClientCmdTypeReturn            ClientCmdType = iota // 返回cmd执行结果
+	ClientCmdTypeOpenTunnel                             // 打开一条虚拟通道
+	ClientCmdTypeCloseTunnel                            // 关闭一条虚拟通道
+	ClientCmdTypeTunnelData                             // 虚拟通道数据
+	ClientCmdTypeHeartbeat         = 255                // 心跳包
+	ClientCmdTypeHeartbeatResponse = 254                // 心跳包响应
 )
 
 // TunnelType 虚拟通道类型
@@ -57,10 +59,12 @@ type TunnelCmdData struct {
 type ServerCmdType uint8
 
 const (
-	ServerCmdTypeInitResult  ServerCmdType = iota // 返回初始化结果
-	ServerCmdTypeReturn                           // 返回cmd执行结果
-	ServerCmdTypeCloseTunnel                      // 关闭一条虚拟通道
-	ServerCmdTypeTunnelData                       // 虚拟通道数据
+	ServerCmdTypeInitResult        ServerCmdType = iota // 返回初始化结果
+	ServerCmdTypeReturn                                 // 返回cmd执行结果
+	ServerCmdTypeCloseTunnel                            // 关闭一条虚拟通道
+	ServerCmdTypeTunnelData                             // 虚拟通道数据
+	ServerCmdTypeHeartbeat         = 255                // 心跳包
+	ServerCmdTypeHeartbeatResponse = 254                // 心跳包响应
 )
 
 type CmdStatusType string
