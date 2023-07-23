@@ -48,5 +48,10 @@ func main() {
 		log.Fatalln("数据库迁移错误：" + err.Error())
 	}
 
+	log.Println("开始迁移DocumentVersion表")
+	if err = DocumentVersionUp(mysql.DB); err != nil {
+		log.Fatalln("数据库迁移错误：" + err.Error())
+	}
+
 	log.Println("迁移结束")
 }

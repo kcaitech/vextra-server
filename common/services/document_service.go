@@ -15,6 +15,7 @@ type DocumentService struct {
 	DocumentAccessRecordService       *DocumentAccessRecordService
 	DocumentFavoritesService          *DocumentFavoritesService
 	DocumentPermissionRequestsService *DocumentPermissionRequestsService
+	DocumentVersionService            *DocumentVersionService
 }
 
 func NewDocumentService() *DocumentService {
@@ -24,6 +25,7 @@ func NewDocumentService() *DocumentService {
 		DocumentAccessRecordService:       NewDocumentAccessRecordService(),
 		DocumentFavoritesService:          NewDocumentFavoritesService(),
 		DocumentPermissionRequestsService: NewDocumentPermissionRequestsService(),
+		DocumentVersionService:            NewDocumentVersionService(),
 	}
 	that.That = that
 	return that
@@ -401,6 +403,18 @@ type DocumentPermissionRequestsService struct {
 func NewDocumentPermissionRequestsService() *DocumentPermissionRequestsService {
 	that := &DocumentPermissionRequestsService{
 		DefaultService: NewDefaultService(&models.DocumentPermissionRequests{}),
+	}
+	that.That = that
+	return that
+}
+
+type DocumentVersionService struct {
+	*DefaultService
+}
+
+func NewDocumentVersionService() *DocumentVersionService {
+	that := &DocumentVersionService{
+		DefaultService: NewDefaultService(&models.DocumentVersion{}),
 	}
 	that.That = that
 	return that

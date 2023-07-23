@@ -21,6 +21,7 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 		log.Println("document ws建立失败，参数错误", ok, ok1, ok2, documentIdStr, userId)
 		return nil
 	}
+	versionId, _ := clientCmdDataData["document_id"].(string)
 
 	// 获取文档信息
 	documentId := str.DefaultToInt(documentIdStr, 0)
@@ -60,6 +61,7 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 	if err := serverWs.WriteJSON(Data{
 		"documentId": documentIdStr,
 		"userId":     str.IntToString(userId),
+		"versionId":  versionId,
 	}); err != nil {
 		serverCmd.Message = "通道建立失败"
 		_ = clientWs.WriteJSON(&serverCmd)

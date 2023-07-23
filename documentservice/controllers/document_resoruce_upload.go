@@ -108,7 +108,7 @@ func UploadDocumentResource(c *gin.Context) {
 			return
 		}
 		path := document.Path + "/medias/" + resourceHeader.Name
-		if _, err = storage.Bucket.PubObjectByte(path, resourceData); err != nil {
+		if _, err = storage.Bucket.PutObjectByte(path, resourceData); err != nil {
 			resp.Message = "上传失败"
 			_ = ws.WriteJSON(&resp)
 			log.Println("上传失败", err)

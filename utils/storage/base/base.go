@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"protodesign.cn/kcserver/utils/my_map"
+	"sync"
 )
 
 type Client interface {
@@ -20,9 +22,17 @@ type ClientConfig struct {
 	StsSecretAccessKey string   `yaml:"stsSecretAccessKey"`
 }
 
+type PutObjectInput struct {
+	ObjectName  string
+	Reader      io.Reader
+	ObjectSize  int64
+	ContentType string
+}
+
 type Bucket interface {
-	PubObject(objectName string, reader io.Reader, objectSize int64, contentType string) (*UploadInfo, error)
-	PubObjectByte(objectName string, content []byte) (*UploadInfo, error)
+	PutObject(putObjectInput *PutObjectInput) (*UploadInfo, error)
+	PutObjectByte(objectName string, content []byte) (*UploadInfo, error)
+	PutObjectList(putObjectInputList []*PutObjectInput) ([]*UploadInfo, []error)
 	GenerateAccessKey(authPath string, authOp int, expires int, roleArn string, roleSessionName string) (*AccessKeyValue, error)
 	CopyObject(srcPath string, destPath string) (*UploadInfo, error)
 	CopyDirectory(srcDirPath string, destDirPath string) (*UploadInfo, error)
@@ -50,8 +60,38 @@ func (that *DefaultBucket) PubObject(objectName string, reader io.Reader, object
 	return nil, errors.New("PubObject方法未实现")
 }
 
-func (that *DefaultBucket) PubObjectByte(objectName string, content []byte) (*UploadInfo, error) {
-	return that.That.PubObject(objectName, bytes.NewReader(content), int64(len(content)), "")
+func (that *DefaultBucket) PutObjectByte(objectName string, content []byte) (*UploadInfo, error) {
+	return that.That.PutObject(&PutObjectInput{
+		ObjectName:  objectName,
+		Reader:      bytes.NewReader(content),
+		ObjectSize:  int64(len(content)),
+		ContentType: "",
+	})
+}
+
+func (that *DefaultBucket) PutObjectList(putObjectInputList []*PutObjectInput) ([]*UploadInfo, []error) {
+	uploadInfoMap := my_map.NewSyncMap[int, *UploadInfo]()
+	errorMap := my_map.NewSyncMap[int, error]()
+	uploadWaitGroup := sync.WaitGroup{}
+	for index, putObjectInput := range putObjectInputList {
+		uploadWaitGroup.Add(1)
+		go func(index int, putObjectInput *PutObjectInput) {
+			defer uploadWaitGroup.Done()
+			result, err := that.That.PutObject(putObjectInput)
+			uploadInfoMap.Set(index, result)
+			errorMap.Set(index, err)
+		}(index, putObjectInput)
+	}
+	uploadWaitGroup.Wait()
+	uploadInfoList := make([]*UploadInfo, 0, len(putObjectInputList))
+	errorList := make([]error, 0, len(putObjectInputList))
+	for index := 0; index < len(putObjectInputList); index++ {
+		uploadInfo, _ := uploadInfoMap.Get(index)
+		err, _ := errorMap.Get(index)
+		uploadInfoList = append(uploadInfoList, uploadInfo)
+		errorList = append(errorList, err)
+	}
+	return uploadInfoList, errorList
 }
 
 func (that *DefaultBucket) CopyObject(srcPath string, destPath string) (*UploadInfo, error) {

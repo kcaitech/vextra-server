@@ -6,7 +6,6 @@ import (
 	"errors"
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
-	"io"
 	"log"
 	"protodesign.cn/kcserver/utils/storage/base"
 	"strconv"
@@ -48,25 +47,25 @@ func (that *client) NewBucket(config *base.BucketConfig) base.Bucket {
 	return instance
 }
 
-func (that *bucket) PubObject(objectName string, reader io.Reader, objectSize int64, contentType string) (*base.UploadInfo, error) {
-	if contentType == "" {
-		contentType = "application/octet-stream"
-		splitRes := strings.Split(objectName, ".")
+func (that *bucket) PutObject(putObjectInput *base.PutObjectInput) (*base.UploadInfo, error) {
+	if putObjectInput.ContentType == "" {
+		putObjectInput.ContentType = "application/octet-stream"
+		splitRes := strings.Split(putObjectInput.ObjectName, ".")
 		if len(splitRes) > 1 {
 			switch splitRes[len(splitRes)-1] {
 			case "json":
-				contentType = "application/json"
+				putObjectInput.ContentType = "application/json"
 			}
 		}
 	}
 	result, err := that.client.client.PutObject(
 		context.Background(),
 		that.config.BucketName,
-		objectName,
-		reader,
-		objectSize,
+		putObjectInput.ObjectName,
+		putObjectInput.Reader,
+		putObjectInput.ObjectSize,
 		minio.PutObjectOptions{
-			ContentType: contentType,
+			ContentType: putObjectInput.ContentType,
 		},
 	)
 	if err != nil {

@@ -54,14 +54,14 @@ func OpenDocCommentOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serve
 	if !ok || !ok1 || documentIdStr == "" || !ok2 || userId <= 0 {
 		serverCmd.Message = "通道建立失败，参数错误"
 		_ = clientWs.WriteJSON(&serverCmd)
-		log.Println("document resource upload ws建立失败，参数错误", ok, ok1, ok2, documentIdStr, userId)
+		log.Println("document comment ws建立失败，参数错误", ok, ok1, ok2, documentIdStr, userId)
 		return nil
 	}
 	documentId := str.DefaultToInt(documentIdStr, 0)
 	if documentId <= 0 {
 		serverCmd.Message = "通道建立失败，documentId错误"
 		_ = clientWs.WriteJSON(&serverCmd)
-		log.Println("document resource upload ws建立失败，documentId错误", documentId)
+		log.Println("document comment ws建立失败，documentId错误", documentId)
 		return nil
 	}
 	// 权限校验

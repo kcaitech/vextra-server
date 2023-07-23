@@ -182,6 +182,8 @@ func Communication(c *gin.Context) {
 				tunnel = OpenDocResourceUploadTunnel(ws, clientCmdData, serverCmd, Data{"userId": userId})
 			case TunnelTypeDocCommentOp:
 				tunnel = OpenDocCommentOpTunnel(ws, clientCmdData, serverCmd, Data{"userId": userId})
+			case TunnelTypeDocUpload:
+				tunnel = OpenDocUploadTunnel(ws, clientCmdData, serverCmd, Data{"userId": userId})
 			default:
 				serverCmd.Message = "tunnel_type错误"
 				log.Println("clientCmd.TunnelType错误", clientCmd.TunnelType)

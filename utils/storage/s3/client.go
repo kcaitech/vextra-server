@@ -9,7 +9,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/aws/aws-sdk-go/service/sts"
-	"io"
 	"protodesign.cn/kcserver/utils/storage/base"
 	"strconv"
 	"strings"
@@ -54,23 +53,23 @@ func (that *client) NewBucket(config *base.BucketConfig) base.Bucket {
 	return instance
 }
 
-func (that *bucket) PubObject(objectName string, reader io.Reader, objectSize int64, contentType string) (*base.UploadInfo, error) {
-	if contentType == "" {
-		contentType = "application/octet-stream"
-		splitRes := strings.Split(objectName, ".")
+func (that *bucket) PutObject(putObjectInput *base.PutObjectInput) (*base.UploadInfo, error) {
+	if putObjectInput.ContentType == "" {
+		putObjectInput.ContentType = "application/octet-stream"
+		splitRes := strings.Split(putObjectInput.ObjectName, ".")
 		if len(splitRes) > 1 {
 			switch splitRes[len(splitRes)-1] {
 			case "json":
-				contentType = "application/json"
+				putObjectInput.ContentType = "application/json"
 			}
 		}
 	}
 	uploader := s3manager.NewUploader(that.client.sess)
 	result, err := uploader.Upload(&s3manager.UploadInput{
 		Bucket:      aws.String(that.config.BucketName),
-		Key:         aws.String(objectName),
-		Body:        reader,
-		ContentType: aws.String(contentType),
+		Key:         aws.String(putObjectInput.ObjectName),
+		Body:        putObjectInput.Reader,
+		ContentType: aws.String(putObjectInput.ContentType),
 	})
 	if err != nil {
 		return nil, err

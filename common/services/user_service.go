@@ -6,6 +6,7 @@ import (
 	"io"
 	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/common/storage"
+	storageBase "protodesign.cn/kcserver/utils/storage/base"
 	"protodesign.cn/kcserver/utils/str"
 )
 
@@ -56,7 +57,12 @@ func (s *UserService) UploadAvatar(user *models.User, file io.Reader, fileSize i
 	}
 	fileName := fmt.Sprintf("%s.%s", str.GetUid(), suffix)
 	avatarPath := fmt.Sprintf("/users/%s/avatar/%s", user.Uid, fileName)
-	if _, err := storage.FilesBucket.PubObject(avatarPath, file, fileSize, contentType); err != nil {
+	if _, err := storage.FilesBucket.PutObject(&storageBase.PutObjectInput{
+		ObjectName:  avatarPath,
+		Reader:      file,
+		ObjectSize:  fileSize,
+		ContentType: contentType,
+	}); err != nil {
 		return "", errors.New("上传文件失败")
 	}
 	user.Avatar = avatarPath

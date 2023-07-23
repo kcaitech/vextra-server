@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -141,6 +140,7 @@ func UploadDocumentByUser(c *gin.Context) {
 		paramsError("headerData")
 		return
 	}
+
 	// 获取用户信息
 	parseData, err := ParseJwt(headerDataVal.Token)
 	if err != nil {
@@ -152,6 +152,7 @@ func UploadDocumentByUser(c *gin.Context) {
 		paramsError("Id")
 		return
 	}
+
 	// 获取文档信息
 	documentService := services.NewDocumentService()
 	var document models.Document
@@ -212,7 +213,7 @@ func UploadDocumentByUser(c *gin.Context) {
 		dataFormatError("uploadData.Data.Pages格式错误 " + err.Error())
 		return
 	}
-	// 上传pages、page-symrefs、page-artboardrefs目录
+	// 上传pages目录
 	for i := 0; i < len(pages); i++ {
 		pageId := pages[i].Id
 		pagePath := docPath + "/pages/" + pageId + ".json"
@@ -221,7 +222,7 @@ func UploadDocumentByUser(c *gin.Context) {
 		uploadWaitGroup.Add(1)
 		go func(pagePath string, pageContent json.RawMessage) {
 			defer uploadWaitGroup.Done()
-			if _, err = storage.Bucket.PubObjectByte(pagePath, pageContent); err != nil {
+			if _, err = storage.Bucket.PutObjectByte(pagePath, pageContent); err != nil {
 				uploadError(err)
 				return
 			}
@@ -256,7 +257,7 @@ func UploadDocumentByUser(c *gin.Context) {
 		uploadWaitGroup.Add(1)
 		go func(path string, media []byte) {
 			defer uploadWaitGroup.Done()
-			if _, err = storage.Bucket.PubObjectByte(path, media); err != nil {
+			if _, err = storage.Bucket.PutObjectByte(path, media); err != nil {
 				uploadError(err)
 				return
 			}
@@ -270,14 +271,14 @@ func UploadDocumentByUser(c *gin.Context) {
 
 	// 上传document-meta.json
 	path := docPath + "/document-meta.json"
-	if _, err = storage.Bucket.PubObjectByte(path, data.Data.DocumentMeta); err != nil {
+	if _, err = storage.Bucket.PutObjectByte(path, data.Data.DocumentMeta); err != nil {
 		uploadError(err)
 		return
 	}
 
 	// 上传document-syms.json
 	symsPath := docPath + "/document-syms.json"
-	if _, err = storage.Bucket.PubObjectByte(symsPath, data.Data.DocumentSyms); err != nil {
+	if _, err = storage.Bucket.PutObjectByte(symsPath, data.Data.DocumentSyms); err != nil {
 		uploadError(err)
 		return
 	}
@@ -334,6 +335,6 @@ func UploadDocumentByUser(c *gin.Context) {
 	}
 
 	done(map[string]any{
-		"doc_id": fmt.Sprintf("%d", docId),
+		"doc_id": str.IntToString(docId),
 	})
 }
