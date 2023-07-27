@@ -194,7 +194,7 @@ func UploadDocument(c *gin.Context) {
 		}
 		pageItem["versionId"] = versionId
 	}
-	uploadData.DocumentMeta["versionId"] = lastCmdId
+	uploadData.DocumentMeta["lastCmdId"] = lastCmdId
 	// 上传document-meta.json
 	documentMetaStr, err := json.Marshal(uploadData.DocumentMeta)
 	if err != nil {

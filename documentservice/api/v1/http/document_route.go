@@ -8,7 +8,6 @@ import (
 func loadDocumentRoutes(api *gin.RouterGroup) {
 	router := api.Group("/documents")
 	{
-		router.GET("/upload", controllers.UploadDocumentByUser)
 		router.GET("/document_upload", controllers.UploadDocument)
 		router.GET("/resource_upload", controllers.UploadDocumentResource)
 		router.GET("/access_records", controllers.GetUserDocumentAccessRecordsList)
