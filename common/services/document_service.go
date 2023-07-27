@@ -53,6 +53,7 @@ type Document struct {
 	DocType   models.DocType `json:"doc_type"`
 	Name      string         `json:"name"`
 	Size      uint64         `json:"size"`
+	VersionId string         `json:"version_id"`
 }
 
 func (model *Document) MarshalJSON() ([]byte, error) {

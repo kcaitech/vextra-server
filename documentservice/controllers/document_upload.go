@@ -213,13 +213,6 @@ func UploadDocument(c *gin.Context) {
 		return
 	}
 	documentVersionId := putObjectResult.VersionID
-	if err := documentService.DocumentVersionService.Create(&models.DocumentVersion{
-		DocumentId: documentId,
-		VersionId:  documentVersionId,
-		LastCmdId:  str.DefaultToInt(lastCmdId, 0),
-	}); err != nil {
-
-	}
 	documentSize += uint64(len(uploadData.DocumentMeta))
 
 	// 上传document-syms.json
@@ -289,9 +282,19 @@ func UploadDocument(c *gin.Context) {
 		}
 	}
 
+	// 创建文档版本记录
+	if err := documentService.DocumentVersionService.Create(&models.DocumentVersion{
+		DocumentId: documentId,
+		VersionId:  documentVersionId,
+		LastCmdId:  str.DefaultToInt(lastCmdId, 0),
+	}); err != nil {
+
+	}
+
 	resp.Status = ResponseStatusSuccess
 	resp.Data = Data{
-		"doc_id": str.IntToString(documentId),
+		"doc_id":     str.IntToString(documentId),
+		"version_id": documentVersionId,
 	}
 	_ = ws.WriteJSON(&resp)
 }
