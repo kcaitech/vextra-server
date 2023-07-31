@@ -89,6 +89,7 @@ func UploadDocument(c *gin.Context) {
 		Pages        json.RawMessage `json:"pages"`
 		DocumentSyms json.RawMessage `json:"document_syms"`
 		MediaNames   []string        `json:"media_names"`
+		MediasSize   uint64          `json:"medias_size"`
 	}
 	uploadData := UploadData{}
 	if err := ws.ReadJSON(&uploadData); err != nil {
@@ -176,6 +177,8 @@ func UploadDocument(c *gin.Context) {
 				}
 			}(path, media)
 		}
+	} else {
+		documentSize += uploadData.MediasSize
 	}
 
 	uploadWaitGroup.Wait()
