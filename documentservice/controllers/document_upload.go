@@ -67,12 +67,13 @@ func UploadDocument(c *gin.Context) {
 		log.Println("参数错误", userId, documentId)
 		return
 	}
+	isFirstUpload := documentId <= 0
 
 	// 获取文档信息
 	documentService := services.NewDocumentService()
 	var document models.Document
 	docPath := uuid.New().String()
-	if documentId > 0 {
+	if !isFirstUpload {
 		if documentService.GetById(documentId, &document) != nil {
 			resp.Message = "文档不存在"
 			_ = ws.WriteJSON(&resp)
@@ -139,40 +140,42 @@ func UploadDocument(c *gin.Context) {
 	}
 
 	// medias部分
-	nextMedia := func() []byte {
-		messageType, data, err := ws.ReadMessage()
-		if err != nil {
-			resp.Message = "ws连接异常"
-			_ = ws.WriteJSON(&resp)
-			ws.Close()
-			return nil
-		}
-		if messageType != websocket.MessageTypeBinary {
-			resp.Message = "media格式错误"
-			_ = ws.WriteJSON(&resp)
-			ws.Close()
-			return nil
-		}
-		return data
-	}
-	for _, mediaName := range uploadData.MediaNames {
-		path := docPath + "/medias/" + mediaName
-		media := nextMedia()
-		if media == nil {
-			return
-		}
-		documentSize += uint64(len(media))
-		uploadWaitGroup.Add(1)
-		go func(path string, media []byte) {
-			defer uploadWaitGroup.Done()
-			if _, err := storage.Bucket.PutObjectByte(path, media); err != nil {
-				resp.Message = "对象上传错误"
-				log.Println("对象上传错误", err)
+	if isFirstUpload {
+		nextMedia := func() []byte {
+			messageType, data, err := ws.ReadMessage()
+			if err != nil {
+				resp.Message = "ws连接异常"
 				_ = ws.WriteJSON(&resp)
 				ws.Close()
+				return nil
+			}
+			if messageType != websocket.MessageTypeBinary {
+				resp.Message = "media格式错误"
+				_ = ws.WriteJSON(&resp)
+				ws.Close()
+				return nil
+			}
+			return data
+		}
+		for _, mediaName := range uploadData.MediaNames {
+			path := docPath + "/medias/" + mediaName
+			media := nextMedia()
+			if media == nil {
 				return
 			}
-		}(path, media)
+			documentSize += uint64(len(media))
+			uploadWaitGroup.Add(1)
+			go func(path string, media []byte) {
+				defer uploadWaitGroup.Done()
+				if _, err := storage.Bucket.PutObjectByte(path, media); err != nil {
+					resp.Message = "对象上传错误"
+					log.Println("对象上传错误", err)
+					_ = ws.WriteJSON(&resp)
+					ws.Close()
+					return
+				}
+			}(path, media)
+		}
 	}
 
 	uploadWaitGroup.Wait()
@@ -231,7 +234,7 @@ func UploadDocument(c *gin.Context) {
 	documentAccessRecordService := services.NewDocumentAccessRecordService()
 	// 创建文档记录和历史记录
 	now := myTime.Time(time.Now())
-	if documentId <= 0 {
+	if isFirstUpload {
 		newDocument := models.Document{
 			UserId:    userId,
 			Path:      docPath,

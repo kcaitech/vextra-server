@@ -242,6 +242,11 @@ func Communication(c *gin.Context) {
 				serverCmd.Status = CmdStatusSuccess
 				_ = ws.WriteJSON(&serverCmd)
 			}
+		case ClientCmdTypeHeartbeat:
+			serverCmd.Status = CmdStatusSuccess
+			serverCmd.CmdType = ServerCmdTypeHeartbeatResponse
+			serverCmd.Data = CmdData{"cmd_id": clientCmd.CmdId}
+			_ = ws.WriteJSON(&serverCmd)
 		default:
 			serverCmd.Message = "cmd_type错误"
 			_ = ws.WriteJSON(&serverCmd)
