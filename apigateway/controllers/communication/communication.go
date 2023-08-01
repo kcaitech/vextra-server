@@ -2,6 +2,7 @@ package communication
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"log"
@@ -76,7 +77,7 @@ func Communication(c *gin.Context) {
 		tunnelId := tunnelCmdData.TunnelId
 		tunnel := getTunnelById(tunnelId)
 		if tunnel == nil {
-			return "", nil
+			return tunnelId, nil
 		}
 		return tunnelId, tunnel
 	}
@@ -134,7 +135,7 @@ func Communication(c *gin.Context) {
 			CmdId:   serverCmdId,
 		}
 		if err := ws.ReadJSON(&clientCmd); err != nil {
-			if err == websocket.ErrClosed {
+			if errors.Is(err, websocket.ErrClosed) {
 				tunnelMap.Range(func(_ string, tunnelSession *Tunnel) bool {
 					tunnelSession.Server.Close()
 					return true
@@ -172,6 +173,13 @@ func Communication(c *gin.Context) {
 			if !ok || !ok1 || cmdId == "" {
 				log.Println("cmdId错误", ok, ok1, cmdId)
 				continue
+			}
+			if clientCmd.Status == CmdStatusFail && clientCmd.Message == CmdMessageTunnelIdError {
+				tunnelId, tunnel := getTunnelByCmdData(clientCmdData)
+				if tunnel != nil {
+					tunnel.Server.Close()
+				}
+				tunnelMap.Delete(tunnelId)
 			}
 		case ClientCmdTypeOpenTunnel:
 			var tunnel *Tunnel
@@ -211,7 +219,7 @@ func Communication(c *gin.Context) {
 		case ClientCmdTypeCloseTunnel:
 			tunnelId, tunnel := getTunnelByCmdData(clientCmdData)
 			if tunnel == nil {
-				serverCmd.Message = "tunnel_id错误"
+				serverCmd.Message = CmdMessageTunnelIdError
 				_ = ws.WriteJSON(&serverCmd)
 				continue
 			}
@@ -223,7 +231,7 @@ func Communication(c *gin.Context) {
 			tunnelId, tunnel := getTunnelByTunnelCmdData(clientTunnelCmdData)
 			serverCmd.Data["tunnel_id"] = tunnelId
 			if tunnel == nil {
-				serverCmd.Message = "tunnel_id错误"
+				serverCmd.Message = CmdMessageTunnelIdError
 				_ = ws.WriteJSON(&serverCmd)
 				continue
 			}

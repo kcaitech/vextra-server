@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"github.com/gin-gonic/gin"
 	"log"
 	"protodesign.cn/kcserver/common/gin/response"
@@ -91,7 +92,7 @@ func UploadDocumentResource(c *gin.Context) {
 		}
 		resourceHeader := ResourceHeader{}
 		if err := ws.ReadJSON(&resourceHeader); err != nil || resourceHeader.Name == "" {
-			if err == websocket.ErrClosed {
+			if errors.Is(err, websocket.ErrClosed) {
 				log.Println("ws连接关闭", err)
 				return
 			}

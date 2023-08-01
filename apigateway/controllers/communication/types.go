@@ -32,6 +32,10 @@ const (
 
 type Data map[string]any
 
+const (
+	CmdMessageTunnelIdError string = "tunnel_id错误"
+)
+
 type CmdData Data
 
 type ClientCmd struct {
