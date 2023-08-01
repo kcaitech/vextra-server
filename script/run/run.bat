@@ -35,7 +35,7 @@ exit /b
     cd %base_dir%\%1
     echo 正在处理：%1
     @echo on
-    docker-compose up -d
+    docker compose up -d
     @echo off
     exit /b
 
@@ -43,6 +43,6 @@ exit /b
     cd %base_dir%\%1
     echo 正在处理：%1
     @echo on
-    docker-compose up -d --build --force-recreate
+    docker compose up -d --build --force-recreate
     @echo off
     exit /b

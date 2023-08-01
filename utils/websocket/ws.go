@@ -3,6 +3,7 @@ package websocket
 import (
 	"errors"
 	gws "github.com/gorilla/websocket"
+	"io"
 	"net/http"
 	"protodesign.cn/kcserver/utils/str"
 	"sync"
@@ -124,6 +125,9 @@ func (ws *Ws) ReadMessageLock(needLock bool) (MessageType, []byte, error) {
 	}
 	messageType, data, err := ws.ws.ReadMessage()
 	if err != nil {
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+			return MessageTypeNone, data, ErrClosed
+		}
 		return MessageTypeNone, data, err
 	}
 	if messageType == int(MessageTypeText) || messageType == int(MessageTypeBinary) {
@@ -143,7 +147,11 @@ func (ws *Ws) ReadJSONLock(needLock bool, v any) error {
 	if ws.isClose || ws.ws == nil {
 		return ErrClosed
 	}
-	return ws.ws.ReadJSON(v)
+	err := ws.ws.ReadJSON(v)
+	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+		return ErrClosed
+	}
+	return err
 }
 
 func (ws *Ws) WriteMessage(messageType MessageType, data []byte) error {

@@ -29,7 +29,7 @@ function RunService() {
   local position=$(FindIndex "$1" "${serviceList1[@]}")
   if [ $position -ne -1 ]; then
     cd "$baseDir/docker_compose/$1"
-    docker-compose up -d
+    docker compose up -d
     return
   fi
 
@@ -37,7 +37,7 @@ function RunService() {
   local position=$(FindIndex "$1" "${serviceList2[@]}")
   if [ $position -ne -1 ]; then
     cd "$baseDir/$1"
-    docker-compose up -d --build --force-recreate
+    docker compose up -d --build --force-recreate
     return
   fi
 
