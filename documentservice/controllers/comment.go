@@ -158,7 +158,7 @@ func PostUserComment(c *gin.Context) {
 		Type:    UserCommentPublishTypeAdd,
 		Comment: &userComment,
 	}); err == nil {
-		redis.Client.Publish(context.Background(), "D"+userComment.DocumentId+"C", publishData)
+		redis.Client.Publish(context.Background(), "Document Comment[DocumentId:"+userComment.DocumentId+"]", publishData)
 	}
 	response.Success(c, &userComment)
 }
@@ -238,7 +238,7 @@ func PutUserComment(c *gin.Context) {
 		Type:    UserCommentPublishTypeUpdate,
 		Comment: &userComment,
 	}); err == nil {
-		redis.Client.Publish(context.Background(), "D"+comment.DocumentId+"C", publishData)
+		redis.Client.Publish(context.Background(), "Document Comment[DocumentId:"+comment.DocumentId+"]", publishData)
 	}
 	response.Success(c, &userComment)
 }
@@ -298,7 +298,7 @@ func DeleteUserComment(c *gin.Context) {
 			Id: commentId,
 		},
 	}); err == nil {
-		redis.Client.Publish(context.Background(), "D"+comment.DocumentId+"C", publishData)
+		redis.Client.Publish(context.Background(), "Document Comment[DocumentId:"+comment.DocumentId+"]", publishData)
 	}
 	response.Success(c, "")
 }
@@ -353,7 +353,7 @@ func SetUserCommentStatus(c *gin.Context) {
 		Type:    UserCommentPublishTypeUpdate,
 		Comment: &userComment,
 	}); err == nil {
-		redis.Client.Publish(context.Background(), "D"+comment.DocumentId+"C", publishData)
+		redis.Client.Publish(context.Background(), "Document Comment[DocumentId:"+comment.DocumentId+"]", publishData)
 	}
 	response.Success(c, &userComment)
 }
