@@ -28,6 +28,7 @@ const (
 	TunnelTypeDocResourceUpload                   // 文档资源上传
 	TunnelTypeDocCommentOp                        // 文档评论操作
 	TunnelTypeDocUpload                           // 文档上传
+	TunnelTypeDocSelectionOp                      // 文档选区操作
 )
 
 type Data map[string]any

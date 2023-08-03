@@ -9,41 +9,45 @@ import (
 	"protodesign.cn/kcserver/common/services"
 	"protodesign.cn/kcserver/utils/str"
 	"protodesign.cn/kcserver/utils/websocket"
+	"sync"
 )
 
-type tunnelServerType struct {
-	handleClose func(code int, text string)
-	isClose     bool
-	messageChan chan []byte
+type docCommentTunnelServer struct {
+	HandleClose  func(code int, text string)
+	IsClose      bool
+	CloseLock    sync.Mutex
+	ToClientChan chan []byte
 }
 
-func (server *tunnelServerType) SetCloseHandler(handler func(code int, text string)) {
-	server.handleClose = handler
+func (server *docCommentTunnelServer) SetCloseHandler(handler func(code int, text string)) {
+	server.HandleClose = handler
 }
 
-func (server *tunnelServerType) WriteMessage(messageType websocket.MessageType, data []byte) error {
+func (server *docCommentTunnelServer) WriteMessage(messageType websocket.MessageType, data []byte) error {
 	return nil
 }
 
-func (server *tunnelServerType) ReadMessage() (websocket.MessageType, []byte, error) {
-	if server.isClose {
+func (server *docCommentTunnelServer) ReadMessage() (websocket.MessageType, []byte, error) {
+	if server.IsClose {
 		return websocket.MessageTypeNone, nil, websocket.ErrClosed
 	}
-	data, ok := <-server.messageChan
+	data, ok := <-server.ToClientChan
 	if !ok {
 		return websocket.MessageTypeNone, nil, websocket.ErrClosed
 	}
 	return websocket.MessageTypeText, data, nil
 }
 
-func (server *tunnelServerType) Close() {
-	if server.isClose {
+func (server *docCommentTunnelServer) Close() {
+	server.CloseLock.Lock()
+	defer server.CloseLock.Unlock()
+	if server.IsClose {
 		return
 	}
-	server.isClose = true
-	close(server.messageChan)
-	if server.handleClose != nil {
-		server.handleClose(0, "")
+	server.IsClose = true
+	close(server.ToClientChan)
+	if server.HandleClose != nil {
+		server.HandleClose(0, "")
 	}
 }
 
@@ -77,8 +81,8 @@ func OpenDocCommentOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serve
 	}
 
 	tunnelId := uuid.New().String()
-	tunnelServer := &tunnelServerType{
-		messageChan: make(chan []byte),
+	tunnelServer := &docCommentTunnelServer{
+		ToClientChan: make(chan []byte),
 	}
 	tunnel := &Tunnel{
 		Id:     tunnelId,
@@ -95,7 +99,7 @@ func OpenDocCommentOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serve
 		pubsub := redis.Client.Subscribe(context.Background(), "Document Comment[DocumentId:"+documentIdStr+"]")
 		defer pubsub.Close()
 		for v := range pubsub.Channel() {
-			tunnelServer.messageChan <- []byte(v.Payload)
+			tunnelServer.ToClientChan <- []byte(v.Payload)
 		}
 	}()
 

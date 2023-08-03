@@ -1,0 +1,231 @@
+package communication
+
+import (
+	"context"
+	"encoding/json"
+	"github.com/google/uuid"
+	"log"
+	"protodesign.cn/kcserver/common"
+	"protodesign.cn/kcserver/common/models"
+	"protodesign.cn/kcserver/common/redis"
+	"protodesign.cn/kcserver/common/services"
+	"protodesign.cn/kcserver/utils/str"
+	"protodesign.cn/kcserver/utils/websocket"
+	"sync"
+	"time"
+)
+
+type docSelectionTunnelServer struct {
+	HandleClose  func(code int, text string)
+	IsClose      bool
+	CloseLock    sync.Mutex
+	ToClientChan chan []byte
+	ToServerChan chan []byte
+}
+
+func (server *docSelectionTunnelServer) SetCloseHandler(handler func(code int, text string)) {
+	server.HandleClose = handler
+}
+
+func (server *docSelectionTunnelServer) WriteMessage(messageType websocket.MessageType, data []byte) (err error) {
+	if server.IsClose {
+		return websocket.ErrClosed
+	}
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println("通道写入时panic", err)
+			err = websocket.ErrClosed
+		}
+	}()
+	server.ToServerChan <- data
+	return nil
+}
+
+func (server *docSelectionTunnelServer) ReadMessage() (websocket.MessageType, []byte, error) {
+	if server.IsClose {
+		return websocket.MessageTypeNone, nil, websocket.ErrClosed
+	}
+	data, ok := <-server.ToClientChan
+	if !ok {
+		return websocket.MessageTypeNone, nil, websocket.ErrClosed
+	}
+	return websocket.MessageTypeText, data, nil
+}
+
+func (server *docSelectionTunnelServer) Close() {
+	server.CloseLock.Lock()
+	defer server.CloseLock.Unlock()
+	if server.IsClose {
+		return
+	}
+	server.IsClose = true
+	close(server.ToClientChan)
+	close(server.ToServerChan)
+	if server.HandleClose != nil {
+		server.HandleClose(0, "")
+	}
+}
+
+type DocSelectionData struct {
+	SelectPageId      string          `json:"select_page_id,omitempty"`
+	SelectShapeIdList []string        `json:"select_shape_id_list"`
+	HoverShapeId      string          `json:"hover_shape_id,omitempty"`
+	CursorStart       int             `json:"cursor_start,omitempty"`
+	CursorEnd         int             `json:"cursor_end,omitempty"`
+	UserId            string          `json:"user_id,omitempty"`
+	Permission        models.PermType `json:"permission,omitempty"`
+	Avatar            string          `json:"avatar,omitempty"`
+	Nickname          string          `json:"nickname,omitempty"`
+	EnterTime         int64           `json:"enter_time,omitempty"`
+}
+
+type DocSelectionOpType uint8
+
+const (
+	DocSelectionOpTypeUpdate DocSelectionOpType = iota
+	DocSelectionOpTypeExit
+)
+
+type DocSelectionOpData struct {
+	Type   DocSelectionOpType `json:"type"`
+	UserId string             `json:"user_id"`
+	Data   *DocSelectionData  `json:"data,omitempty"`
+}
+
+func OpenDocSelectionOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd ServerCmd, data Data) *Tunnel {
+	clientCmdDataData, ok := clientCmdData["data"].(map[string]any)
+	documentIdStr, ok1 := clientCmdDataData["document_id"].(string)
+	userId, ok2 := data["userId"].(int64)
+	if !ok || !ok1 || documentIdStr == "" || !ok2 || userId <= 0 {
+		serverCmd.Message = "通道建立失败，参数错误"
+		_ = clientWs.WriteJSON(&serverCmd)
+		log.Println("document comment ws建立失败，参数错误", ok, ok1, ok2, documentIdStr, userId)
+		return nil
+	}
+	userIdStr := str.IntToString(userId)
+	userService := services.NewUserService()
+	user := models.User{}
+	if err := userService.GetById(userId, &user); err != nil {
+		serverCmd.Message = "通道建立失败，用户信息错误"
+		_ = clientWs.WriteJSON(&serverCmd)
+		log.Println("document comment ws建立失败，用户不存在", err, userId)
+		return nil
+	}
+	documentId := str.DefaultToInt(documentIdStr, 0)
+	if documentId <= 0 {
+		serverCmd.Message = "通道建立失败，documentId错误"
+		_ = clientWs.WriteJSON(&serverCmd)
+		log.Println("document comment ws建立失败，documentId错误", documentId)
+		return nil
+	}
+	// 权限校验
+	var permType models.PermType
+	if err := services.NewDocumentService().GetPermTypeByDocumentAndUserId(&permType, documentId, userId); err != nil || permType < models.PermTypeReadOnly {
+		serverCmd.Message = "通道建立失败"
+		if err != nil {
+			serverCmd.Message += "，无权限"
+		}
+		_ = clientWs.WriteJSON(&serverCmd)
+		log.Println("document ws建立失败，权限校验错误", err, permType)
+		return nil
+	}
+
+	enterTime := time.Now().UnixNano() / 1e6
+
+	tunnelId := uuid.New().String()
+	tunnelServer := &docSelectionTunnelServer{
+		ToClientChan: make(chan []byte),
+		ToServerChan: make(chan []byte),
+	}
+	tunnel := &Tunnel{
+		Id:     tunnelId,
+		Server: tunnelServer,
+		Client: clientWs,
+	}
+	// 转发客户端数据到服务端
+	tunnel.ReceiveFromClient = tunnel.DefaultClientToServer
+	// 转发服务端数据到客户端
+	go tunnel.DefaultServerToClient()
+
+	go func() {
+		defer tunnelServer.Close()
+		// 获取文档当前所有用户的选区数据
+		result, err := redis.Client.HGetAll(context.Background(), "Document Selection Data[DocumentId:"+documentIdStr+"]").Result()
+		if err != nil {
+			log.Println("获取文档选区数据失败", err)
+			return
+		}
+		log.Println(result)
+		for userIdStr, data := range result {
+			selectionData := &DocSelectionData{}
+			if err := json.Unmarshal([]byte(data), selectionData); err != nil {
+				log.Println("获取文档选区数据失败：数据解码错误", err)
+				return
+			}
+			docSelectionOpData := &DocSelectionOpData{
+				Type:   DocSelectionOpTypeUpdate,
+				UserId: userIdStr,
+				Data:   selectionData,
+			}
+			if data, err := json.Marshal(docSelectionOpData); err == nil {
+				tunnelServer.ToClientChan <- data
+			}
+		}
+		subscribe := redis.Client.Subscribe(context.Background(), "Document Selection[DocumentId:"+documentIdStr+"]")
+		defer subscribe.Close()
+		subscribeChan := subscribe.Channel()
+		for {
+			select {
+			case data, ok := <-tunnelServer.ToServerChan:
+				if !ok {
+					docSelectionOpData := &DocSelectionOpData{
+						Type:   DocSelectionOpTypeExit,
+						UserId: userIdStr,
+					}
+					if data, err := json.Marshal(docSelectionOpData); err == nil {
+						redis.Client.HDel(context.Background(), "Document Selection Data[DocumentId:"+documentIdStr+"]", userIdStr)
+						redis.Client.Publish(context.Background(), "Document Selection[DocumentId:"+documentIdStr+"]", string(data))
+					}
+					return
+				}
+				selectionData := &DocSelectionData{}
+				if err := json.Unmarshal(data, selectionData); err != nil {
+					log.Println("document selection数据解码错误", err)
+					continue
+				}
+				selectionData.Permission = permType
+				selectionData.UserId = userIdStr
+				selectionData.Avatar = common.StorageHost + user.Avatar
+				selectionData.Nickname = user.Nickname
+				selectionData.EnterTime = enterTime
+				selectionDataJson, _ := json.Marshal(selectionData)
+				docSelectionOpData := &DocSelectionOpData{
+					Type:   DocSelectionOpTypeUpdate,
+					UserId: userIdStr,
+					Data:   selectionData,
+				}
+				if docSelectionOpDataJson, err := json.Marshal(docSelectionOpData); err != nil {
+					log.Println("document selection数据编码错误", err)
+					continue
+				} else {
+					redis.Client.HSet(context.Background(), "Document Selection Data[DocumentId:"+documentIdStr+"]", userIdStr, string(selectionDataJson))
+					redis.Client.Publish(context.Background(), "Document Selection[DocumentId:"+documentIdStr+"]", string(docSelectionOpDataJson))
+				}
+			case data, ok := <-subscribeChan:
+				if !ok {
+					docSelectionOpData := &DocSelectionOpData{
+						Type:   DocSelectionOpTypeExit,
+						UserId: userIdStr,
+					}
+					if data, err := json.Marshal(docSelectionOpData); err == nil {
+						redis.Client.Publish(context.Background(), "Document Selection[DocumentId:"+documentIdStr+"]", string(data))
+					}
+					return
+				}
+				tunnelServer.ToClientChan <- []byte(data.Payload)
+			}
+		}
+	}()
+
+	return tunnel
+}

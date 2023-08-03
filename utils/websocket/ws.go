@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"protodesign.cn/kcserver/utils/str"
+	"strings"
 	"sync"
 )
 
@@ -93,6 +94,8 @@ func (ws *Ws) Unlock() {
 	ws.unlockReadLock()
 }
 
+const UseOfClosedNetworkConnectionWant = "use of closed network connection"
+
 func (ws *Ws) WriteMessageLock(needLock bool, messageType MessageType, data []byte) error {
 	if needLock {
 		ws.wsWriteLock.Lock()
@@ -101,7 +104,11 @@ func (ws *Ws) WriteMessageLock(needLock bool, messageType MessageType, data []by
 	if ws.isClose || ws.ws == nil {
 		return ErrClosed
 	}
-	return ws.ws.WriteMessage(int(messageType), data)
+	err := ws.ws.WriteMessage(int(messageType), data)
+	if err != nil && strings.Contains(err.Error(), UseOfClosedNetworkConnectionWant) {
+		return ErrClosed
+	}
+	return err
 }
 
 func (ws *Ws) WriteJSONLock(needLock bool, v any) error {
@@ -112,7 +119,11 @@ func (ws *Ws) WriteJSONLock(needLock bool, v any) error {
 	if ws.isClose || ws.ws == nil {
 		return ErrClosed
 	}
-	return ws.ws.WriteJSON(v)
+	err := ws.ws.WriteJSON(v)
+	if err != nil && strings.Contains(err.Error(), UseOfClosedNetworkConnectionWant) {
+		return ErrClosed
+	}
+	return err
 }
 
 func (ws *Ws) ReadMessageLock(needLock bool) (MessageType, []byte, error) {
@@ -125,7 +136,7 @@ func (ws *Ws) ReadMessageLock(needLock bool) (MessageType, []byte, error) {
 	}
 	messageType, data, err := ws.ws.ReadMessage()
 	if err != nil {
-		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) || strings.Contains(err.Error(), UseOfClosedNetworkConnectionWant) {
 			return MessageTypeNone, data, ErrClosed
 		}
 		return MessageTypeNone, data, err
@@ -148,7 +159,7 @@ func (ws *Ws) ReadJSONLock(needLock bool, v any) error {
 		return ErrClosed
 	}
 	err := ws.ws.ReadJSON(v)
-	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+	if err != nil && (errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) || strings.Contains(err.Error(), UseOfClosedNetworkConnectionWant)) {
 		return ErrClosed
 	}
 	return err

@@ -11,6 +11,7 @@ import (
 	"protodesign.cn/kcserver/utils/my_map"
 	"protodesign.cn/kcserver/utils/str"
 	"protodesign.cn/kcserver/utils/websocket"
+	"time"
 )
 
 func getTunnelDataByCmdData(tunnelCmdData TunnelCmdData, ws *websocket.Ws) (TunnelDataType, []byte) {
@@ -98,23 +99,23 @@ func Communication(c *gin.Context) {
 		CmdId:   cmdId,
 	}
 	if err := ws.ReadJSON(&header); err != nil {
+		log.Println("Header结构错误", err)
 		serverCmd.Message = "Header结构错误"
 		_ = ws.WriteJSON(&serverCmd)
-		log.Println("Header结构错误", err)
 		return
 	}
 	jwtParseData, err := jwt.ParseJwt(header.Token)
 	if err != nil {
+		log.Println("Token错误", err)
 		serverCmd.Message = "Token错误"
 		_ = ws.WriteJSON(&serverCmd)
-		log.Println("Token错误", err)
 		return
 	}
 	userId := str.DefaultToInt(jwtParseData.Id, 0)
 	if userId <= 0 {
+		log.Println("UserId错误", userId)
 		serverCmd.Message = "UserId错误"
 		_ = ws.WriteJSON(&serverCmd)
-		log.Println("UserId错误", userId)
 		return
 	}
 	communicationId := uuid.New().String()
@@ -126,6 +127,27 @@ func Communication(c *gin.Context) {
 	}
 	log.Println("websocket连接成功，communicationId：", communicationId)
 
+	lastReceiveHeartbeatTime := time.Now()
+	go func() {
+		for {
+			time.Sleep(time.Second * 1)
+			if ws.IsClose() {
+				return
+			}
+			if time.Now().Sub(lastReceiveHeartbeatTime).Seconds() > 60 {
+				log.Println("心跳超时，断开连接")
+				ws.Close()
+				return
+			}
+			// 1秒发送一次心跳
+			_ = ws.WriteJSON(&ServerCmd{
+				CmdType: ServerCmdTypeHeartbeat,
+				Status:  CmdStatusSuccess,
+				CmdId:   uuid.New().String(),
+			})
+		}
+	}()
+
 	for {
 		clientCmd := ClientCmd{}
 		serverCmdId := uuid.New().String()
@@ -136,16 +158,16 @@ func Communication(c *gin.Context) {
 		}
 		if err := ws.ReadJSON(&clientCmd); err != nil {
 			if errors.Is(err, websocket.ErrClosed) {
+				log.Println("ws连接关闭", err)
 				tunnelMap.Range(func(_ string, tunnelSession *Tunnel) bool {
 					tunnelSession.Server.Close()
 					return true
 				})
-				log.Println("ws连接关闭", err)
 				return
 			}
 			serverCmd.Message = "cmdData结构错误"
-			_ = ws.WriteJSON(&serverCmd)
 			log.Println("cmdData结构错误", err)
+			_ = ws.WriteJSON(&serverCmd)
 			continue
 		}
 		serverCmd.Data = CmdData{"cmd_id": clientCmd.CmdId}
@@ -162,8 +184,8 @@ func Communication(c *gin.Context) {
 		}
 		if err := json.Unmarshal(clientCmd.Data, v); err != nil {
 			serverCmd.Message = "clientCmd.Data结构错误"
-			_ = ws.WriteJSON(&serverCmd)
 			log.Println("clientCmd.Data结构错误", err)
+			_ = ws.WriteJSON(&serverCmd)
 			continue
 		}
 		switch clientCmd.CmdType {
@@ -192,6 +214,8 @@ func Communication(c *gin.Context) {
 				tunnel = OpenDocCommentOpTunnel(ws, clientCmdData, serverCmd, Data{"userId": userId})
 			case TunnelTypeDocUpload:
 				tunnel = OpenDocUploadTunnel(ws, clientCmdData, serverCmd, Data{"userId": userId})
+			case TunnelTypeDocSelectionOp:
+				tunnel = OpenDocSelectionOpTunnel(ws, clientCmdData, serverCmd, Data{"userId": userId})
 			default:
 				serverCmd.Message = "tunnel_type错误"
 				log.Println("clientCmd.TunnelType错误", clientCmd.TunnelType)
@@ -208,13 +232,13 @@ func Communication(c *gin.Context) {
 			tunnelMap.Set(tunnelId, tunnel)
 			// todo 关闭前的处理
 			tunnel.Server.SetCloseHandler(func(code int, text string) {
+				log.Println("document ws连接关闭", tunnelId)
 				tunnelMap.Delete(tunnelId)
 				_ = ws.WriteJSON(&ServerCmd{
 					CmdType: ServerCmdTypeCloseTunnel,
 					CmdId:   uuid.New().String(),
 					Data:    CmdData{"tunnel_id": tunnelId},
 				})
-				log.Println("document ws连接关闭", tunnelId)
 			})
 		case ClientCmdTypeCloseTunnel:
 			tunnelId, tunnel := getTunnelByCmdData(clientCmdData)
@@ -243,8 +267,8 @@ func Communication(c *gin.Context) {
 			}
 			if err := tunnel.ReceiveFromClient(tunnelDataType, data, serverCmd); err != nil {
 				serverCmd.Message = err.Error()
-				_ = ws.WriteJSON(&serverCmd)
 				log.Println("数据发送失败", err)
+				_ = ws.WriteJSON(&serverCmd)
 				continue
 			} else {
 				serverCmd.Status = CmdStatusSuccess
@@ -255,10 +279,12 @@ func Communication(c *gin.Context) {
 			serverCmd.CmdType = ServerCmdTypeHeartbeatResponse
 			serverCmd.Data = CmdData{"cmd_id": clientCmd.CmdId}
 			_ = ws.WriteJSON(&serverCmd)
+		case ClientCmdTypeHeartbeatResponse:
+			lastReceiveHeartbeatTime = time.Now()
 		default:
 			serverCmd.Message = "cmd_type错误"
-			_ = ws.WriteJSON(&serverCmd)
 			log.Println("clientCmd.CmdType错误", clientCmd.CmdType)
+			_ = ws.WriteJSON(&serverCmd)
 		}
 	}
 }
