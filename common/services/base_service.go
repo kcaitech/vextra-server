@@ -325,8 +325,8 @@ func AddCond(db *gorm.DB, args ...any) error {
 	_, ok := args[0].(string)
 	if ok {
 		var i int
+	Loop:
 		for _, arg := range args[1:] {
-			ok := false
 			switch arg.(type) {
 			case WhereArgs, *WhereArgs, []WhereArgs, []*WhereArgs, *[]WhereArgs, *[]*WhereArgs,
 				WhereNode, *WhereNode,
@@ -338,10 +338,7 @@ func AddCond(db *gorm.DB, args ...any) error {
 				Unscoped, *Unscoped,
 				As, *As,
 				Wrap, *Wrap:
-				ok = true
-			}
-			if ok {
-				break
+				break Loop
 			}
 			i++
 		}

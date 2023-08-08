@@ -38,5 +38,10 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 		router.DELETE("/comment", controllers.DeleteUserComment)
 		router.PUT("/comment/status", controllers.SetUserCommentStatus)
 		router.POST("/copy", controllers.CopyDocument)
+		router.POST("/team", controllers.CreateTeam)
+		router.DELETE("/team", controllers.DeleteTeam)
+		router.POST("/team/apply", controllers.ApplyJoinTeam)
+		router.GET("/team/apply", controllers.GetTeamJoinRequestsList)
+		router.POST("/team/apply/audit", controllers.ReviewTeamJoinRequest)
 	}
 }

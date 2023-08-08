@@ -80,7 +80,7 @@ func SetAvatar(c *gin.Context) {
 	defer file.Close()
 	fileSize := fileHeader.Size
 	contentType := fileHeader.Header.Get("Content-Type")
-	avatarPath, err := services.NewUserService().UploadAvatar(user, file, fileSize, contentType)
+	avatarPath, err := services.NewUserService().UploadUserAvatar(user, file, fileSize, contentType)
 	if err != nil {
 		response.Fail(c, err.Error())
 		return

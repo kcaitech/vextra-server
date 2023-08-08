@@ -31,7 +31,7 @@ func (s *UserService) GetByNickname(nickname string) (*models.User, error) {
 	return &modelData, nil
 }
 
-func (s *UserService) UploadAvatar(user *models.User, file io.Reader, fileSize int64, contentType string) (string, error) {
+func (s *UserService) UploadUserAvatar(user *models.User, file io.Reader, fileSize int64, contentType string) (string, error) {
 	if fileSize > 1024*1024*5 {
 		return "", errors.New("文件大小不能超过5MB")
 	}

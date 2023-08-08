@@ -53,5 +53,15 @@ func main() {
 		log.Fatalln("数据库迁移错误：" + err.Error())
 	}
 
+	log.Println("开始迁移Team表")
+	if err = TeamUp(mysql.DB); err != nil {
+		log.Fatalln("数据库迁移错误：" + err.Error())
+	}
+
+	log.Println("开始迁移Project表")
+	if err = ProjectUp(mysql.DB); err != nil {
+		log.Fatalln("数据库迁移错误：" + err.Error())
+	}
+
 	log.Println("迁移结束")
 }

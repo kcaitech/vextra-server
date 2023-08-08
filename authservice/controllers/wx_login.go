@@ -196,7 +196,7 @@ func WxLogin(c *gin.Context) {
 					return
 				}
 				defer resp.Body.Close()
-				if _, err := services.NewUserService().UploadAvatar(user, resp.Body, resp.ContentLength, resp.Header.Get("Content-Type")); err != nil {
+				if _, err := services.NewUserService().UploadUserAvatar(user, resp.Body, resp.ContentLength, resp.Header.Get("Content-Type")); err != nil {
 					log.Println("上传头像失败：", err)
 					return
 				}

@@ -26,6 +26,8 @@ type Document struct {
 	Size      uint64    `gorm:"" json:"size"`
 	PurgedAt  time.Time `gorm:"" json:"purged_at"`
 	VersionId string    `gorm:"size:64" json:"version_id"`
+	TeamId    int64     `gorm:"index" json:"team_id"`
+	ProjectId int64     `gorm:"index" json:"project_id"`
 }
 
 func DocumentUp(db *gorm.DB) error {

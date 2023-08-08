@@ -344,7 +344,7 @@ func ReviewDocumentPermissionRequest(c *gin.Context) {
 		},
 	); err != nil {
 		if err == services.ErrRecordNotFound {
-			response.Forbidden(c, "")
+			response.BadRequest(c, "申请已被处理")
 		} else {
 			response.Fail(c, "查询错误")
 		}
@@ -359,6 +359,8 @@ func ReviewDocumentPermissionRequest(c *gin.Context) {
 	} else if approvalCode == 1 {
 		documentPermissionRequest.Status = models.StatusTypeApproved
 	}
+	documentPermissionRequest.ProcessedAt = myTime.Time(time.Now())
+	documentPermissionRequest.ProcessedBy = userId
 	if err := documentService.DocumentPermissionRequestsService.UpdatesById(documentPermissionRequestsId, &documentPermissionRequest); err != nil {
 		response.Fail(c, "更新错误")
 		return

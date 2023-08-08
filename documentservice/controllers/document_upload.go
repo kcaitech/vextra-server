@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"errors"
 	"log"
 	"protodesign.cn/kcserver/utils/my_map"
 	"protodesign.cn/kcserver/utils/websocket"
@@ -259,7 +260,6 @@ func UploadDocument(c *gin.Context) {
 			LastAccessTime: now,
 		})
 	} else {
-		document.Name = documentName
 		document.Size = documentSize
 		document.VersionId = documentVersionId
 		if err := documentService.UpdatesById(documentId, &document); err != nil {
@@ -270,7 +270,7 @@ func UploadDocument(c *gin.Context) {
 		}
 		var documentAccessRecord models.DocumentAccessRecord
 		err := documentAccessRecordService.Get(&documentAccessRecord, "user_id = ? and document_id = ?", userId, documentId)
-		if err != nil && err != services.ErrRecordNotFound {
+		if err != nil && !errors.Is(err, services.ErrRecordNotFound) {
 			resp.Message = "对象上传错误..."
 			_ = ws.WriteJSON(&resp)
 			ws.Close()
