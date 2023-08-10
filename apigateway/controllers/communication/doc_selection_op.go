@@ -72,6 +72,7 @@ type DocSelectionData struct {
 	HoverShapeId      string          `json:"hover_shape_id,omitempty"`
 	CursorStart       int             `json:"cursor_start,omitempty"`
 	CursorEnd         int             `json:"cursor_end,omitempty"`
+	CursorAtBefore    bool            `json:"cursor_at_before,omitempty"`
 	UserId            string          `json:"user_id,omitempty"`
 	Permission        models.PermType `json:"permission,omitempty"`
 	Avatar            string          `json:"avatar,omitempty"`
@@ -155,7 +156,6 @@ func OpenDocSelectionOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, ser
 			log.Println("获取文档选区数据失败", err)
 			return
 		}
-		log.Println(result)
 		for userIdStr, data := range result {
 			selectionData := &DocSelectionData{}
 			if err := json.Unmarshal([]byte(data), selectionData); err != nil {
@@ -171,13 +171,33 @@ func OpenDocSelectionOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, ser
 				tunnelServer.ToClientChan <- data
 			}
 		}
+		// 首次发送当前用户的选区数据
+		selectionData := &DocSelectionData{
+			SelectShapeIdList: []string{},
+			UserId:            userIdStr,
+			Permission:        permType,
+			Avatar:            common.StorageHost + user.Avatar,
+			Nickname:          user.Nickname,
+			EnterTime:         enterTime,
+		}
+		selectionDataJson, _ := json.Marshal(selectionData)
+		docSelectionOpData := &DocSelectionOpData{
+			Type:   DocSelectionOpTypeUpdate,
+			UserId: userIdStr,
+			Data:   selectionData,
+		}
+		if docSelectionOpDataJson, err := json.Marshal(docSelectionOpData); err == nil {
+			redis.Client.HSet(context.Background(), "Document Selection Data[DocumentId:"+documentIdStr+"]", userIdStr, string(selectionDataJson))
+			redis.Client.Publish(context.Background(), "Document Selection[DocumentId:"+documentIdStr+"]", string(docSelectionOpDataJson))
+		}
+		// 开始转发
 		subscribe := redis.Client.Subscribe(context.Background(), "Document Selection[DocumentId:"+documentIdStr+"]")
 		defer subscribe.Close()
 		subscribeChan := subscribe.Channel()
 		for {
 			select {
 			case data, ok := <-tunnelServer.ToServerChan:
-				if !ok {
+				if !ok { // 通道已关闭
 					docSelectionOpData := &DocSelectionOpData{
 						Type:   DocSelectionOpTypeExit,
 						UserId: userIdStr,
@@ -193,8 +213,8 @@ func OpenDocSelectionOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, ser
 					log.Println("document selection数据解码错误", err)
 					continue
 				}
-				selectionData.Permission = permType
 				selectionData.UserId = userIdStr
+				selectionData.Permission = permType
 				selectionData.Avatar = common.StorageHost + user.Avatar
 				selectionData.Nickname = user.Nickname
 				selectionData.EnterTime = enterTime
@@ -212,7 +232,7 @@ func OpenDocSelectionOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, ser
 					redis.Client.Publish(context.Background(), "Document Selection[DocumentId:"+documentIdStr+"]", string(docSelectionOpDataJson))
 				}
 			case data, ok := <-subscribeChan:
-				if !ok {
+				if !ok { // 通道已关闭
 					docSelectionOpData := &DocSelectionOpData{
 						Type:   DocSelectionOpTypeExit,
 						UserId: userIdStr,
