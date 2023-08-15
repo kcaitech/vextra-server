@@ -94,7 +94,7 @@ func (ws *Ws) Unlock() {
 	ws.unlockReadLock()
 }
 
-const UseOfClosedNetworkConnectionWant = "use of closed network connection"
+const UseOfClosedNetworkConnectionWarn = "use of closed network connection"
 
 func (ws *Ws) WriteMessageLock(needLock bool, messageType MessageType, data []byte) error {
 	if needLock {
@@ -105,7 +105,7 @@ func (ws *Ws) WriteMessageLock(needLock bool, messageType MessageType, data []by
 		return ErrClosed
 	}
 	err := ws.ws.WriteMessage(int(messageType), data)
-	if err != nil && strings.Contains(err.Error(), UseOfClosedNetworkConnectionWant) {
+	if err != nil && strings.Contains(err.Error(), UseOfClosedNetworkConnectionWarn) {
 		return ErrClosed
 	}
 	return err
@@ -120,7 +120,7 @@ func (ws *Ws) WriteJSONLock(needLock bool, v any) error {
 		return ErrClosed
 	}
 	err := ws.ws.WriteJSON(v)
-	if err != nil && strings.Contains(err.Error(), UseOfClosedNetworkConnectionWant) {
+	if err != nil && strings.Contains(err.Error(), UseOfClosedNetworkConnectionWarn) {
 		return ErrClosed
 	}
 	return err
@@ -136,7 +136,7 @@ func (ws *Ws) ReadMessageLock(needLock bool) (MessageType, []byte, error) {
 	}
 	messageType, data, err := ws.ws.ReadMessage()
 	if err != nil {
-		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) || strings.Contains(err.Error(), UseOfClosedNetworkConnectionWant) {
+		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) || strings.Contains(err.Error(), UseOfClosedNetworkConnectionWarn) {
 			return MessageTypeNone, data, ErrClosed
 		}
 		return MessageTypeNone, data, err
@@ -159,7 +159,7 @@ func (ws *Ws) ReadJSONLock(needLock bool, v any) error {
 		return ErrClosed
 	}
 	err := ws.ws.ReadJSON(v)
-	if err != nil && (errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) || strings.Contains(err.Error(), UseOfClosedNetworkConnectionWant)) {
+	if err != nil && (errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) || strings.Contains(err.Error(), UseOfClosedNetworkConnectionWarn)) {
 		return ErrClosed
 	}
 	return err

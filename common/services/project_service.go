@@ -81,21 +81,51 @@ func (model ProjectMember) MarshalJSON() ([]byte, error) {
 }
 
 type ProjectQueryResItem struct {
-	Project       Project                `gorm:"embedded;embeddedPrefix:project__" json:"project" table:"project" join:"project;inner;id,#project_id"`
-	ProjectMember ProjectMember          `gorm:"embedded;embeddedPrefix:project_member__" json:"-" table:"project_member" join:"project_member;inner;project_id,#project_id"`
-	User          User                   `gorm:"embedded;embeddedPrefix:user__" json:"-" table:"user" join:"user;inner;id,#user_id"`
+	Project       Project                `gorm:"embedded;embeddedPrefix:project__" json:"project" table:"project"`
+	ProjectMember ProjectMember          `gorm:"embedded;embeddedPrefix:project_member__" json:"-" table:"project_member" join:"project_member;inner;project_id,id"`
+	User          User                   `gorm:"embedded;embeddedPrefix:user__" json:"-" table:"user" join:"user;inner;id,project_member.user_id"`
 	PermType      models.ProjectPermType `gorm:"-" json:"perm_type"`
 }
 
-// FindProjectByTeamIdAndUserId 查询某个用户所在的某个团队中的所有项目列表
+// FindProjectByTeamIdAndUserId 查询某个用户（所在的某个团队中）的所有项目列表
 func (s *ProjectService) FindProjectByTeamIdAndUserId(teamId int64, userId int64) []ProjectQueryResItem {
 	var result []ProjectQueryResItem
+	whereArgsList := []WhereArgs{
+		{"project_member.deleted_at is null and user.deleted_at is null", nil},
+		{"project_member.user_id = ?", []any{userId}},
+	}
+	if teamId > 0 {
+		whereArgsList = append(whereArgsList, WhereArgs{"project.team_id = ?", []any{teamId}})
+	}
 	_ = s.Find(
 		&result,
-		&ParamArgs{"#project_id": "project.id", "#user_id": "project_member.user_id"},
-		&WhereArgs{"project_member.deleted_at is null and user.deleted_at is null", nil},
-		&WhereArgs{"project_member.user_id = ? and project.team_id = ?", []any{userId, teamId}},
+		&whereArgsList,
 		&OrderLimitArgs{"project_member.id desc", 0},
+	)
+	for i := range result {
+		result[i].PermType = result[i].ProjectMember.PermType
+	}
+	return result
+}
+
+type ProjectMemberQueryResItem struct {
+	ProjectMember ProjectMember          `gorm:"embedded;embeddedPrefix:project_member__" json:"-" table:"project_member"`
+	Project       Project                `gorm:"embedded;embeddedPrefix:project__" json:"-" table:"project" join:"project;inner;id,project_id"`
+	User          User                   `gorm:"embedded;embeddedPrefix:user__" json:"user" table:"user" join:"user;inner;id,user_id"`
+	PermType      models.ProjectPermType `gorm:"-" json:"perm_type"`
+}
+
+// FindProjectMember 查询某个项目中的成员列表
+func (s *ProjectService) FindProjectMember(projectId int64) []ProjectMemberQueryResItem {
+	var result []ProjectMemberQueryResItem
+	whereArgsList := []WhereArgs{
+		{"project.deleted_at is null and user.deleted_at is null", nil},
+		{"project_member.project_id = ?", []any{projectId}},
+	}
+	_ = s.ProjectMemberService.Find(
+		&result,
+		&whereArgsList,
+		&OrderLimitArgs{"project_member.perm_type desc, project_member.id asc", 0},
 	)
 	for i := range result {
 		result[i].PermType = result[i].ProjectMember.PermType

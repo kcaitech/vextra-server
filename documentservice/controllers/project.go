@@ -92,12 +92,32 @@ func GetProjectList(c *gin.Context) {
 		return
 	}
 	teamId := str.DefaultToInt(c.Query("team_id"), 0)
-	if teamId <= 0 {
-		response.BadRequest(c, "参数错误：team_id")
+	projectService := services.NewProjectService()
+	result := projectService.FindProjectByTeamIdAndUserId(teamId, userId)
+	response.Success(c, result)
+}
+
+// GetProjectMemberList 获取项目成员列表
+func GetProjectMemberList(c *gin.Context) {
+	userId, err := auth.GetUserId(c)
+	if err != nil {
+		response.Unauthorized(c)
+		return
+	}
+	projectId := str.DefaultToInt(c.Query("project_id"), 0)
+	if projectId <= 0 {
+		response.BadRequest(c, "参数错误：project_id")
 		return
 	}
 	projectService := services.NewProjectService()
-	result := projectService.FindProjectByTeamIdAndUserId(teamId, userId)
+	if permType, err := projectService.GetProjectPermTypeByForUser(projectId, userId); err != nil {
+		response.Fail(c, "查询错误")
+		return
+	} else if permType == nil || *permType < models.ProjectPermTypeReadOnly {
+		response.Forbidden(c, "")
+		return
+	}
+	result := projectService.FindProjectMember(projectId)
 	response.Success(c, result)
 }
 

@@ -90,6 +90,30 @@ func GetTeamList(c *gin.Context) {
 	response.Success(c, result)
 }
 
+// GetTeamMemberList 获取团队成员列表
+func GetTeamMemberList(c *gin.Context) {
+	userId, err := auth.GetUserId(c)
+	if err != nil {
+		response.Unauthorized(c)
+		return
+	}
+	teamId := str.DefaultToInt(c.Query("team_id"), 0)
+	if teamId <= 0 {
+		response.BadRequest(c, "参数错误：team_id")
+		return
+	}
+	teamService := services.NewTeamService()
+	if permType, err := teamService.GetTeamPermTypeByForUser(teamId, userId); err != nil {
+		response.Fail(c, "查询错误")
+		return
+	} else if permType == nil || *permType < models.TeamPermTypeReadOnly {
+		response.Forbidden(c, "")
+		return
+	}
+	result := teamService.FindTeamMember(teamId)
+	response.Success(c, result)
+}
+
 // DeleteTeam 解散团队
 func DeleteTeam(c *gin.Context) {
 	userId, err := auth.GetUserId(c)
