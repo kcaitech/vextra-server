@@ -10,6 +10,6 @@ type DocumentAccessRecord struct {
 	LastAccessTime time.Time `gorm:"autoCreateTime;type:datetime(6)" json:"last_access_time"` // 上次访问时间
 }
 
-func (model *DocumentAccessRecord) MarshalJSON() ([]byte, error) {
+func (model DocumentAccessRecord) MarshalJSON() ([]byte, error) {
 	return MarshalJSON(model)
 }

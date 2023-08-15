@@ -8,6 +8,6 @@ type DocumentFavorites struct {
 	IsFavorite bool  `gorm:"" json:"is_favorite"`
 }
 
-func (model *DocumentFavorites) MarshalJSON() ([]byte, error) {
+func (model DocumentFavorites) MarshalJSON() ([]byte, error) {
 	return MarshalJSON(model)
 }

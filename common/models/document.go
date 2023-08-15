@@ -29,7 +29,7 @@ type Document struct {
 	ProjectId int64     `gorm:"index" json:"project_id"`
 }
 
-func (model *Document) MarshalJSON() ([]byte, error) {
+func (model Document) MarshalJSON() ([]byte, error) {
 	return MarshalJSON(model)
 }
 

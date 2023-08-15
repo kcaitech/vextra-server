@@ -18,22 +18,23 @@ type Team struct {
 	Description     string       `gorm:"size:128" json:"description"`
 	Avatar          string       `gorm:"size:256" json:"avatar"`
 	Uid             string       `gorm:"unique;size:64" json:"uid"`
-	InvitedPermType TeamPermType `gorm:"not null" json:"invited_perm_type"`
+	InvitedPermType TeamPermType `gorm:"not null;default:0" json:"invited_perm_type"`  // 邀请权限类型
+	InvitedSwitch   bool         `gorm:"not null;default:false" json:"invited_switch"` // 邀请开关
 }
 
-func (model *Team) MarshalJSON() ([]byte, error) {
+func (model Team) MarshalJSON() ([]byte, error) {
 	return MarshalJSON(model)
 }
 
 // TeamMember 团队成员
 type TeamMember struct {
 	BaseModel
-	TeamId   int64        `gorm:"uniqueIndex:idx_team_member;not null" json:"team_id"` // 团队ID
-	UserId   int64        `gorm:"uniqueIndex:idx_team_member;not null" json:"user_id"` // 用户ID
-	PermType TeamPermType `gorm:"not null" json:"perm_type"`                           // 权限类型
+	TeamId   int64        `gorm:"not null" json:"team_id"`   // 团队ID
+	UserId   int64        `gorm:"not null" json:"user_id"`   // 用户ID
+	PermType TeamPermType `gorm:"not null" json:"perm_type"` // 权限类型
 }
 
-func (model *TeamMember) MarshalJSON() ([]byte, error) {
+func (model TeamMember) MarshalJSON() ([]byte, error) {
 	return MarshalJSON(model)
 }
 
@@ -59,6 +60,6 @@ type TeamJoinRequest struct {
 	ProcessorNotes   string                `gorm:"size:256" json:"processor_notes"`
 }
 
-func (model *TeamJoinRequest) MarshalJSON() ([]byte, error) {
+func (model TeamJoinRequest) MarshalJSON() ([]byte, error) {
 	return MarshalJSON(model)
 }

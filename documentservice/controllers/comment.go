@@ -37,7 +37,7 @@ type UserType struct {
 	Avatar   string `json:"avatar" bson:"avatar,omitempty"`
 }
 
-func (user *UserType) MarshalJSON() ([]byte, error) {
+func (user UserType) MarshalJSON() ([]byte, error) {
 	if strings.HasPrefix(user.Avatar, "/") {
 		user.Avatar = common.StorageHost + user.Avatar
 	}

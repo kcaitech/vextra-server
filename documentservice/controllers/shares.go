@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"github.com/gin-gonic/gin"
 	"log"
 	"protodesign.cn/kcserver/common/gin/auth"
@@ -343,7 +344,7 @@ func ReviewDocumentPermissionRequest(c *gin.Context) {
 			Args:  []interface{}{documentPermissionRequestsId, models.StatusTypePending, userId},
 		},
 	); err != nil {
-		if err == services.ErrRecordNotFound {
+		if errors.Is(err, services.ErrRecordNotFound) {
 			response.BadRequest(c, "申请已被处理")
 		} else {
 			response.Fail(c, "查询错误")

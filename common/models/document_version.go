@@ -8,7 +8,7 @@ type DocumentVersion struct {
 	LastCmdId  int64  `gorm:"" json:"last_cmd_id"` // 此版本最后一个cmd的id
 }
 
-func (model *DocumentVersion) MarshalJSON() ([]byte, error) {
+func (model DocumentVersion) MarshalJSON() ([]byte, error) {
 	return MarshalJSON(model)
 }
 

@@ -46,6 +46,6 @@ type DocumentPermission struct {
 	PermSourceType PermSourceType `gorm:"default:0" json:"perm_source_type"`                        // 权限来源类型
 }
 
-func (model *DocumentPermission) MarshalJSON() ([]byte, error) {
+func (model DocumentPermission) MarshalJSON() ([]byte, error) {
 	return MarshalJSON(model)
 }

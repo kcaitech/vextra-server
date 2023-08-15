@@ -68,13 +68,25 @@ func CreateTeam(c *gin.Context) {
 	}
 
 	result := map[string]any{
-		"id":          team.Id,
+		"id":          str.IntToString(team.Id),
 		"name":        team.Name,
 		"description": team.Description,
 	}
 	if team.Avatar != "" {
 		result["avatar"] = common.StorageHost + team.Avatar
 	}
+	response.Success(c, result)
+}
+
+// GetTeamList 获取团队列表
+func GetTeamList(c *gin.Context) {
+	userId, err := auth.GetUserId(c)
+	if err != nil {
+		response.Unauthorized(c)
+		return
+	}
+	teamService := services.NewTeamService()
+	result := teamService.FindTeamByUserId(userId)
 	response.Success(c, result)
 }
 
@@ -150,9 +162,8 @@ func ApplyJoinTeam(c *gin.Context) {
 		return
 	}
 	var req struct {
-		TeamId         string              `json:"team_id" binding:"required"`
-		PermType       models.TeamPermType `json:"perm_type" binding:"min=0,max=1"`
-		ApplicantNotes string              `json:"applicant_notes"`
+		TeamId         string `json:"team_id" binding:"required"`
+		ApplicantNotes string `json:"applicant_notes"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, "")
@@ -173,6 +184,11 @@ func ApplyJoinTeam(c *gin.Context) {
 		}
 		return
 	}
+	if !team.InvitedSwitch {
+		response.BadRequest(c, "团队未开启邀请")
+		return
+	}
+	invitedPermType := team.InvitedPermType
 	teamMemberService := teamService.TeamMemberService
 	if ok, err := teamMemberService.Exist("team_id = ? AND user_id = ?", teamId, userId); ok {
 		response.BadRequest(c, "已加入团队")
@@ -189,15 +205,10 @@ func ApplyJoinTeam(c *gin.Context) {
 		response.Fail(c, "查询错误..")
 		return
 	}
-	permType := req.PermType
-	if permType < models.TeamPermTypeReadOnly || permType > models.TeamPermTypeEditable {
-		response.BadRequest(c, "参数错误：perm_type")
-		return
-	}
 	if err := teamJoinRequestService.Create(&models.TeamJoinRequest{
 		UserId:         userId,
 		TeamId:         teamId,
-		PermType:       permType,
+		PermType:       invitedPermType,
 		ApplicantNotes: req.ApplicantNotes,
 	}); err != nil {
 		response.Fail(c, "新建错误")
@@ -205,8 +216,8 @@ func ApplyJoinTeam(c *gin.Context) {
 	response.Success(c, "")
 }
 
-// GetTeamJoinRequestsList 获取申请列表
-func GetTeamJoinRequestsList(c *gin.Context) {
+// GetTeamJoinRequestList 获取申请列表
+func GetTeamJoinRequestList(c *gin.Context) {
 	userId, err := auth.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
@@ -222,7 +233,7 @@ func GetTeamJoinRequestsList(c *gin.Context) {
 		startTimeStr = myTime.Time(time.UnixMilli(startTimeInt)).String()
 	}
 	teamService := services.NewTeamService()
-	result := teamService.FindTeamJoinRequests(userId, teamId, startTimeStr)
+	result := teamService.FindTeamJoinRequest(userId, teamId, startTimeStr)
 	response.Success(c, result)
 }
 
@@ -257,16 +268,18 @@ func ReviewTeamJoinRequest(c *gin.Context) {
 	if err := teamService.TeamJoinRequestService.Get(
 		&teamJoinRequest,
 		&services.JoinArgsRaw{
-			Join: "inner join team_member on team_member.team_id = team_join_request.team_id and team_member.user_id = ? and (team_member.perm_type = ? or team_member.perm_type = ?)",
+			Join: "inner join team_member on team_member.team_id = team_join_request.team_id" +
+				" and team_member.user_id = ? and (team_member.perm_type = ? or team_member.perm_type = ?)" +
+				" and team_member.deleted_at is null",
 			Args: []any{userId, models.TeamPermTypeAdmin, models.TeamPermTypeCreator},
 		},
 		&services.WhereArgs{
 			Query: "team_join_request.id = ? and team_join_request.status = ?",
-			Args:  []interface{}{teamJoinRequestsId, models.StatusTypePending},
+			Args:  []interface{}{teamJoinRequestsId, models.TeamJoinRequestStatusPending},
 		},
 	); err != nil {
 		if errors.Is(err, services.ErrRecordNotFound) {
-			response.BadRequest(c, "申请已被处理")
+			response.BadRequest(c, "申请已被处理或无权限")
 		} else {
 			response.Fail(c, "查询错误")
 		}
@@ -288,13 +301,10 @@ func ReviewTeamJoinRequest(c *gin.Context) {
 		return
 	}
 	if approvalCode == 1 {
-		var teamMember models.TeamMember
-		err := teamService.TeamMemberService.Get(&teamMember, "team_id = ? AND user_id = ?", teamJoinRequest.TeamId, teamJoinRequest.UserId)
-		if err != nil && !errors.Is(err, services.ErrRecordNotFound) {
+		if permType, err := teamService.GetTeamPermTypeByForUser(teamJoinRequest.TeamId, teamJoinRequest.UserId); err != nil {
 			response.Fail(c, "查询错误")
 			return
-		}
-		if errors.Is(err, services.ErrRecordNotFound) {
+		} else if permType == nil {
 			if err := teamService.TeamMemberService.Create(&models.TeamMember{
 				TeamId:   teamJoinRequest.TeamId,
 				UserId:   teamJoinRequest.UserId,
@@ -303,18 +313,388 @@ func ReviewTeamJoinRequest(c *gin.Context) {
 				response.Fail(c, "新建错误")
 				return
 			}
+		} else if teamJoinRequest.PermType <= *permType {
+			response.Success(c, "")
+			return
 		} else {
-			if teamJoinRequest.PermType <= teamMember.PermType {
-				response.Success(c, "")
+			if err := teamService.TeamMemberService.UpdatesIgnoreZero(&models.TeamMember{
+				PermType: teamJoinRequest.PermType,
+			}, "team_id = ? and user_id = ?", teamJoinRequest.TeamId, teamJoinRequest.UserId); err != nil {
+				response.Fail(c, "更新错误")
 				return
-			} else {
-				teamMember.PermType = teamJoinRequest.PermType
-				if err := teamService.TeamMemberService.UpdatesById(teamMember.Id, &teamMember); err != nil {
-					response.Fail(c, "更新错误")
-					return
-				}
 			}
 		}
+	}
+	response.Success(c, "")
+}
+
+// SetTeamInfo 设置团队信息
+func SetTeamInfo(c *gin.Context) {
+	userId, err := auth.GetUserId(c)
+	if err != nil {
+		response.Unauthorized(c)
+		return
+	}
+	var req struct {
+		TeamId      string `json:"team_id" form:"team_id" binding:"required"`
+		Name        string `json:"name" form:"name"`
+		Description string `json:"description" form:"description"`
+	}
+	if err := c.ShouldBind(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	teamId := str.DefaultToInt(req.TeamId, 0)
+	if teamId <= 0 {
+		response.BadRequest(c, "参数错误：team_id")
+		return
+	}
+	teamService := services.NewTeamService()
+	if permType, err := teamService.GetTeamPermTypeByForUser(teamId, userId); err != nil {
+		response.Fail(c, "查询错误")
+		return
+	} else if permType == nil || *permType != models.TeamPermTypeCreator {
+		response.Forbidden(c, "")
+		return
+	}
+	fileHeader, err := c.FormFile("avatar")
+	fileExists := err == nil
+	if req.Name == "" && req.Description == "" && !fileExists {
+		response.BadRequest(c, "")
+		return
+	}
+	if req.Name != "" || req.Description != "" {
+		if err := teamService.UpdatesIgnoreZeroById(teamId, &models.Team{
+			Name:        req.Name,
+			Description: req.Description,
+		}); err != nil {
+			response.Fail(c, "更新错误")
+			return
+		}
+	}
+	result := map[string]any{}
+	if fileExists {
+		file, err := fileHeader.Open()
+		if err != nil {
+			response.BadRequest(c, "获取文件失败")
+			return
+		}
+		defer file.Close()
+		fileSize := fileHeader.Size
+		contentType := fileHeader.Header.Get("Content-Type")
+		if avatarPath, err := teamService.UploadTeamAvatarById(teamId, file, fileSize, contentType); err == nil {
+			result["avatar"] = common.StorageHost + avatarPath
+		}
+	}
+	response.Success(c, result)
+}
+
+// SetTeamInvited 修改团队邀请设置
+func SetTeamInvited(c *gin.Context) {
+	userId, err := auth.GetUserId(c)
+	if err != nil {
+		response.Unauthorized(c)
+		return
+	}
+	var req struct {
+		TeamId          string               `json:"team_id" binding:"required"`
+		InvitedPermType *models.TeamPermType `json:"invited_perm_type"`
+		InvitedSwitch   *bool                `json:"invited_switch"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	teamId := str.DefaultToInt(req.TeamId, 0)
+	if teamId <= 0 {
+		response.BadRequest(c, "参数错误：team_id")
+		return
+	}
+	if req.InvitedPermType == nil && req.InvitedSwitch == nil {
+		response.BadRequest(c, "")
+		return
+	}
+	if req.InvitedPermType != nil && (*req.InvitedPermType < models.TeamPermTypeReadOnly || *req.InvitedPermType > models.TeamPermTypeEditable) {
+		response.BadRequest(c, "参数错误：invited_perm_type")
+		return
+	}
+	teamService := services.NewTeamService()
+	if permType, err := teamService.GetTeamPermTypeByForUser(teamId, userId); err != nil {
+		response.Fail(c, "查询错误")
+		return
+	} else if permType == nil || *permType < models.TeamPermTypeAdmin {
+		response.Forbidden(c, "")
+		return
+	}
+	updateColumns := map[string]any{}
+	if req.InvitedPermType != nil {
+		updateColumns["invited_perm_type"] = *req.InvitedPermType
+	}
+	if req.InvitedSwitch != nil {
+		updateColumns["invited_switch"] = *req.InvitedSwitch
+	}
+	if err := teamService.UpdateColumnsById(teamId, updateColumns); err != nil {
+		response.Fail(c, "更新错误")
+		return
+	}
+	response.Success(c, "")
+}
+
+// GetTeamInvitedInfo 获取团队邀请信息
+func GetTeamInvitedInfo(c *gin.Context) {
+	userId, err := auth.GetUserId(c)
+	if err != nil {
+		response.Unauthorized(c)
+		return
+	}
+	teamId := str.DefaultToInt(c.Query("team_id"), 0)
+	if teamId <= 0 {
+		response.BadRequest(c, "参数错误：team_id")
+		return
+	}
+	teamService := services.NewTeamService()
+	var team models.Team
+	if err := teamService.GetById(teamId, &team); err != nil {
+		response.Fail(c, "查询错误")
+		return
+	}
+	if !team.InvitedSwitch {
+		response.Fail(c, "团队邀请已关闭")
+		return
+	}
+	selfPermType, err := teamService.GetTeamPermTypeByForUser(teamId, userId)
+	if err != nil {
+		response.Fail(c, "查询错误")
+		return
+	}
+	result := map[string]any{
+		"id":                team.Id,
+		"name":              team.Name,
+		"self_perm_type":    selfPermType,
+		"invited_perm_type": team.InvitedPermType,
+	}
+	response.Success(c, result)
+}
+
+// ExitTeam 退出团队
+func ExitTeam(c *gin.Context) {
+	userId, err := auth.GetUserId(c)
+	if err != nil {
+		response.Unauthorized(c)
+		return
+	}
+	var req struct {
+		TeamId string `json:"team_id" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "")
+		return
+	}
+	teamId := str.DefaultToInt(req.TeamId, 0)
+	if teamId <= 0 {
+		response.BadRequest(c, "参数错误：team_id")
+		return
+	}
+	teamService := services.NewTeamService()
+	if permType, err := teamService.GetTeamPermTypeByForUser(teamId, userId); err != nil {
+		response.Fail(c, "查询错误")
+		return
+	} else if permType == nil || *permType == models.TeamPermTypeCreator {
+		response.Forbidden(c, "")
+		return
+	}
+	// 退出或删除项目 todo
+
+	// 删除团队成员
+	teamMemberService := services.NewTeamMemberService()
+	if err := teamMemberService.Delete("team_id = ? and user_id = ?", teamId, userId); err != nil {
+		response.Fail(c, "团队成员删除失败")
+		return
+	}
+	response.Success(c, "")
+}
+
+// SetTeamMemberPermission 设置团队成员权限
+func SetTeamMemberPermission(c *gin.Context) {
+	userId, err := auth.GetUserId(c)
+	if err != nil {
+		response.Unauthorized(c)
+		return
+	}
+	var req struct {
+		TeamId   string               `json:"team_id" binding:"required"`
+		UserId   string               `json:"user_id" binding:"required"`
+		PermType *models.TeamPermType `json:"perm_type" binding:"min=0,max=2"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "")
+		return
+	}
+	teamId := str.DefaultToInt(req.TeamId, 0)
+	if teamId <= 0 {
+		response.BadRequest(c, "参数错误：team_id")
+		return
+	}
+	reqUserId := str.DefaultToInt(req.UserId, 0)
+	if reqUserId <= 0 {
+		response.BadRequest(c, "参数错误：user_id")
+		return
+	}
+	if req.PermType == nil {
+		response.BadRequest(c, "参数错误：perm_type")
+		return
+	}
+	teamService := services.NewTeamService()
+	selfPermType, err := teamService.GetTeamPermTypeByForUser(teamId, userId)
+	if err != nil {
+		response.Fail(c, "查询错误")
+		return
+	} else if selfPermType == nil || *selfPermType < models.TeamPermTypeAdmin {
+		response.Forbidden(c, "")
+		return
+	}
+	permType, err := teamService.GetTeamPermTypeByForUser(teamId, reqUserId)
+	if err != nil {
+		response.Fail(c, "查询错误")
+		return
+	}
+	if permType != nil && *permType >= *selfPermType {
+		response.Forbidden(c, "")
+		return
+	}
+	teamMemberService := services.NewTeamMemberService()
+	if err := teamMemberService.UpdateColumns(map[string]any{
+		"perm_type": req.PermType,
+	}, "team_id = ? and user_id = ?", teamId, reqUserId); err != nil {
+		response.Fail(c, "更新错误")
+		return
+	}
+	response.Success(c, "")
+}
+
+// ChangeTeamCreator 更改团队创建者
+func ChangeTeamCreator(c *gin.Context) {
+	userId, err := auth.GetUserId(c)
+	if err != nil {
+		response.Unauthorized(c)
+		return
+	}
+	var req struct {
+		TeamId string `json:"team_id" binding:"required"`
+		UserId string `json:"user_id" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "")
+		return
+	}
+	teamId := str.DefaultToInt(req.TeamId, 0)
+	if teamId <= 0 {
+		response.BadRequest(c, "参数错误：team_id")
+		return
+	}
+	reqUserId := str.DefaultToInt(req.UserId, 0)
+	if reqUserId <= 0 {
+		response.BadRequest(c, "参数错误：user_id")
+		return
+	}
+	if userId == reqUserId {
+		response.BadRequest(c, "不能转移给自己")
+		return
+	}
+	teamService := services.NewTeamService()
+	selfPermType, err := teamService.GetTeamPermTypeByForUser(teamId, userId)
+	if err != nil {
+		response.Fail(c, "查询错误")
+		return
+	} else if selfPermType == nil || *selfPermType != models.TeamPermTypeCreator {
+		response.Forbidden(c, "")
+		return
+	}
+	teamMemberService := services.NewTeamMemberService()
+	teamMemberService.DB = teamMemberService.DB.Begin() // 开启事务
+	needRollback := false
+	defer func() {
+		if needRollback {
+			teamMemberService.DB.Rollback()
+		} else {
+			teamMemberService.DB.Commit()
+		}
+	}()
+	if err := teamMemberService.DB.Error; err != nil {
+		response.Fail(c, "更新错误")
+		needRollback = true
+		return
+	}
+	if err := teamMemberService.UpdateColumns(map[string]any{
+		"perm_type": models.TeamPermTypeAdmin,
+	}, "team_id = ? and user_id = ?", teamId, userId); err != nil {
+		response.Fail(c, "更新错误.")
+		needRollback = true
+		return
+	}
+	if err := teamMemberService.UpdateColumns(map[string]any{
+		"perm_type": models.TeamPermTypeCreator,
+	}, "team_id = ? and user_id = ?", teamId, reqUserId); err != nil {
+		response.Fail(c, "更新错误..")
+		needRollback = true
+		return
+	}
+	response.Success(c, "")
+}
+
+// RemoveTeamMember 移除团队成员
+func RemoveTeamMember(c *gin.Context) {
+	userId, err := auth.GetUserId(c)
+	if err != nil {
+		response.Unauthorized(c)
+		return
+	}
+	var req struct {
+		TeamId string `json:"team_id" binding:"required"`
+		UserId string `json:"user_id" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "")
+		return
+	}
+	teamId := str.DefaultToInt(req.TeamId, 0)
+	if teamId <= 0 {
+		response.BadRequest(c, "参数错误：team_id")
+		return
+	}
+	reqUserId := str.DefaultToInt(req.UserId, 0)
+	if reqUserId <= 0 {
+		response.BadRequest(c, "参数错误：user_id")
+		return
+	}
+	if userId == reqUserId {
+		response.BadRequest(c, "不能移除自己")
+		return
+	}
+	teamService := services.NewTeamService()
+	selfPermType, err := teamService.GetTeamPermTypeByForUser(teamId, userId)
+	if err != nil {
+		response.Fail(c, "查询错误")
+		return
+	} else if selfPermType == nil || *selfPermType < models.TeamPermTypeAdmin {
+		response.Forbidden(c, "")
+		return
+	}
+	permType, err := teamService.GetTeamPermTypeByForUser(teamId, reqUserId)
+	if err != nil {
+		response.Fail(c, "查询错误")
+		return
+	} else if permType != nil && *permType >= *selfPermType {
+		response.Forbidden(c, "")
+		return
+	}
+	// 退出或删除项目 todo
+
+	// 删除团队成员
+	teamMemberService := services.NewTeamMemberService()
+	if err := teamMemberService.Delete("team_id = ? and user_id = ?", teamId, reqUserId); err != nil {
+		response.Fail(c, "团队成员删除失败")
+		return
 	}
 	response.Success(c, "")
 }

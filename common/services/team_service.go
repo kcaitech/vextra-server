@@ -96,6 +96,26 @@ func (s *TeamService) UploadTeamAvatar(team *models.Team, file io.Reader, fileSi
 	return avatarPath, nil
 }
 
+func (s *TeamService) UploadTeamAvatarById(teamId int64, file io.Reader, fileSize int64, contentType string) (string, error) {
+	team := models.Team{}
+	if err := s.GetById(teamId, &team); err != nil {
+		return "", err
+	}
+	return s.UploadTeamAvatar(&team, file, fileSize, contentType)
+}
+
+// GetTeamPermTypeByForUser 获取用户在团队中的权限
+func (s *TeamService) GetTeamPermTypeByForUser(teamId int64, userId int64) (*models.TeamPermType, error) {
+	var teamMember TeamMember
+	if err := s.TeamMemberService.Get(&teamMember, WhereArgs{Query: "team_id = ? and user_id = ?", Args: []any{teamId, userId}}); err != nil {
+		if errors.Is(err, ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &teamMember.PermType, nil
+}
+
 type Team struct {
 	Id              int64               `json:"id"`
 	CreatedAt       time.Time           `json:"created_at"`
@@ -103,49 +123,82 @@ type Team struct {
 	Description     string              `json:"description"`
 	Avatar          string              `json:"avatar"`
 	InvitedPermType models.TeamPermType `json:"invited_perm_type"`
+	InvitedSwitch   bool                `json:"invited_switch"`
 }
 
-func (team *Team) MarshalJSON() ([]byte, error) {
+func (team Team) MarshalJSON() ([]byte, error) {
 	if strings.HasPrefix(team.Avatar, "/") {
 		team.Avatar = common.StorageHost + team.Avatar
 	}
 	return models.MarshalJSON(team)
 }
 
-type TeamJoinRequest models.TeamJoinRequest
+type TeamMember models.TeamMember
 
-func (model *TeamJoinRequest) MarshalJSON() ([]byte, error) {
+func (model TeamMember) MarshalJSON() ([]byte, error) {
 	return models.MarshalJSON(model)
 }
 
-type TeamMember models.TeamMember
+type TeamQueryResItem struct {
+	Team       Team                `gorm:"embedded;embeddedPrefix:team__" json:"team" table:"team" join:"team;inner;id,#team_id"`
+	TeamMember TeamMember          `gorm:"embedded;embeddedPrefix:team_member__" json:"-" table:"team_member" join:"team_member;inner;team_id,#team_id"`
+	User       User                `gorm:"embedded;embeddedPrefix:user__" json:"-" table:"user" join:"user;inner;id,#user_id"`
+	PermType   models.TeamPermType `gorm:"-" json:"perm_type"`
+}
 
-func (model *TeamMember) MarshalJSON() ([]byte, error) {
+// FindTeamByUserId 查询某个用户所在的所有团队列表
+func (s *TeamService) FindTeamByUserId(userId int64) []TeamQueryResItem {
+	var result []TeamQueryResItem
+	_ = s.Find(
+		&result,
+		&ParamArgs{"#team_id": "team.id", "#user_id": "team_member.user_id"},
+		&WhereArgs{"team_member.deleted_at is null and user.deleted_at is null", nil},
+		&WhereArgs{"team_member.user_id = ?", []any{userId}},
+		&OrderLimitArgs{"team_member.id desc", 0},
+	)
+	for i := range result {
+		result[i].PermType = result[i].TeamMember.PermType
+	}
+	return result
+}
+
+type TeamJoinRequest models.TeamJoinRequest
+
+func (model TeamJoinRequest) MarshalJSON() ([]byte, error) {
 	return models.MarshalJSON(model)
 }
 
 type TeamJoinRequestsQueryResItem struct {
+	TeamMember      TeamMember      `gorm:"-" json:"-" table:"team_member" join:"team_member;inner;team_id,team_id;user_id,?user_id"` // 自己的（非申请人的）权限
 	Team            Team            `gorm:"embedded;embeddedPrefix:team__" json:"team" table:"team" join:"team;inner;id,team_id"`
 	User            User            `gorm:"embedded;embeddedPrefix:user__" json:"user" table:"user" join:"user;inner;id,user_id"`
-	TeamMember      TeamMember      `gorm:"-" json:"-" table:"team_member" join:"team_member;inner;team_id,team_id;user_id,user_id"`
 	TeamJoinRequest TeamJoinRequest `gorm:"embedded;embeddedPrefix:team_join_request__" json:"request" table:"team_join_request"`
 }
 
-// FindTeamJoinRequests 获取用户所创建或担任管理员的团队的加入申请列表
-func (s *TeamService) FindTeamJoinRequests(userId int64, teamId int64, startTime string) []TeamJoinRequestsQueryResItem {
+// FindTeamJoinRequest 获取用户所创建或担任管理员的团队的加入申请列表
+func (s *TeamService) FindTeamJoinRequest(userId int64, teamId int64, startTime string) []TeamJoinRequestsQueryResItem {
 	var result []TeamJoinRequestsQueryResItem
-	whereArgsList := []WhereArgs{{Query: "team_member.user_id = ? and (team_member.perm_type = ? or team_member.perm_type = ?)", Args: []any{userId, models.TeamPermTypeAdmin, models.TeamPermTypeCreator}}}
+	whereArgsList := []WhereArgs{
+		{
+			Query: "team_member.deleted_at is null and team.deleted_at is null and user.deleted_at is null",
+		},
+		{
+			Query: "team_member.perm_type >= ? and team_member.perm_type <= ? and team_join_request.status = ?",
+			Args:  []any{models.TeamPermTypeAdmin, models.TeamPermTypeCreator, models.TeamJoinRequestStatusPending},
+		},
+	}
 	if teamId != 0 {
-		whereArgsList = append(whereArgsList, WhereArgs{Query: "team.id = ?", Args: []any{teamId}})
+		whereArgsList = append(whereArgsList, WhereArgs{Query: "team_join_request.team_id = ?", Args: []any{teamId}})
 	}
 	if startTime != "" {
 		whereArgsList = append(whereArgsList, WhereArgs{
-			Query: "team_join_request.status = ? and team_join_request.created_at >= ? and team_join_request.first_displayed_at is null",
-			Args:  []any{models.TeamJoinRequestStatusPending, startTime}},
+			Query: "team_join_request.created_at >= ? and team_join_request.first_displayed_at is null",
+			Args:  []any{startTime}},
 		)
 	}
 	_ = s.TeamJoinRequestService.Find(
 		&result,
+		&ParamArgs{"?user_id": userId},
 		whereArgsList,
 		&OrderLimitArgs{"team_join_request.id desc", 0},
 	)

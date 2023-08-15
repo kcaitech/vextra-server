@@ -19,6 +19,6 @@ type User struct {
 	WxLoginCode              string    `gorm:"size:64" json:"wx_login_code"`
 }
 
-func (model *User) MarshalJSON() ([]byte, error) {
+func (model User) MarshalJSON() ([]byte, error) {
 	return MarshalJSON(model)
 }

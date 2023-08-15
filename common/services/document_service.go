@@ -37,7 +37,7 @@ type User struct {
 	Avatar   string `json:"avatar"`
 }
 
-func (user *User) MarshalJSON() ([]byte, error) {
+func (user User) MarshalJSON() ([]byte, error) {
 	if strings.HasPrefix(user.Avatar, "/") {
 		user.Avatar = common.StorageHost + user.Avatar
 	}
@@ -56,7 +56,7 @@ type Document struct {
 	VersionId string         `json:"version_id"`
 }
 
-func (model *Document) MarshalJSON() ([]byte, error) {
+func (model Document) MarshalJSON() ([]byte, error) {
 	return models.MarshalJSON(model)
 }
 
@@ -65,7 +65,7 @@ type DocumentFavorites struct {
 	IsFavorite bool  `json:"is_favorite"`
 }
 
-func (model *DocumentFavorites) MarshalJSON() ([]byte, error) {
+func (model DocumentFavorites) MarshalJSON() ([]byte, error) {
 	return models.MarshalJSON(model)
 }
 
@@ -74,7 +74,7 @@ type DocumentAccessRecord struct {
 	LastAccessTime time.Time `json:"last_access_time"`
 }
 
-func (model *DocumentAccessRecord) MarshalJSON() ([]byte, error) {
+func (model DocumentAccessRecord) MarshalJSON() ([]byte, error) {
 	return models.MarshalJSON(model)
 }
 
@@ -84,13 +84,13 @@ type DocumentPermission struct {
 	PermSourceType models.PermSourceType `json:"perm_source_type"`
 }
 
-func (model *DocumentPermission) MarshalJSON() ([]byte, error) {
+func (model DocumentPermission) MarshalJSON() ([]byte, error) {
 	return models.MarshalJSON(model)
 }
 
 type DocumentPermissionRequests models.DocumentPermissionRequests
 
-func (model *DocumentPermissionRequests) MarshalJSON() ([]byte, error) {
+func (model DocumentPermissionRequests) MarshalJSON() ([]byte, error) {
 	return models.MarshalJSON(model)
 }
 

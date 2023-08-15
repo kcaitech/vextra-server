@@ -7,6 +7,6 @@ type InviteCode struct {
 	UserId int64  `gorm:"" json:"user_id"`
 }
 
-func (model *InviteCode) MarshalJSON() ([]byte, error) {
+func (model InviteCode) MarshalJSON() ([]byte, error) {
 	return MarshalJSON(model)
 }
