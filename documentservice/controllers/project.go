@@ -155,23 +155,23 @@ func DeleteProject(c *gin.Context) {
 	}
 	// 删除项目申请记录
 	projectMemberService := projectService.ProjectMemberService
-	if err := projectMemberService.Delete("project_id = ?", projectId); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
+	if _, err := projectMemberService.Delete("project_id = ?", projectId); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
 		response.Fail(c, "项目申请记录删除失败")
 		return
 	}
 	// 删除项目成员
-	if err := projectMemberService.Delete("project_id = ?", projectId); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
+	if _, err := projectMemberService.Delete("project_id = ?", projectId); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
 		response.Fail(c, "项目成员删除失败")
 		return
 	}
 	// 删除项目
-	if err := projectService.Delete("id = ?", projectId); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
+	if _, err := projectService.Delete("id = ?", projectId); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
 		response.Fail(c, "项目删除失败")
 		return
 	}
 	// 删除项目文档
 	documentService := services.NewDocumentService()
-	if err := documentService.Delete("project_id = ?", projectId); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
+	if _, err := documentService.Delete("project_id = ?", projectId); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
 		response.Fail(c, "项目文档删除失败")
 		return
 	}
@@ -345,7 +345,7 @@ func ReviewProjectJoinRequest(c *gin.Context) {
 	}
 	projectJoinRequest.ProcessedAt = myTime.Time(time.Now())
 	projectJoinRequest.ProcessedBy = userId
-	if err := projectService.ProjectJoinRequestService.UpdatesById(projectJoinRequestsId, &projectJoinRequest); err != nil {
+	if _, err := projectService.ProjectJoinRequestService.UpdatesById(projectJoinRequestsId, &projectJoinRequest); err != nil {
 		response.Fail(c, "更新错误")
 		return
 	}
@@ -367,7 +367,7 @@ func ReviewProjectJoinRequest(c *gin.Context) {
 			response.Success(c, "")
 			return
 		} else {
-			if err := projectService.ProjectMemberService.UpdatesIgnoreZero(&models.ProjectMember{
+			if _, err := projectService.ProjectMemberService.UpdatesIgnoreZero(&models.ProjectMember{
 				PermType:       projectJoinRequest.PermType,
 				PermSourceType: models.ProjectPermSourceTypeCustom,
 			}, "project_id = ? and user_id = ?", projectJoinRequest.ProjectId, projectJoinRequest.UserId); err != nil {
@@ -413,7 +413,7 @@ func SetProjectInfo(c *gin.Context) {
 		return
 	}
 	if req.Name != "" || req.Description != "" {
-		if err := projectService.UpdatesIgnoreZeroById(projectId, &models.Project{
+		if _, err := projectService.UpdatesIgnoreZeroById(projectId, &models.Project{
 			Name:        req.Name,
 			Description: req.Description,
 		}); err != nil {
@@ -476,7 +476,7 @@ func SetProjectInvited(c *gin.Context) {
 	if req.NeedApproval != nil {
 		updateColumns["need_approval"] = *req.NeedApproval
 	}
-	if err := projectService.UpdateColumnsById(projectId, updateColumns); err != nil {
+	if _, err := projectService.UpdateColumnsById(projectId, updateColumns); err != nil {
 		response.Fail(c, "更新错误")
 		return
 	}
@@ -548,7 +548,7 @@ func ExitProject(c *gin.Context) {
 	}
 	// 删除项目成员
 	projectMemberService := services.NewProjectMemberService()
-	if err := projectMemberService.Delete("project_id = ? and user_id = ?", projectId, userId); err != nil {
+	if _, err := projectMemberService.Delete("project_id = ? and user_id = ?", projectId, userId); err != nil {
 		response.Fail(c, "项目成员删除失败")
 		return
 	}
@@ -604,7 +604,7 @@ func SetProjectMemberPermission(c *gin.Context) {
 		return
 	}
 	projectMemberService := services.NewProjectMemberService()
-	if err := projectMemberService.UpdateColumns(map[string]any{
+	if _, err := projectMemberService.UpdateColumns(map[string]any{
 		"perm_type": req.PermType,
 	}, "project_id = ? and user_id = ?", projectId, reqUserId); err != nil {
 		response.Fail(c, "更新错误")
@@ -666,14 +666,14 @@ func ChangeProjectCreator(c *gin.Context) {
 		needRollback = true
 		return
 	}
-	if err := projectMemberService.UpdateColumns(map[string]any{
+	if _, err := projectMemberService.UpdateColumns(map[string]any{
 		"perm_type": models.ProjectPermTypeAdmin,
 	}, "project_id = ? and user_id = ?", projectId, userId); err != nil {
 		response.Fail(c, "更新错误.")
 		needRollback = true
 		return
 	}
-	if err := projectMemberService.UpdateColumns(map[string]any{
+	if _, err := projectMemberService.UpdateColumns(map[string]any{
 		"perm_type": models.ProjectPermTypeCreator,
 	}, "project_id = ? and user_id = ?", projectId, reqUserId); err != nil {
 		response.Fail(c, "更新错误..")
@@ -731,8 +731,37 @@ func RemoveProjectMember(c *gin.Context) {
 	}
 	// 删除项目成员
 	projectMemberService := services.NewProjectMemberService()
-	if err := projectMemberService.Delete("project_id = ? and user_id = ?", projectId, reqUserId); err != nil {
+	if _, err := projectMemberService.Delete("project_id = ? and user_id = ?", projectId, reqUserId); err != nil {
 		response.Fail(c, "团队成员删除失败")
+		return
+	}
+	response.Success(c, "")
+}
+
+// SetProjectFavorite 收藏/取消收藏项目
+func SetProjectFavorite(c *gin.Context) {
+	userId, err := auth.GetUserId(c)
+	if err != nil {
+		response.Unauthorized(c)
+		return
+	}
+	var req struct {
+		ProjectId string `json:"project_id" binding:"required"`
+		IsFavor   *bool  `json:"is_favor" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "")
+		return
+	}
+	isFavor := *req.IsFavor
+	projectId := str.DefaultToInt(req.ProjectId, 0)
+	if projectId <= 0 {
+		response.BadRequest(c, "参数错误：project_id")
+		return
+	}
+	projectService := services.NewProjectService()
+	if err := projectService.ToggleProjectFavorite(userId, projectId, isFavor); err != nil {
+		response.Fail(c, "操作失败")
 		return
 	}
 	response.Success(c, "")

@@ -5,6 +5,7 @@ import (
 	"unicode"
 )
 
+// CamelToSnake 驼峰转蛇形
 func CamelToSnake(s string) string {
 	var result string
 	var words []string

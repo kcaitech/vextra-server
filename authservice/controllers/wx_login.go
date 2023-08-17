@@ -206,7 +206,7 @@ func WxLogin(c *gin.Context) {
 
 	if !user.IsActivated {
 		user.WxLoginCode = req.Code
-		_ = userService.Updates(user)
+		_, _ = userService.Updates(user)
 		// 邀请码校验
 		if len(sliceutil.FilterT(func(code string) bool {
 			return req.InviteCode == code
@@ -226,7 +226,7 @@ func WxLogin(c *gin.Context) {
 		}
 		// 激活用户
 		user.IsActivated = true
-		if err := userService.Updates(user); err != nil {
+		if _, err := userService.Updates(user); err != nil {
 			response.Fail(c, "登陆失败")
 			return
 		}

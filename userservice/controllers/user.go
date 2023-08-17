@@ -51,9 +51,9 @@ func SetNickname(c *gin.Context) {
 		return
 	}
 	userService := services.NewUserService()
-	if userService.UpdateColumnsById(userId, map[string]any{
+	if _, err := userService.UpdateColumnsById(userId, map[string]any{
 		"nickname": req.Nickname,
-	}) != nil {
+	}); err != nil {
 		response.BadRequest(c, "")
 		return
 	}

@@ -30,7 +30,7 @@ func DeleteUserDocumentAccessRecord(c *gin.Context) {
 		response.BadRequest(c, "参数错误：access_record_id")
 		return
 	}
-	if err := services.NewDocumentService().DocumentAccessRecordService.Delete(
+	if _, err := services.NewDocumentService().DocumentAccessRecordService.Delete(
 		"user_id = ? and id = ?", userId, accessRecordId,
 	); err != nil && err != services.ErrRecordNotFound {
 		response.Fail(c, "删除错误")

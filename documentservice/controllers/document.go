@@ -34,7 +34,7 @@ func DeleteUserDocument(c *gin.Context) {
 		response.BadRequest(c, "参数错误：doc_id")
 		return
 	}
-	if err := services.NewDocumentService().Delete(
+	if _, err := services.NewDocumentService().Delete(
 		"user_id = ? and id = ?", userId, documentId,
 	); err != nil && err != services.ErrRecordNotFound {
 		response.Fail(c, "删除错误")
@@ -88,7 +88,7 @@ func SetDocumentName(c *gin.Context) {
 		response.BadRequest(c, "参数错误：doc_id")
 		return
 	}
-	if err = services.NewDocumentService().UpdateColumns(
+	if _, err = services.NewDocumentService().UpdateColumns(
 		map[string]any{"name": req.Name},
 		"user_id = ? and id = ?", userId, documentId,
 	); err != nil && err != services.ErrRecordNotFound {

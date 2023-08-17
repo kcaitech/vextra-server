@@ -10,6 +10,7 @@ type ProjectService struct {
 	*DefaultService
 	ProjectMemberService      *ProjectMemberService
 	ProjectJoinRequestService *ProjectJoinRequestService
+	ProjectFavoriteService    *ProjectFavoriteService
 }
 
 func NewProjectService() *ProjectService {
@@ -17,6 +18,7 @@ func NewProjectService() *ProjectService {
 		DefaultService:            NewDefaultService(&models.Project{}),
 		ProjectMemberService:      NewProjectMemberService(),
 		ProjectJoinRequestService: NewprojectJoinRequestService(),
+		ProjectFavoriteService:    NewProjectFavoriteService(),
 	}
 	that.That = that
 	return that
@@ -41,6 +43,18 @@ type ProjectJoinRequestService struct {
 func NewprojectJoinRequestService() *ProjectJoinRequestService {
 	that := &ProjectJoinRequestService{
 		DefaultService: NewDefaultService(&models.ProjectJoinRequest{}),
+	}
+	that.That = that
+	return that
+}
+
+type ProjectFavoriteService struct {
+	*DefaultService
+}
+
+func NewProjectFavoriteService() *ProjectFavoriteService {
+	that := &ProjectFavoriteService{
+		DefaultService: NewDefaultService(&models.ProjectFavorite{}),
 	}
 	that.That = that
 	return that
@@ -174,4 +188,17 @@ func (s *ProjectService) FindProjectJoinRequest(userId int64, projectId int64, s
 		&OrderLimitArgs{"project_join_request.id desc", 0},
 	)
 	return result
+}
+
+// ToggleProjectFavorite 收藏/取消收藏项目
+func (s *ProjectService) ToggleProjectFavorite(userId int64, projectId int64, isFavor bool) error {
+	if _, err := s.ProjectFavoriteService.HardDelete("user_id = ? and project_id = ?", userId, projectId); err != nil && !errors.Is(err, ErrRecordNotFound) {
+		return err
+	}
+	if isFavor {
+		if err := s.ProjectFavoriteService.Create(&models.ProjectFavorite{UserId: userId, ProjectId: projectId}); err != nil {
+			return err
+		}
+	}
+	return nil
 }

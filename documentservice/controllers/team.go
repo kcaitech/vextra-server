@@ -149,29 +149,29 @@ func DeleteTeam(c *gin.Context) {
 	}
 	// 删除团队申请记录
 	teamJoinRequestService := teamService.TeamJoinRequestService
-	if err := teamJoinRequestService.Delete("team_id = ?", teamId); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
+	if _, err := teamJoinRequestService.Delete("team_id = ?", teamId); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
 		response.Fail(c, "团队申请记录删除失败")
 		return
 	}
 	// 删除团队成员
-	if err := teamMemberService.Delete("team_id = ?", teamId); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
+	if _, err := teamMemberService.Delete("team_id = ?", teamId); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
 		response.Fail(c, "团队成员删除失败")
 		return
 	}
 	// 删除团队项目
 	projectService := services.NewProjectService()
-	if err := projectService.Delete("team_id = ?", teamId); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
+	if _, err := projectService.Delete("team_id = ?", teamId); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
 		response.Fail(c, "团队项目删除失败")
 		return
 	}
 	// 删除团队文档
 	documentService := services.NewDocumentService()
-	if err := documentService.Delete("team_id = ?", teamId); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
+	if _, err := documentService.Delete("team_id = ?", teamId); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
 		response.Fail(c, "团队文档删除失败")
 		return
 	}
 	// 删除团队
-	if err := teamService.Delete("id = ?", teamId); err != nil {
+	if _, err := teamService.Delete("id = ?", teamId); err != nil {
 		response.Fail(c, "团队删除失败")
 		return
 	}
@@ -320,7 +320,7 @@ func ReviewTeamJoinRequest(c *gin.Context) {
 	}
 	teamJoinRequest.ProcessedAt = myTime.Time(time.Now())
 	teamJoinRequest.ProcessedBy = userId
-	if err := teamService.TeamJoinRequestService.UpdatesById(teamJoinRequestsId, &teamJoinRequest); err != nil {
+	if _, err := teamService.TeamJoinRequestService.UpdatesById(teamJoinRequestsId, &teamJoinRequest); err != nil {
 		response.Fail(c, "更新错误")
 		return
 	}
@@ -341,7 +341,7 @@ func ReviewTeamJoinRequest(c *gin.Context) {
 			response.Success(c, "")
 			return
 		} else {
-			if err := teamService.TeamMemberService.UpdatesIgnoreZero(&models.TeamMember{
+			if _, err := teamService.TeamMemberService.UpdatesIgnoreZero(&models.TeamMember{
 				PermType: teamJoinRequest.PermType,
 			}, "team_id = ? and user_id = ?", teamJoinRequest.TeamId, teamJoinRequest.UserId); err != nil {
 				response.Fail(c, "更新错误")
@@ -388,7 +388,7 @@ func SetTeamInfo(c *gin.Context) {
 		return
 	}
 	if req.Name != "" || req.Description != "" {
-		if err := teamService.UpdatesIgnoreZeroById(teamId, &models.Team{
+		if _, err := teamService.UpdatesIgnoreZeroById(teamId, &models.Team{
 			Name:        req.Name,
 			Description: req.Description,
 		}); err != nil {
@@ -457,7 +457,7 @@ func SetTeamInvited(c *gin.Context) {
 	if req.InvitedSwitch != nil {
 		updateColumns["invited_switch"] = *req.InvitedSwitch
 	}
-	if err := teamService.UpdateColumnsById(teamId, updateColumns); err != nil {
+	if _, err := teamService.UpdateColumnsById(teamId, updateColumns); err != nil {
 		response.Fail(c, "更新错误")
 		return
 	}
@@ -531,7 +531,7 @@ func ExitTeam(c *gin.Context) {
 
 	// 删除团队成员
 	teamMemberService := services.NewTeamMemberService()
-	if err := teamMemberService.Delete("team_id = ? and user_id = ?", teamId, userId); err != nil {
+	if _, err := teamMemberService.Delete("team_id = ? and user_id = ?", teamId, userId); err != nil {
 		response.Fail(c, "团队成员删除失败")
 		return
 	}
@@ -587,7 +587,7 @@ func SetTeamMemberPermission(c *gin.Context) {
 		return
 	}
 	teamMemberService := services.NewTeamMemberService()
-	if err := teamMemberService.UpdateColumns(map[string]any{
+	if _, err := teamMemberService.UpdateColumns(map[string]any{
 		"perm_type": req.PermType,
 	}, "team_id = ? and user_id = ?", teamId, reqUserId); err != nil {
 		response.Fail(c, "更新错误")
@@ -649,14 +649,14 @@ func ChangeTeamCreator(c *gin.Context) {
 		needRollback = true
 		return
 	}
-	if err := teamMemberService.UpdateColumns(map[string]any{
+	if _, err := teamMemberService.UpdateColumns(map[string]any{
 		"perm_type": models.TeamPermTypeAdmin,
 	}, "team_id = ? and user_id = ?", teamId, userId); err != nil {
 		response.Fail(c, "更新错误.")
 		needRollback = true
 		return
 	}
-	if err := teamMemberService.UpdateColumns(map[string]any{
+	if _, err := teamMemberService.UpdateColumns(map[string]any{
 		"perm_type": models.TeamPermTypeCreator,
 	}, "team_id = ? and user_id = ?", teamId, reqUserId); err != nil {
 		response.Fail(c, "更新错误..")
@@ -716,7 +716,7 @@ func RemoveTeamMember(c *gin.Context) {
 
 	// 删除团队成员
 	teamMemberService := services.NewTeamMemberService()
-	if err := teamMemberService.Delete("team_id = ? and user_id = ?", teamId, reqUserId); err != nil {
+	if _, err := teamMemberService.Delete("team_id = ? and user_id = ?", teamId, reqUserId); err != nil {
 		response.Fail(c, "团队成员删除失败")
 		return
 	}

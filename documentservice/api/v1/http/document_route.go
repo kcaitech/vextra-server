@@ -66,5 +66,6 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 		router.PUT("/team/project/member/perm", controllers.SetProjectMemberPermission)
 		router.PUT("/team/project/creator", controllers.ChangeProjectCreator)
 		router.DELETE("/team/project/member", controllers.RemoveProjectMember)
+		router.PUT("/team/project/favorite", controllers.SetProjectFavorite)
 	}
 }

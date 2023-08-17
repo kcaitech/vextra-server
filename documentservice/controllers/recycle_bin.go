@@ -41,7 +41,7 @@ func RestoreUserRecycleBinDocument(c *gin.Context) {
 		response.BadRequest(c, "参数错误：doc_id")
 		return
 	}
-	if err := services.NewDocumentService().UpdateColumns(
+	if _, err := services.NewDocumentService().UpdateColumns(
 		map[string]any{"deleted_at": nil},
 		"user_id = ? and id = ? and deleted_at is not null and purged_at is null", userId, documentId,
 		services.Unscoped{},
@@ -64,7 +64,7 @@ func DeleteUserRecycleBinDocument(c *gin.Context) {
 		response.BadRequest(c, "参数错误：doc_id")
 		return
 	}
-	if err := services.NewDocumentService().UpdateColumns(
+	if _, err := services.NewDocumentService().UpdateColumns(
 		map[string]any{"purged_at": myTime.Time(time.Now())},
 		"user_id = ? and id = ? and deleted_at is not null", userId, documentId,
 		services.Unscoped{},

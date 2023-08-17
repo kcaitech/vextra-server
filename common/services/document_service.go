@@ -1,7 +1,6 @@
 package services
 
 import (
-	"gorm.io/gorm"
 	"protodesign.cn/kcserver/common"
 	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/utils/sliceutil"
@@ -45,15 +44,15 @@ func (user User) MarshalJSON() ([]byte, error) {
 }
 
 type Document struct {
-	Id        int64          `json:"id"`
-	CreatedAt time.Time      `json:"created_at"`
-	DeletedAt gorm.DeletedAt `json:"deleted_at"`
-	UserId    int64          `json:"user_id"`
-	Path      string         `json:"path"`
-	DocType   models.DocType `json:"doc_type"`
-	Name      string         `json:"name"`
-	Size      uint64         `json:"size"`
-	VersionId string         `json:"version_id"`
+	Id        int64            `json:"id"`
+	CreatedAt time.Time        `json:"created_at"`
+	DeletedAt models.DeletedAt `json:"deleted_at"`
+	UserId    int64            `json:"user_id"`
+	Path      string           `json:"path"`
+	DocType   models.DocType   `json:"doc_type"`
+	Name      string           `json:"name"`
+	Size      uint64           `json:"size"`
+	VersionId string           `json:"version_id"`
 }
 
 func (model Document) MarshalJSON() ([]byte, error) {

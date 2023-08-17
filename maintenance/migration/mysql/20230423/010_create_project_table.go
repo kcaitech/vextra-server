@@ -67,6 +67,14 @@ type ProjectJoinRequest struct {
 	ProcessorNotes   string                   `gorm:"size:256" json:"processor_notes"`
 }
 
+// ProjectFavorite 项目收藏（固定）
+type ProjectFavorite struct {
+	BaseModel
+	UserId    int64 `gorm:"uniqueIndex:idx_user_project;not null" json:"user_id"`
+	ProjectId int64 `gorm:"uniqueIndex:idx_user_project;not null" json:"project_id"`
+	IsFavor   bool  `gorm:"not null;default:true" json:"is_favor"`
+}
+
 func ProjectUp(db *gorm.DB) error {
 	if err := db.AutoMigrate(&Project{}); err != nil {
 		return err
@@ -75,6 +83,9 @@ func ProjectUp(db *gorm.DB) error {
 		return err
 	}
 	if err := db.AutoMigrate(&ProjectJoinRequest{}); err != nil {
+		return err
+	}
+	if err := db.AutoMigrate(&ProjectFavorite{}); err != nil {
 		return err
 	}
 	return nil

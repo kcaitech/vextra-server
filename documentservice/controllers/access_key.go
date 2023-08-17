@@ -89,7 +89,7 @@ func GetDocumentAccessKey(c *gin.Context) {
 			})
 		}
 	} else {
-		_ = documentService.DocumentAccessRecordService.UpdateColumns(map[string]any{
+		_, _ = documentService.DocumentAccessRecordService.UpdateColumns(map[string]any{
 			"last_access_time": now,
 			"deleted_at":       nil,
 		}, "id = ?", documentAccessRecord.Id, &services.Unscoped{})

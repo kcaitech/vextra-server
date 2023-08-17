@@ -88,9 +88,9 @@ func (s *TeamService) UploadTeamAvatar(team *models.Team, file io.Reader, fileSi
 		return "", errors.New("上传文件失败")
 	}
 	team.Avatar = avatarPath
-	if s.UpdateColumnsById(team.Id, map[string]any{
+	if _, err := s.UpdateColumnsById(team.Id, map[string]any{
 		"avatar": avatarPath,
-	}) != nil {
+	}); err != nil {
 		return "", errors.New("更新错误")
 	}
 	return avatarPath, nil

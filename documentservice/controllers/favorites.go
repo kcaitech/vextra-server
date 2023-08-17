@@ -69,7 +69,7 @@ func SetUserDocumentFavoriteStatus(c *gin.Context) {
 		return
 	}
 	documentFavorites.IsFavorite = req.Status
-	if err := documentFavoritesService.UpdatesById(documentFavorites.Id, &documentFavorites); err != nil {
+	if _, err := documentFavoritesService.UpdatesById(documentFavorites.Id, &documentFavorites); err != nil {
 		response.Fail(c, "更新失败")
 		return
 	}

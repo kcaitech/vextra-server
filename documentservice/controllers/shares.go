@@ -36,7 +36,7 @@ func DeleteUserShare(c *gin.Context) {
 		response.BadRequest(c, "参数错误：share_id")
 		return
 	}
-	if err := services.NewDocumentService().DocumentPermissionService.Delete(
+	if _, err := services.NewDocumentService().DocumentPermissionService.Delete(
 		"grantee_type = ? and grantee_id = ? and id = ?", models.GranteeTypeExternal, userId, permissionId,
 	); err != nil && err != services.ErrRecordNotFound {
 		response.Fail(c, "删除错误")
@@ -83,7 +83,7 @@ func SetDocumentShareType(c *gin.Context) {
 		return
 	}
 	document.DocType = docType
-	if err := documentService.UpdatesById(documentId, &document); err != nil {
+	if _, err := documentService.UpdatesById(documentId, &document); err != nil {
 		response.Fail(c, "更新错误")
 		return
 	}
@@ -97,7 +97,7 @@ func SetDocumentShareType(c *gin.Context) {
 		case models.DocTypePublicEditable:
 			permType = models.PermTypeEditable
 		}
-		_ = documentService.DocumentPermissionService.UpdateColumns(map[string]any{
+		_, _ = documentService.DocumentPermissionService.UpdateColumns(map[string]any{
 			"perm_type": permType,
 		}, "resource_type = ? and resource_id = ? and grantee_type = ? and perm_source_type = ?", models.ResourceTypeDoc, documentId, models.GranteeTypeExternal, models.PermSourceTypeDefault)
 	}
@@ -166,7 +166,7 @@ func SetDocumentSharePermission(c *gin.Context) {
 		}
 		return
 	}
-	_ = services.NewDocumentService().DocumentPermissionService.UpdateColumns(
+	_, _ = services.NewDocumentService().DocumentPermissionService.UpdateColumns(
 		map[string]any{"perm_type": permType, "perm_source_type": models.PermSourceTypeCustom},
 		"id = ?",
 		permissionId,
@@ -200,7 +200,7 @@ func DeleteDocumentSharePermission(c *gin.Context) {
 		}
 		return
 	}
-	_ = services.NewDocumentService().DocumentPermissionService.HardDelete("id = ?", permissionId)
+	_, _ = services.NewDocumentService().DocumentPermissionService.HardDelete("id = ?", permissionId)
 	response.Success(c, "")
 }
 
@@ -297,7 +297,7 @@ func GetDocumentPermissionRequestsList(c *gin.Context) {
 		permissionRequestsIdList := sliceutil.MapT(func(item services.PermissionRequestsQueryResItem) int64 {
 			return item.DocumentPermissionRequests.Id
 		}, *result...)
-		if err := documentService.DocumentPermissionRequestsService.UpdatesIgnoreZero(
+		if _, err := documentService.DocumentPermissionRequestsService.UpdatesIgnoreZero(
 			&models.DocumentPermissionRequests{FirstDisplayedAt: myTime.Time(time.Now())},
 			"id in ?", permissionRequestsIdList,
 		); err != nil {
@@ -362,7 +362,7 @@ func ReviewDocumentPermissionRequest(c *gin.Context) {
 	}
 	documentPermissionRequest.ProcessedAt = myTime.Time(time.Now())
 	documentPermissionRequest.ProcessedBy = userId
-	if err := documentService.DocumentPermissionRequestsService.UpdatesById(documentPermissionRequestsId, &documentPermissionRequest); err != nil {
+	if _, err := documentService.DocumentPermissionRequestsService.UpdatesById(documentPermissionRequestsId, &documentPermissionRequest); err != nil {
 		response.Fail(c, "更新错误")
 		return
 	}
@@ -395,7 +395,7 @@ func ReviewDocumentPermissionRequest(c *gin.Context) {
 				return
 			} else {
 				documentPermission.PermType = documentPermissionRequest.PermType
-				if err := documentService.DocumentPermissionService.UpdatesById(documentPermission.Id, documentPermission); err != nil {
+				if _, err := documentService.DocumentPermissionService.UpdatesById(documentPermission.Id, documentPermission); err != nil {
 					response.Fail(c, "更新错误")
 					return
 				}

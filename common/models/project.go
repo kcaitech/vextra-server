@@ -77,3 +77,15 @@ type ProjectJoinRequest struct {
 func (model ProjectJoinRequest) MarshalJSON() ([]byte, error) {
 	return MarshalJSON(model)
 }
+
+// ProjectFavorite 项目收藏（固定）
+type ProjectFavorite struct {
+	BaseModel
+	UserId    int64 `gorm:"uniqueIndex:idx_user_project;not null" json:"user_id"`
+	ProjectId int64 `gorm:"uniqueIndex:idx_user_project;not null" json:"project_id"`
+	IsFavor   bool  `gorm:"not null;default:true" json:"is_favor"`
+}
+
+func (model ProjectFavorite) MarshalJSON() ([]byte, error) {
+	return MarshalJSON(model)
+}

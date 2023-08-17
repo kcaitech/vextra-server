@@ -66,9 +66,9 @@ func (s *UserService) UploadUserAvatar(user *models.User, file io.Reader, fileSi
 		return "", errors.New("上传文件失败")
 	}
 	user.Avatar = avatarPath
-	if s.UpdateColumnsById(user.Id, map[string]any{
+	if _, err := s.UpdateColumnsById(user.Id, map[string]any{
 		"avatar": avatarPath,
-	}) != nil {
+	}); err != nil {
 		return "", errors.New("更新错误")
 	}
 	return avatarPath, nil

@@ -262,7 +262,7 @@ func UploadDocument(c *gin.Context) {
 	} else {
 		document.Size = documentSize
 		document.VersionId = documentVersionId
-		if err := documentService.UpdatesById(documentId, &document); err != nil {
+		if _, err := documentService.UpdatesById(documentId, &document); err != nil {
 			resp.Message = "对象上传错误.."
 			_ = ws.WriteJSON(&resp)
 			ws.Close()
@@ -284,7 +284,7 @@ func UploadDocument(c *gin.Context) {
 			})
 		} else {
 			documentAccessRecord.LastAccessTime = now
-			_ = documentAccessRecordService.UpdatesById(documentAccessRecord.Id, &documentAccessRecord)
+			_, _ = documentAccessRecordService.UpdatesById(documentAccessRecord.Id, &documentAccessRecord)
 		}
 	}
 
