@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/common/snowflake"
 	myReflect "protodesign.cn/kcserver/utils/reflect"
@@ -109,10 +110,11 @@ type JoinArgsOn struct {
 }
 
 type JoinArgs struct {
-	Table  string
-	Type   JoinType
-	On     []JoinArgsOn
-	OnArgs []any
+	TableName         string
+	OriginalTableName string
+	Type              JoinType
+	On                []JoinArgsOn
+	OnArgs            []any
 }
 
 type SelectArgs struct {
@@ -454,7 +456,7 @@ func AddCond(db *gorm.DB, args ...any) error {
 				argv = *argv1
 			}
 		}
-		if argv.Table == "" {
+		if argv.TableName == "" || argv.OriginalTableName == "" {
 			return errors.New("JoinArgs.Table为空")
 		}
 		if argv.Type != JoinTypeInner && argv.Type != JoinTypeLeft && argv.Type != JoinTypeRight {
@@ -477,12 +479,17 @@ func AddCond(db *gorm.DB, args ...any) error {
 			} else {
 				on.JoinTable += "."
 			}
-			onList = append(onList, fmt.Sprintf("%s.%s=%s%s", argv.Table, on.Field, on.JoinTable, on.JoinField))
+			onList = append(onList, fmt.Sprintf("%s.%s=%s%s", argv.TableName, on.Field, on.JoinTable, on.JoinField))
 		}
 		if len(argv.OnArgs) != argsNum {
 			return errors.New("JoinArgs.OnArgs错误")
 		}
-		db.Joins(fmt.Sprintf("%s %s on %s", argv.Type, argv.Table, strings.Join(onList, " and ")), argv.OnArgs...)
+		// join table别名
+		tableAlias := ""
+		if argv.OriginalTableName != argv.TableName {
+			tableAlias = " " + argv.TableName
+		}
+		db.Joins(fmt.Sprintf("%s %s%s on %s", argv.Type, argv.OriginalTableName, tableAlias, strings.Join(onList, " and ")), argv.OnArgs...)
 		return nil
 	}
 
@@ -732,9 +739,9 @@ func AddIdCondIfNoWhere(modelData models.ModelData, args *[]any) bool {
 	return true
 }
 
-func (s *DefaultService) updates(modelData models.ModelData, ignoreZero bool, args ...any) error {
+func (s *DefaultService) updates(modelData models.ModelData, ignoreZero bool, args ...any) (int64, error) {
 	if !AddIdCondIfNoWhere(modelData, &args) {
-		return errors.New("无搜索条件")
+		return 0, errors.New("无搜索条件")
 	}
 	db := s.DB.Model(s.Model)
 	paramArgs := GetParamArgsFromArgs(&args)
@@ -744,86 +751,90 @@ func (s *DefaultService) updates(modelData models.ModelData, ignoreZero bool, ar
 		db.Select("*")
 	}
 	if err := AddCond(db, args...); err != nil {
-		return err
+		return 0, err
 	}
 	tx := db.Updates(modelData)
 	if tx.Error != nil {
-		return tx.Error
+		return 0, tx.Error
 	}
 	if tx.RowsAffected == 0 {
-		return ErrRecordNotFound
+		return 0, ErrRecordNotFound
 	}
-	return nil
+	return tx.RowsAffected, nil
 }
 
-func (s *DefaultService) Updates(modelData models.ModelData, args ...any) error {
+func (s *DefaultService) Updates(modelData models.ModelData, args ...any) (int64, error) {
 	return s.updates(modelData, false, args...)
 }
 
-func (s *DefaultService) UpdatesById(id int64, modelData models.ModelData) error {
+func (s *DefaultService) UpdatesById(id int64, modelData models.ModelData) (int64, error) {
 	return s.Updates(modelData, "id = ?", id)
 }
 
-func (s *DefaultService) UpdatesIgnoreZero(modelData models.ModelData, args ...any) error {
+func (s *DefaultService) UpdatesIgnoreZero(modelData models.ModelData, args ...any) (int64, error) {
 	return s.updates(modelData, true, args...)
 }
 
-func (s *DefaultService) UpdatesIgnoreZeroById(id int64, modelData models.ModelData) error {
+func (s *DefaultService) UpdatesIgnoreZeroById(id int64, modelData models.ModelData) (int64, error) {
 	return s.UpdatesIgnoreZero(modelData, "id = ?", id)
 }
 
-func (s *DefaultService) UpdateColumns(values map[string]any, args ...any) error {
+func Expr(expr string, args ...interface{}) clause.Expr {
+	return gorm.Expr(expr, args...)
+}
+
+func (s *DefaultService) UpdateColumns(values map[string]any, args ...any) (int64, error) {
 	if len(args) == 0 {
-		return errors.New("无搜索条件")
+		return 0, errors.New("无搜索条件")
 	}
 	db := s.DB.Model(s.Model)
 	if err := AddCond(db, args...); err != nil {
-		return err
+		return 0, err
 	}
 	values["updated_at"] = myTime.Time(time.Now())
 	tx := db.UpdateColumns(values)
 	if tx.Error != nil {
-		return tx.Error
+		return 0, tx.Error
 	}
 	if tx.RowsAffected == 0 {
-		return ErrRecordNotFound
+		return 0, ErrRecordNotFound
 	}
-	return nil
+	return tx.RowsAffected, nil
 }
 
-func (s *DefaultService) UpdateColumnsById(id int64, values map[string]any) error {
+func (s *DefaultService) UpdateColumnsById(id int64, values map[string]any) (int64, error) {
 	return s.UpdateColumns(values, "id = ?", id)
 }
 
 // Delete 软删除
-func (s *DefaultService) Delete(args ...any) error {
+func (s *DefaultService) Delete(args ...any) (int64, error) {
 	db := s.DB.Model(s.Model)
 	if !HasWhere(&args) {
-		return errors.New("无搜索条件")
+		return 0, errors.New("无搜索条件")
 	}
 	if err := AddCond(db, args...); err != nil {
-		return err
+		return 0, err
 	}
 	tx := db.Delete(s.Model)
 	if tx.Error != nil {
-		return tx.Error
+		return 0, tx.Error
 	}
 	if tx.RowsAffected == 0 {
-		return ErrRecordNotFound
+		return 0, ErrRecordNotFound
 	}
-	return nil
+	return tx.RowsAffected, nil
 }
 
-func (s *DefaultService) DeleteById(id int64) error {
+func (s *DefaultService) DeleteById(id int64) (int64, error) {
 	return s.Delete("id = ?", id)
 }
 
 // HardDelete 硬删除
-func (s *DefaultService) HardDelete(args ...any) error {
+func (s *DefaultService) HardDelete(args ...any) (int64, error) {
 	return s.Delete(append(args, Unscoped{})...)
 }
 
-func (s *DefaultService) HardDeleteById(id int64) error {
+func (s *DefaultService) HardDeleteById(id int64) (int64, error) {
 	return s.HardDelete("id = ?", id)
 }
 
@@ -878,10 +889,13 @@ func generateSelectArgs(dataType reflect.Type, connector string, selectArgsList 
 		connector = "__"
 	}
 	iterateDataTypeFields(dataType, func(typeField reflect.StructField, typeFieldType reflect.Type) {
-		// 无table标签，跳过
 		tableName := typeField.Tag.Get("table")
-		if tableName == "" {
-			return
+		splitRes := strings.Split(tableName, ",")
+		if len(splitRes) == 0 || splitRes[0] == "" { // 未指定tableName，自动根据字段名生成蛇形命名
+			tableName = str.CamelToSnake(typeField.Name)
+		}
+		if len(splitRes) > 1 { // 取别名
+			tableName = splitRes[1]
 		}
 		// 非匿名struct且具有table标签，获取内部所有公开字段
 		var GetExportedFieldNames func(fieldType reflect.Type, fieldNames *[]string)
@@ -937,17 +951,28 @@ func generateJoinArgs(dataType reflect.Type, mainTable string, paramArgs ParamAr
 		if join == "" {
 			return
 		}
+		// 取tableName
+		tableName := typeField.Tag.Get("table")
+		splitRes := strings.Split(tableName, ",")
+		var originalTableName string
+		if len(splitRes) == 0 || splitRes[0] == "" { // 未指定tableName，自动根据字段名生成蛇形命名
+			originalTableName = str.CamelToSnake(typeField.Name)
+			tableName = originalTableName
+		}
+		if len(splitRes) > 1 { // 取别名
+			originalTableName = splitRes[0]
+			tableName = splitRes[1]
+		}
 		// 非匿名struct且具有join标签，解析join标签，生成JoinArgs
-		splitRes := strings.Split(join, ";")
-		if len(splitRes) < 3 {
+		splitRes = strings.Split(join, ";") // 连接方式;selfField1,joinField1;selfField2,joinField2
+		if len(splitRes) < 2 {
 			return
 		}
-		table := splitRes[0]
-		joinType := JoinType(splitRes[1])
-		if table == "" || joinType == "" {
+		joinType := JoinType(splitRes[0])
+		if joinType == "" {
 			return
 		}
-		if table == mainTable {
+		if originalTableName == mainTable || tableName == mainTable {
 			return
 		}
 		switch joinType {
@@ -999,8 +1024,8 @@ func generateJoinArgs(dataType reflect.Type, mainTable string, paramArgs ParamAr
 			return
 		}
 		joinOnArgs := make([]any, 0)
-		onList := make([]JoinArgsOn, 0, len(splitRes)-2)
-		for _, onStr := range splitRes[2:] {
+		onList := make([]JoinArgsOn, 0, len(splitRes)-1)
+		for _, onStr := range splitRes[1:] {
 			joinArgsOn := JoinArgsOn{}
 			onSplitRes := strings.Split(onStr, ",")
 			if joinArgsOn.Field = onSplitRes[0]; joinArgsOn.Field == "" {
@@ -1050,7 +1075,7 @@ func generateJoinArgs(dataType reflect.Type, mainTable string, paramArgs ParamAr
 		if len(onList) == 0 {
 			return
 		}
-		*joinArgsList = append(*joinArgsList, &JoinArgs{Table: table, Type: joinType, On: onList, OnArgs: joinOnArgs})
+		*joinArgsList = append(*joinArgsList, &JoinArgs{TableName: tableName, OriginalTableName: originalTableName, Type: joinType, On: onList, OnArgs: joinOnArgs})
 	})
 }
 
