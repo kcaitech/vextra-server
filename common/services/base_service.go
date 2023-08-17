@@ -875,6 +875,7 @@ func iterateDataTypeFields(dataType reflect.Type, handler func(typeField reflect
 		// 匿名字段递归调用
 		if typeField.Anonymous || typeField.Tag.Get("anonymous") == "true" {
 			iterateDataTypeFields(typeField.Type, handler)
+			continue
 		}
 		handler(typeField, typeFieldType)
 	}
@@ -889,12 +890,23 @@ func generateSelectArgs(dataType reflect.Type, connector string, selectArgsList 
 		connector = "__"
 	}
 	iterateDataTypeFields(dataType, func(typeField reflect.StructField, typeFieldType reflect.Type) {
-		tableName := typeField.Tag.Get("table")
-		splitRes := strings.Split(tableName, ",")
-		if len(splitRes) == 0 || splitRes[0] == "" { // 未指定tableName，自动根据字段名生成蛇形命名
-			tableName = str.CamelToSnake(typeField.Name)
+		tableName, ok := typeField.Tag.Lookup("table")
+		if !ok { // 无table标签时取join标签的第一个参数
+			join, ok1 := typeField.Tag.Lookup("join")
+			if !ok1 { // 无join标签，跳过
+				return
+			}
+			splitRes := strings.Split(join, ";")
+			if len(splitRes) > 0 {
+				tableName = splitRes[0]
+			}
 		}
-		if len(splitRes) > 1 { // 取别名
+		splitRes := strings.Split(tableName, ",")
+		if tableName == "" || len(splitRes) == 0 { // 未指定tableName，自动根据字段名生成蛇形命名
+			tableName = str.CamelToSnake(typeField.Name)
+		} else if len(splitRes) == 1 { // 指定tableName
+			tableName = splitRes[0]
+		} else { // 取别名
 			tableName = splitRes[1]
 		}
 		// 非匿名struct且具有table标签，获取内部所有公开字段
@@ -934,6 +946,7 @@ func generateSelectArgs(dataType reflect.Type, connector string, selectArgsList 
 }
 
 // GenerateSelectArgs 根据modelData生成SelectArgs
+// table标签决定SQL语句的select部分中是否包含对应的字段，不设置table时会读取join标签的第一个参数作为table，为空字符串时自动根据字段名生成蛇形命名
 func GenerateSelectArgs(modelData any, connector string) *[]*SelectArgs {
 	selectArgsList := make([]*SelectArgs, 0)
 	generateSelectArgs(reflect.TypeOf(modelData), connector, &selectArgsList)
@@ -946,29 +959,31 @@ func GenerateSelectArgs(modelData any, connector string) *[]*SelectArgs {
 // 非匿名字段且带有join标签的struct类型字段：解析join标签，生成JoinArgs
 func generateJoinArgs(dataType reflect.Type, mainTable string, paramArgs ParamArgs, joinArgsList *[]*JoinArgs) {
 	iterateDataTypeFields(dataType, func(typeField reflect.StructField, typeFieldType reflect.Type) {
-		// 无join标签，跳过
-		join := typeField.Tag.Get("join")
-		if join == "" {
+		join, ok := typeField.Tag.Lookup("join")
+		if !ok { // 无join标签，跳过
+			return
+		}
+		// 非匿名struct且具有join标签，解析join标签，生成JoinArgs
+		splitRes := strings.Split(join, ";") // 表名,表别名;连接方式;selfField_n,joinField_n;...
+		if len(splitRes) < 3 {
 			return
 		}
 		// 取tableName
-		tableName := typeField.Tag.Get("table")
-		splitRes := strings.Split(tableName, ",")
+		tableName := splitRes[0]
+		splitRes1 := strings.Split(tableName, ",")
 		var originalTableName string
-		if len(splitRes) == 0 || splitRes[0] == "" { // 未指定tableName，自动根据字段名生成蛇形命名
+		if tableName == "" || len(splitRes1) == 0 { // 未指定tableName，自动根据字段名生成蛇形命名
 			originalTableName = str.CamelToSnake(typeField.Name)
 			tableName = originalTableName
+		} else if len(splitRes1) == 1 { // 指定tableName
+			originalTableName = splitRes1[0]
+			tableName = originalTableName
+		} else { // 取别名
+			originalTableName = splitRes1[0]
+			tableName = splitRes1[1]
 		}
-		if len(splitRes) > 1 { // 取别名
-			originalTableName = splitRes[0]
-			tableName = splitRes[1]
-		}
-		// 非匿名struct且具有join标签，解析join标签，生成JoinArgs
-		splitRes = strings.Split(join, ";") // 连接方式;selfField1,joinField1;selfField2,joinField2
-		if len(splitRes) < 2 {
-			return
-		}
-		joinType := JoinType(splitRes[0])
+		// 取joinType
+		joinType := JoinType(splitRes[1])
 		if joinType == "" {
 			return
 		}
@@ -1024,8 +1039,8 @@ func generateJoinArgs(dataType reflect.Type, mainTable string, paramArgs ParamAr
 			return
 		}
 		joinOnArgs := make([]any, 0)
-		onList := make([]JoinArgsOn, 0, len(splitRes)-1)
-		for _, onStr := range splitRes[1:] {
+		onList := make([]JoinArgsOn, 0, len(splitRes)-2)
+		for _, onStr := range splitRes[2:] {
 			joinArgsOn := JoinArgsOn{}
 			onSplitRes := strings.Split(onStr, ",")
 			if joinArgsOn.Field = onSplitRes[0]; joinArgsOn.Field == "" {
@@ -1080,6 +1095,8 @@ func generateJoinArgs(dataType reflect.Type, mainTable string, paramArgs ParamAr
 }
 
 // GenerateJoinArgs 根据modelData生成JoinArgs
+// join标签决定SQL语句的join部分中是否包含此表，格式为：表名,表别名;连接方式;selfField_n,joinField_n;...
+// 不设置table（第一个参数）时会读取join标签的第一个参数作为table，为空字符串时自动根据字段名生成蛇形命名
 func GenerateJoinArgs(modelData any, mainTable string, paramArgs ParamArgs) *[]*JoinArgs {
 	joinArgsList := make([]*JoinArgs, 0)
 	generateJoinArgs(reflect.TypeOf(modelData), mainTable, paramArgs, &joinArgsList)
