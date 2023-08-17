@@ -140,9 +140,9 @@ func (model TeamMember) MarshalJSON() ([]byte, error) {
 }
 
 type TeamQueryResItem struct {
-	Team       Team                `gorm:"embedded;embeddedPrefix:team__" json:"team" table:"team"`
-	TeamMember TeamMember          `gorm:"embedded;embeddedPrefix:team_member__" json:"-" table:"team_member" join:"team_member;inner;team_id,team.id"`
-	User       User                `gorm:"embedded;embeddedPrefix:user__" json:"-" table:"user" join:"user;inner;id,team_member.user_id"`
+	Team       Team                `gorm:"embedded;embeddedPrefix:team__" json:"team" table:""`
+	TeamMember TeamMember          `gorm:"embedded;embeddedPrefix:team_member__" json:"-" join:";inner;team_id,team.id"`
+	User       User                `gorm:"embedded;embeddedPrefix:user__" json:"-" join:";inner;id,team_member.user_id"`
 	PermType   models.TeamPermType `gorm:"-" json:"perm_type"`
 }
 
@@ -165,9 +165,9 @@ func (s *TeamService) FindTeamByUserId(userId int64) []TeamQueryResItem {
 }
 
 type TeamMemberQueryResItem struct {
-	TeamMember TeamMember          `gorm:"embedded;embeddedPrefix:team_member__" json:"-" table:"team_member"`
-	Team       Team                `gorm:"embedded;embeddedPrefix:team__" json:"-" table:"team" join:"team;inner;id,team_id"`
-	User       User                `gorm:"embedded;embeddedPrefix:user__" json:"user" table:"user" join:"user;inner;id,user_id"`
+	TeamMember TeamMember          `gorm:"embedded;embeddedPrefix:team_member__" json:"-" table:""`
+	Team       Team                `gorm:"embedded;embeddedPrefix:team__" json:"-" join:";inner;id,team_id"`
+	User       User                `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,user_id"`
 	PermType   models.TeamPermType `gorm:"-" json:"perm_type"`
 }
 
@@ -196,10 +196,10 @@ func (model TeamJoinRequest) MarshalJSON() ([]byte, error) {
 }
 
 type TeamJoinRequestsQueryResItem struct {
-	TeamMember      TeamMember      `gorm:"-" json:"-" table:"team_member" join:"team_member;inner;team_id,team_id;user_id,?user_id"` // 自己的（非申请人的）权限
-	Team            Team            `gorm:"embedded;embeddedPrefix:team__" json:"team" table:"team" join:"team;inner;id,team_id"`
-	User            User            `gorm:"embedded;embeddedPrefix:user__" json:"user" table:"user" join:"user;inner;id,user_id"`
-	TeamJoinRequest TeamJoinRequest `gorm:"embedded;embeddedPrefix:team_join_request__" json:"request" table:"team_join_request"`
+	TeamMember      TeamMember      `gorm:"-" json:"-" join:";inner;team_id,team_id;user_id,?user_id"` // 自己的（非申请人的）权限
+	Team            Team            `gorm:"embedded;embeddedPrefix:team__" json:"team" join:";inner;id,team_id"`
+	User            User            `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,user_id"`
+	TeamJoinRequest TeamJoinRequest `gorm:"embedded;embeddedPrefix:team_join_request__" json:"request" table:""`
 }
 
 // FindTeamJoinRequest 获取用户所创建或担任管理员的团队的加入申请列表

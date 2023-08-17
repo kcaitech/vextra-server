@@ -94,14 +94,14 @@ func (model DocumentPermissionRequests) MarshalJSON() ([]byte, error) {
 }
 
 type DocumentQueryResItem struct {
-	Document Document `gorm:"embedded;embeddedPrefix:document__" json:"document" table:"document" join:"document;inner;id,[#document_id document_id]"`
-	User     User     `gorm:"embedded;embeddedPrefix:user__" json:"user" table:"user" join:"user;inner;id,[#user_id document.user_id]"`
+	Document Document `gorm:"embedded;embeddedPrefix:document__" json:"document" join:";inner;id,[#document_id document_id]"`
+	User     User     `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,[#user_id document.user_id]"`
 }
 
 type AccessRecordAndFavoritesQueryResItem struct {
 	DocumentQueryResItem
-	DocumentFavorites    DocumentFavorites    `gorm:"embedded;embeddedPrefix:document_favorites__" json:"document_favorites" table:"document_favorites" join:"document_favorites;left;document_id,document.id;user_id,?user_id"`
-	DocumentAccessRecord DocumentAccessRecord `gorm:"embedded;embeddedPrefix:document_access_record__" json:"document_access_record" table:"document_access_record" join:"document_access_record;left;user_id,?user_id;document_id,document.id"`
+	DocumentFavorites    DocumentFavorites    `gorm:"embedded;embeddedPrefix:document_favorites__" json:"document_favorites" join:";left;document_id,document.id;user_id,?user_id"`
+	DocumentAccessRecord DocumentAccessRecord `gorm:"embedded;embeddedPrefix:document_access_record__" json:"document_access_record" join:";left;user_id,?user_id;document_id,document.id"`
 }
 
 // FindRecycleBinByUserId 查询用户的回收站列表
@@ -155,7 +155,7 @@ func (s *DocumentService) FindFavoritesByUserId(userId int64) *[]AccessRecordAnd
 
 type DocumentSharesAndFavoritesQueryRes struct {
 	AccessRecordAndFavoritesQueryResItem
-	DocumentPermission DocumentPermission `gorm:"embedded;embeddedPrefix:document_permission__" json:"document_permission" table:"document_permission" join:"document_permission;left;resource_type,?resource_type;resource_id,?resource_id;grantee_type,?grantee_type;grantee_id,?user_id"`
+	DocumentPermission DocumentPermission `gorm:"embedded;embeddedPrefix:document_permission__" json:"document_permission" join:";left;resource_type,?resource_type;resource_id,?resource_id;grantee_type,?grantee_type;grantee_id,?user_id"`
 }
 
 // FindSharesByUserId 查询用户加入的文档分享列表
@@ -178,7 +178,7 @@ func (s *DocumentService) FindSharesByUserId(userId int64) *[]DocumentSharesAndF
 
 type DocumentSharesQueryRes struct {
 	DocumentQueryResItem
-	DocumentPermission DocumentPermission `gorm:"embedded;embeddedPrefix:document_permission__" json:"document_permission" table:"document_permission" join:"document_permission;left;resource_type,?resource_type;resource_id,?resource_id;grantee_type,?grantee_type;grantee_id,?user_id"`
+	DocumentPermission DocumentPermission `gorm:"embedded;embeddedPrefix:document_permission__" json:"document_permission" join:";left;resource_type,?resource_type;resource_id,?resource_id;grantee_type,?grantee_type;grantee_id,?user_id"`
 }
 
 // FindSharesByDocumentId 查询某个文档对所有用户的分享列表
@@ -338,7 +338,7 @@ func (s *DocumentService) GetPermTypeByDocumentAndUserId(permType *models.PermTy
 
 type PermissionRequestsQueryResItem struct {
 	DocumentQueryResItem
-	DocumentPermissionRequests DocumentPermissionRequests `gorm:"embedded;embeddedPrefix:document_permission_requests__" json:"apply" table:"document_permission_requests"`
+	DocumentPermissionRequests DocumentPermissionRequests `gorm:"embedded;embeddedPrefix:document_permission_requests__" json:"apply" table:""`
 }
 
 // FindPermissionRequests 获取用户所创建文档的权限申请列表

@@ -95,9 +95,9 @@ func (model ProjectMember) MarshalJSON() ([]byte, error) {
 }
 
 type ProjectQueryResItem struct {
-	Project       Project                `gorm:"embedded;embeddedPrefix:project__" json:"project" table:"project"`
-	ProjectMember ProjectMember          `gorm:"embedded;embeddedPrefix:project_member__" json:"-" table:"project_member" join:"project_member;inner;project_id,id"`
-	User          User                   `gorm:"embedded;embeddedPrefix:user__" json:"-" table:"user" join:"user;inner;id,project_member.user_id"`
+	Project       Project                `gorm:"embedded;embeddedPrefix:project__" json:"project" table:""`
+	ProjectMember ProjectMember          `gorm:"embedded;embeddedPrefix:project_member__" json:"-" join:";inner;project_id,id"`
+	User          User                   `gorm:"embedded;embeddedPrefix:user__" json:"-" join:";inner;id,project_member.user_id"`
 	PermType      models.ProjectPermType `gorm:"-" json:"perm_type"`
 }
 
@@ -123,9 +123,9 @@ func (s *ProjectService) FindProjectByTeamIdAndUserId(teamId int64, userId int64
 }
 
 type ProjectMemberQueryResItem struct {
-	ProjectMember ProjectMember          `gorm:"embedded;embeddedPrefix:project_member__" json:"-" table:"project_member"`
-	Project       Project                `gorm:"embedded;embeddedPrefix:project__" json:"-" table:"project" join:"project;inner;id,project_id"`
-	User          User                   `gorm:"embedded;embeddedPrefix:user__" json:"user" table:"user" join:"user;inner;id,user_id"`
+	ProjectMember ProjectMember          `gorm:"embedded;embeddedPrefix:project_member__" json:"-" table:""`
+	Project       Project                `gorm:"embedded;embeddedPrefix:project__" json:"-" join:";inner;id,project_id"`
+	User          User                   `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,user_id"`
 	PermType      models.ProjectPermType `gorm:"-" json:"perm_type"`
 }
 
@@ -154,10 +154,10 @@ func (model ProjectJoinRequest) MarshalJSON() ([]byte, error) {
 }
 
 type projectJoinRequestQueryResItem struct {
-	ProjectMember      ProjectMember      `gorm:"-" json:"-" table:"project_member" join:"project_member;inner;project_id,project_id;user_id,?user_id"` // 自己的（非申请人的）权限
-	Project            Project            `gorm:"embedded;embeddedPrefix:project__" json:"project" table:"project" join:"project;inner;id,project_id"`
-	User               User               `gorm:"embedded;embeddedPrefix:user__" json:"user" table:"user" join:"user;inner;id,user_id"`
-	ProjectJoinRequest ProjectJoinRequest `gorm:"embedded;embeddedPrefix:project_join_request__" json:"request" table:"project_join_request"`
+	ProjectMember      ProjectMember      `gorm:"-" json:"-" join:";inner;project_id,project_id;user_id,?user_id"` // 自己的（非申请人的）权限
+	Project            Project            `gorm:"embedded;embeddedPrefix:project__" json:"project" join:";inner;id,project_id"`
+	User               User               `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,user_id"`
+	ProjectJoinRequest ProjectJoinRequest `gorm:"embedded;embeddedPrefix:project_join_request__" json:"request" table:""`
 }
 
 // FindProjectJoinRequest 获取用户所创建或担任管理员的项目的加入申请列表
