@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"protodesign.cn/kcserver/common"
 	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/utils/sliceutil"
@@ -105,12 +106,20 @@ type AccessRecordAndFavoritesQueryResItem struct {
 }
 
 // FindRecycleBinByUserId 查询用户的回收站列表
-func (s *DocumentService) FindRecycleBinByUserId(userId int64) *[]AccessRecordAndFavoritesQueryResItem {
+func (s *DocumentService) FindRecycleBinByUserId(userId int64, projectId int64) *[]AccessRecordAndFavoritesQueryResItem {
 	var result []AccessRecordAndFavoritesQueryResItem
+	whereArgsList := []WhereArgs{
+		{"document.user_id = ? and document.deleted_at is not null and document.purged_at is null", []any{userId}},
+	}
+	if projectId > 0 {
+		whereArgsList = append(whereArgsList, WhereArgs{"document.project_id = ?", []any{projectId}})
+	} else {
+		whereArgsList = append(whereArgsList, WhereArgs{"document.project_id is null or document.project_id = 0", nil})
+	}
 	_ = s.Find(
 		&result,
 		&ParamArgs{"?user_id": userId},
-		&WhereArgs{"document.user_id = ? and document.deleted_at is not null and purged_at is null", []any{userId}},
+		whereArgsList,
 		&OrderLimitArgs{"document_access_record.last_access_time desc", 0},
 		&Unscoped{},
 	)
@@ -123,7 +132,19 @@ func (s *DocumentService) FindDocumentByUserId(userId int64) *[]AccessRecordAndF
 	_ = s.Find(
 		&result,
 		&ParamArgs{"?user_id": userId},
-		&WhereArgs{"document.user_id = ?", []any{userId}},
+		&WhereArgs{"document.user_id = ? and (document.project_id is null or document.project_id = 0)", []any{userId}},
+		&OrderLimitArgs{"document_access_record.last_access_time desc", 0},
+	)
+	return &result
+}
+
+// FindDocumentByProjectId 查询项目的文档列表
+func (s *DocumentService) FindDocumentByProjectId(projectId int64, userId int64) *[]AccessRecordAndFavoritesQueryResItem {
+	var result []AccessRecordAndFavoritesQueryResItem
+	_ = s.Find(
+		&result,
+		&ParamArgs{"?user_id": userId},
+		&WhereArgs{"document.project_id = ?", []any{projectId}},
 		&OrderLimitArgs{"document_access_record.last_access_time desc", 0},
 	)
 	return &result
@@ -147,7 +168,11 @@ func (s *DocumentService) FindFavoritesByUserId(userId int64) *[]AccessRecordAnd
 	_ = s.DocumentFavoritesService.Find(
 		&result,
 		&ParamArgs{"?user_id": userId},
-		&WhereArgs{"document_favorites.user_id = ? and document.deleted_at is null and document_favorites.is_favorite = 1", []any{userId}},
+		&WhereArgs{
+			"document_favorites.user_id = ? and document_favorites.is_favorite = 1" +
+				" and document.deleted_at is null and (document.project_id is null and document.project_id = 0)",
+			[]any{userId},
+		},
 		&OrderLimitArgs{"document_access_record.last_access_time desc", 0},
 	)
 	return &result
@@ -255,55 +280,46 @@ func (s *DocumentService) GetDocumentInfoByDocumentAndUserId(documentId int64, u
 	return &result
 }
 
-// GetSelfPermTypeByDocumentAndUserId 获取用户对文档的权限（不包含文档本身的公共权限）
-func (s *DocumentService) GetSelfPermTypeByDocumentAndUserId(permType *models.PermType, documentId int64, userId int64) error {
-	var document models.Document
-	if err := s.GetById(documentId, &document); err != nil {
-		return err
-	}
-	if document.UserId == userId {
-		*permType = models.PermTypeEditable
-		return nil
-	}
-	var documentPermission models.DocumentPermission
-	if err := s.DocumentPermissionService.Get(
-		&documentPermission,
-		"resource_type = ? and resource_id = ? and grantee_type = ? and grantee_id = ?",
-		models.ResourceTypeDoc, documentId, models.GranteeTypeExternal, userId,
-	); err != nil && err != ErrRecordNotFound {
-		return err
-	}
-	*permType = documentPermission.PermType
-	return nil
-}
+type DocumentPermSourceType uint8 // 文档权限来源
+
+const (
+	PermSourceTypeNone    DocumentPermSourceType = iota // 无权限
+	PermSourceTypeCreator                               // 创建者
+	PermSourceTypeCustom                                // 自定义
+	PermSourceTypePublish                               // 公共权限
+	PermSourceTypeProject                               // 项目成员权限
+)
 
 // GetDocumentPermissionByDocumentAndUserId 获取用户的文档权限记录和用户的文档权限（包含文档本身的公共权限）
-// 第二个返回参数为“是否为文档创建人”
-func (s *DocumentService) GetDocumentPermissionByDocumentAndUserId(permType *models.PermType, documentId int64, userId int64) (*models.DocumentPermission, bool, error) {
+func (s *DocumentService) GetDocumentPermissionByDocumentAndUserId(permType *models.PermType, documentId int64, userId int64) (*models.DocumentPermission, DocumentPermSourceType, error) {
 	var document models.Document
 	if err := s.GetById(documentId, &document); err != nil {
-		return nil, false, err
+		return nil, PermSourceTypeNone, err
 	}
 	documentPermission := &models.DocumentPermission{}
 	if err := s.DocumentPermissionService.Get(
 		documentPermission,
 		"resource_type = ? and resource_id = ? and grantee_type = ? and grantee_id = ?",
 		models.ResourceTypeDoc, documentId, models.GranteeTypeExternal, userId,
-	); err != nil && err != ErrRecordNotFound {
-		return nil, false, err
-	} else if err == ErrRecordNotFound {
+	); err != nil && !errors.Is(err, ErrRecordNotFound) {
+		return nil, PermSourceTypeNone, err
+	} else if errors.Is(err, ErrRecordNotFound) {
 		documentPermission = nil
 	}
 	if document.UserId == userId {
 		*permType = models.PermTypeEditable
-		return documentPermission, true, nil
+		return documentPermission, PermSourceTypeCreator, nil
 	}
+	// 自定义权限和公共权限
+	var permSource DocumentPermSourceType
 	*permType = models.PermTypeNone
 	if documentPermission != nil {
 		*permType = documentPermission.PermType
+		permSource = PermSourceTypeCustom
 	}
 	if document.DocType == models.DocTypePrivate {
 		*permType = models.PermTypeNone
+		permSource = PermSourceTypeNone
 	} else if *permType == models.PermTypeNone {
 		var sharesCount int64
 		if err := s.DocumentPermissionService.Count(
@@ -311,21 +327,38 @@ func (s *DocumentService) GetDocumentPermissionByDocumentAndUserId(permType *mod
 			"resource_type = ? and resource_id = ? and grantee_type = ?",
 			models.ResourceTypeDoc, documentId, models.GranteeTypeExternal,
 		); err != nil {
-			return nil, false, err
+			return nil, PermSourceTypeNone, err
 		}
 		if sharesCount >= 5 {
-			return nil, false, nil
-		}
-		switch document.DocType {
-		case models.DocTypePublicReadable:
-			*permType = models.PermTypeReadOnly
-		case models.DocTypePublicCommentable:
-			*permType = models.PermTypeCommentable
-		case models.DocTypePublicEditable:
-			*permType = models.PermTypeEditable
+			*permType = models.PermTypeNone
+			permSource = PermSourceTypeNone
+		} else {
+			switch document.DocType {
+			case models.DocTypePublicReadable:
+				*permType = models.PermTypeReadOnly
+			case models.DocTypePublicCommentable:
+				*permType = models.PermTypeCommentable
+			case models.DocTypePublicEditable:
+				*permType = models.PermTypeEditable
+			}
+			permSource = PermSourceTypePublish
 		}
 	}
-	return documentPermission, false, nil
+	if document.ProjectId == 0 {
+		return documentPermission, permSource, nil
+	}
+	// 项目成员权限
+	projectService := NewProjectService()
+	projectPermType, err := projectService.GetProjectPermTypeByForUser(document.ProjectId, userId)
+	if err != nil {
+		return nil, PermSourceTypeNone, err
+	}
+	if *permType > models.PermType(*projectPermType) || (*permType == models.PermType(*projectPermType) && permSource == PermSourceTypeCustom) {
+		return documentPermission, permSource, nil
+	} else {
+		*permType = models.PermType(*projectPermType)
+		return documentPermission, PermSourceTypeProject, nil
+	}
 }
 
 // GetPermTypeByDocumentAndUserId 获取用户对文档的权限（包含文档本身的公共权限）

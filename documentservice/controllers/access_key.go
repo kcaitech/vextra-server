@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"github.com/gin-gonic/gin"
 	"log"
 	"protodesign.cn/kcserver/common/gin/auth"
@@ -38,9 +39,9 @@ func GetDocumentAccessKey(c *gin.Context) {
 	}
 
 	var permType models.PermType
-	var isCreator bool
+	var permSource services.DocumentPermSourceType
 	var documentPermission *models.DocumentPermission
-	if documentPermission, isCreator, err = documentService.GetDocumentPermissionByDocumentAndUserId(&permType, documentId, userId); err != nil {
+	if documentPermission, permSource, err = documentService.GetDocumentPermissionByDocumentAndUserId(&permType, documentId, userId); err != nil {
 		response.Fail(c, "")
 		return
 	}
@@ -48,7 +49,7 @@ func GetDocumentAccessKey(c *gin.Context) {
 		response.Forbidden(c, "")
 		return
 	}
-	if documentPermission == nil && !isCreator {
+	if documentPermission == nil && permSource == services.PermSourceTypePublish {
 		if err := documentService.DocumentPermissionService.Create(&models.DocumentPermission{
 			ResourceType: models.ResourceTypeDoc,
 			ResourceId:   documentId,
@@ -79,7 +80,7 @@ func GetDocumentAccessKey(c *gin.Context) {
 	documentAccessRecord := models.DocumentAccessRecord{}
 	err = documentService.DocumentAccessRecordService.Get(&documentAccessRecord, "document_id = ? and user_id = ?", documentId, userId, &services.Unscoped{})
 	if err != nil {
-		if err != services.ErrRecordNotFound {
+		if !errors.Is(err, services.ErrRecordNotFound) {
 			log.Println("documentAccessRecordService.Get错误：" + err.Error())
 		} else {
 			_ = documentService.DocumentAccessRecordService.Create(&models.DocumentAccessRecord{

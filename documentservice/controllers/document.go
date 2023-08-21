@@ -19,7 +19,14 @@ func GetUserDocumentList(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	response.Success(c, services.NewDocumentService().FindDocumentByUserId(userId))
+	projectId := str.DefaultToInt(c.Query("project_id"), 0)
+	var result any
+	if projectId > 0 {
+		result = services.NewDocumentService().FindDocumentByProjectId(projectId, userId)
+	} else {
+		result = services.NewDocumentService().FindDocumentByUserId(userId)
+	}
+	response.Success(c, result)
 }
 
 // DeleteUserDocument 删除用户的某份文档
