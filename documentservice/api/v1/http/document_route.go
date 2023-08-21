@@ -67,5 +67,7 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 		router.PUT("/team/project/creator", controllers.ChangeProjectCreator)
 		router.DELETE("/team/project/member", controllers.RemoveProjectMember)
 		router.PUT("/team/project/favorite", controllers.SetProjectFavorite)
+		router.GET("/team/project/favorite/list", controllers.GetFavorProjectList)
+		router.POST("/team/project/document/move", controllers.MoveDocument)
 	}
 }

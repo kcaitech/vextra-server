@@ -3,7 +3,9 @@ package services
 import (
 	"errors"
 	"protodesign.cn/kcserver/common/models"
+	"protodesign.cn/kcserver/utils/sliceutil"
 	"protodesign.cn/kcserver/utils/time"
+	"sort"
 )
 
 type ProjectService struct {
@@ -60,18 +62,6 @@ func NewProjectFavoriteService() *ProjectFavoriteService {
 	return that
 }
 
-// GetProjectPermTypeByForUser 获取用户在项目中的权限
-func (s *ProjectService) GetProjectPermTypeByForUser(projectId int64, userId int64) (*models.ProjectPermType, error) {
-	var projectMember models.ProjectMember
-	if err := s.ProjectMemberService.Get(&projectMember, WhereArgs{Query: "project_id = ? and user_id = ?", Args: []any{projectId, userId}}); err != nil {
-		if errors.Is(err, ErrRecordNotFound) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return &projectMember.PermType, nil
-}
-
 type Project struct {
 	Id            int64                  `json:"id"`
 	CreatedAt     time.Time              `json:"created_at"`
@@ -94,35 +84,155 @@ func (model ProjectMember) MarshalJSON() ([]byte, error) {
 	return models.MarshalJSON(model)
 }
 
-type ProjectQueryResItem struct {
-	Project       Project                `gorm:"embedded;embeddedPrefix:project__" json:"project" table:""`
-	ProjectMember ProjectMember          `gorm:"embedded;embeddedPrefix:project_member__" json:"-" join:";inner;project_id,id"`
-	User          User                   `gorm:"embedded;embeddedPrefix:user__" json:"-" join:";inner;id,project_member.user_id"`
-	PermType      models.ProjectPermType `gorm:"-" json:"perm_type"`
+type ProjectJoinRequest models.ProjectJoinRequest
+
+func (model ProjectJoinRequest) MarshalJSON() ([]byte, error) {
+	return models.MarshalJSON(model)
 }
 
-// FindProjectByTeamIdAndUserId 查询某个用户（所在的某个团队中）的所有项目列表
-func (s *ProjectService) FindProjectByTeamIdAndUserId(teamId int64, userId int64) []ProjectQueryResItem {
-	var result []ProjectQueryResItem
-	whereArgsList := []WhereArgs{
-		{"project_member.deleted_at is null and user.deleted_at is null", nil},
-		{"project_member.user_id = ?", []any{userId}},
+// GetProjectPermTypeByForUser 获取用户在项目中的权限
+func (s *ProjectService) GetProjectPermTypeByForUser(projectId int64, userId int64) (*models.ProjectPermType, error) {
+	var projectMember models.ProjectMember
+	err := s.ProjectMemberService.Get(&projectMember, WhereArgs{Query: "project_id = ? and user_id = ?", Args: []any{projectId, userId}})
+	if err == nil {
+		return &projectMember.PermType, nil
 	}
+	if !errors.Is(err, ErrRecordNotFound) {
+		return nil, err
+	}
+	type ProjectQuery struct {
+		models.DefaultModelData
+		Project    Project    `gorm:"embedded;embeddedPrefix:p__" table:"p"`
+		TeamMember TeamMember `gorm:"embedded;embeddedPrefix:tm__" join:",tm;inner;team_id,team_id;user_id,?user_id"`
+	}
+	var projectQueryResult ProjectQuery
+	whereArgsList := []WhereArgs{
+		{"tm.deleted_at is null", nil},
+		{"p.id = ? and p.public_switch = ?", []any{projectId, true}},
+	}
+	err = s.Get(
+		&projectQueryResult,
+		&As{BaseService: s, Alias: "p"},
+		&ParamArgs{"?user_id": userId},
+		&whereArgsList,
+	)
+	if err == nil {
+		return &projectQueryResult.Project.PermType, nil
+	}
+	if !errors.Is(err, ErrRecordNotFound) {
+		return nil, err
+	}
+	return nil, nil
+}
+
+type ProjectQuery struct {
+	Project              Project                `gorm:"embedded;embeddedPrefix:p__" json:"project" table:"p"`
+	CreatorProjectMember ProjectMember          `gorm:"embedded;embeddedPrefix:pm__" json:"-" join:"project_member,pm;inner;project_id,id;perm_type,?creator_perm_type"`
+	CreatorUser          User                   `gorm:"embedded;embeddedPrefix:u__" json:"creator" join:"user,u;inner;id,pm.user_id"`
+	SelfPermType         models.ProjectPermType `gorm:"-" json:"self_perm_type"`
+	IsInTeam             bool                   `gorm:"-" json:"is_in_team"`
+}
+
+type SelfProjectQuery struct { // 通过邀请进入的项目
+	ProjectQuery
+	SelfProjectMember ProjectMember `gorm:"embedded;embeddedPrefix:pm1__" json:"-" join:"project_member,pm1;inner;project_id,id;user_id,?user_id"`
+	SelfUser          User          `gorm:"embedded;embeddedPrefix:u1__" json:"-" join:"user,u1;inner;id,pm1.user_id"`
+	SelfTeamMember    TeamMember    `gorm:"embedded;embeddedPrefix:tm__" join:"team_member,tm;left;deleted_at,#deleted_at;team_id,team_id;user_id,?user_id"`
+}
+
+type PublishProjectQuery struct { // 通过项目的团队公开权限进入的项目
+	ProjectQuery
+	TeamMember TeamMember `gorm:"embedded;embeddedPrefix:tm__" join:",tm;inner;team_id,team_id;user_id,?user_id"`
+}
+
+// 查询用户的项目列表
+func (s *ProjectService) findProject(teamId int64, userId int64, projectIdList *[]int64) []*ProjectQuery {
+	var whereArgsList []WhereArgs
 	if teamId > 0 {
-		whereArgsList = append(whereArgsList, WhereArgs{"project.team_id = ?", []any{teamId}})
+		whereArgsList = append(whereArgsList, WhereArgs{"p.team_id = ?", []any{teamId}})
+	}
+	if projectIdList != nil {
+		whereArgsList = append(whereArgsList, WhereArgs{"p.id in ?", []any{*projectIdList}})
+	}
+
+	var selfProjectQueryResult []SelfProjectQuery
+	whereArgsList1 := append(
+		whereArgsList,
+		WhereArgs{"pm.deleted_at is null and u.deleted_at is null and pm1.deleted_at is null and u1.deleted_at is null", nil},
+	)
+	_ = s.Find(
+		&selfProjectQueryResult,
+		&As{BaseService: s, Alias: "p"},
+		&ParamArgs{"?creator_perm_type": models.ProjectPermTypeCreator, "?user_id": userId, "#deleted_at": "#is null"},
+		&whereArgsList1,
+		&OrderLimitArgs{"pm1.id desc", 0},
+	)
+
+	var publishProjectQueryResult []PublishProjectQuery
+	selfProjectIdList := sliceutil.MapT(func(item SelfProjectQuery) int64 {
+		return item.Project.Id
+	}, selfProjectQueryResult...)
+	whereArgsList2 := append(
+		whereArgsList,
+		WhereArgs{"pm.deleted_at is null and u.deleted_at is null and tm.deleted_at is null", nil},
+		WhereArgs{"p.public_switch = ?", []any{true}},
+	)
+	if len(selfProjectIdList) > 0 {
+		whereArgsList2 = append(whereArgsList2, WhereArgs{"p.id not in ?", []any{selfProjectIdList}})
 	}
 	_ = s.Find(
-		&result,
-		&whereArgsList,
-		&OrderLimitArgs{"project_member.id desc", 0},
+		&publishProjectQueryResult,
+		&As{BaseService: s, Alias: "p"},
+		&ParamArgs{"?creator_perm_type": models.ProjectPermTypeCreator, "?user_id": userId},
+		&whereArgsList2,
+		&OrderLimitArgs{"p.id desc", 0},
 	)
-	for i := range result {
-		result[i].PermType = result[i].ProjectMember.PermType
+
+	selfProjectQueryResultLen := len(selfProjectQueryResult)
+	publishProjectQueryResultLen := len(publishProjectQueryResult)
+	result := make([]*ProjectQuery, selfProjectQueryResultLen+publishProjectQueryResultLen)
+	for i := range selfProjectQueryResult {
+		selfProjectQueryResult[i].SelfPermType = selfProjectQueryResult[i].SelfProjectMember.PermType
+		selfProjectQueryResult[i].IsInTeam = selfProjectQueryResult[i].SelfTeamMember.Id > 0
+		result[i] = &selfProjectQueryResult[i].ProjectQuery
 	}
+	for i := range publishProjectQueryResult {
+		publishProjectQueryResult[i].SelfPermType = publishProjectQueryResult[i].Project.PermType
+		selfProjectQueryResult[i].IsInTeam = true
+		result[i+selfProjectQueryResultLen] = &publishProjectQueryResult[i].ProjectQuery
+	}
+
 	return result
 }
 
-type ProjectMemberQueryResItem struct {
+// FindProject 查询用户的项目列表
+func (s *ProjectService) FindProject(teamId int64, userId int64) []*ProjectQuery {
+	return s.findProject(teamId, userId, nil)
+}
+
+// FindFavorProject 查询用户收藏的项目列表
+func (s *ProjectService) FindFavorProject(teamId int64, userId int64) []*ProjectQuery {
+	var projectFavoriteList []models.ProjectFavorite
+	_ = s.ProjectFavoriteService.Find(
+		&projectFavoriteList,
+		&WhereArgs{"user_id = ? and is_favor = true", []any{userId}},
+		&OrderLimitArgs{"id desc", 0},
+	)
+	projectIdList := sliceutil.MapT(func(item models.ProjectFavorite) int64 {
+		return item.ProjectId
+	}, projectFavoriteList...)
+	projectIdToIndex := make(map[int64]int, len(projectIdList))
+	for i, projectId := range projectIdList {
+		projectIdToIndex[projectId] = i
+	}
+	favorProjectQueryResult := s.findProject(teamId, userId, &projectIdList)
+	sort.Slice(favorProjectQueryResult, func(i, j int) bool {
+		return projectIdToIndex[favorProjectQueryResult[i].Project.Id] < projectIdToIndex[favorProjectQueryResult[j].Project.Id]
+	})
+	return favorProjectQueryResult
+}
+
+type ProjectMemberQuery struct {
 	ProjectMember ProjectMember          `gorm:"embedded;embeddedPrefix:project_member__" json:"-" table:""`
 	Project       Project                `gorm:"embedded;embeddedPrefix:project__" json:"-" join:";inner;id,project_id"`
 	User          User                   `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,user_id"`
@@ -130,8 +240,8 @@ type ProjectMemberQueryResItem struct {
 }
 
 // FindProjectMember 查询某个项目中的成员列表
-func (s *ProjectService) FindProjectMember(projectId int64) []ProjectMemberQueryResItem {
-	var result []ProjectMemberQueryResItem
+func (s *ProjectService) FindProjectMember(projectId int64) []ProjectMemberQuery {
+	var result []ProjectMemberQuery
 	whereArgsList := []WhereArgs{
 		{"project.deleted_at is null and user.deleted_at is null", nil},
 		{"project_member.project_id = ?", []any{projectId}},
@@ -147,13 +257,7 @@ func (s *ProjectService) FindProjectMember(projectId int64) []ProjectMemberQuery
 	return result
 }
 
-type ProjectJoinRequest models.ProjectJoinRequest
-
-func (model ProjectJoinRequest) MarshalJSON() ([]byte, error) {
-	return models.MarshalJSON(model)
-}
-
-type projectJoinRequestQueryResItem struct {
+type projectJoinRequestQuery struct {
 	ProjectMember      ProjectMember      `gorm:"-" json:"-" join:";inner;project_id,project_id;user_id,?user_id"` // 自己的（非申请人的）权限
 	Project            Project            `gorm:"embedded;embeddedPrefix:project__" json:"project" join:";inner;id,project_id"`
 	User               User               `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,user_id"`
@@ -161,8 +265,8 @@ type projectJoinRequestQueryResItem struct {
 }
 
 // FindProjectJoinRequest 获取用户所创建或担任管理员的项目的加入申请列表
-func (s *ProjectService) FindProjectJoinRequest(userId int64, projectId int64, startTime string) []projectJoinRequestQueryResItem {
-	var result []projectJoinRequestQueryResItem
+func (s *ProjectService) FindProjectJoinRequest(userId int64, projectId int64, startTime string) []projectJoinRequestQuery {
+	var result []projectJoinRequestQuery
 	whereArgsList := []WhereArgs{
 		{
 			Query: "project_member.deleted_at is null and project.deleted_at is null and user.deleted_at is null",

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"gorm.io/gorm/schema"
 	"log"
 	"protodesign.cn/kcserver/common/config"
@@ -57,6 +58,18 @@ func (n *DeletedAt) UnmarshalJSON(b []byte) error {
 		}
 	}
 	return (*gorm.DeletedAt)(n).UnmarshalJSON(b)
+}
+
+func (n DeletedAt) QueryClauses(f *schema.Field) []clause.Interface {
+	return gorm.DeletedAt(n).QueryClauses(f)
+}
+
+func (n DeletedAt) UpdateClauses(f *schema.Field) []clause.Interface {
+	return gorm.DeletedAt(n).UpdateClauses(f)
+}
+
+func (n DeletedAt) DeleteClauses(f *schema.Field) []clause.Interface {
+	return gorm.DeletedAt(n).DeleteClauses(f)
 }
 
 type BaseModel struct {

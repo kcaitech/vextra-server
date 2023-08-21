@@ -673,20 +673,12 @@ func RemoveTeamMember(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	var req struct {
-		TeamId string `json:"team_id" binding:"required"`
-		UserId string `json:"user_id" binding:"required"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "")
-		return
-	}
-	teamId := str.DefaultToInt(req.TeamId, 0)
+	teamId := str.DefaultToInt(c.Query("team_id"), 0)
 	if teamId <= 0 {
 		response.BadRequest(c, "参数错误：team_id")
 		return
 	}
-	reqUserId := str.DefaultToInt(req.UserId, 0)
+	reqUserId := str.DefaultToInt(c.Query("user_id"), 0)
 	if reqUserId <= 0 {
 		response.BadRequest(c, "参数错误：user_id")
 		return

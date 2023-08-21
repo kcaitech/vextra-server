@@ -18,20 +18,20 @@ import (
 )
 
 type BaseService interface {
-	GetTable() string
+	GetTableName() string
 }
 
 type DefaultService struct {
 	DB              *gorm.DB
 	That            BaseService
 	Model           models.ModelData
-	Table           string
+	TableName       string
 	FieldNames      []string
 	TableFieldNames []string
 }
 
-func (s *DefaultService) GetTable() string {
-	return s.Table
+func (s *DefaultService) GetTableName() string {
+	return s.TableName
 }
 
 func (s *DefaultService) GetFieldNames() []string {
@@ -53,7 +53,7 @@ func (s *DefaultService) GetTableFieldNamesStr() string {
 func (s *DefaultService) GetTableFieldNamesStrAliasByPrefix(prefix string) string {
 	var tableFieldNames []string
 	for _, tableFieldName := range s.FieldNames {
-		tableFieldNames = append(tableFieldNames, fmt.Sprintf("%s.%s as %s", s.Table, tableFieldName, prefix+tableFieldName))
+		tableFieldNames = append(tableFieldNames, fmt.Sprintf("%s.%s as %s", s.TableName, tableFieldName, prefix+tableFieldName))
 	}
 	return strings.Join(tableFieldNames, ",")
 }
@@ -62,7 +62,7 @@ func (s *DefaultService) GetTableFieldNamesStrAliasByDefaultPrefix(connector str
 	if connector == "" {
 		connector = "__"
 	}
-	return s.GetTableFieldNamesStrAliasByPrefix(s.Table + connector)
+	return s.GetTableFieldNamesStrAliasByPrefix(s.TableName + connector)
 }
 
 func NewDefaultService(model models.ModelData) *DefaultService {
@@ -72,10 +72,11 @@ func NewDefaultService(model models.ModelData) *DefaultService {
 	}
 	db := models.DB.Model(model)
 	_ = db.Statement.Parse(&model)
-	s.Table = db.Statement.Table
+	s.TableName = db.Statement.Table
+	s.TableName = s.TableName
 	for _, field := range db.Statement.Schema.Fields {
 		s.FieldNames = append(s.FieldNames, field.DBName)
-		s.TableFieldNames = append(s.TableFieldNames, fmt.Sprintf("%s.%s", s.Table, field.DBName))
+		s.TableFieldNames = append(s.TableFieldNames, fmt.Sprintf("%s.%s", s.TableName, field.DBName))
 	}
 	return &s
 }
@@ -479,7 +480,11 @@ func AddCond(db *gorm.DB, args ...any) error {
 			} else {
 				on.JoinTable += "."
 			}
-			onList = append(onList, fmt.Sprintf("%s.%s=%s%s", argv.TableName, on.Field, on.JoinTable, on.JoinField))
+			if !strings.HasPrefix(on.JoinField, "#") {
+				onList = append(onList, fmt.Sprintf("%s.%s=%s%s", argv.TableName, on.Field, on.JoinTable, on.JoinField))
+			} else {
+				onList = append(onList, fmt.Sprintf("%s.%s %s", argv.TableName, on.Field, on.JoinField[1:]))
+			}
 		}
 		if len(argv.OnArgs) != argsNum {
 			return errors.New("JoinArgs.OnArgs错误")
@@ -591,11 +596,13 @@ func AddCond(db *gorm.DB, args ...any) error {
 		switch argv := arg.(type) {
 		case As:
 			if argv.BaseService != nil && argv.Alias != "" {
-				db.Table(fmt.Sprintf("%s as %s", argv.BaseService.GetTable(), argv.Alias))
+				db.Table(fmt.Sprintf("%s as %s", argv.BaseService.GetTableName(), argv.Alias))
+				db.InstanceSet("TableAlias", argv.Alias)
 			}
 		case *As:
 			if argv.BaseService != nil && argv.Alias != "" {
-				db.Table(fmt.Sprintf("%s as %s", argv.BaseService.GetTable(), argv.Alias))
+				db.Table(fmt.Sprintf("%s as %s", argv.BaseService.GetTableName(), argv.Alias))
+				db.InstanceSet("TableAlias", argv.Alias)
 			}
 		}
 		return nil
@@ -603,6 +610,14 @@ func AddCond(db *gorm.DB, args ...any) error {
 
 	var calc func(args []any) error
 	calc = func(args []any) error {
+		for _, arg := range args {
+			switch argv := arg.(type) {
+			case As, *As:
+				if err := calcAs(argv); err != nil {
+					return err
+				}
+			}
+		}
 		for _, arg := range args {
 			switch argv := arg.(type) {
 			case WhereArgs, *WhereArgs, []WhereArgs, []*WhereArgs, *[]WhereArgs, *[]*WhereArgs:
@@ -683,8 +698,18 @@ var ErrRecordNotFound = errors.New("记录不存在")
 
 func (s *DefaultService) Get(modelData models.ModelData, args ...any) error {
 	db := s.DB.Model(s.Model)
-	paramArgs := GetParamArgsFromArgs(&args)
-	args = append(args, GenerateJoinArgs(modelData, s.Table, paramArgs))
+	paramArgs := GetAndDeleteParamArgsForArgs(&args)
+	if err := AddCond(db, args...); err != nil {
+		return err
+	}
+	tableName := s.TableName
+	v, ok := db.InstanceGet("TableAlias")
+	tableAlias, ok1 := v.(string)
+	if ok && ok1 {
+		tableName = tableAlias
+	}
+	args = []any{}
+	args = append(args, GenerateJoinArgs(modelData, tableName, paramArgs))
 	args = append(args, GenerateSelectArgs(modelData, ""))
 	if err := AddCond(db, args...); err != nil {
 		return err
@@ -706,8 +731,18 @@ func (s *DefaultService) GetById(id int64, modelData models.ModelData) error {
 
 func (s *DefaultService) Find(modelDataList models.ModelListData, args ...any) error {
 	db := s.DB.Model(s.Model)
-	paramArgs := GetParamArgsFromArgs(&args)
-	args = append(args, GenerateJoinArgs(modelDataList, s.Table, paramArgs))
+	paramArgs := GetAndDeleteParamArgsForArgs(&args)
+	if err := AddCond(db, args...); err != nil {
+		return err
+	}
+	tableName := s.TableName
+	v, ok := db.InstanceGet("TableAlias")
+	tableAlias, ok1 := v.(string)
+	if ok && ok1 {
+		tableName = tableAlias
+	}
+	args = []any{}
+	args = append(args, GenerateJoinArgs(modelDataList, tableName, paramArgs))
 	args = append(args, GenerateSelectArgs(modelDataList, ""))
 	if err := AddCond(db, args...); err != nil {
 		return err
@@ -744,8 +779,18 @@ func (s *DefaultService) updates(modelData models.ModelData, ignoreZero bool, ar
 		return 0, errors.New("无搜索条件")
 	}
 	db := s.DB.Model(s.Model)
-	paramArgs := GetParamArgsFromArgs(&args)
-	args = append(args, GenerateJoinArgs(modelData, s.Table, paramArgs))
+	paramArgs := GetAndDeleteParamArgsForArgs(&args)
+	if err := AddCond(db, args...); err != nil {
+		return 0, err
+	}
+	tableName := s.TableName
+	v, ok := db.InstanceGet("TableAlias")
+	tableAlias, ok1 := v.(string)
+	if ok && ok1 {
+		tableName = tableAlias
+	}
+	args = []any{}
+	args = append(args, GenerateJoinArgs(modelData, tableName, paramArgs))
 	args = append(args, GenerateSelectArgs(modelData, ""))
 	if !ignoreZero {
 		db.Select("*")
@@ -980,6 +1025,9 @@ func generateJoinArgs(dataType reflect.Type, mainTable string, paramArgs ParamAr
 			tableName = originalTableName
 		} else { // 取别名
 			originalTableName = splitRes1[0]
+			if originalTableName == "" {
+				originalTableName = str.CamelToSnake(typeField.Name)
+			}
 			tableName = splitRes1[1]
 		}
 		// 取joinType
@@ -1118,8 +1166,8 @@ func (that ParamArgs) MergeParamArgs(paramArgsList ...ParamArgs) ParamArgs {
 	return that
 }
 
-// GetParamArgsFromArgs 从args中获取ParamArgs，同时删除args中的ParamArgs
-func GetParamArgsFromArgs(args *[]any) ParamArgs {
+// GetAndDeleteParamArgsForArgs 从args中获取ParamArgs，同时删除args中的ParamArgs
+func GetAndDeleteParamArgsForArgs(args *[]any) ParamArgs {
 	paramArgs := ParamArgs{}
 	newArgs := make([]any, 0, len(*args))
 	for _, arg := range *args {

@@ -93,7 +93,7 @@ func GetProjectList(c *gin.Context) {
 	}
 	teamId := str.DefaultToInt(c.Query("team_id"), 0)
 	projectService := services.NewProjectService()
-	result := projectService.FindProjectByTeamIdAndUserId(teamId, userId)
+	result := projectService.FindProject(teamId, userId)
 	response.Success(c, result)
 }
 
@@ -690,20 +690,12 @@ func RemoveProjectMember(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	var req struct {
-		ProjectId string `json:"project_id" binding:"required"`
-		UserId    string `json:"user_id" binding:"required"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "")
-		return
-	}
-	projectId := str.DefaultToInt(req.ProjectId, 0)
+	projectId := str.DefaultToInt(c.Query("project_id"), 0)
 	if projectId <= 0 {
 		response.BadRequest(c, "参数错误：project_id")
 		return
 	}
-	reqUserId := str.DefaultToInt(req.UserId, 0)
+	reqUserId := str.DefaultToInt(c.Query("user_id"), 0)
 	if reqUserId <= 0 {
 		response.BadRequest(c, "参数错误：user_id")
 		return
@@ -764,5 +756,105 @@ func SetProjectFavorite(c *gin.Context) {
 		response.Fail(c, "操作失败")
 		return
 	}
+	response.Success(c, "")
+}
+
+// GetFavorProjectList 获取收藏项目列表
+func GetFavorProjectList(c *gin.Context) {
+	userId, err := auth.GetUserId(c)
+	if err != nil {
+		response.Unauthorized(c)
+		return
+	}
+	teamId := str.DefaultToInt(c.Query("team_id"), 0)
+	projectService := services.NewProjectService()
+	result := projectService.FindFavorProject(teamId, userId)
+	response.Success(c, result)
+}
+
+// MoveDocument 移动文档
+func MoveDocument(c *gin.Context) {
+	userId, err := auth.GetUserId(c)
+	if err != nil {
+		response.Unauthorized(c)
+		return
+	}
+	var req struct {
+		SourceProjectId string `json:"source_project_id"`
+		TargetProjectId string `json:"target_project_id"`
+		DocumentId      string `json:"document_id" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "")
+		return
+	}
+
+	documentId := str.DefaultToInt(req.DocumentId, 0)
+	if documentId <= 0 {
+		response.BadRequest(c, "参数错误：document_id")
+		return
+	}
+	var document models.Document
+	documentService := services.NewDocumentService()
+	if err := documentService.GetById(documentId, &document); err != nil {
+		response.Fail(c, "查询错误")
+		return
+	}
+
+	sourceProjectId := str.DefaultToInt(req.SourceProjectId, 0)
+	targetProjectId := str.DefaultToInt(req.TargetProjectId, 0)
+	if (sourceProjectId <= 0 && targetProjectId <= 0) || sourceProjectId == targetProjectId {
+		response.BadRequest(c, "参数错误：source_project_id、target_project_id")
+		return
+	}
+	if document.ProjectId != sourceProjectId {
+		response.BadRequest(c, "参数错误：document.project_id")
+		return
+	}
+	if document.ProjectId == 0 && document.UserId != userId {
+		response.Forbidden(c, "")
+		return
+	}
+
+	projectService := services.NewProjectService()
+	if sourceProjectId != 0 {
+		sourcePermType, err := projectService.GetProjectPermTypeByForUser(sourceProjectId, userId)
+		if err != nil {
+			response.Fail(c, "查询错误")
+			return
+		}
+		if sourcePermType == nil || *sourcePermType < models.ProjectPermTypeEditable {
+			response.Forbidden(c, "")
+			return
+		}
+	}
+
+	var targetTeamId int64
+	if targetProjectId != 0 {
+		targetPermType, err := projectService.GetProjectPermTypeByForUser(targetProjectId, userId)
+		if err != nil {
+			response.Fail(c, "查询错误")
+			return
+		}
+		if targetPermType == nil || *targetPermType < models.ProjectPermTypeEditable {
+			response.Forbidden(c, "")
+			return
+		}
+		var targetProject models.Project
+		if err := projectService.GetById(targetProjectId, &targetProject); err != nil {
+			response.Fail(c, "查询错误")
+			return
+		}
+		targetTeamId = targetProject.TeamId
+	}
+
+	if _, err := documentService.UpdateColumns(map[string]any{
+		"team_id":    targetTeamId,
+		"project_id": targetProjectId,
+	}, "id = ?", documentId); err != nil {
+		response.Fail(c, "更新错误")
+		return
+	}
+
 	response.Success(c, "")
 }

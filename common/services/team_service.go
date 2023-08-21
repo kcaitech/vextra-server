@@ -140,26 +140,30 @@ func (model TeamMember) MarshalJSON() ([]byte, error) {
 }
 
 type TeamQueryResItem struct {
-	Team       Team                `gorm:"embedded;embeddedPrefix:team__" json:"team" table:""`
-	TeamMember TeamMember          `gorm:"embedded;embeddedPrefix:team_member__" json:"-" join:";inner;team_id,team.id"`
-	User       User                `gorm:"embedded;embeddedPrefix:user__" json:"-" join:";inner;id,team_member.user_id"`
-	PermType   models.TeamPermType `gorm:"-" json:"perm_type"`
+	Team              Team                `gorm:"embedded;embeddedPrefix:t__" json:"team" table:"t"`
+	SelfTeamMember    TeamMember          `gorm:"embedded;embeddedPrefix:tm__" json:"-" join:"team_member,tm;inner;team_id,id"`
+	SelfUser          User                `gorm:"embedded;embeddedPrefix:u__" json:"-" join:"user,u;inner;id,tm.user_id"`
+	CreatorTeamMember TeamMember          `gorm:"embedded;embeddedPrefix:tm1__" json:"-" join:"team_member,tm1;inner;team_id,id;perm_type,?creator_perm_type"`
+	CreatorUser       User                `gorm:"embedded;embeddedPrefix:u1__" json:"creator" join:"user,u1;inner;id,tm1.user_id"`
+	SelfPermType      models.TeamPermType `gorm:"-" json:"self_perm_type"`
 }
 
 // FindTeamByUserId 查询某个用户所在的所有团队列表
 func (s *TeamService) FindTeamByUserId(userId int64) []TeamQueryResItem {
 	var result []TeamQueryResItem
 	whereArgsList := []WhereArgs{
-		{"team_member.deleted_at is null and user.deleted_at is null", nil},
-		{"team_member.user_id = ?", []any{userId}},
+		{"tm.deleted_at is null and u.deleted_at is null", nil},
+		{"tm.user_id = ?", []any{userId}},
 	}
 	_ = s.Find(
 		&result,
+		&As{BaseService: s, Alias: "t"},
+		&ParamArgs{"?creator_perm_type": models.TeamPermTypeCreator},
 		&whereArgsList,
-		&OrderLimitArgs{"team_member.id desc", 0},
+		&OrderLimitArgs{"tm.id desc", 0},
 	)
 	for i := range result {
-		result[i].PermType = result[i].TeamMember.PermType
+		result[i].SelfPermType = result[i].SelfTeamMember.PermType
 	}
 	return result
 }
