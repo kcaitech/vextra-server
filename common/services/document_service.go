@@ -163,16 +163,20 @@ func (s *DocumentService) FindAccessRecordsByUserId(userId int64) *[]AccessRecor
 }
 
 // FindFavoritesByUserId 查询用户的收藏列表
-func (s *DocumentService) FindFavoritesByUserId(userId int64) *[]AccessRecordAndFavoritesQueryResItem {
+func (s *DocumentService) FindFavoritesByUserId(userId int64, projectId int64) *[]AccessRecordAndFavoritesQueryResItem {
 	var result []AccessRecordAndFavoritesQueryResItem
+	whereArgsList := []WhereArgs{
+		{"document_favorites.user_id = ? and document_favorites.is_favorite = 1 and document.deleted_at is null", []any{userId}},
+	}
+	if projectId > 0 {
+		whereArgsList = append(whereArgsList, WhereArgs{"document.project_id = ?", []any{projectId}})
+	} else {
+		whereArgsList = append(whereArgsList, WhereArgs{"document.project_id is null or document.project_id = 0", nil})
+	}
 	_ = s.DocumentFavoritesService.Find(
 		&result,
 		&ParamArgs{"?user_id": userId},
-		&WhereArgs{
-			"document_favorites.user_id = ? and document_favorites.is_favorite = 1" +
-				" and document.deleted_at is null and (document.project_id is null and document.project_id = 0)",
-			[]any{userId},
-		},
+		whereArgsList,
 		&OrderLimitArgs{"document_access_record.last_access_time desc", 0},
 	)
 	return &result

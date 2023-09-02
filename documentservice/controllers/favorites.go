@@ -16,7 +16,8 @@ func GetUserDocumentFavoritesList(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	response.Success(c, services.NewDocumentService().FindFavoritesByUserId(userId))
+	projectId := str.DefaultToInt(c.Query("project_id"), 0)
+	response.Success(c, services.NewDocumentService().FindFavoritesByUserId(userId, projectId))
 }
 
 type SetUserDocumentFavoriteStatusReq struct {

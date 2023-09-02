@@ -180,6 +180,15 @@ func DeleteTeam(c *gin.Context) {
 
 // ApplyJoinTeam 申请加入团队
 func ApplyJoinTeam(c *gin.Context) {
+	type FailCode int
+	const (
+		FailCodeTeamNotExist FailCode = iota + 1
+		FailCodeInvitedNotOpen
+		FailCodeAlreadyJoined
+		FailCodeAlreadyApplied
+	)
+	failResponseData := map[string]any{}
+
 	userId, err := auth.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
@@ -202,28 +211,32 @@ func ApplyJoinTeam(c *gin.Context) {
 	var team models.Team
 	if err := teamService.GetById(teamId, &team); err != nil {
 		if errors.Is(err, services.ErrRecordNotFound) {
-			response.BadRequest(c, "团队不存在")
+			failResponseData["code"] = FailCodeTeamNotExist
+			response.BadRequestData(c, "团队不存在", failResponseData)
 		} else {
 			response.Fail(c, "查询错误")
 		}
 		return
 	}
 	if !team.InvitedSwitch {
-		response.BadRequest(c, "团队未开启邀请")
+		failResponseData["code"] = FailCodeInvitedNotOpen
+		response.BadRequestData(c, "团队未开启邀请", failResponseData)
 		return
 	}
 	invitedPermType := team.InvitedPermType
 	teamMemberService := teamService.TeamMemberService
-	if ok, err := teamMemberService.Exist("team_id = ? AND user_id = ?", teamId, userId); ok {
-		response.BadRequest(c, "已加入团队")
+	if ok, err := teamMemberService.Exist("deleted_at is null and team_id = ? and user_id = ?", teamId, userId); ok {
+		failResponseData["code"] = FailCodeAlreadyJoined
+		response.BadRequestData(c, "已加入团队", failResponseData)
 		return
 	} else if err != nil {
 		response.Fail(c, "查询错误.")
 		return
 	}
 	teamJoinRequestService := teamService.TeamJoinRequestService
-	if ok, err := teamJoinRequestService.Exist("team_id = ? AND user_id = ?", teamId, userId); ok {
-		response.BadRequest(c, "不能重复申请")
+	if ok, err := teamJoinRequestService.Exist("deleted_at is null and team_id = ? and user_id = ? and status = ?", teamId, userId, models.TeamJoinRequestStatusPending); ok {
+		failResponseData["code"] = FailCodeAlreadyApplied
+		response.BadRequestData(c, "不能重复申请", failResponseData)
 		return
 	} else if err != nil {
 		response.Fail(c, "查询错误..")
@@ -464,7 +477,7 @@ func SetTeamInvited(c *gin.Context) {
 	response.Success(c, "")
 }
 
-// GetTeamInvitedInfo 获取团队邀请信息
+// GetTeamInvitedInfo 获取团队信息
 func GetTeamInvitedInfo(c *gin.Context) {
 	userId, err := auth.GetUserId(c)
 	if err != nil {
@@ -482,20 +495,17 @@ func GetTeamInvitedInfo(c *gin.Context) {
 		response.Fail(c, "查询错误")
 		return
 	}
-	if !team.InvitedSwitch {
-		response.Fail(c, "团队邀请已关闭")
-		return
-	}
 	selfPermType, err := teamService.GetTeamPermTypeByForUser(teamId, userId)
 	if err != nil {
 		response.Fail(c, "查询错误")
 		return
 	}
 	result := map[string]any{
-		"id":                team.Id,
+		"id":                str.IntToString(team.Id),
 		"name":              team.Name,
 		"self_perm_type":    selfPermType,
 		"invited_perm_type": team.InvitedPermType,
+		"invited_switch":    team.InvitedSwitch,
 	}
 	response.Success(c, result)
 }

@@ -222,7 +222,7 @@ func ApplyJoinProject(c *gin.Context) {
 		return
 	}
 	projectJoinRequestService := projectService.ProjectJoinRequestService
-	if ok, err := projectJoinRequestService.Exist("project_id = ? and user_id = ?", projectId, userId); err != nil {
+	if ok, err := projectJoinRequestService.Exist("deleted_at is null and project_id = ? and user_id = ? and status = ?", projectId, userId, models.ProjectJoinRequestStatusPending); err != nil {
 		response.Fail(c, "申请查询错误")
 		return
 	} else if ok {

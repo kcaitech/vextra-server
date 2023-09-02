@@ -25,6 +25,7 @@ func UploadDocument(c *gin.Context) {
 	type Header struct {
 		UserId     string `json:"user_id"`
 		DocumentId string `json:"document_id"`
+		ProjectId  string `json:"project_id"`
 		LastCmdId  string `json:"last_cmd_id"`
 	}
 
@@ -61,6 +62,7 @@ func UploadDocument(c *gin.Context) {
 	}
 	userId := str.DefaultToInt(header.UserId, 0)
 	documentId := str.DefaultToInt(header.DocumentId, 0)
+	projectId := str.DefaultToInt(header.ProjectId, 0)
 	lastCmdId := header.LastCmdId
 	if (userId <= 0 && documentId <= 0) || (userId > 0 && documentId > 0) || (documentId > 0 && lastCmdId == "") { // userId和documentId必须只传一个
 		resp.Message = "参数错误"
@@ -69,6 +71,9 @@ func UploadDocument(c *gin.Context) {
 		return
 	}
 	isFirstUpload := documentId <= 0
+	if projectId < 0 {
+		projectId = 0
+	}
 
 	// 获取文档信息
 	documentService := services.NewDocumentService()
@@ -246,6 +251,7 @@ func UploadDocument(c *gin.Context) {
 			Name:      documentName,
 			Size:      documentSize,
 			VersionId: documentVersionId,
+			ProjectId: projectId,
 		}
 		if err := documentService.Create(&newDocument); err != nil {
 			resp.Message = "对象上传错误."

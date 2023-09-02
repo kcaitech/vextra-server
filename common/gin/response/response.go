@@ -53,6 +53,13 @@ func BadRequest(c *gin.Context, message string) Response {
 	return Resp(c, http.StatusBadRequest, message, nil)
 }
 
+func BadRequestData(c *gin.Context, message string, data any) Response {
+	if message == "" {
+		message = "参数错误"
+	}
+	return Resp(c, http.StatusBadRequest, message, data)
+}
+
 func Forbidden(c *gin.Context, message string) Response {
 	if message == "" {
 		message = "无访问权限"
