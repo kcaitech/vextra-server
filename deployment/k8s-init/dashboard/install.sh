@@ -39,10 +39,10 @@ fi
 
 # 下载配置文件 dashboard
 echo "下载配置文件 dashboard"
-export http_proxy="${proxy_address}"
-export https_proxy="${proxy_address}"
-export HTTP_PROXY="${proxy_address}"
-export HTTPS_PROXY="${proxy_address}"
+export http_proxy=$proxy_address
+export https_proxy=$proxy_address
+export HTTP_PROXY=$proxy_address
+export HTTPS_PROXY=$proxy_address
 curl https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml -L -o kubernetes-dashboard.yaml
 export HTTP_PROXY=
 export HTTPS_PROXY=

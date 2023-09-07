@@ -50,20 +50,11 @@ echo "（kc-master1 192.168.137.20:6443,kc-master2 192.168.137.21:6443,kc-master
 read -r master_nodes
 # 验证格式以及分割
 if [[ "$master_nodes" == "" ]]; then
-#  echo "输入错误"
-#  exit 1
   master_nodes="kc-master1 192.168.137.20:6443,kc-master2 192.168.137.21:6443,kc-master3 192.168.137.22:6443"
 fi
 IFS=',' read -ra master_nodes <<< "$master_nodes"
 for node in "${master_nodes[@]}"; do
-  if [[ "$node" =~ ^[a-zA-Z0-9_-]+[[:space:]]+[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:[0-9]+$ ]]; then
-    # 写入hosts
-    name=$(echo "$node" | awk '{print $1}')
-    ip_port=$(echo "$node" | awk '{print $2}')
-    ip=$(echo "$ip_port" | cut -d: -f1)
-    echo "写入hosts $ip $name"
-    echo "$ip $name" >> /etc/hosts
-  else
+  if [[ ! "$node" =~ ^[a-zA-Z0-9_-]+[[:space:]]+[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:[0-9]+$ ]]; then
     echo "输入错误"
     exit 1
   fi
@@ -491,10 +482,10 @@ EOF
 
   # 下载配置文件 calico
   echo "下载配置文件 calico"
-  export http_proxy="${proxy_address}"
-  export https_proxy="${proxy_address}"
-  export HTTP_PROXY="${proxy_address}"
-  export HTTPS_PROXY="${proxy_address}"
+  export http_proxy=$proxy_address
+  export https_proxy=$proxy_address
+  export HTTP_PROXY=$proxy_address
+  export HTTPS_PROXY=$proxy_address
   curl https://docs.projectcalico.org/manifests/calico.yaml -LO
   export HTTP_PROXY=
   export HTTPS_PROXY=

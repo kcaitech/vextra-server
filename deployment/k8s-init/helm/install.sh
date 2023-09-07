@@ -23,10 +23,10 @@ fi
 
 # 下载安装包
 echo "下载安装包"
-export http_proxy="${proxy_address}"
-export https_proxy="${proxy_address}"
-export HTTP_PROXY="${proxy_address}"
-export HTTPS_PROXY="${proxy_address}"
+export http_proxy=$proxy_address
+export https_proxy=$proxy_address
+export HTTP_PROXY=$proxy_address
+export HTTPS_PROXY=$proxy_address
 curl https://get.helm.sh/helm-v3.12.3-linux-amd64.tar.gz -LO
 export HTTP_PROXY=
 export HTTPS_PROXY=
