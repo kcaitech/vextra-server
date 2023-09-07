@@ -515,6 +515,7 @@ func GetProjectInvitedInfo(c *gin.Context) {
 		"name":              project.Name,
 		"self_perm_type":    selfPermType,
 		"invited_perm_type": project.PermType,
+		"invited_switch":    project.InvitedSwitch,
 	}
 	response.Success(c, result)
 }
@@ -565,7 +566,7 @@ func SetProjectMemberPermission(c *gin.Context) {
 	var req struct {
 		ProjectId string                  `json:"project_id" binding:"required"`
 		UserId    string                  `json:"user_id" binding:"required"`
-		PermType  *models.ProjectPermType `json:"perm_type" binding:"min=1,max=3"`
+		PermType  *models.ProjectPermType `json:"perm_type" binding:"min=1,max=4"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, "")

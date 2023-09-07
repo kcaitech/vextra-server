@@ -10,6 +10,11 @@
 # 3. root用户（需以root用户执行本脚本）
 # sudo passwd root
 
+# 参考文档：
+# https://kubernetes.io/zh-cn/docs/reference/config-api/kubeadm-config.v1beta3
+
+# 运行环境：Ubuntu 22.04.3 LTS
+
 echo "请选择初始化类型"
 echo "1) 集群初始化"
 echo "2) master节点初始化"
@@ -25,7 +30,7 @@ read -r -p "请输入网卡名称（eth0）" net_card_name
 if [[ "$net_card_name" == "" ]]; then
   net_card_name="eth0"
 fi
-
+# 获取本机ip
 this_ip=$(ip addr show $net_card_name | grep "inet\b" | awk '{print $2}' | cut -d/ -f1) # 网卡下的ip
 if [[ "$this_ip" == "" ]]; then
   echo "获取网卡ip错误，请检查网卡名称（$net_card_name）是否正确"
@@ -41,13 +46,13 @@ fi
 
 # 获取用于haproxy的所有name、ip和端口，多个之间以,隔开 格式：name ip:port
 echo "请输入所有master节点的name、ip和端口，多个之间以,隔开 格式：name ip:port"
-echo "（kcserver1 192.168.137.20:6443,kcserver2 192.168.137.21:6443,kcserver3 192.168.137.22:6443）"
+echo "（kc-master1 192.168.137.20:6443,kc-master2 192.168.137.21:6443,kc-master3 192.168.137.22:6443）"
 read -r master_nodes
 # 验证格式以及分割
 if [[ "$master_nodes" == "" ]]; then
 #  echo "输入错误"
 #  exit 1
-  master_nodes="kcserver1 192.168.137.20:6443,kcserver2 192.168.137.21:6443,kcserver3 192.168.137.22:6443"
+  master_nodes="kc-master1 192.168.137.20:6443,kc-master2 192.168.137.21:6443,kc-master3 192.168.137.22:6443"
 fi
 IFS=',' read -ra master_nodes <<< "$master_nodes"
 for node in "${master_nodes[@]}"; do
@@ -107,7 +112,7 @@ else
 fi
 # 写入hosts
 echo "写入hosts $apiserver_domain $apiserver_ip"
-echo "$apiserver_domain $apiserver_ip" >> /etc/hosts
+echo "$apiserver_ip $apiserver_domain" >> /etc/hosts
 read -r -p "端口（9443）：" apiserver_port
 if [[ "$apiserver_port" == "" ]]; then
   apiserver_port="9443"
@@ -133,13 +138,20 @@ if [[ "$init_type" == "2" ]]; then
   fi
 fi
 
+# 获取网络代理地址
 echo "请输入网络代理地址（http、socks5）（包含协议、ip和端口），不设置代理请输入空格"
-read -r -p "（socks5://$gateway_ip:10808）" proxy_address
+read -r -p "（http://$gateway_ip:10809）" proxy_address
 if [[ "$proxy_address" == "" ]]; then
-  proxy_address="socks5://$gateway_ip:10808"
+  proxy_address="http://$gateway_ip:10809"
 elif [[ "$proxy_address" == " " ]]; then
   proxy_address=""
 fi
+
+# 设置时区
+echo "设置时区"
+timedatectl set-timezone Asia/Shanghai
+echo "NTP=cg.lzu.edu.cn" >> /etc/systemd/timesyncd.conf
+systemctl restart systemd-timesyncd
 
 # 设置内核参数
 echo "设置内核参数"
@@ -153,7 +165,45 @@ cat << EOF > /etc/sysctl.d/k8s.conf
 net.bridge.bridge-nf-call-ip6tables = 1
 net.bridge.bridge-nf-call-iptables = 1
 net.ipv4.ip_forward = 1
+
+fs.may_detach_mounts = 1
+vm.overcommit_memory=1
+vm.panic_on_oom=0
+fs.inotify.max_user_watches=89100
+fs.file-max=52706963
+fs.nr_open=52706963
+net.netfilter.nf_conntrack_max=2310720
+
+net.ipv4.tcp_keepalive_time = 600
+net.ipv4.tcp_keepalive_probes = 3
+net.ipv4.tcp_keepalive_intvl =15
+net.ipv4.tcp_max_tw_buckets = 36000
+net.ipv4.tcp_tw_reuse = 1
+net.ipv4.tcp_max_orphans = 327680
+net.ipv4.tcp_orphan_retries = 3
+net.ipv4.tcp_syncookies = 1
+net.ipv4.tcp_max_syn_backlog = 16384
+net.ipv4.ip_conntrack_max = 65536
+net.ipv4.tcp_max_syn_backlog = 16384
+net.ipv4.tcp_timestamps = 0
+net.core.somaxconn = 16384
+
+net.ipv6.conf.all.disable_ipv6 = 0
+net.ipv6.conf.default.disable_ipv6 = 0
+net.ipv6.conf.lo.disable_ipv6 = 0
+net.ipv6.conf.all.forwarding = 1
 EOF
+cat << EOF >> /etc/security/limits.conf
+* soft nproc 102400
+* hard nproc 104800
+* soft nofile 102400
+* hard nofile 104800
+root soft nproc 102400
+root hard nproc 104800
+root soft nofile 102400
+root hard nofile 104800
+EOF
+sysctl -p
 sysctl --system
 
 # 设置apt源
@@ -187,11 +237,16 @@ cat << EOF > /etc/docker/daemon.json
         "max-size": "100m"
     },
     "storage-driver": "overlay2",
-    "registry-mirrors": ["https://jsoixv4u.mirror.aliyuncs.com"]
+    "registry-mirrors": [
+      "https://jsoixv4u.mirror.aliyuncs.com",
+      "https://docker.mirrors.ustc.edu.cn",
+      "http://hub-mirror.c.163.com"
+    ]
 }
 EOF
 # 重启docker服务
 echo "重启docker服务"
+systemctl enable --now docker
 systemctl restart docker
 # 验证docker服务是否正常
 #echo "验证docker服务是否正常"
@@ -213,7 +268,9 @@ awk '/\[plugins\."io\.containerd\.grpc\.v1\.cri"\.registry\.mirrors\]/ {
   next;
 }
 1' /etc/containerd/config.toml > /etc/containerd/config.toml.tmp && mv /etc/containerd/config.toml.tmp /etc/containerd/config.toml
+sed -i 's/LimitNOFILE=infinity/LimitNOFILE=1048576/g' /lib/systemd/system/containerd.service
 systemctl daemon-reload
+systemctl enable --now containerd
 systemctl restart containerd
 
 # 配置haproxy
@@ -421,7 +478,7 @@ EOF
   done
   # 手动修改参数：name、advertiseAddress等
   read -r -p "是否需要手动修改kubeadm init config参数（y/n）" init_type
-  if [[ "$init_type" == "y" ]]; then
+  if [[ "$init_type" == "" || "$init_type" == "y" ]]; then
       vim init-defaults.k8s.yaml
   fi
 
@@ -432,42 +489,25 @@ EOF
   cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
   chown "$(id -u):$(id -g)" $HOME/.kube/config
 
-  # 下载配置文件 calico dashboard
-  echo "下载配置文件 calico dashboard"
+  # 下载配置文件 calico
+  echo "下载配置文件 calico"
+  export http_proxy="${proxy_address}"
+  export https_proxy="${proxy_address}"
   export HTTP_PROXY="${proxy_address}"
   export HTTPS_PROXY="${proxy_address}"
-  curl https://docs.projectcalico.org/manifests/calico.yaml -L -O
-  curl https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml -L -O -o kubernetes-dashboard.yaml
+  curl https://docs.projectcalico.org/manifests/calico.yaml -LO
   export HTTP_PROXY=
   export HTTPS_PROXY=
+  export http_proxy=
+  export https_proxy=
 
   # 安装网络插件calico
   echo "安装网络插件calico"
   kubectl apply -f calico.yaml
 
-  # 安装dashboard
-  echo "安装dashboard"
-  awk '
-BEGIN { flag_kind=0; flag_name=0; }
-/kind: Service/ { flag_kind=1; print; next; }
-flag_kind && /name: kubernetes-dashboard/ { flag_name=1; }
-{
-  print;
-}
-flag_name && /targetPort: 8443/ {
-  spaces = $0;
-  sub(/targetPort:.*/, "", spaces);
-  print spaces "nodePort: 30001";
-  sub(/^.{4}/, "", spaces);
-  print spaces "type: NodePort";
-}' kubernetes-dashboard.yaml > kubernetes-dashboard.yaml.tmp && mv kubernetes-dashboard.yaml.tmp kubernetes-dashboard.yaml
-  kubectl apply -f kubernetes-dashboard.yaml
-  kubectl create serviceaccount dashboard-admin -n kubernetes-dashboard
-  kubectl create clusterrolebinding dashboard-admin --clusterrole=cluster-admin --serviceaccount=kubernetes-dashboard:dashboard-admin
-  kubectl create token dashboard-admin -n kubernetes-dashboard | tee dashboard-admin-token.log
-  echo "请在浏览器中打开：https://$this_ip:30001或https://$keepalived_vip:30001"
-  echo "并将dashboard-admin-token.log中的token复制到登录页面中，或者执行以下命令重新获取token："
-  echo "kubectl create token dashboard-admin -n kubernetes-dashboard"
+  # 清除master节点污点
+  echo "清除master节点污点"
+  kubectl taint nodes --all node-role.kubernetes.io/master-
 fi
 
 # 加入集群
@@ -508,5 +548,8 @@ EOF
     mkdir -p $HOME/.kube
     cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
     chown "$(id -u):$(id -g)" $HOME/.kube/config
+    # 清除master节点污点
+    echo "清除master节点污点"
+    kubectl taint nodes --all node-role.kubernetes.io/master-
   fi
 fi
