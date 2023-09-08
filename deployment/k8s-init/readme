@@ -2,3 +2,11 @@
 分别进入到需要安装的软件的目录
 chmod +x install.sh
 ./install.sh
+
+典型顺序：
+1. init.sh
+2. kubernetes
+3. helm
+4. kubeapps
+5. kuboard
+6. openebs

@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# 安装OpenEBS
+
 # 获取网卡名称
 read -r -p "请输入网卡名称（eth0）" net_card_name
 if [[ "$net_card_name" == "" ]]; then
@@ -21,21 +23,39 @@ elif [[ "$proxy_address" == " " ]]; then
   proxy_address=""
 fi
 
-# 下载安装包
-echo "下载安装包"
+# 设置代理
 export http_proxy=$proxy_address
 export https_proxy=$proxy_address
 export HTTP_PROXY=$proxy_address
 export HTTPS_PROXY=$proxy_address
-curl https://get.helm.sh/helm-v3.12.3-linux-amd64.tar.gz -LO
+export no_proxy=localhost,127.0.0.1,cluster-endpoint
+export NO_PROXY=localhost,127.0.0.1,cluster-endpoint
+# 添加仓库
+helm repo add openebs https://openebs.github.io/charts
+helm repo update
+# 安装
+#helm install openebs openebs/openebs -n openebs --create-namespace -f values.yaml
+helm install openebs openebs/openebs -n openebs --create-namespace -f values.yaml --set cstor.enabled=true
+# 取消代理
 export HTTP_PROXY=
 export HTTPS_PROXY=
 export http_proxy=
 export https_proxy=
-# 解压并复制到/usr/local/bin
-mkdir helm-v3.12.3-linux-amd64
-tar -zxvf helm-v3.12.3-linux-amd64.tar.gz -C helm-v3.12.3-linux-amd64
-cp helm-v3.12.3-linux-amd64/linux-amd64/helm /usr/local/bin/helm
-# 添加repo
-helm repo add stable  https://kubernetes.oss-cn-hangzhou.aliyuncs.com/charts
-helm repo update
+export no_proxy=
+export NO_PROXY=
+
+# 创建storageclass
+kubectl apply -f local-hostpath-sc.yaml
+
+# 创建cStor池
+echo "块设备信息："
+kubectl -n openebs get bd
+echo "请根据块设备信息修改cstor-pool.yaml文件，修改后创建cStor池："
+echo "kubectl apply -f cstor-pool-cluster.yaml"
+echo "查看cStor池状态："
+echo "kubectl -n openebs get cspc"
+echo "kubectl -n openebs get cspi"
+echo "创建cStor存储类："
+echo "kubectl apply -f cstor-sc.yaml"
+echo "查看cStor存储类状态："
+echo "kubectl get sc cstor-sc"

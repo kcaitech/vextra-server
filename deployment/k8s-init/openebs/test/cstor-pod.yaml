@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: test-cstor
+spec:
+  containers:
+    - name: test
+      image: busybox
+      command:
+        - sh
+        - -c
+        - "sleep 3600"
+      volumeMounts:
+        - mountPath: /mnt/test
+          name: cstor
+  volumes:
+    - name: cstor
+      persistentVolumeClaim:
+        claimName: cstor-pvc
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cstor-pvc
+spec:
+  storageClassName: cstor-sc
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi

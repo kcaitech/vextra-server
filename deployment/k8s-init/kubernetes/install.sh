@@ -31,7 +31,7 @@ if [[ "$net_card_name" == "" ]]; then
   net_card_name="eth0"
 fi
 # 获取本机ip
-this_ip=$(ip addr show $net_card_name | grep "inet\b" | awk '{print $2}' | cut -d/ -f1) # 网卡下的ip
+this_ip=$(ifconfig $net_card_name | grep 'inet ' | awk '{print $2}' | cut -d':' -f2) # 网卡下的ip
 if [[ "$this_ip" == "" ]]; then
   echo "获取网卡ip错误，请检查网卡名称（$net_card_name）是否正确"
   exit 1
