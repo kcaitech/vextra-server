@@ -23,7 +23,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: cstor-pvc
 spec:
-  storageClassName: cstor-sc
+  storageClassName: cstor
   accessModes:
     - ReadWriteOnce
   resources:

@@ -1,7 +1,8 @@
 要在root用户下运行
 分别进入到需要安装的软件的目录
-chmod +x install.sh
-./install.sh
+1) 查看readme
+2) chmod +x install.sh
+3) ./install.sh
 
 典型顺序：
 1. init.sh

@@ -4,9 +4,8 @@
 
 # 添加bitnami helm仓库
 helm repo add bitnami https://charts.bitnami.com/bitnami
-kubectl create namespace kubeapps
 # 安装
-helm install kubeapps --namespace kubeapps bitnami/kubeapps
+helm install kubeapps bitnami/kubeapps -n kubeapps --create-namespace
 kubectl apply -f nodeport-services.yaml
 # 创建访问密钥
 kubectl create --namespace default serviceaccount kubeapps-operator

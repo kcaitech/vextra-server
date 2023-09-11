@@ -8,7 +8,7 @@
 # vim /etc/netplan/00-installer-config.yaml
 # netplan apply
 # 3. root用户（需以root用户执行本脚本）
-# sudo passwd root
+# passwd root
 
 # 参考文档：
 # https://kubernetes.io/zh-cn/docs/reference/config-api/kubeadm-config.v1beta3
@@ -146,7 +146,7 @@ systemctl restart systemd-timesyncd
 
 # 设置内核参数
 echo "设置内核参数"
-cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
+cat <<EOF | tee /etc/modules-load.d/k8s.conf
 overlay
 br_netfilter
 EOF
@@ -205,8 +205,9 @@ sed -i 's@//.*archive.ubuntu.com@//mirrors.ustc.edu.cn@g' /etc/apt/sources.list
 
 # 安装基础软件
 echo "安装基础软件"
-apt-get update
-apt-get install -y sudo wget ca-certificates curl gnupg htop git jq tree
+apt update
+sleep 3
+apt install -y wget ca-certificates curl gnupg htop git jq tree
 
 # 安装docker
 echo "安装docker"
@@ -216,8 +217,8 @@ curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg | gpg --dearmor
 chmod a+r /etc/apt/keyrings/docker.gpg
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://mirrors.aliyun.com/docker-ce/linux/ubuntu \
 $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-apt-get update
-apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-compose
+apt update
+apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-compose
 # 设置docker参数
 echo "设置docker参数"
 cat << EOF > /etc/docker/daemon.json
@@ -398,10 +399,10 @@ curl https://mirrors.aliyun.com/kubernetes/apt/doc/apt-key.gpg | apt-key add -
 cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
 deb https://mirrors.aliyun.com/kubernetes/apt/ kubernetes-xenial main
 EOF
-apt-get update
-apt-get install -y kubelet=1.28.1-00 kubeadm=1.28.1-00
+apt update
+apt install -y kubelet=1.28.1-00 kubeadm=1.28.1-00
 if [[ "$init_type" == "1" || "$init_type" == "2" ]]; then
-  apt-get install -y kubectl=1.28.1-00
+  apt install -y kubectl=1.28.1-00
 fi
 
 # 创建集群

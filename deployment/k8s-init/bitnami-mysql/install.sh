@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# 安装mysql
+
 # 获取网卡名称
 read -r -p "请输入网卡名称（eth0）" net_card_name
 if [[ "$net_card_name" == "" ]]; then
@@ -21,21 +23,22 @@ elif [[ "$proxy_address" == " " ]]; then
   proxy_address=""
 fi
 
-# 下载安装包
-echo "下载安装包"
+# 设置代理
 export http_proxy=$proxy_address
 export https_proxy=$proxy_address
 export HTTP_PROXY=$proxy_address
 export HTTPS_PROXY=$proxy_address
-curl https://get.helm.sh/helm-v3.12.3-linux-amd64.tar.gz -LO
+export no_proxy=localhost,127.0.0.1,cluster-endpoint
+export NO_PROXY=localhost,127.0.0.1,cluster-endpoint
+# 添加仓库
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo update
+# 安装
+helm install bitnami bitnami/mysql -n mysql --create-namespace -f values.yaml
+# 取消代理
 export HTTP_PROXY=
 export HTTPS_PROXY=
 export http_proxy=
 export https_proxy=
-# 解压并复制到/usr/local/bin
-mkdir helm-v3.12.3-linux-amd64
-tar -zxvf helm-v3.12.3-linux-amd64.tar.gz -C helm-v3.12.3-linux-amd64
-cp helm-v3.12.3-linux-amd64/linux-amd64/helm /usr/local/bin/helm
-# 添加repo
-helm repo add aliyun  https://kubernetes.oss-cn-hangzhou.aliyuncs.com/charts
-helm repo update
+export no_proxy=
+export NO_PROXY=
