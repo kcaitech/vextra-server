@@ -9,6 +9,8 @@ import (
 )
 
 func OpenDocUploadTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd ServerCmd, data Data) *Tunnel {
+	clientCmdDataData, _ := clientCmdData["data"].(map[string]any)
+	projectIdStr, _ := clientCmdDataData["project_id"].(string)
 	userId, ok := data["userId"].(int64)
 	if !ok || userId <= 0 {
 		serverCmd.Message = "通道建立失败，参数错误"
@@ -24,9 +26,13 @@ func OpenDocUploadTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCm
 		log.Println("document upload ws建立失败", err)
 		return nil
 	}
-	if err := serverWs.WriteJSON(Data{
+	sendToServerData := Data{
 		"user_id": str.IntToString(userId),
-	}); err != nil {
+	}
+	if projectIdStr != "" {
+		sendToServerData["project_id"] = projectIdStr
+	}
+	if err := serverWs.WriteJSON(sendToServerData); err != nil {
 		serverCmd.Message = "通道建立失败"
 		_ = clientWs.WriteJSON(&serverCmd)
 		log.Println("document upload ws建立失败（鉴权）", err)

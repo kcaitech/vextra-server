@@ -274,6 +274,27 @@ func GetTeamJoinRequestList(c *gin.Context) {
 	response.Success(c, result)
 }
 
+// GetSelfTeamJoinRequestList 获取自身的申请列表
+func GetSelfTeamJoinRequestList(c *gin.Context) {
+	userId, err := auth.GetUserId(c)
+	if err != nil {
+		response.Unauthorized(c)
+		return
+	}
+	teamId := str.DefaultToInt(c.Query("team_id"), 0)
+	if teamId <= 0 {
+		teamId = 0
+	}
+	startTimeStr := ""
+	startTimeInt := str.DefaultToInt(c.Query("start_time"), 0)
+	if startTimeInt > 0 {
+		startTimeStr = myTime.Time(time.UnixMilli(startTimeInt)).String()
+	}
+	teamService := services.NewTeamService()
+	result := teamService.FindSelfTeamJoinRequest(userId, teamId, startTimeStr)
+	response.Success(c, result)
+}
+
 // ReviewTeamJoinRequest 权限申请审核
 func ReviewTeamJoinRequest(c *gin.Context) {
 	userId, err := auth.GetUserId(c)

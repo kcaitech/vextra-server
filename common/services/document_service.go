@@ -54,6 +54,8 @@ type Document struct {
 	Name      string           `json:"name"`
 	Size      uint64           `json:"size"`
 	VersionId string           `json:"version_id"`
+	TeamId    string           `json:"team_id"`
+	ProjectId string           `json:"project_id"`
 }
 
 func (model Document) MarshalJSON() ([]byte, error) {
@@ -361,6 +363,9 @@ func (s *DocumentService) GetDocumentPermissionByDocumentAndUserId(permType *mod
 		return documentPermission, permSource, nil
 	} else {
 		*permType = models.PermType(*projectPermType)
+		if *permType > models.PermTypeEditable {
+			*permType = models.PermTypeEditable
+		}
 		return documentPermission, PermSourceTypeProject, nil
 	}
 }

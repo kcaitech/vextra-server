@@ -71,8 +71,27 @@ func UploadDocument(c *gin.Context) {
 		return
 	}
 	isFirstUpload := documentId <= 0
+	var teamId int64
 	if projectId < 0 {
 		projectId = 0
+	} else if projectId > 0 {
+		projectService := services.NewProjectService()
+		project := models.Project{}
+		if err := projectService.GetById(projectId, &project); err != nil {
+			resp.Message = "项目不存在"
+			_ = ws.WriteJSON(&resp)
+			return
+		}
+		teamId = project.TeamId
+		permType, err := projectService.GetProjectPermTypeByForUser(projectId, userId)
+		if err != nil {
+			log.Println("获取项目权限失败", err)
+		}
+		if err != nil || permType == nil || *permType < models.ProjectPermTypeEditable {
+			resp.Message = "无权限"
+			_ = ws.WriteJSON(&resp)
+			return
+		}
 	}
 
 	// 获取文档信息
@@ -251,6 +270,7 @@ func UploadDocument(c *gin.Context) {
 			Name:      documentName,
 			Size:      documentSize,
 			VersionId: documentVersionId,
+			TeamId:    teamId,
 			ProjectId: projectId,
 		}
 		if err := documentService.Create(&newDocument); err != nil {

@@ -199,11 +199,15 @@ func (model TeamJoinRequest) MarshalJSON() ([]byte, error) {
 	return models.MarshalJSON(model)
 }
 
-type TeamJoinRequestsQueryResItem struct {
-	TeamMember      TeamMember      `gorm:"-" json:"-" join:";inner;team_id,team_id;user_id,?user_id"` // 自己的（非申请人的）权限
+type SelfTeamJoinRequestsQueryResItem struct {
 	Team            Team            `gorm:"embedded;embeddedPrefix:team__" json:"team" join:";inner;id,team_id"`
-	User            User            `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,user_id"`
 	TeamJoinRequest TeamJoinRequest `gorm:"embedded;embeddedPrefix:team_join_request__" json:"request" table:""`
+}
+
+type TeamJoinRequestsQueryResItem struct {
+	SelfTeamJoinRequestsQueryResItem
+	TeamMember TeamMember `gorm:"-" json:"-" join:";inner;team_id,team_id;user_id,?user_id"` // 自己的（非申请人的）权限
+	User       User       `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,user_id"`
 }
 
 // FindTeamJoinRequest 获取用户所创建或担任管理员的团队的加入申请列表
@@ -214,8 +218,8 @@ func (s *TeamService) FindTeamJoinRequest(userId int64, teamId int64, startTime 
 			Query: "team_member.deleted_at is null and team.deleted_at is null and user.deleted_at is null",
 		},
 		{
-			Query: "team_member.perm_type >= ? and team_member.perm_type <= ? and team_join_request.status = ?",
-			Args:  []any{models.TeamPermTypeAdmin, models.TeamPermTypeCreator, models.TeamJoinRequestStatusPending},
+			Query: "team_member.perm_type >= ? and team_member.perm_type <= ?",
+			Args:  []any{models.TeamPermTypeAdmin, models.TeamPermTypeCreator},
 		},
 	}
 	if teamId != 0 {
@@ -230,6 +234,35 @@ func (s *TeamService) FindTeamJoinRequest(userId int64, teamId int64, startTime 
 	_ = s.TeamJoinRequestService.Find(
 		&result,
 		&ParamArgs{"?user_id": userId},
+		whereArgsList,
+		&OrderLimitArgs{"team_join_request.id desc", 0},
+	)
+	return result
+}
+
+// FindSelfTeamJoinRequest 获取用户自身的团队加入申请列表
+func (s *TeamService) FindSelfTeamJoinRequest(userId int64, teamId int64, startTime string) []SelfTeamJoinRequestsQueryResItem {
+	var result []SelfTeamJoinRequestsQueryResItem
+	whereArgsList := []WhereArgs{
+		{
+			Query: "team.deleted_at is null",
+		},
+		{
+			Query: "team_join_request.user_id = ? and team_join_request.status != ?",
+			Args:  []any{userId, models.TeamJoinRequestStatusPending},
+		},
+	}
+	if teamId != 0 {
+		whereArgsList = append(whereArgsList, WhereArgs{Query: "team_join_request.team_id = ?", Args: []any{teamId}})
+	}
+	if startTime != "" {
+		whereArgsList = append(whereArgsList, WhereArgs{
+			Query: "team_join_request.created_at >= ? and team_join_request.first_displayed_at is null",
+			Args:  []any{startTime}},
+		)
+	}
+	_ = s.TeamJoinRequestService.Find(
+		&result,
 		whereArgsList,
 		&OrderLimitArgs{"team_join_request.id desc", 0},
 	)

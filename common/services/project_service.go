@@ -131,6 +131,7 @@ type ProjectQuery struct {
 	CreatorUser          User                   `gorm:"embedded;embeddedPrefix:u__" json:"creator" join:"user,u;inner;id,pm.user_id"`
 	SelfPermType         models.ProjectPermType `gorm:"-" json:"self_perm_type"`
 	IsInTeam             bool                   `gorm:"-" json:"is_in_team"`
+	IsInvited            bool                   `gorm:"-" json:"is_invited"`
 }
 
 type SelfProjectQuery struct { // 通过邀请进入的项目
@@ -194,11 +195,13 @@ func (s *ProjectService) findProject(teamId int64, userId int64, projectIdList *
 	for i := range selfProjectQueryResult {
 		selfProjectQueryResult[i].SelfPermType = selfProjectQueryResult[i].SelfProjectMember.PermType
 		selfProjectQueryResult[i].IsInTeam = selfProjectQueryResult[i].SelfTeamMember.Id > 0
+		selfProjectQueryResult[i].IsInvited = true
 		result[i] = &selfProjectQueryResult[i].ProjectQuery
 	}
 	for i := range publishProjectQueryResult {
 		publishProjectQueryResult[i].SelfPermType = publishProjectQueryResult[i].Project.PermType
 		selfProjectQueryResult[i].IsInTeam = true
+		selfProjectQueryResult[i].IsInvited = false
 		result[i+selfProjectQueryResultLen] = &publishProjectQueryResult[i].ProjectQuery
 	}
 
@@ -257,23 +260,27 @@ func (s *ProjectService) FindProjectMember(projectId int64) []ProjectMemberQuery
 	return result
 }
 
-type projectJoinRequestQuery struct {
-	ProjectMember      ProjectMember      `gorm:"-" json:"-" join:";inner;project_id,project_id;user_id,?user_id"` // 自己的（非申请人的）权限
+type SelfProjectJoinRequestQuery struct {
 	Project            Project            `gorm:"embedded;embeddedPrefix:project__" json:"project" join:";inner;id,project_id"`
-	User               User               `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,user_id"`
 	ProjectJoinRequest ProjectJoinRequest `gorm:"embedded;embeddedPrefix:project_join_request__" json:"request" table:""`
 }
 
+type ProjectJoinRequestQuery struct {
+	SelfProjectJoinRequestQuery
+	ProjectMember ProjectMember `gorm:"-" json:"-" join:";inner;project_id,project_id;user_id,?user_id"` // 自己的（非申请人的）权限
+	User          User          `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,user_id"`
+}
+
 // FindProjectJoinRequest 获取用户所创建或担任管理员的项目的加入申请列表
-func (s *ProjectService) FindProjectJoinRequest(userId int64, projectId int64, startTime string) []projectJoinRequestQuery {
-	var result []projectJoinRequestQuery
+func (s *ProjectService) FindProjectJoinRequest(userId int64, projectId int64, startTime string) []ProjectJoinRequestQuery {
+	var result []ProjectJoinRequestQuery
 	whereArgsList := []WhereArgs{
 		{
 			Query: "project_member.deleted_at is null and project.deleted_at is null and user.deleted_at is null",
 		},
 		{
-			Query: "project_member.perm_type >= ? and project_member.perm_type <= ? and project_join_request.status = ?",
-			Args:  []any{models.ProjectPermTypeAdmin, models.ProjectPermTypeCreator, models.ProjectJoinRequestStatusPending},
+			Query: "project_member.perm_type >= ? and project_member.perm_type <= ?",
+			Args:  []any{models.ProjectPermTypeAdmin, models.ProjectPermTypeCreator},
 		},
 	}
 	if projectId != 0 {
@@ -288,6 +295,35 @@ func (s *ProjectService) FindProjectJoinRequest(userId int64, projectId int64, s
 	_ = s.ProjectJoinRequestService.Find(
 		&result,
 		&ParamArgs{"?user_id": userId},
+		whereArgsList,
+		&OrderLimitArgs{"project_join_request.id desc", 0},
+	)
+	return result
+}
+
+// FindSelfProjectJoinRequest 获取用户自身的项目加入申请列表
+func (s *ProjectService) FindSelfProjectJoinRequest(userId int64, projectId int64, startTime string) []SelfProjectJoinRequestQuery {
+	var result []SelfProjectJoinRequestQuery
+	whereArgsList := []WhereArgs{
+		{
+			Query: "project.deleted_at is null",
+		},
+		{
+			Query: "project_join_request.user_id = ? and project_join_request.status != ?",
+			Args:  []any{userId, models.ProjectJoinRequestStatusPending},
+		},
+	}
+	if projectId != 0 {
+		whereArgsList = append(whereArgsList, WhereArgs{Query: "project_join_request.project_id = ?", Args: []any{projectId}})
+	}
+	if startTime != "" {
+		whereArgsList = append(whereArgsList, WhereArgs{
+			Query: "project_join_request.created_at >= ? and project_join_request.first_displayed_at is null",
+			Args:  []any{startTime},
+		})
+	}
+	_ = s.ProjectJoinRequestService.Find(
+		&result,
 		whereArgsList,
 		&OrderLimitArgs{"project_join_request.id desc", 0},
 	)
