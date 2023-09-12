@@ -5,6 +5,7 @@ import (
 	"protodesign.cn/kcserver/common"
 	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/utils/sliceutil"
+	"protodesign.cn/kcserver/utils/str"
 	"protodesign.cn/kcserver/utils/time"
 	"strings"
 )
@@ -62,6 +63,24 @@ func (model Document) MarshalJSON() ([]byte, error) {
 	return models.MarshalJSON(model)
 }
 
+type DocumentTeam struct {
+	Id   int64  `json:"id"`
+	Name string `json:"name"`
+}
+
+func (model DocumentTeam) MarshalJSON() ([]byte, error) {
+	return models.MarshalJSON(model)
+}
+
+type DocumentProject struct {
+	Id   int64  `json:"id"`
+	Name string `json:"name"`
+}
+
+func (model DocumentProject) MarshalJSON() ([]byte, error) {
+	return models.MarshalJSON(model)
+}
+
 type DocumentFavorites struct {
 	Id         int64 `json:"id"`
 	IsFavorite bool  `json:"is_favorite"`
@@ -97,8 +116,10 @@ func (model DocumentPermissionRequests) MarshalJSON() ([]byte, error) {
 }
 
 type DocumentQueryResItem struct {
-	Document Document `gorm:"embedded;embeddedPrefix:document__" json:"document" join:";inner;id,[#document_id document_id]"`
-	User     User     `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,[#user_id document.user_id]"`
+	Document Document         `gorm:"embedded;embeddedPrefix:document__" json:"document" join:";inner;id,[#document_id document_id]"`
+	User     User             `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,[#user_id document.user_id]"`
+	Team     *DocumentTeam    `gorm:"embedded;embeddedPrefix:team__" json:"team" join:";left;id,document.team_id"`
+	Project  *DocumentProject `gorm:"embedded;embeddedPrefix:project__" json:"project" join:";left;id,document.project_id"`
 }
 
 type AccessRecordAndFavoritesQueryResItem struct {
@@ -111,12 +132,12 @@ type AccessRecordAndFavoritesQueryResItem struct {
 func (s *DocumentService) FindRecycleBinByUserId(userId int64, projectId int64) *[]AccessRecordAndFavoritesQueryResItem {
 	var result []AccessRecordAndFavoritesQueryResItem
 	whereArgsList := []WhereArgs{
-		{"document.user_id = ? and document.deleted_at is not null and document.purged_at is null", []any{userId}},
+		{"document.deleted_at is not null and document.purged_at is null", nil},
 	}
 	if projectId > 0 {
 		whereArgsList = append(whereArgsList, WhereArgs{"document.project_id = ?", []any{projectId}})
 	} else {
-		whereArgsList = append(whereArgsList, WhereArgs{"document.project_id is null or document.project_id = 0", nil})
+		whereArgsList = append(whereArgsList, WhereArgs{"document.user_id = ? and document.project_id is null or document.project_id = 0", []any{userId}})
 	}
 	_ = s.Find(
 		&result,
@@ -172,8 +193,6 @@ func (s *DocumentService) FindFavoritesByUserId(userId int64, projectId int64) *
 	}
 	if projectId > 0 {
 		whereArgsList = append(whereArgsList, WhereArgs{"document.project_id = ?", []any{projectId}})
-	} else {
-		whereArgsList = append(whereArgsList, WhereArgs{"document.project_id is null or document.project_id = 0", nil})
 	}
 	_ = s.DocumentFavoritesService.Find(
 		&result,
@@ -261,19 +280,29 @@ func (s *DocumentService) GetDocumentInfoByDocumentAndUserId(documentId int64, u
 		models.ResourceTypeDoc, documentId, models.GranteeTypeExternal,
 	)
 	if result.DocumentPermission.PermType == models.PermTypeNone {
-		_ = s.DocumentPermissionService.Count(
-			&result.SharesCount,
-			"resource_type = ? and resource_id = ? and grantee_type = ?",
-			models.ResourceTypeDoc, documentId, models.GranteeTypeExternal,
-		)
-		if result.SharesCount < 5 {
-			switch result.Document.DocType {
-			case models.DocTypePublicReadable:
-				result.DocumentPermission.PermType = models.PermTypeReadOnly
-			case models.DocTypePublicCommentable:
-				result.DocumentPermission.PermType = models.PermTypeCommentable
-			case models.DocTypePublicEditable:
-				result.DocumentPermission.PermType = models.PermTypeEditable
+		projectId := str.DefaultToInt(result.Document.ProjectId, 0)
+		if projectId > 0 {
+			projectService := NewProjectService()
+			projectPermType, err := projectService.GetProjectPermTypeByForUser(projectId, userId)
+			if err == nil && projectPermType != nil {
+				result.DocumentPermission.PermType = (*projectPermType).ToPermType()
+			}
+		}
+		if result.DocumentPermission.PermType == models.PermTypeNone {
+			_ = s.DocumentPermissionService.Count(
+				&result.SharesCount,
+				"resource_type = ? and resource_id = ? and grantee_type = ?",
+				models.ResourceTypeDoc, documentId, models.GranteeTypeExternal,
+			)
+			if result.SharesCount < 5 {
+				switch result.Document.DocType {
+				case models.DocTypePublicReadable:
+					result.DocumentPermission.PermType = models.PermTypeReadOnly
+				case models.DocTypePublicCommentable:
+					result.DocumentPermission.PermType = models.PermTypeCommentable
+				case models.DocTypePublicEditable:
+					result.DocumentPermission.PermType = models.PermTypeEditable
+				}
 			}
 		}
 	}
@@ -359,7 +388,7 @@ func (s *DocumentService) GetDocumentPermissionByDocumentAndUserId(permType *mod
 	if err != nil {
 		return nil, PermSourceTypeNone, err
 	}
-	if *permType > models.PermType(*projectPermType) || (*permType == models.PermType(*projectPermType) && permSource == PermSourceTypeCustom) {
+	if *permType > (*projectPermType).ToPermType() || (*permType == (*projectPermType).ToPermType() && permSource == PermSourceTypeCustom) {
 		return documentPermission, permSource, nil
 	} else {
 		*permType = models.PermType(*projectPermType)

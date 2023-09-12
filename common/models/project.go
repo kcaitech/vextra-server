@@ -15,6 +15,16 @@ const (
 	ProjectPermTypeCreator                            // 创建者
 )
 
+func (projectPermType ProjectPermType) ToPermType() PermType {
+	permType := PermType(projectPermType)
+	if permType < PermTypeNone {
+		permType = PermTypeNone
+	} else if permType > PermTypeEditable {
+		permType = PermTypeEditable
+	}
+	return permType
+}
+
 // Project 项目
 type Project struct {
 	BaseModel

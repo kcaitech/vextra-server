@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"log"
@@ -41,11 +42,32 @@ func DeleteUserDocument(c *gin.Context) {
 		response.BadRequest(c, "参数错误：doc_id")
 		return
 	}
-	if _, err := services.NewDocumentService().Delete(
-		"user_id = ? and id = ?", userId, documentId,
-	); err != nil && err != services.ErrRecordNotFound {
-		response.Fail(c, "删除错误")
+	documentService := services.NewDocumentService()
+	document := models.Document{}
+	if documentService.GetById(documentId, &document) != nil {
+		response.BadRequest(c, "文档不存在")
 		return
+	}
+	if document.ProjectId == 0 {
+		if _, err := services.NewDocumentService().Delete(
+			"user_id = ? and id = ?", userId, documentId,
+		); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
+			response.Fail(c, "删除错误")
+			return
+		}
+	} else {
+		projectService := services.NewProjectService()
+		projectPermType, err := projectService.GetProjectPermTypeByForUser(document.ProjectId, userId)
+		if err != nil || projectPermType == nil || (*projectPermType) < models.ProjectPermTypeEditable {
+			response.Forbidden(c, "")
+			return
+		}
+		if _, err := services.NewDocumentService().Delete(
+			"id = ?", documentId,
+		); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
+			response.Fail(c, "删除错误")
+			return
+		}
 	}
 	response.Success(c, "")
 }

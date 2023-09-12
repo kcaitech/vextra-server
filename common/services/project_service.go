@@ -200,8 +200,8 @@ func (s *ProjectService) findProject(teamId int64, userId int64, projectIdList *
 	}
 	for i := range publishProjectQueryResult {
 		publishProjectQueryResult[i].SelfPermType = publishProjectQueryResult[i].Project.PermType
-		selfProjectQueryResult[i].IsInTeam = true
-		selfProjectQueryResult[i].IsInvited = false
+		publishProjectQueryResult[i].IsInTeam = true
+		publishProjectQueryResult[i].IsInvited = false
 		result[i+selfProjectQueryResultLen] = &publishProjectQueryResult[i].ProjectQuery
 	}
 
