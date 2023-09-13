@@ -1,0 +1,22 @@
+# 创建mongos的nodeport服务
+kind: Service
+apiVersion: v1
+metadata:
+  name: mongos-nodeport
+  namespace: psmdb
+  labels:
+    app.kubernetes.io/name: percona-server-mongodb
+spec:
+  type: NodePort
+  selector:
+    app.kubernetes.io/component: mongos
+    app.kubernetes.io/instance: percona-mongodb-psmdb
+    app.kubernetes.io/managed-by: percona-server-mongodb-operator
+    app.kubernetes.io/name: percona-server-mongodb
+    app.kubernetes.io/part-of: percona-server-mongodb
+  ports:
+    - name: mongos
+      protocol: TCP
+      port: 27017
+      targetPort: 27017
+      nodePort: 30200

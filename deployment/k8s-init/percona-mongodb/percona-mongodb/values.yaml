@@ -247,7 +247,6 @@ replsets:
     # schedulerName: ""
     resources:
       limits:
-        cpu: "300m"
         memory: "0.5G"
       requests:
         cpu: "300m"
@@ -265,7 +264,7 @@ replsets:
         accessModes: [ "ReadWriteOnce" ]
         resources:
           requests:
-            storage: 1Gi
+            storage: 10Gi
 
 sharding:
   enabled: true
@@ -338,7 +337,6 @@ sharding:
       #   some-label: some-key
     resources:
       limits:
-        cpu: "300m"
         memory: "0.5G"
       requests:
         cpu: "300m"
@@ -357,7 +355,7 @@ sharding:
         accessModes: [ "ReadWriteOnce" ]
         resources:
           requests:
-            storage: 1Gi
+            storage: 5Gi
 
   mongos:
     size: 3
@@ -409,13 +407,12 @@ sharding:
       maxUnavailable: 1
     resources:
       limits:
-        cpu: "300m"
         memory: "0.5G"
       requests:
         cpu: "100m"
         memory: "100M"
     expose:
-      exposeType: NodePort
+      exposeType: ClusterIP
       # servicePerPod: true
       # loadBalancerSourceRanges:
       #   - 10.0.0.0/8
