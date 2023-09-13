@@ -377,6 +377,14 @@ jiva:
 #      tag: 2.12.1
 
 cstor:
+  # Enable openebs-ndm as root dependency not as sub dependency.
+  # openebs
+  # | - cstor(enable)
+  # | | - openebs-ndm(disable)
+  # | - openebs-ndm(enable)
+  enabled: true
+  openebsNDM:
+    enabled: false
 
   # non csi configuration
   pool:
@@ -400,15 +408,6 @@ cstor:
   # cstor chart dependency tree is here -
   # cstor
   # | - openebs-ndm
-
-  # Enable openebs-ndm as root dependency not as sub dependency.
-  # openebs
-  # | - cstor(enable)
-  # | | - openebs-ndm(disable)
-  # | - openebs-ndm(enable)
-  enabled: false
-  openebsNDM:
-    enabled: false
 
   # Sample configuration if you want to configure cstor csi driver with custom values.
   # This is a small part of the full configuration. Full configuration available

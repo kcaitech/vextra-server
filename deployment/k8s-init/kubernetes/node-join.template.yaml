@@ -1,0 +1,25 @@
+kind: JoinConfiguration
+apiVersion: kubeadm.k8s.io/v1beta3
+discovery:
+  bootstrapToken:
+    token: $join_token
+    apiServerEndpoint: $apiserver_domain:$apiserver_port
+    unsafeSkipCAVerification: true
+  timeout: 5m0s
+  tlsBootstrapToken: $join_token
+nodeRegistration:
+  name: $node_name
+  criSocket: unix:///var/run/containerd/containerd.sock
+  imagePullPolicy: IfNotPresent
+  taints: []
+caCertPath: "/etc/kubernetes/pki/ca.crt"
+---
+kind: KubeletConfiguration
+apiVersion: kubelet.config.k8s.io/v1beta1
+systemReserved:
+  cpu: "200m"
+  memory: "0.5Gi"
+kubeReserved:
+  cpu: "100m"
+  memory: "200Mi"
+  ephemeral-storage: "200Mi"

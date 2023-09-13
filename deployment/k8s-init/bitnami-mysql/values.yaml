@@ -43,7 +43,8 @@ clusterDomain: cluster.local
 commonAnnotations: {}
 ## @param commonLabels Common labels to add to all MySQL resources (sub-charts are not considered). Evaluated as a template
 ##
-commonLabels: {}
+commonLabels:
+  app: mysql
 ## @param extraDeploy Array with extra yaml to deploy with the chart. Evaluated as a template
 ##
 extraDeploy: []
@@ -272,7 +273,16 @@ primary:
   ## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
   ## Note: podAffinityPreset, podAntiAffinityPreset, and  nodeAffinityPreset will be ignored when it's set
   ##
-  affinity: {}
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values:
+                  - mysql
+          topologyKey: "kubernetes.io/hostname"
   ## @param primary.nodeSelector Node labels for MySQL primary pods assignment
   ## ref: https://kubernetes.io/docs/user-guide/node-selection/
   ##
@@ -438,7 +448,7 @@ primary:
     existingClaim: ""
     ## @param primary.persistence.subPath The name of a volume's sub path to mount for persistence
     ##
-    subPath: "mysql-data"
+    subPath: ""
     ## @param primary.persistence.storageClass MySQL primary persistent volume storage Class
     ## If defined, storageClassName: <storageClass>
     ## If set to "-", storageClassName: "", which disables dynamic provisioning
@@ -456,7 +466,7 @@ primary:
       - ReadWriteOnce
     ## @param primary.persistence.size MySQL primary persistent volume size
     ##
-    size: 1Gi
+    size: 10Gi
     ## @param primary.persistence.selector Selector to match an existing Persistent Volume
     ## selector:
     ##   matchLabels:
@@ -558,7 +568,7 @@ primary:
 secondary:
   ## @param secondary.name Name of the secondary database (eg secondary, slave, ...)
   ##
-  name: secondary
+  name: slave
   ## @param secondary.replicaCount Number of MySQL secondary replicas
   ##
   replicaCount: 2
@@ -597,6 +607,8 @@ secondary:
     collation-server=utf8_general_ci
     slow_query_log=0
     long_query_time=10.0
+    read-only=1
+    super-read-only = 1
 
     [client]
     port=3306
@@ -653,7 +665,16 @@ secondary:
   ## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
   ## Note: podAffinityPreset, podAntiAffinityPreset, and  nodeAffinityPreset will be ignored when it's set
   ##
-  affinity: {}
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values:
+                  - mysql
+          topologyKey: "kubernetes.io/hostname"
   ## @param secondary.nodeSelector Node labels for MySQL secondary pods assignment
   ## ref: https://kubernetes.io/docs/user-guide/node-selection/
   ##
@@ -819,7 +840,7 @@ secondary:
     existingClaim: ""
     ## @param secondary.persistence.subPath The name of a volume's sub path to mount for persistence
     ##
-    subPath: "mysql-slave-data"
+    subPath: ""
     ## @param secondary.persistence.storageClass MySQL secondary persistent volume storage Class
     ## If defined, storageClassName: <storageClass>
     ## If set to "-", storageClassName: "", which disables dynamic provisioning
@@ -837,7 +858,7 @@ secondary:
       - ReadWriteOnce
     ## @param secondary.persistence.size MySQL secondary persistent volume size
     ##
-    size: 1Gi
+    size: 10Gi
     ## @param secondary.persistence.selector Selector to match an existing Persistent Volume
     ## selector:
     ##   matchLabels:

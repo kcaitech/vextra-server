@@ -1,13 +1,23 @@
 要在root用户下运行
 分别进入到需要安装的软件的目录
 1) 查看readme
-2) chmod +x install.sh
+2) chmod +x install.sh 或 find . -type f -name "*.sh" -exec chmod +x {} \;
 3) ./install.sh
 
 典型顺序：
 1. init.sh
 2. kubernetes
 3. helm
-4. kubeapps
-5. kuboard
-6. openebs
+4. kuboard
+5. openebs
+6. pxc-mysql
+7. percona-mongodb
+8. redis
+9. minio
+
+调整apiserver对nodeport的限制
+vim /etc/kubernetes/manifests/kube-apiserver.yaml
+在spec.containers[0].command中添加
+- --service-node-port-range=10000-65535
+重启apiserver
+kubectl -n kube-system get pod | grep kube-apiserver-$(hostname) | awk '{print $1}' | xargs -i kubectl -n kube-system delete pod {}

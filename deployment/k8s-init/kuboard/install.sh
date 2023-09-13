@@ -19,13 +19,13 @@ fi
 docker run -d \
   --restart=unless-stopped \
   --name=kuboard \
-  -p 30002:80/tcp \
+  -p 30001:80/tcp \
   -p 10081:10081/tcp \
-  -e KUBOARD_ENDPOINT="http://$this_ip:30002" \
+  -e KUBOARD_ENDPOINT="http://$this_ip:30001" \
   -e KUBOARD_AGENT_SERVER_TCP_PORT="10081" \
   -v /root/kuboard-data:/data \
   swr.cn-east-2.myhuaweicloud.com/kuboard/kuboard:v3
 
 # 输出信息
-echo "http://$this_ip:30002"
+echo "http://$this_ip:30001"
 echo "初始账号密码：admin Kuboard123"

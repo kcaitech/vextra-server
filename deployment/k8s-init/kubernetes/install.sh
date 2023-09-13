@@ -146,54 +146,12 @@ systemctl restart systemd-timesyncd
 
 # 设置内核参数
 echo "设置内核参数"
-cat <<EOF | tee /etc/modules-load.d/k8s.conf
-overlay
-br_netfilter
-EOF
+echo "overlay" >> /etc/modules-load.d/k8s.conf
+echo "br_netfilter" >> /etc/modules-load.d/k8s.conf
 modprobe overlay
 modprobe br_netfilter
-cat << EOF > /etc/sysctl.d/k8s.conf
-net.bridge.bridge-nf-call-ip6tables = 1
-net.bridge.bridge-nf-call-iptables = 1
-net.ipv4.ip_forward = 1
-
-fs.may_detach_mounts = 1
-vm.overcommit_memory=1
-vm.panic_on_oom=0
-fs.inotify.max_user_watches=89100
-fs.file-max=52706963
-fs.nr_open=52706963
-net.netfilter.nf_conntrack_max=2310720
-
-net.ipv4.tcp_keepalive_time = 600
-net.ipv4.tcp_keepalive_probes = 3
-net.ipv4.tcp_keepalive_intvl =15
-net.ipv4.tcp_max_tw_buckets = 36000
-net.ipv4.tcp_tw_reuse = 1
-net.ipv4.tcp_max_orphans = 327680
-net.ipv4.tcp_orphan_retries = 3
-net.ipv4.tcp_syncookies = 1
-net.ipv4.tcp_max_syn_backlog = 16384
-net.ipv4.ip_conntrack_max = 65536
-net.ipv4.tcp_max_syn_backlog = 16384
-net.ipv4.tcp_timestamps = 0
-net.core.somaxconn = 16384
-
-net.ipv6.conf.all.disable_ipv6 = 0
-net.ipv6.conf.default.disable_ipv6 = 0
-net.ipv6.conf.lo.disable_ipv6 = 0
-net.ipv6.conf.all.forwarding = 1
-EOF
-cat << EOF >> /etc/security/limits.conf
-* soft nproc 102400
-* hard nproc 104800
-* soft nofile 102400
-* hard nofile 104800
-root soft nproc 102400
-root hard nproc 104800
-root soft nofile 102400
-root hard nofile 104800
-EOF
+cp etc_sysctl.d_k8s.conf /etc/sysctl.d/k8s.conf
+cat etc_security_limits.conf >> /etc/security/limits.conf
 sysctl -p
 sysctl --system
 
@@ -221,21 +179,7 @@ apt update
 apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin docker-compose
 # 设置docker参数
 echo "设置docker参数"
-cat << EOF > /etc/docker/daemon.json
-{
-    "exec-opts": ["native.cgroupdriver=systemd"],
-    "log-driver": "json-file",
-    "log-opts": {
-        "max-size": "100m"
-    },
-    "storage-driver": "overlay2",
-    "registry-mirrors": [
-      "https://jsoixv4u.mirror.aliyuncs.com",
-      "https://docker.mirrors.ustc.edu.cn",
-      "http://hub-mirror.c.163.com"
-    ]
-}
-EOF
+cp etc_docker_daemon.json /etc/docker/daemon.json
 # 重启docker服务
 echo "重启docker服务"
 systemctl enable --now docker
@@ -268,57 +212,8 @@ systemctl restart containerd
 # 配置haproxy
 if [[ "$init_type" == "1" || "$init_type" == "2" ]]; then
   echo "配置haproxy"
-  cat <<EOF > haproxy.cfg
-global
-  log 127.0.0.1 local2
-  chroot /var/lib/haproxy
-  pidfile /var/run/haproxy.pid
-  maxconn 4096
-  stats socket /var/lib/haproxy/stats.sock mode 660 level admin expose-fd listeners
-  stats timeout 30s
-  user haproxy
-  group haproxy
-  daemon
-
-defaults
-  log global
-  mode http
-  option httplog
-  option dontlognull
-  option http-server-close
-  option forwardfor except 127.0.0.0/8
-  option redispatch
-  retries 3
-  timeout http-request 10s
-  timeout queue 1m
-  timeout connect 10s
-  timeout client 1m
-  timeout server 1m
-  timeout http-keep-alive 10s
-  timeout check 10s
-  maxconn 3000
-
-frontend kube-apiserver
-  bind *:$apiserver_port
-  mode tcp
-  option tcplog
-  default_backend kube-apiserver
-
-listen stats
-  bind *:8888
-  mode http
-  stats enable
-  stats uri /stats
-  stats refresh 5s
-  stats show-node
-  stats auth kcai:kcai1212
-  stats realm Haproxy\ Statistics
-  log 127.0.0.1 local3 err
-
-backend kube-apiserver
-  mode tcp
-  balance roundrobin
-EOF
+  cp haproxy.template.cfg haproxy.cfg
+  sed -i "s/\$apiserver_port/$apiserver_port/g" haproxy.cfg
   for node in "${master_nodes[@]}"; do
     name=$(echo "$node" | awk '{print $1}')
     ip_port=$(echo "$node" | awk '{print $2}')
@@ -336,50 +231,17 @@ fi
 # 配置keepalived
 if [[ "$init_type" == "1" || "$init_type" == "2" ]]; then
   echo "配置keepalived"
-  cat <<EOF > keepalived.conf
-global_defs {
-  router_id VI_1_$node_name
-}
-
-vrrp_script check_haproxy {
-  script /usr/bin/check_haproxy.sh
-  interval 2
-  weight -30
-}
-
-vrrp_instance VI_1 {
-  state $keepalived_state
-  interface $net_card_name
-  virtual_router_id 51
-  priority 100
-  advert_int 1
-
-  authentication {
-    auth_type PASS
-    auth_pass kcai1212
-  }
-
-  virtual_ipaddress {
-    $keepalived_vip/24 dev $net_card_name
-  }
-
-  track_script {
-    check_haproxy
-  }
-}
-EOF
+  mkdir /usr/local/k8s-init/haproxy -p
+  cp keepalived.template.conf keepalived.conf
+  sed -i "s/\$node_name/$node_name/g" keepalived.conf
+  sed -i "s/\$keepalived_state/$keepalived_state/g" keepalived.conf
+  sed -i "s/\$net_card_name/$net_card_name/g" keepalived.conf
+  sed -i "s/\$keepalived_vip/$keepalived_vip/g" keepalived.conf
+  mv keepalived.conf /usr/local/k8s-init/haproxy/keepalived.conf
   # 配置check_haproxy.sh
   echo "配置check_haproxy.sh"
-  cat <<EOF > check_haproxy.sh
-#!/bin/bash
-count=`netstat -apn | grep 9443 | grep haproxy | wc -l`
-if [ \$count -gt 0 ]; then
-  exit 0
-else
-  exit 1
-fi
-EOF
-  chmod +x check_haproxy.sh
+  cp check_haproxy.sh /usr/local/k8s-init/haproxy/check_haproxy.sh
+  chmod +x /usr/local/k8s-init/haproxy/check_haproxy.sh
   # 以docker容器方式运行keepalived
   echo "以docker容器方式运行keepalived"
   docker run -d --name keepalived \
@@ -388,17 +250,15 @@ EOF
   --cap-add=NET_BROADCAST \
   --cap-add=NET_RAW \
   --restart=always \
-  -v "$(pwd)"/keepalived.conf:/container/service/keepalived/assets/keepalived.conf \
-  -v "$(pwd)"/check_haproxy.sh:/usr/bin/check_haproxy.sh \
+  -v /usr/local/k8s-init/haproxy/keepalived.conf:/container/service/keepalived/assets/keepalived.conf \
+  -v /usr/local/k8s-init/haproxy/check_haproxy.sh:/usr/bin/check_haproxy.sh \
   osixia/keepalived:2.0.20 --copy-service
 fi
 
 # 安装kubernetes相关组件
 echo "安装kubernetes相关组件"
 curl https://mirrors.aliyun.com/kubernetes/apt/doc/apt-key.gpg | apt-key add -
-cat <<EOF >/etc/apt/sources.list.d/kubernetes.list
-deb https://mirrors.aliyun.com/kubernetes/apt/ kubernetes-xenial main
-EOF
+echo "deb https://mirrors.aliyun.com/kubernetes/apt/ kubernetes-xenial main" > /etc/apt/sources.list.d/kubernetes.list
 apt update
 apt install -y kubelet=1.28.1-00 kubeadm=1.28.1-00
 if [[ "$init_type" == "1" || "$init_type" == "2" ]]; then
@@ -409,74 +269,23 @@ fi
 if [[ "$init_type" == "1" ]]; then
   # 设置kubernetes参数
   echo "设置kubernetes参数"
-  cat <<EOF > init-defaults.k8s.yaml
-kind: InitConfiguration
-apiVersion: kubeadm.k8s.io/v1beta3
-bootstrapTokens:
-- groups:
-  - system:bootstrappers:kubeadm:default-node-token
-  token: abcdef.0123456789abcdef
-  ttl: 24h0m0s
-  usages:
-  - signing
-  - authentication
-localAPIEndpoint:
-  advertiseAddress: $this_ip
-  bindPort: 6443
-nodeRegistration:
-  criSocket: unix:///var/run/containerd/containerd.sock
-  imagePullPolicy: IfNotPresent
-  name: $node_name
-  taints: []
----
-kind: ClusterConfiguration
-apiVersion: kubeadm.k8s.io/v1beta3
-certificatesDir: /etc/kubernetes/pki
-clusterName: kubernetes
-controllerManager: {}
-dns: {}
-etcd:
-  local:
-    dataDir: /var/lib/etcd
-imageRepository: registry.cn-hangzhou.aliyuncs.com/google_containers
-kubernetesVersion: 1.28.0
-networking:
-  dnsDomain: cluster.local
-  serviceSubnet: 10.96.0.0/12
-scheduler: {}
-controlPlaneEndpoint: $apiserver_domain:$apiserver_port
-apiServer:
-  timeoutForControlPlane: 4m0s
-  certSANs:
-  - kubernetes
-  - kubernetes.default
-  - kubernetes.default.svc
-  - kubernetes.default.svc.cluster.local
-  - localhost
-  - 127.0.0.1
-  - protodesign.cn
-  - www.protodesign.cn
-  - api.protodesign.cn
-  - test.protodesign.cn
-  - $apiserver_domain
-  - $apiserver_ip
-EOF
+  cp k8s-init.template.yaml k8s-init.yaml
   for node in "${master_nodes[@]}"; do
     name=$(echo "$node" | awk '{print $1}')
     ip_port=$(echo "$node" | awk '{print $2}')
     ip=$(echo "$ip_port" | cut -d: -f1)
-    echo "  - $name" >> init-defaults.k8s.yaml
-    echo "  - $ip" >> init-defaults.k8s.yaml
+    echo "    - $name" >> k8s-init.yaml
+    echo "    - $ip" >> k8s-init.yaml
   done
   # 手动修改参数：name、advertiseAddress等
   read -r -p "是否需要手动修改kubeadm init config参数（y/n）" init_type
   if [[ "$init_type" == "" || "$init_type" == "y" ]]; then
-      vim init-defaults.k8s.yaml
+      vim k8s-init.yaml
   fi
 
   # 初始化kubernetes集群
   echo "初始化kubernetes集群"
-  kubeadm init --config init-defaults.k8s.yaml --upload-certs | tee kubeadm-init.log
+  kubeadm init --config k8s-init.yaml --upload-certs | tee kubeadm-init.log
   mkdir -p $HOME/.kube
   cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
   chown "$(id -u):$(id -g)" $HOME/.kube/config
@@ -506,25 +315,9 @@ fi
 if [[ "$init_type" == "2" || "$init_type" == "3" ]]; then
   # 设置JoinConfiguration参数
   echo "设置JoinConfiguration参数"
-  cat <<EOF > join-defaults.k8s.yaml
-kind: JoinConfiguration
-apiVersion: kubeadm.k8s.io/v1beta3
-discovery:
-  bootstrapToken:
-    token: $join_token
-    apiServerEndpoint: $apiserver_domain:$apiserver_port
-    unsafeSkipCAVerification: true
-  timeout: 5m0s
-  tlsBootstrapToken: $join_token
-nodeRegistration:
-  name: $node_name
-  criSocket: unix:///var/run/containerd/containerd.sock
-  imagePullPolicy: IfNotPresent
-  taints: []
-caCertPath: "/etc/kubernetes/pki/ca.crt"
-EOF
+  cp node-join.template.yaml node-join.yaml
   if [ "$init_type" == "2" ]; then # 加入master节点
-  cat <<EOF >> join-defaults.k8s.yaml
+  cat <<EOF >> node-join.yaml
 controlPlane:
   localAPIEndpoint:
     advertiseAddress: $this_ip
@@ -534,7 +327,7 @@ EOF
   fi
   # 加入集群
   echo "加入集群"
-  kubeadm join --config join-defaults.k8s.yaml
+  kubeadm join --config node-join.yaml
   # 设置kubectl
   if [[ "$init_type" == "2" ]]; then
     mkdir -p $HOME/.kube
