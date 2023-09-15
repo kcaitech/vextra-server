@@ -2,6 +2,8 @@
 
 # 安装bitnami-mysql
 
+set -e
+
 # 添加仓库
 helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo update

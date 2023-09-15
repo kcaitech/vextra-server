@@ -6,6 +6,8 @@
 #   2、将其余两台主机添加到/etc/hosts，运行../kubernetes/install.sh后即已添加
 # 本脚本仅在第一个master节点运行即可
 
+set -e
+
 # 获取网卡名称
 read -r -p "请输入网卡名称（eth0）" net_card_name
 if [[ "$net_card_name" == "" ]]; then

@@ -15,6 +15,8 @@
 
 # 运行环境：Ubuntu 22.04.3 LTS
 
+set -e
+
 echo "请选择初始化类型"
 echo "1) 集群初始化"
 echo "2) master节点初始化"
@@ -63,10 +65,9 @@ done
 # 获取keepalived的vip和state
 if [[ "$init_type" == "1" || "$init_type" == "2" ]]; then
   echo "请输入keepalived的vip和state（MASTER/BACKUP）"
-  read -r -p "vip（同一网段可只输入最后一个数字）：" keepalived_vip
+  read -r -p "vip（同一网段可只输入最后一个数字）（19）：" keepalived_vip
   if [[ "$keepalived_vip" == "" ]]; then
-    echo "输入错误"
-    exit 1
+    keepalived_vip="19"
   fi
   # 若只输入了vip的最后一个数字，则使用this_ip的前三个数字拼接
   if [[ "$keepalived_vip" =~ ^[0-9]+$ ]]; then
@@ -111,7 +112,7 @@ fi
 
 # 获取join时需要的token
 if [[ "$init_type" == "2" || "$init_type" == "3" ]]; then
-  echo "请输入join token（可在集群上执行kubeadm token create --print-join-command获取）"
+  echo "请输入join token（可在集群上执行以下命令获取: kubeadm token create --print-join-command | awk -F'--token ' '{print $2}' | awk '{print $1}'）"
   read -r join_token
   if [[ "$join_token" == "" ]]; then
     echo "输入错误"
@@ -128,38 +129,6 @@ if [[ "$init_type" == "2" ]]; then
     exit 1
   fi
 fi
-
-# 获取网络代理地址
-echo "请输入网络代理地址（http、socks5）（包含协议、ip和端口），不设置代理请输入空格"
-read -r -p "（http://$gateway_ip:10809）" proxy_address
-if [[ "$proxy_address" == "" ]]; then
-  proxy_address="http://$gateway_ip:10809"
-elif [[ "$proxy_address" == " " ]]; then
-  proxy_address=""
-fi
-
-# 设置时区
-echo "设置时区"
-timedatectl set-timezone Asia/Shanghai
-echo "NTP=cg.lzu.edu.cn" >> /etc/systemd/timesyncd.conf
-systemctl restart systemd-timesyncd
-
-# 设置内核参数
-echo "设置内核参数"
-echo "overlay" >> /etc/modules-load.d/k8s.conf
-echo "br_netfilter" >> /etc/modules-load.d/k8s.conf
-modprobe overlay
-modprobe br_netfilter
-cp etc_sysctl.d_k8s.conf /etc/sysctl.d/k8s.conf
-cat etc_security_limits.conf >> /etc/security/limits.conf
-sysctl -p
-sysctl --system
-
-# 设置apt源
-echo "设置apt源"
-formatted_date=$(date +"%Y%m%d%H%M%S%3N")
-cp /etc/apt/sources.list /etc/apt/sources.list.bak.$formatted_date
-sed -i 's@//.*archive.ubuntu.com@//mirrors.ustc.edu.cn@g' /etc/apt/sources.list
 
 # 安装基础软件
 echo "安装基础软件"
@@ -262,7 +231,9 @@ echo "deb https://mirrors.aliyun.com/kubernetes/apt/ kubernetes-xenial main" > /
 apt update
 apt install -y kubelet=1.28.1-00 kubeadm=1.28.1-00
 if [[ "$init_type" == "1" || "$init_type" == "2" ]]; then
-  apt install -y kubectl=1.28.1-00
+  if ! dpkg -l | grep -q kubectl; then
+    apt install -y kubectl=1.28.1-00
+  fi
 fi
 
 # 创建集群
@@ -270,6 +241,11 @@ if [[ "$init_type" == "1" ]]; then
   # 设置kubernetes参数
   echo "设置kubernetes参数"
   cp k8s-init.template.yaml k8s-init.yaml
+  sed -i "s/\$this_ip/$this_ip/g" k8s-init.yaml
+  sed -i "s/\$node_name/$node_name/g" k8s-init.yaml
+  sed -i "s/\$apiserver_domain/$apiserver_domain/g" k8s-init.yaml
+  sed -i "s/\$apiserver_port/$apiserver_port/g" k8s-init.yaml
+  sed -i "s/\$apiserver_ip/$apiserver_ip/g" k8s-init.yaml
   for node in "${master_nodes[@]}"; do
     name=$(echo "$node" | awk '{print $1}')
     ip_port=$(echo "$node" | awk '{print $2}')
@@ -289,18 +265,6 @@ if [[ "$init_type" == "1" ]]; then
   mkdir -p $HOME/.kube
   cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
   chown "$(id -u):$(id -g)" $HOME/.kube/config
-
-  # 下载配置文件 calico
-  echo "下载配置文件 calico"
-  export http_proxy=$proxy_address
-  export https_proxy=$proxy_address
-  export HTTP_PROXY=$proxy_address
-  export HTTPS_PROXY=$proxy_address
-  curl https://docs.projectcalico.org/manifests/calico.yaml -LO
-  export HTTP_PROXY=
-  export HTTPS_PROXY=
-  export http_proxy=
-  export https_proxy=
 
   # 安装网络插件calico
   echo "安装网络插件calico"

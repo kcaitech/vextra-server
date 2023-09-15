@@ -2,6 +2,8 @@
 
 # 安装OpenEBS
 
+set -e
+
 # 添加仓库
 helm repo add openebs https://openebs.github.io/charts
 helm repo update
@@ -25,3 +27,5 @@ echo "创建cStor存储类："
 echo "kubectl apply -f cstor-sc.yaml"
 echo "查看cStor存储类状态："
 echo "kubectl get sc cstor-sc"
+echo "删除默认储存类："
+echo "kubectl delete sc openebs-hostpath openebs-device openebs-jiva-default openebs-snapshot-promoter"

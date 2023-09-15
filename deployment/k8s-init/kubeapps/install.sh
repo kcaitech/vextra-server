@@ -2,6 +2,8 @@
 
 # 安装kubeapps
 
+set -e
+
 # 添加bitnami helm仓库
 helm repo add bitnami https://charts.bitnami.com/bitnami
 # 安装

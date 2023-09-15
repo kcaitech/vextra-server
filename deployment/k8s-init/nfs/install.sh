@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 apt update && apt install -y nfs-kernel-server
 cat << EOF > /etc/exports
 /root/nfs_root/ *(insecure,rw,sync,no_root_squash)

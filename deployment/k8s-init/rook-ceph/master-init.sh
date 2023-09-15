@@ -6,6 +6,8 @@
 # 2、修改operator.yaml中的一些镜像地址：data.ROOK_CSI_CEPH_IMAGE等
 # 3、修改cluster.yaml中的spec.storage.nodes
 
+set -e
+
 
 # 获取用于ceph的所有node的名称，多个之间以,隔开
 echo "请输入获取用于ceph的所有node的名称，多个之间以,隔开"

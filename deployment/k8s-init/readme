@@ -21,3 +21,5 @@ vim /etc/kubernetes/manifests/kube-apiserver.yaml
 - --service-node-port-range=10000-65535
 重启apiserver
 kubectl -n kube-system get pod | grep kube-apiserver-$(hostname) | awk '{print $1}' | xargs -i kubectl -n kube-system delete pod {}
+
+TODO: 所有安装的软件都要设定好固定版本 apt install

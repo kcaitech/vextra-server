@@ -4,6 +4,8 @@
 # 运行本脚本前：
 # 1、确保要作为osd的节点已挂载未格式化的硬盘，可运行lsblk -f、fdisk -l等命令查看
 
+set -e
+
 apt update
 apt install -y lvm2 gdisk
 

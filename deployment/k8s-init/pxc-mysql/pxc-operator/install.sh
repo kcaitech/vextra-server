@@ -2,6 +2,8 @@
 
 # 安装pxc-operator
 
+set -e
+
 # 添加仓库
 helm repo add percona https://percona.github.io/percona-helm-charts/
 helm repo update

@@ -2,6 +2,8 @@
 
 # 安装kuboard
 
+set -e
+
 # 获取网卡名称
 read -r -p "请输入网卡名称（eth0）" net_card_name
 if [[ "$net_card_name" == "" ]]; then
