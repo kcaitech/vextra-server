@@ -1,0 +1,11 @@
+获取密码、启动测试容器连接redis
+REDIS_PASSWORD=$(kubectl get secret --namespace bitnami-redis bitnami-redis -o jsonpath="{.data.redis-password}" | base64 -d)
+kubectl run -it --rm redis-client --restart='Never' \
+--env REDIS_PASSWORD=$REDIS_PASSWORD \
+--image docker.io/bitnami/redis:7.2.1-debian-11-r0 \
+-- redis-cli -h bitnami-redis -p 26379 -a $REDIS_PASSWORD
+
+外部连接
+NODE_IP=$(kubectl get nodes --namespace bitnami-redis -o jsonpath="{.items[0].status.addresses[0].address}")
+NODE_PORT=$(kubectl get --namespace bitnami-redis -o jsonpath="{.spec.ports[0].nodePort}" services bitnami-redis)
+redis-cli -h $NODE_IP -p $NODE_PORT -a $REDIS_PASSWORD

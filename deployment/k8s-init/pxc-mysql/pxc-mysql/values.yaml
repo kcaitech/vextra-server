@@ -241,8 +241,7 @@ haproxy:
   labels:
     app: pxc-mysql-haproxy
   #  rack: rack-22
-  # serviceType: ClusterIP
-  serviceType: NodePort
+  serviceType: ClusterIP
   # externalTrafficPolicy: Cluster
   # runtimeClassName: image-rc
   # loadBalancerSourceRanges:
@@ -256,8 +255,7 @@ haproxy:
   # replicasLoadBalancerSourceRanges:
   #   - 10.0.0.0/8
   # replicasLoadBalancerIP: 127.0.0.1
-  # replicasServiceType: ClusterIP
-  replicasServiceType: NodePort
+  replicasServiceType: ClusterIP
   # replicasExternalTrafficPolicy: Cluster
   # replicasServiceAnnotations:
   #   service.beta.kubernetes.io/aws-load-balancer-backend-protocol: http

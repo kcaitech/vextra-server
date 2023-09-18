@@ -10,5 +10,5 @@ ROOT_PASSWORD=`kubectl -n pxc get secrets pxc-mysql-pxc-db-secrets -o jsonpath="
 kubectl -n pxc exec -ti pxc-mysql-pxc-db-pxc-0 -c pxc -- mysql -uroot -p"$ROOT_PASSWORD"
 
 mysql客户端远程登陆
-kubectl run -i --tty --rm percona-client --image=percona --restart=Never \
-  -- mysql -h pxc-mysql-pxc-db-haproxy-replicas.pxc.svc.cluster.local -uroot -p"$ROOT_PASSWORD"
+kubectl run -it --rm percona-client --image=percona --restart=Never \
+-- mysql -h pxc-mysql-pxc-db-haproxy-replicas.pxc.svc.cluster.local -uroot -p"$ROOT_PASSWORD"

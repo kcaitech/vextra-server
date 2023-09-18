@@ -32,7 +32,6 @@ evictionHard:
   nodefs.available: "10%"
   nodefs.inodesFree: "5%"
   imagefs.available: "15%"
-evictionSoft: {}
 ---
 kind: ClusterConfiguration
 apiVersion: kubeadm.k8s.io/v1beta3
@@ -52,6 +51,9 @@ networking:
 scheduler: {}
 controlPlaneEndpoint: $apiserver_domain:$apiserver_port
 apiServer:
+  ControlPlaneComponent:
+    extraArgs:
+      service-node-port-range: "30000-39999"
   timeoutForControlPlane: 4m0s
   certSANs:
     - kubernetes

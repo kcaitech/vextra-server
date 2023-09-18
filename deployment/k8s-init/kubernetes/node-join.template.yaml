@@ -13,20 +13,3 @@ nodeRegistration:
   imagePullPolicy: IfNotPresent
   taints: []
 caCertPath: "/etc/kubernetes/pki/ca.crt"
----
-kind: KubeletConfiguration
-apiVersion: kubelet.config.k8s.io/v1beta1
-maxPods: 1000
-systemReserved:
-  cpu: "200m"
-  memory: "0.5Gi"
-kubeReserved:
-  cpu: "200m"
-  memory: "0.5Gi"
-  ephemeral-storage: "1Gi"
-evictionHard:
-  memory.available: "100Mi"
-  nodefs.available: "10%"
-  nodefs.inodesFree: "5%"
-  imagefs.available: "15%"
-evictionSoft: {}

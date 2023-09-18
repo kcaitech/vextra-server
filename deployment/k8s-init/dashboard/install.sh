@@ -36,7 +36,6 @@ curl https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/re
 echo "安装dashboard"
 awk '
 BEGIN { flag_kind=0; flag_name=0; flag_target_port=0; }
-/king: / { flag_kind=0; flag_name=0; flag_target_port=0; }
 /kind: Service$/ { flag_kind=1; }
 flag_kind && /name: kubernetes-dashboard$/ { flag_name=1; }
 flag_name && /targetPort: 8443/ { flag_target_port=1; }

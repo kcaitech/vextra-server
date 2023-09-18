@@ -112,7 +112,7 @@ fi
 
 # 获取join时需要的token
 if [[ "$init_type" == "2" || "$init_type" == "3" ]]; then
-  echo "请输入join token（可在集群上执行以下命令获取: kubeadm token create --print-join-command | awk -F'--token ' '{print $2}' | awk '{print $1}'）"
+  echo "请输入join token（可在集群上执行以下命令获取: kubeadm token create --print-join-command | awk -F'--token ' '{print \$2}' | awk '{print \$1}'）"
   read -r join_token
   if [[ "$join_token" == "" ]]; then
     echo "输入错误"
@@ -280,6 +280,10 @@ if [[ "$init_type" == "2" || "$init_type" == "3" ]]; then
   # 设置JoinConfiguration参数
   echo "设置JoinConfiguration参数"
   cp node-join.template.yaml node-join.yaml
+  sed -i "s/\$join_token/$join_token/g" node-join.yaml
+  sed -i "s/\$apiserver_domain/$apiserver_domain/g" node-join.yaml
+  sed -i "s/\$apiserver_port/$apiserver_port/g" node-join.yaml
+  sed -i "s/\$node_name/$node_name/g" node-join.yaml
   if [ "$init_type" == "2" ]; then # 加入master节点
   cat <<EOF >> node-join.yaml
 controlPlane:
@@ -300,5 +304,27 @@ EOF
     # 清除master节点污点
     echo "清除master节点污点"
     kubectl taint nodes --all node-role.kubernetes.io/master-
+    # 修改kubelet参数
+    echo "修改kubelet参数"
+    sleep 10
+    formatted_date=$(date +"%Y%m%d_%H%M%S")_$(date +%N | cut -c1-6)
+    cp /var/lib/kubelet/config.yaml /var/lib/kubelet/config.yaml.bak.$formatted_date
+    awk '
+    BEGIN { flag_system_reserved=0; flag_memory=0; }
+    /systemReserved:/ { flag_system_reserved=1; }
+    flag_system_reserved && /memory:/ { flag_memory=1; }
+    {
+      if (!flag_memory) {
+        print; # 默认打印当前行
+      } else {
+        spaces = $0;
+        sub(/memory:.*/, "", spaces); # 获取行首的空格
+        print spaces "memory: 0.5Gi";
+        flag_system_reserved=0; flag_memory=0;
+      }
+    }' /var/lib/kubelet/config.yaml > /var/lib/kubelet/config.yaml.tmp && mv /var/lib/kubelet/config.yaml.tmp /var/lib/kubelet/config.yaml
+    # 重启kubelet
+    systemctl daemon-reload
+    systemctl restart kubelet
   fi
 fi
