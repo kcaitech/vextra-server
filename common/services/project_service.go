@@ -10,17 +10,19 @@ import (
 
 type ProjectService struct {
 	*DefaultService
-	ProjectMemberService      *ProjectMemberService
-	ProjectJoinRequestService *ProjectJoinRequestService
-	ProjectFavoriteService    *ProjectFavoriteService
+	ProjectMemberService                 *ProjectMemberService
+	ProjectJoinRequestService            *ProjectJoinRequestService
+	ProjectJoinRequestMessageShowService *ProjectJoinRequestMessageShowService
+	ProjectFavoriteService               *ProjectFavoriteService
 }
 
 func NewProjectService() *ProjectService {
 	that := &ProjectService{
-		DefaultService:            NewDefaultService(&models.Project{}),
-		ProjectMemberService:      NewProjectMemberService(),
-		ProjectJoinRequestService: NewprojectJoinRequestService(),
-		ProjectFavoriteService:    NewProjectFavoriteService(),
+		DefaultService:                       NewDefaultService(&models.Project{}),
+		ProjectMemberService:                 NewProjectMemberService(),
+		ProjectJoinRequestService:            NewProjectJoinRequestService(),
+		ProjectJoinRequestMessageShowService: NewProjectJoinRequestMessageShowService(),
+		ProjectFavoriteService:               NewProjectFavoriteService(),
 	}
 	that.That = that
 	return that
@@ -42,9 +44,21 @@ type ProjectJoinRequestService struct {
 	*DefaultService
 }
 
-func NewprojectJoinRequestService() *ProjectJoinRequestService {
+func NewProjectJoinRequestService() *ProjectJoinRequestService {
 	that := &ProjectJoinRequestService{
 		DefaultService: NewDefaultService(&models.ProjectJoinRequest{}),
+	}
+	that.That = that
+	return that
+}
+
+type ProjectJoinRequestMessageShowService struct {
+	*DefaultService
+}
+
+func NewProjectJoinRequestMessageShowService() *ProjectJoinRequestMessageShowService {
+	that := &ProjectJoinRequestMessageShowService{
+		DefaultService: NewDefaultService(&models.ProjectJoinRequestMessageShow{}),
 	}
 	that.That = that
 	return that

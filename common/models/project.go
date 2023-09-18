@@ -88,6 +88,18 @@ func (model ProjectJoinRequest) MarshalJSON() ([]byte, error) {
 	return MarshalJSON(model)
 }
 
+type ProjectJoinRequestMessageShow struct {
+	BaseModel
+	ProjectJoinRequestId int64     `json:"project_join_request_id"`
+	UserId               int64     `json:"user_id"`
+	ProjectId            int64     `json:"project_id"`
+	FirstDisplayedAt     time.Time `json:"first_displayed_at"`
+}
+
+func (model ProjectJoinRequestMessageShow) MarshalJSON() ([]byte, error) {
+	return MarshalJSON(model)
+}
+
 // ProjectFavorite 项目收藏（固定）
 type ProjectFavorite struct {
 	BaseModel

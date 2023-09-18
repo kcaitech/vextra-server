@@ -3,10 +3,12 @@ package controllers
 import (
 	"errors"
 	"github.com/gin-gonic/gin"
+	"log"
 	"protodesign.cn/kcserver/common/gin/auth"
 	"protodesign.cn/kcserver/common/gin/response"
 	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/common/services"
+	"protodesign.cn/kcserver/utils/sliceutil"
 	"protodesign.cn/kcserver/utils/str"
 	myTime "protodesign.cn/kcserver/utils/time"
 	"time"
@@ -282,7 +284,39 @@ func GetProjectJoinRequestList(c *gin.Context) {
 		startTimeStr = myTime.Time(time.UnixMilli(startTimeInt)).String()
 	}
 	projectService := services.NewProjectService()
+	projectJoinRequestMessageShowService := projectService.ProjectJoinRequestMessageShowService
+	now := myTime.Time(time.Now())
 	result := projectService.FindProjectJoinRequest(userId, projectId, startTimeStr)
+	if startTimeStr == "" {
+		response.Success(c, result)
+		return
+	}
+	var messageShowList []models.ProjectJoinRequestMessageShow
+	if projectJoinRequestMessageShowService.Find(&messageShowList, "user_id = ? and project_id = ?", userId, projectId) != nil {
+		log.Println("ProjectJoinRequestMessageShow查询错误", err)
+		response.Fail(c, "")
+		return
+	}
+	result = sliceutil.FilterT(func(item services.ProjectJoinRequestQuery) bool {
+		return sliceutil.Find(func(messageShowItem models.ProjectJoinRequestMessageShow) bool {
+			return messageShowItem.ProjectJoinRequestId == item.ProjectJoinRequest.Id
+		}, messageShowList...) == nil
+	}, result...)
+	newMessageShowList := sliceutil.MapT(func(item services.ProjectJoinRequestQuery) models.ModelData {
+		return &models.ProjectJoinRequestMessageShow{
+			ProjectJoinRequestId: item.ProjectJoinRequest.Id,
+			UserId:               userId,
+			ProjectId:            projectId,
+			FirstDisplayedAt:     now,
+		}
+	}, result...)
+	for i := range newMessageShowList {
+		if err := projectJoinRequestMessageShowService.Create(newMessageShowList[i]); err != nil {
+			log.Println("ProjectJoinRequestMessageShow新建错误", err)
+			response.Fail(c, "")
+			return
+		}
+	}
 	response.Success(c, result)
 }
 

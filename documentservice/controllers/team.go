@@ -3,11 +3,13 @@ package controllers
 import (
 	"errors"
 	"github.com/gin-gonic/gin"
+	"log"
 	"protodesign.cn/kcserver/common"
 	"protodesign.cn/kcserver/common/gin/auth"
 	"protodesign.cn/kcserver/common/gin/response"
 	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/common/services"
+	"protodesign.cn/kcserver/utils/sliceutil"
 	"protodesign.cn/kcserver/utils/str"
 	myTime "protodesign.cn/kcserver/utils/time"
 	"time"
@@ -270,7 +272,39 @@ func GetTeamJoinRequestList(c *gin.Context) {
 		startTimeStr = myTime.Time(time.UnixMilli(startTimeInt)).String()
 	}
 	teamService := services.NewTeamService()
+	teamJoinRequestMessageShowService := teamService.TeamJoinRequestMessageShowService
+	now := myTime.Time(time.Now())
 	result := teamService.FindTeamJoinRequest(userId, teamId, startTimeStr)
+	if startTimeStr == "" {
+		response.Success(c, result)
+		return
+	}
+	var messageShowList []models.TeamJoinRequestMessageShow
+	if teamJoinRequestMessageShowService.Find(&messageShowList, "user_id = ? and team_id = ?", userId, teamId) != nil {
+		log.Println("TeamJoinRequestMessageShow查询错误", err)
+		response.Fail(c, "")
+		return
+	}
+	result = sliceutil.FilterT(func(item services.TeamJoinRequestQuery) bool {
+		return sliceutil.Find(func(messageShowItem models.TeamJoinRequestMessageShow) bool {
+			return messageShowItem.TeamJoinRequestId == item.TeamJoinRequest.Id
+		}, messageShowList...) == nil
+	}, result...)
+	newMessageShowList := sliceutil.MapT(func(item services.TeamJoinRequestQuery) models.ModelData {
+		return &models.TeamJoinRequestMessageShow{
+			TeamJoinRequestId: item.TeamJoinRequest.Id,
+			UserId:            userId,
+			TeamId:            teamId,
+			FirstDisplayedAt:  now,
+		}
+	}, result...)
+	for i := range newMessageShowList {
+		if err := teamJoinRequestMessageShowService.Create(newMessageShowList[i]); err != nil {
+			log.Println("TeamJoinRequestMessageShow新建错误", err)
+			response.Fail(c, "")
+			return
+		}
+	}
 	response.Success(c, result)
 }
 

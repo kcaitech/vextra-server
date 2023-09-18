@@ -57,6 +57,7 @@ type Document struct {
 	VersionId string           `json:"version_id"`
 	TeamId    string           `json:"team_id"`
 	ProjectId string           `json:"project_id"`
+	PurgeBy   int64            `json:"purge_by"`
 }
 
 func (model Document) MarshalJSON() ([]byte, error) {
@@ -128,9 +129,14 @@ type AccessRecordAndFavoritesQueryResItem struct {
 	DocumentAccessRecord DocumentAccessRecord `gorm:"embedded;embeddedPrefix:document_access_record__" json:"document_access_record" join:";left;user_id,?user_id;document_id,document.id"`
 }
 
+type RecycleBinQueryResItem struct {
+	AccessRecordAndFavoritesQueryResItem
+	DeleteUser User `gorm:"embedded;embeddedPrefix:delete_user__" json:"delete_user" join:"user,delete_user;left;id,document.delete_by"`
+}
+
 // FindRecycleBinByUserId 查询用户的回收站列表
-func (s *DocumentService) FindRecycleBinByUserId(userId int64, projectId int64) *[]AccessRecordAndFavoritesQueryResItem {
-	var result []AccessRecordAndFavoritesQueryResItem
+func (s *DocumentService) FindRecycleBinByUserId(userId int64, projectId int64) *[]RecycleBinQueryResItem {
+	var result []RecycleBinQueryResItem
 	whereArgsList := []WhereArgs{
 		{"document.deleted_at is not null and document.purged_at is null", nil},
 	}

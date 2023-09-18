@@ -42,3 +42,21 @@ func MapT[T any, V any](fn func(item T) V, args ...T) []V {
 	}
 	return result
 }
+
+func Find[T any](fn func(item T) bool, args ...T) *T {
+	for _, item := range args {
+		if fn(item) {
+			return &item
+		}
+	}
+	return nil
+}
+
+func FindIndex[T any](fn func(item T) bool, args ...T) int {
+	for i, item := range args {
+		if fn(item) {
+			return i
+		}
+	}
+	return -1
+}

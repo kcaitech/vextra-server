@@ -25,6 +25,7 @@ type Document struct {
 	Name      string    `gorm:"size:64" json:"name"`
 	Size      uint64    `gorm:"" json:"size"`
 	PurgedAt  time.Time `gorm:"" json:"purged_at"`
+	DeleteBy  int64     `gorm:"" json:"purge_by"` // 删除人ID
 	VersionId string    `gorm:"size:64" json:"version_id"`
 	TeamId    int64     `gorm:"index" json:"team_id"`
 	ProjectId int64     `gorm:"index" json:"project_id"`

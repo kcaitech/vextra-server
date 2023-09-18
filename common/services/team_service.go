@@ -15,15 +15,17 @@ import (
 
 type TeamService struct {
 	*DefaultService
-	TeamMemberService      *TeamMemberService
-	TeamJoinRequestService *TeamJoinRequestService
+	TeamMemberService                 *TeamMemberService
+	TeamJoinRequestService            *TeamJoinRequestService
+	TeamJoinRequestMessageShowService *TeamJoinRequestMessageShowService
 }
 
 func NewTeamService() *TeamService {
 	that := &TeamService{
-		DefaultService:         NewDefaultService(&models.Team{}),
-		TeamMemberService:      NewTeamMemberService(),
-		TeamJoinRequestService: NewTeamJoinRequestService(),
+		DefaultService:                    NewDefaultService(&models.Team{}),
+		TeamMemberService:                 NewTeamMemberService(),
+		TeamJoinRequestService:            NewTeamJoinRequestService(),
+		TeamJoinRequestMessageShowService: NewTeamJoinRequestMessageShowService(),
 	}
 	that.That = that
 	return that
@@ -48,6 +50,18 @@ type TeamJoinRequestService struct {
 func NewTeamJoinRequestService() *TeamJoinRequestService {
 	that := &TeamJoinRequestService{
 		DefaultService: NewDefaultService(&models.TeamJoinRequest{}),
+	}
+	that.That = that
+	return that
+}
+
+type TeamJoinRequestMessageShowService struct {
+	*DefaultService
+}
+
+func NewTeamJoinRequestMessageShowService() *TeamJoinRequestMessageShowService {
+	that := &TeamJoinRequestMessageShowService{
+		DefaultService: NewDefaultService(&models.TeamJoinRequestMessageShow{}),
 	}
 	that.That = that
 	return that
@@ -204,15 +218,15 @@ type SelfTeamJoinRequestsQueryResItem struct {
 	TeamJoinRequest TeamJoinRequest `gorm:"embedded;embeddedPrefix:team_join_request__" json:"request" table:""`
 }
 
-type TeamJoinRequestsQueryResItem struct {
+type TeamJoinRequestQuery struct {
 	SelfTeamJoinRequestsQueryResItem
 	TeamMember TeamMember `gorm:"-" json:"-" join:";inner;team_id,team_id;user_id,?user_id"` // 自己的（非申请人的）权限
 	User       User       `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,user_id"`
 }
 
 // FindTeamJoinRequest 获取用户所创建或担任管理员的团队的加入申请列表
-func (s *TeamService) FindTeamJoinRequest(userId int64, teamId int64, startTime string) []TeamJoinRequestsQueryResItem {
-	var result []TeamJoinRequestsQueryResItem
+func (s *TeamService) FindTeamJoinRequest(userId int64, teamId int64, startTime string) []TeamJoinRequestQuery {
+	var result []TeamJoinRequestQuery
 	whereArgsList := []WhereArgs{
 		{
 			Query: "team_member.deleted_at is null and team.deleted_at is null and user.deleted_at is null",

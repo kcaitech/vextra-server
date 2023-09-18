@@ -55,6 +55,14 @@ type TeamJoinRequest struct {
 	ProcessorNotes   string                `gorm:"size:256" json:"processor_notes"`
 }
 
+type TeamJoinRequestMessageShow struct {
+	BaseModel
+	TeamJoinRequestId int64     `json:"team_join_request_id"`
+	UserId            int64     `json:"user_id"`
+	TeamId            int64     `json:"team_id"`
+	FirstDisplayedAt  time.Time `json:"first_displayed_at"`
+}
+
 func TeamUp(db *gorm.DB) error {
 	if err := db.AutoMigrate(&Team{}); err != nil {
 		return err
@@ -63,6 +71,9 @@ func TeamUp(db *gorm.DB) error {
 		return err
 	}
 	if err := db.AutoMigrate(&TeamJoinRequest{}); err != nil {
+		return err
+	}
+	if err := db.AutoMigrate(&TeamJoinRequestMessageShow{}); err != nil {
 		return err
 	}
 	return nil
@@ -76,6 +87,9 @@ func TeamDown(db *gorm.DB) error {
 		return err
 	}
 	if err := db.Migrator().DropTable(&TeamJoinRequest{}); err != nil {
+		return err
+	}
+	if err := db.Migrator().DropTable(&TeamJoinRequestMessageShow{}); err != nil {
 		return err
 	}
 	return nil

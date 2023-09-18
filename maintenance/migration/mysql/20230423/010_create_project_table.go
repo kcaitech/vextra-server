@@ -67,6 +67,14 @@ type ProjectJoinRequest struct {
 	ProcessorNotes   string                   `gorm:"size:256" json:"processor_notes"`
 }
 
+type ProjectJoinRequestMessageShow struct {
+	BaseModel
+	ProjectJoinRequestId int64     `json:"project_join_request_id"`
+	UserId               int64     `json:"user_id"`
+	ProjectId            int64     `json:"project_id"`
+	FirstDisplayedAt     time.Time `json:"first_displayed_at"`
+}
+
 // ProjectFavorite 项目收藏（固定）
 type ProjectFavorite struct {
 	BaseModel
@@ -85,6 +93,9 @@ func ProjectUp(db *gorm.DB) error {
 	if err := db.AutoMigrate(&ProjectJoinRequest{}); err != nil {
 		return err
 	}
+	if err := db.AutoMigrate(&ProjectJoinRequestMessageShow{}); err != nil {
+		return err
+	}
 	if err := db.AutoMigrate(&ProjectFavorite{}); err != nil {
 		return err
 	}
@@ -99,6 +110,12 @@ func ProjectDown(db *gorm.DB) error {
 		return err
 	}
 	if err := db.Migrator().DropTable(&ProjectJoinRequest{}); err != nil {
+		return err
+	}
+	if err := db.Migrator().DropTable(&ProjectJoinRequestMessageShow{}); err != nil {
+		return err
+	}
+	if err := db.Migrator().DropTable(&ProjectFavorite{}); err != nil {
 		return err
 	}
 	return nil

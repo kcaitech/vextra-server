@@ -63,3 +63,15 @@ type TeamJoinRequest struct {
 func (model TeamJoinRequest) MarshalJSON() ([]byte, error) {
 	return MarshalJSON(model)
 }
+
+type TeamJoinRequestMessageShow struct {
+	BaseModel
+	TeamJoinRequestId int64     `json:"team_join_request_id"`
+	UserId            int64     `json:"user_id"`
+	TeamId            int64     `json:"team_id"`
+	FirstDisplayedAt  time.Time `json:"first_displayed_at"`
+}
+
+func (model TeamJoinRequestMessageShow) MarshalJSON() ([]byte, error) {
+	return MarshalJSON(model)
+}
