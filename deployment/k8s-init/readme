@@ -5,7 +5,7 @@
 3) ./install.sh
 
 典型顺序：
-1. init.sh
+1. chmod +x init.sh && ./init.sh
 2. kubernetes
 3. helm
 4. kuboard

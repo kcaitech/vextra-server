@@ -48,11 +48,11 @@ fi
 
 # 获取用于haproxy的所有name、ip和端口，多个之间以,隔开 格式：name ip:port
 echo "请输入所有master节点的name、ip和端口，多个之间以,隔开 格式：name ip:port"
-echo "（kc-master1 192.168.137.20:6443,kc-master2 192.168.137.21:6443,kc-master3 192.168.137.22:6443）"
+echo "（kc-master1 169.254.231.20:6443,kc-master2 169.254.231.21:6443,kc-master3 169.254.231.22:6443）"
 read -r master_nodes
 # 验证格式以及分割
 if [[ "$master_nodes" == "" ]]; then
-  master_nodes="kc-master1 192.168.137.20:6443,kc-master2 192.168.137.21:6443,kc-master3 192.168.137.22:6443"
+  master_nodes="kc-master1 169.254.231.20:6443,kc-master2 169.254.231.21:6443,kc-master3 169.254.231.22:6443"
 fi
 IFS=',' read -ra master_nodes <<< "$master_nodes"
 for node in "${master_nodes[@]}"; do

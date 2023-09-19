@@ -14,3 +14,5 @@
 /documentservice/log
 
 **/go.sum
+
+/deployment/devops/ssh-port-forward-internal/ssh_pids.txt
