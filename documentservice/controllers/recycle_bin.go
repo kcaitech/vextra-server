@@ -46,7 +46,7 @@ func RestoreUserRecycleBinDocument(c *gin.Context) {
 	}
 	documentService := services.NewDocumentService()
 	document := models.Document{}
-	if documentService.Get(&document, "id = ?", documentId) != nil {
+	if documentService.Get(&document, "id = ? and deleted_at is not null", documentId, &services.Unscoped{}) != nil {
 		response.BadRequest(c, "文档不存在")
 		return
 	}
@@ -67,7 +67,7 @@ func RestoreUserRecycleBinDocument(c *gin.Context) {
 	if _, err := services.NewDocumentService().UpdateColumns(
 		map[string]any{"deleted_at": nil},
 		"id = ? and deleted_at is not null and purged_at is null", documentId,
-		services.Unscoped{},
+		&services.Unscoped{},
 	); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
 		response.Fail(c, "更新错误")
 		return
@@ -89,7 +89,7 @@ func DeleteUserRecycleBinDocument(c *gin.Context) {
 	}
 	documentService := services.NewDocumentService()
 	document := models.Document{}
-	if documentService.Get(&document, "id = ?", documentId) != nil {
+	if documentService.Get(&document, "id = ? and deleted_at is not null", documentId, &services.Unscoped{}) != nil {
 		response.BadRequest(c, "文档不存在")
 		return
 	}
@@ -110,7 +110,7 @@ func DeleteUserRecycleBinDocument(c *gin.Context) {
 	if _, err := services.NewDocumentService().UpdateColumns(
 		map[string]any{"purged_at": myTime.Time(time.Now())},
 		"id = ? and deleted_at is not null", documentId,
-		services.Unscoped{},
+		&services.Unscoped{},
 	); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
 		response.Fail(c, "更新错误")
 		return
