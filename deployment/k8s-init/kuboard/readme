@@ -1,5 +1,10 @@
-两种安装方式：
 1、docker方式安装
 ./install-docker.sh
+
 2、static pod方式安装
 ./install-static-pod.sh
+
+注意：
+执行kubectl apply -f ./kuboard-agent.yaml之前可先执行以下命令修改健康检测的相关时间设置
+sed -i "s/initialDelaySeconds:.*/initialDelaySeconds: 120/g" ./kuboard-agent.yaml
+sed -i "s/timeoutSeconds:.*/timeoutSeconds: 10/g" ./kuboard-agent.yaml

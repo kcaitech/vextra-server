@@ -1,13 +1,13 @@
-获取密码、启动测试容器连接redis
+# 获取密码、启动测试容器连接redis
 REDIS_PASSWORD=$(kubectl -n bitnami-redis get secret bitnami-redis -o jsonpath="{.data.redis-password}" | base64 -d)
 kubectl run -it --rm redis-client --restart='Never' \
 --env REDIS_PASSWORD=$REDIS_PASSWORD \
 --image docker.io/bitnami/redis:7.2.1-debian-11-r0 \
 -- /bin/bash
-登录（NodePort: 30300）
-redis-cli -h bitnami-redis.bitnami-redis.svc.cluster.local -p 6379 -a $REDIS_PASSWORD
+# 登录（NodePort: 30300）
+redis-cli -h bitnami-redis.bitnami-redis.svc.cluster.local -p 30300 -a $REDIS_PASSWORD
 
-外部连接
+# 外部连接
 NODE_IP=$(kubectl -n bitnami-redis get nodes -o jsonpath="{.items[0].status.addresses[0].address}")
 NODE_PORT=$(kubectl -n bitnami-redis get -o jsonpath="{.spec.ports[0].nodePort}" services bitnami-redis)
 redis-cli -h $NODE_IP -p $NODE_PORT -a $REDIS_PASSWORD

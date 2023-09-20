@@ -11,6 +11,6 @@
     "http://hub-mirror.c.163.com"
   ],
   "insecure-registries": [
-    "172.16.0.19:5000"
+    "cluster-endpoint:35000"
   ]
 }

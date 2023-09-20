@@ -149,9 +149,9 @@ apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker
 # 设置docker参数
 echo "设置docker参数"
 cp etc_docker_daemon.json /etc/docker/daemon.json
+systemctl enable --now docker
 # 重启docker服务
 echo "重启docker服务"
-systemctl enable --now docker
 systemctl restart docker
 # 验证docker服务是否正常
 #echo "验证docker服务是否正常"

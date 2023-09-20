@@ -74,10 +74,10 @@ metadata:
 spec:
   ports:
     - name: port-name
-      port: 5000
+      port: 35000
       protocol: TCP
       targetPort: 5000
-      nodePort: 5000
+      nodePort: 35000
   selector:
     app: docker-registry
   type: NodePort

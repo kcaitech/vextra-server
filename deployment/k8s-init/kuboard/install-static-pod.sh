@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 ipaddr=$(ip addr | awk '/^[0-9]+: / {}; /inet.*global/ {print gensub(/(.*)\/(.*)/, "\\1", "g", $2)}' | awk 'NR==1{print}')
 
 echo "current ip address is ${ipaddr}"
@@ -81,10 +83,10 @@ spec:
   containers:
     - env:
         - name: KUBOARD_ENDPOINT
-          value: "http://${ipaddr}:80"
+          value: "http://${ipaddr}:30001"
         - name: KUBOARD_AGENT_SERVER_TCP_PORT
           value: "10081"
-      image: 'eipwork/kuboard:v3'
+      image: 'swr.cn-east-2.myhuaweicloud.com/kuboard/kuboard:v3'
       imagePullPolicy: IfNotPresent
       livenessProbe:
         failureThreshold: 3
@@ -92,10 +94,10 @@ spec:
           path: /kuboard-resources/version.json
           port: 80
           scheme: HTTP
-        initialDelaySeconds: 30
+        initialDelaySeconds: 120
         periodSeconds: 10
         successThreshold: 1
-        timeoutSeconds: 1
+        timeoutSeconds: 10
       name: kuboard
       ports:
         - containerPort: 80
@@ -116,10 +118,10 @@ spec:
           path: /kuboard-resources/version.json
           port: 80
           scheme: HTTP
-        initialDelaySeconds: 30
+        initialDelaySeconds: 120
         periodSeconds: 10
         successThreshold: 1
-        timeoutSeconds: 1
+        timeoutSeconds: 10
       volumeMounts:
         - mountPath: /data
           name: data
@@ -150,4 +152,4 @@ echo "\033[34m检查状态\033[0m 待 kuboard-v3-${host_name} 的容器组变为
 echo "初始账号密码：admin Kuboard123"
 echo
 
-kubectl get pods -n kuboard -o wide
+echo "kubectl get pods -n kuboard -o wide"

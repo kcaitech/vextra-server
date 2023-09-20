@@ -18,6 +18,8 @@ set ports[3]=2222:172.16.0.22:22
 set ports[4]=30001:172.16.0.20:30001
 :: apiserver访问端口
 set ports[5]=9443:172.16.0.19:9443
+:: docker registry
+set ports[5]=35000:172.16.0.19:35000
 
 :: 获取数组长度
 set length=0

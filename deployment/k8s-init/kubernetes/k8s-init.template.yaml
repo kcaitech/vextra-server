@@ -53,7 +53,7 @@ controlPlaneEndpoint: $apiserver_domain:$apiserver_port
 apiServer:
   ControlPlaneComponent:
     extraArgs:
-      service-node-port-range: "30000-39999"
+      serviceNodePortRange: "30000-39999"
   timeoutForControlPlane: 4m0s
   certSANs:
     - kubernetes
