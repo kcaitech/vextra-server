@@ -1,13 +1,13 @@
-安装顺序
+# 安装顺序
 1、percona-operator
-查看安装状态
-watch kubectl -n psmdb get pod -l app.kubernetes.io/name=percona-operator
+# 查看安装状态
+watch kubectl -n psmdb get pod -l app.kubernetes.io/name=psmdb-operator
 2、percona-mongodb
-查看安装状态
+# 查看安装状态
 watch kubectl -n psmdb get pod -l app.kubernetes.io/name=percona-server-mongodb
-获取账号密码
+# 获取账号密码
 ADMIN_USER=$(kubectl -n psmdb get secrets percona-mongodb-psmdb-secrets -o jsonpath="{.data.MONGODB_DATABASE_ADMIN_USER}" | base64 --decode)
 ADMIN_PASSWORD=$(kubectl -n psmdb get secrets percona-mongodb-psmdb-secrets -o jsonpath="{.data.MONGODB_DATABASE_ADMIN_PASSWORD}" | base64 --decode)
-连接数据库
+# 连接数据库
 kubectl run -it --rm percona-client --image=percona/percona-server-mongodb:5.0 --restart=Never \
 -- mongo "mongodb://${ADMIN_USER}:${ADMIN_PASSWORD}@percona-mongodb-psmdb-mongos.psmdb.svc.cluster.local/admin?ssl=false"

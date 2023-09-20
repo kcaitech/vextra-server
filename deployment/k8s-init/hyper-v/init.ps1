@@ -9,7 +9,7 @@ if (-not $isAdmin) {
 }
 
 # 创建NAT实例
-New-NetNat -Name KcNat1 -InternalIPInterfaceAddressPrefix 169.254.231.0/24
+New-NetNat -Name KcNat1 -InternalIPInterfaceAddressPrefix 172.16.0.0/24
 
 # 查看NAT实例
 # Get-NetNat

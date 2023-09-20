@@ -1,0 +1,5 @@
+两种安装方式：
+1、docker方式安装
+./install-docker.sh
+2、static pod方式安装
+./install-static-pod.sh

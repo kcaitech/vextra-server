@@ -48,11 +48,11 @@ fi
 
 # 获取用于haproxy的所有name、ip和端口，多个之间以,隔开 格式：name ip:port
 echo "请输入所有master节点的name、ip和端口，多个之间以,隔开 格式：name ip:port"
-echo "（kc-master1 169.254.231.20:6443,kc-master2 169.254.231.21:6443,kc-master3 169.254.231.22:6443）"
+echo "（kc-master1 172.16.0.20:6443,kc-master2 172.16.0.21:6443,kc-master3 172.16.0.22:6443）"
 read -r master_nodes
 # 验证格式以及分割
 if [[ "$master_nodes" == "" ]]; then
-  master_nodes="kc-master1 169.254.231.20:6443,kc-master2 169.254.231.21:6443,kc-master3 169.254.231.22:6443"
+  master_nodes="kc-master1 172.16.0.20:6443,kc-master2 172.16.0.21:6443,kc-master3 172.16.0.22:6443"
 fi
 IFS=',' read -ra master_nodes <<< "$master_nodes"
 for node in "${master_nodes[@]}"; do
@@ -174,6 +174,7 @@ awk '/\[plugins\."io\.containerd\.grpc\.v1\.cri"\.registry\.mirrors\]/ {
 }
 1' /etc/containerd/config.toml > /etc/containerd/config.toml.tmp && mv /etc/containerd/config.toml.tmp /etc/containerd/config.toml
 sed -i 's/LimitNOFILE=infinity/LimitNOFILE=1048576/g' /lib/systemd/system/containerd.service
+echo "重启containerd服务"
 systemctl daemon-reload
 systemctl enable --now containerd
 systemctl restart containerd
@@ -305,8 +306,8 @@ EOF
     echo "清除master节点污点"
     kubectl taint nodes --all node-role.kubernetes.io/master-
     # 修改kubelet参数
-    echo "修改kubelet参数"
-    sleep 10
+    echo "修改kubelet参数（等待30秒）"
+    sleep 30
     formatted_date=$(date +"%Y%m%d_%H%M%S")_$(date +%N | cut -c1-6)
     cp /var/lib/kubelet/config.yaml /var/lib/kubelet/config.yaml.bak.$formatted_date
     awk '
@@ -324,6 +325,7 @@ EOF
       }
     }' /var/lib/kubelet/config.yaml > /var/lib/kubelet/config.yaml.tmp && mv /var/lib/kubelet/config.yaml.tmp /var/lib/kubelet/config.yaml
     # 重启kubelet
+    echo "重启kubelet"
     systemctl daemon-reload
     systemctl restart kubelet
   fi

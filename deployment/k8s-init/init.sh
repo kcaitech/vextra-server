@@ -7,11 +7,11 @@ find . -type f -name "*.sh" -exec chmod +x {} \;
 
 # 将其余节点的hostname和ip加入到hosts文件，多个之间以,隔开 格式：hostname ip
 echo "请输入所有master节点的hostname和ip，多个之间以,隔开 格式：name ip"
-echo "（kc-master1 169.254.231.20,kc-master2 169.254.231.21,kc-master3 169.254.231.22）"
+echo "（kc-master1 172.16.0.20,kc-master2 172.16.0.21,kc-master3 172.16.0.22）"
 read -r master_nodes
 # 验证格式以及分割
 if [[ "$master_nodes" == "" ]]; then
-  master_nodes="kc-master1 169.254.231.20,kc-master2 169.254.231.21,kc-master3 169.254.231.22"
+  master_nodes="kc-master1 172.16.0.20,kc-master2 172.16.0.21,kc-master3 172.16.0.22"
 fi
 IFS=',' read -ra master_nodes <<< "$master_nodes"
 for node in "${master_nodes[@]}"; do

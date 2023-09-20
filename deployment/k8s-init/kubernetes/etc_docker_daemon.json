@@ -9,5 +9,8 @@
     "https://jsoixv4u.mirror.aliyuncs.com",
     "https://docker.mirrors.ustc.edu.cn",
     "http://hub-mirror.c.163.com"
+  ],
+  "insecure-registries": [
+    "172.16.0.19:5000"
   ]
 }
