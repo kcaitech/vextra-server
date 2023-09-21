@@ -29,6 +29,8 @@ spec:
               value: "Registry Realm"
             - name: REGISTRY_AUTH_HTPASSWD_PATH
               value: "/auth/htpasswd"
+            - name: REGISTRY_STORAGE_DELETE_ENABLED
+              value: "true"
           ports:
             - containerPort: 5000
               name: web
@@ -40,23 +42,23 @@ spec:
           terminationMessagePath: /dev/termination-log
           terminationMessagePolicy: File
           volumeMounts:
-            - name: docker-registry-data
+            - name: data
               mountPath: /var/lib/registry/
-            - name: docker-registry-auth-secret
+            - name: auth-secret
               mountPath: /auth
               readOnly: true
       volumes:
-        - name: docker-registry-data
+        - name: data
           persistentVolumeClaim:
-            claimName: docker-registry-pvc
-        - name: docker-registry-auth-secret
+            claimName: docker-registry
+        - name: auth-secret
           secret:
             secretName: docker-registry-auth-secret
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: docker-registry-pvc
+  name: docker-registry
   namespace: docker-registry
 spec:
   storageClassName: cstor
@@ -69,11 +71,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: docker-registry-service
+  name: docker-registry
   namespace: docker-registry
 spec:
   ports:
-    - name: port-name
+    - name: web
       port: 35000
       protocol: TCP
       targetPort: 5000

@@ -11,6 +11,7 @@
     "http://hub-mirror.c.163.com"
   ],
   "insecure-registries": [
-    "cluster-endpoint:35000"
+    "docker-registry.protodesign.cn:35000",
+    "docker-registry.protodesign.cn"
   ]
 }

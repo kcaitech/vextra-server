@@ -1,0 +1,99 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  labels:
+    app: documentservice
+  name: documentservice
+  namespace: kc
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: documentservice
+  template:
+    metadata:
+      labels:
+        app: documentservice
+    spec:
+      serviceAccountName: kc
+      containers:
+        - name: app
+          env:
+            - name: TZ
+              value: "Asia/Shanghai"
+          image: "docker-registry.protodesign.cn:35000/documentservice:v0.0.1"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 10003
+              name: web
+              protocol: TCP
+          resources: {}
+          startupProbe:
+            failureThreshold: 300
+            httpGet:
+              path: /health_check
+              port: 10003
+              scheme: HTTP
+            initialDelaySeconds: 0
+            periodSeconds: 1
+            successThreshold: 1
+            timeoutSeconds: 1
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health_check
+              port: 10003
+              scheme: HTTP
+            initialDelaySeconds: 0
+            periodSeconds: 1
+            successThreshold: 1
+            timeoutSeconds: 1
+          livenessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health_check
+              port: 10003
+              scheme: HTTP
+            initialDelaySeconds: 0
+            periodSeconds: 10
+            successThreshold: 1
+            timeoutSeconds: 1
+          volumeMounts:
+            - name: documentservice-config
+              mountPath: /app/config
+              readOnly: true
+            - name: jwt-config
+              mountPath: /app/common/jwt/config
+              readOnly: true
+            - name: snowflake-config
+              mountPath: /app/common/snowflake/config
+              readOnly: true
+            - name: storage-config
+              mountPath: /app/common/storage/config
+              readOnly: true
+            - name: mongo-config
+              mountPath: /app/common/mongo/config
+              readOnly: true
+            - name: redis-config
+              mountPath: /app/common/redis/config
+              readOnly: true
+      volumes:
+        - name: documentservice-config
+          secret:
+            secretName: documentservice-config
+        - name: jwt-config
+          secret:
+            secretName: jwt-config
+        - name: snowflake-config
+          secret:
+            secretName: snowflake-config
+        - name: storage-config
+          secret:
+            secretName: storage-config
+        - name: mongo-config
+          secret:
+            secretName: mongo-config
+        - name: redis-config
+          secret:
+            secretName: redis-config

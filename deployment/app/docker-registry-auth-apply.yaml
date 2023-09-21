@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: kc-docker-registry-auth-secret
+  namespace: kc
+type: kubernetes.io/dockerconfigjson
+stringData:
+  .dockerconfigjson: |
+    {
+      "auths": {
+        "docker-registry.protodesign.cn:35000": {
+          "username": "kcai",
+          "password": "kcai1212"
+        }
+      }
+    }
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kc
+  namespace: kc
+imagePullSecrets:
+  - name: kc-docker-registry-auth-secret

@@ -1,19 +1,22 @@
 # 推送镜像到私有仓库（demo）
 docker pull hello-world
-docker tag hello-world:latest cluster-endpoint:35000/hello-world:latest
-docker login cluster-endpoint:35000
-docker push cluster-endpoint:35000/hello-world:latest
+docker tag hello-world:latest docker-registry.protodesign.cn:35000/hello-world:latest
+docker login docker-registry.protodesign.cn:35000 -u kcai -p kcai1212
+docker push docker-registry.protodesign.cn:35000/hello-world:latest
 # 从私有仓库拉取镜像
 docker images | grep hello-world
-docker rmi cluster-endpoint:35000/hello-world
+docker rmi docker-registry.protodesign.cn:35000/hello-world
 docker rmi hello-world
 docker images | grep hello-world
-docker pull cluster-endpoint:35000/hello-world
+docker pull docker-registry.protodesign.cn:35000/hello-world
 docker images | grep hello-world
 
 # 获取仓库镜像列表
-http://cluster-endpoint:35000/v2/_catalog
+http://docker-registry.protodesign.cn:35000/v2/_catalog
 # 获取镜像版本列表
-http://cluster-endpoint:35000/v2/hello-world/tags/list
+http://docker-registry.protodesign.cn:35000/v2/hello-world/tags/list
 # api官方文档
 https://docs.docker.com/registry/spec/api/
+
+# docker-registry-ui
+http://docker-registry.protodesign.cn:35001

@@ -20,6 +20,8 @@ set ports[4]=30001:172.16.0.20:30001
 set ports[5]=9443:172.16.0.19:9443
 :: docker registry
 set ports[5]=35000:172.16.0.19:35000
+:: docker registry-ui
+set ports[5]=35001:172.16.0.19:35001
 
 :: 获取数组长度
 set length=0
