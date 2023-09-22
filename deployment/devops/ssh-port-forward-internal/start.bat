@@ -19,9 +19,16 @@ set ports[4]=30001:172.16.0.20:30001
 :: apiserver访问端口
 set ports[5]=9443:172.16.0.19:9443
 :: docker registry
-set ports[5]=35000:172.16.0.19:35000
+set ports[6]=35000:172.16.0.19:35000
 :: docker registry-ui
-set ports[5]=35001:172.16.0.19:35001
+set ports[7]=35001:172.16.0.19:35001
+:: pxc mysql
+set ports[8]=30100:172.16.0.19:30100
+:: percona-mongodb
+set ports[9]=30200:172.16.0.19:30200
+:: bitnami-redis
+set ports[10]=30300:172.16.0.19:30300
+set ports[11]=30500:172.16.0.19:30500
 
 :: 获取数组长度
 set length=0

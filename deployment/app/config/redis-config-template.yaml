@@ -1,0 +1,8 @@
+redis:
+  addr: "bitnami-redis.bitnami-redis.svc.cluster.local:30300"
+  password: "$redis_password"
+  db: 0
+  sentinel: true
+  sentinelAddrs:
+    - "bitnami-redis.bitnami-redis.svc.cluster.local:30350"
+  masterName: "mymaster"

@@ -24,9 +24,9 @@ FROM alpine:3.17 as runner
 WORKDIR /app
 COPY --from=builder /app/documentservice/documentservice /app/
 COPY --from=builder /app/documentservice/config /app/config/
-COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
-COPY --from=builder /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo/
+COPY --from=builder /usr/share/zoneinfo/Asia/Shanghai /etc/localtime/
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
-CMD mkdir -p /app/log && touch /app/log/all.log
-CMD /app/documentservice >> /app/log/all.log 2>&1
+RUN mkdir -p /app/log && touch /app/log/all.log
+CMD /app/documentservice | tee /app/log/all.log 2>&1

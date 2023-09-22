@@ -11,4 +11,4 @@ kubectl -n pxc exec -ti pxc-mysql-pxc-db-pxc-0 -c pxc -- mysql -uroot -p"$ROOT_P
 
 mysql客户端远程登陆
 kubectl run -it --rm percona-client --image=percona --restart=Never \
--- mysql -h pxc-mysql-pxc-db-haproxy-replicas.pxc.svc.cluster.local -uroot -p"$ROOT_PASSWORD"
+-- mysql -h pxc-mysql-nodeport.pxc.svc.cluster.local -uroot -p"$ROOT_PASSWORD"

@@ -2,19 +2,19 @@ kind: Deployment
 apiVersion: apps/v1
 metadata:
   labels:
-    app: documentservice
-  name: documentservice
+    app: authservice
+  name: authservice
   namespace: kc
 spec:
   replicas: 1
   revisionHistoryLimit: 10
   selector:
     matchLabels:
-      app: documentservice
+      app: authservice
   template:
     metadata:
       labels:
-        app: documentservice
+        app: authservice
     spec:
       serviceAccountName: kc
       containers:
@@ -22,10 +22,10 @@ spec:
           env:
             - name: TZ
               value: "Asia/Shanghai"
-          image: "docker-registry.protodesign.cn:35000/documentservice:latest"
+          image: "docker-registry.protodesign.cn:35000/authservice:latest"
           imagePullPolicy: Always
           ports:
-            - containerPort: 10003
+            - containerPort: 10001
               name: web
               protocol: TCP
           resources: {}
@@ -33,7 +33,7 @@ spec:
             failureThreshold: 300
             httpGet:
               path: /health_check
-              port: 10003
+              port: 10001
               scheme: HTTP
             initialDelaySeconds: 0
             periodSeconds: 1
@@ -43,7 +43,7 @@ spec:
             failureThreshold: 3
             httpGet:
               path: /health_check
-              port: 10003
+              port: 10001
               scheme: HTTP
             initialDelaySeconds: 0
             periodSeconds: 1
@@ -53,14 +53,14 @@ spec:
             failureThreshold: 3
             httpGet:
               path: /health_check
-              port: 10003
+              port: 10001
               scheme: HTTP
             initialDelaySeconds: 0
             periodSeconds: 10
             successThreshold: 1
             timeoutSeconds: 1
           volumeMounts:
-            - name: documentservice-config
+            - name: authservice-config
               mountPath: /app/config
               readOnly: true
             - name: jwt-config
@@ -79,9 +79,9 @@ spec:
               mountPath: /app/common/redis/config
               readOnly: true
       volumes:
-        - name: documentservice-config
+        - name: authservice-config
           secret:
-            secretName: documentservice-config
+            secretName: authservice-config
         - name: jwt-config
           secret:
             secretName: jwt-config
@@ -101,14 +101,14 @@ spec:
 kind: Service
 apiVersion: v1
 metadata:
-  name: documentservice
+  name: authservice
   namespace: kc
 spec:
   selector:
-    app: documentservice
+    app: authservice
   type: ClusterIP
   ports:
     - name: web
-      port: 10003
-      targetPort: 10003
+      port: 10001
+      targetPort: 10001
       protocol: TCP

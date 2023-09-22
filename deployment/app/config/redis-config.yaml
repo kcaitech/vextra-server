@@ -1,5 +1,0 @@
-redis:
-  #  addr: "redis_net_1:6379"
-  addr: "192.168.0.18:6379"
-  password: "kcserver"
-  db: 0

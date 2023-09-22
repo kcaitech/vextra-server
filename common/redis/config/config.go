@@ -6,9 +6,12 @@ import (
 
 type Configuration struct {
 	Redis struct {
-		Addr     string `yaml:"addr"`
-		Password string `yaml:"password"`
-		Db       int    `yaml:"db"`
+		Addr          string   `yaml:"addr"`
+		Password      string   `yaml:"password"`
+		Db            int      `yaml:"db"`
+		Sentinel      bool     `yaml:"sentinel"`
+		SentinelAddrs []string `yaml:"sentinelAddrs"`
+		MasterName    string   `yaml:"masterName"`
 	} `yaml:"redis"`
 }
 

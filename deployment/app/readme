@@ -1,0 +1,22 @@
+# 创建docker-registry访问密钥（k8s）
+./create-docker-registry-auth.sh
+
+# servicename取值：apigateway authservice userservice documentservice
+
+# 构建镜像（windows）
+./build-image.bat service_name version_tag
+# 例如
+./build-image.bat documentservice latest
+
+# 一次性构建所有servicename的镜像
+./build-image-all.bat version_tag
+# 例如
+./build-image-all.bat latest
+
+# 运行服务（k8s）
+./apply.sh service_name
+# 例如
+./apply.sh documentservice
+
+# 一次性运行所有servicename的服务
+./apply-all.sh

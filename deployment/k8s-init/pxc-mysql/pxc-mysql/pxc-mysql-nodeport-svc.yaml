@@ -10,7 +10,7 @@ spec:
   type: NodePort
   ports:
     - name: mysql-replicas
-      port: 3306
+      port: 30100
       protocol: TCP
       targetPort: 3306
       nodePort: 30100

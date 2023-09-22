@@ -1,0 +1,5 @@
+server:
+  port: "10002"
+
+db:
+  dsn: "root:$mysql_passwd@tcp(pxc-mysql-nodeport.pxc.svc.cluster.local:30100)/kcserver?charset=utf8&parseTime=True&loc=Local"

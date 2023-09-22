@@ -1082,7 +1082,7 @@ sentinel:
   masterSet: mymaster
   ## @param sentinel.quorum Sentinel Quorum
   ##
-  quorum: 3
+  quorum: 2
   ## @param sentinel.getMasterTimeout Amount of time to allow before get_sentinel_master_info() times out.
   ##
   getMasterTimeout: 99

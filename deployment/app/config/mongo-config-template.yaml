@@ -1,0 +1,3 @@
+mongo:
+  uri: "mongodb://$mongodb_user:$mongodb_password@mongos-nodeport.psmdb.svc.cluster.local:30200"
+  db: "kcserver"

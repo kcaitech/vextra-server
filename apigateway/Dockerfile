@@ -28,4 +28,5 @@ COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 COPY --from=builder /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
-CMD /app/apigateway >> /app/log/all.log 2>&1
+RUN mkdir -p /app/log && touch /app/log/all.log
+CMD /app/apigateway | tee /app/log/all.log 2>&1
