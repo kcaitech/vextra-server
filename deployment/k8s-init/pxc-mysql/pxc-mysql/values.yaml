@@ -85,7 +85,9 @@ pxc:
   # configuration: |
   #   [mysqld]
   #   wsrep_debug=ON
-  #   wsrep_provider_options="gcache.size=1G; gcache.recover=yes"
+  configuration: |
+    [mysqld]
+    default_authentication_plugin=mysql_native_password
   # envVarsSecret: my-env-var-secrets
   resources:
     requests:

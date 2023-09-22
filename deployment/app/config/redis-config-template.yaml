@@ -1,6 +1,6 @@
 redis:
   addr: "bitnami-redis.bitnami-redis.svc.cluster.local:30300"
-  password: "$redis_password"
+  password: "$redis_passwd"
   db: 0
   sentinel: true
   sentinelAddrs:

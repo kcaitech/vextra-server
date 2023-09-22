@@ -6,3 +6,6 @@ set -e
 ./apply.sh authservice
 ./apply.sh userservice
 ./apply.sh documentservice
+
+cd ./docop-server && ./apply.sh
+cd -

@@ -8,5 +8,5 @@ const (
 	AuthServiceHost     = "authservice.kc.svc.cluster.local:10001"
 	UserServiceHost     = "userservice.kc.svc.cluster.local:10002"
 	DocumentServiceHost = "documentservice.kc.svc.cluster.local:10003"
-	DocOpHost           = BaseServiceHost + ":10010"
+	DocOpHost           = "docop-server.kc.svc.cluster.local:10010"
 )
