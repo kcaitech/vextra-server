@@ -213,7 +213,7 @@ func WxLogin(c *gin.Context) {
 			return
 		}
 		if wxAccessTokenResp.Openid == "" {
-			log.Println("OpenId为空")
+			log.Println("OpenId为空", string(body))
 			response.Fail(c, "登陆失败")
 			return
 		}
