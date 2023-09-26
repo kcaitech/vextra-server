@@ -470,7 +470,7 @@ master:
     ## If set to "-", storageClassName: "", which disables dynamic provisioning
     ## If undefined (the default) or set to null, no storageClassName spec is set, choosing the default provisioner
     ##
-    storageClass: "local-hostpath"
+    storageClass: "local-hostpath-retain"
     ## @param master.persistence.accessModes Persistent Volume access modes
     ##
     accessModes:
@@ -913,7 +913,7 @@ replica:
     ## If set to "-", storageClassName: "", which disables dynamic provisioning
     ## If undefined (the default) or set to null, no storageClassName spec is set, choosing the default provisioner
     ##
-    storageClass: "local-hostpath"
+    storageClass: "local-hostpath-retain"
     ## @param replica.persistence.accessModes Persistent Volume access modes
     ##
     accessModes:

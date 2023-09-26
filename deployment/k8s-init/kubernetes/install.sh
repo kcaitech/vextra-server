@@ -50,6 +50,7 @@ fi
 echo "请输入所有master节点的name、ip和端口，多个之间以,隔开 格式：name ip:port"
 echo "（kc-master1 172.16.0.20:6443,kc-master2 172.16.0.21:6443,kc-master3 172.16.0.22:6443）"
 read -r master_nodes
+other_master_nodes_str=""
 # 验证格式以及分割
 if [[ "$master_nodes" == "" ]]; then
   master_nodes="kc-master1 172.16.0.20:6443,kc-master2 172.16.0.21:6443,kc-master3 172.16.0.22:6443"
@@ -59,6 +60,12 @@ for node in "${master_nodes[@]}"; do
   if [[ ! "$node" =~ ^[a-zA-Z0-9_-]+[[:space:]]+[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:[0-9]+$ ]]; then
     echo "输入错误"
     exit 1
+  fi
+  ip_port=$(echo "$node" | awk '{print $2}')
+  ip=$(echo "$ip_port" | cut -d: -f1)
+  # 如果ip不等于this_ip则加入other_master_nodes_str
+  if [[ "$ip" != "$this_ip" ]]; then
+    other_master_nodes_str+="    $ip\n"
   fi
 done
 
@@ -117,10 +124,9 @@ read -r -p "域名（registry-endpoint.protodesign.cn）：" registry_domain
 if [[ "$registry_domain" == "" ]]; then
   registry_domain="registry-endpoint.protodesign.cn"
 fi
-read -r -p "IP（同一网段可只输入最后一个数字）：" registry_ip
+read -r -p "IP（同一网段可只输入最后一个数字）（19）：" registry_ip
 if [[ "$registry_ip" == "" ]]; then
-  echo "输入错误"
-  exit 1
+    registry_ip="19"
 fi
 if [[ "$registry_ip" =~ ^[0-9]+$ ]]; then
   registry_ip="${this_ip%.*}.$registry_ip"
@@ -210,29 +216,38 @@ if [[ "$init_type" == "1" || "$init_type" == "2" ]]; then
     ip_port=$(echo "$node" | awk '{print $2}')
     echo "  server $name $ip_port check" >> haproxy.cfg
   done
+  mkdir /usr/local/k8s-init/haproxy -p
+  mv haproxy.cfg /usr/local/k8s-init/haproxy/haproxy.cfg
   # 以docker容器方式运行haproxy
   echo "以docker容器方式运行haproxy"
   docker run -d --name haproxy \
   --net=host \
   --restart=always \
-  -v "$(pwd)"/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro \
+  -v /usr/local/k8s-init/haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro \
   haproxytech/haproxy-ubuntu:2.8
 fi
 
 # 配置keepalived
 if [[ "$init_type" == "1" || "$init_type" == "2" ]]; then
   echo "配置keepalived"
-  mkdir /usr/local/k8s-init/haproxy -p
   cp keepalived.template.conf keepalived.conf
   sed -i "s/\$node_name/$node_name/g" keepalived.conf
   sed -i "s/\$keepalived_state/$keepalived_state/g" keepalived.conf
   sed -i "s/\$net_card_name/$net_card_name/g" keepalived.conf
   sed -i "s/\$keepalived_vip/$keepalived_vip/g" keepalived.conf
-  mv keepalived.conf /usr/local/k8s-init/haproxy/keepalived.conf
+  sed -i "s/\$node_ip/$this_ip/g" keepalived.conf
+  sed -i "s/    \$other_node_ip/$other_master_nodes_str/g" keepalived.conf
+  if [[ "$init_type" == "1" ]]; then
+    sed -i "s/\$priority/100/g" keepalived.conf
+  else
+    sed -i "s/\$priority/80/g" keepalived.conf
+  fi
+  mkdir /usr/local/k8s-init/keepalived -p
+  mv keepalived.conf /usr/local/k8s-init/keepalived/keepalived.conf
   # 配置check_haproxy.sh
   echo "配置check_haproxy.sh"
-  cp check_haproxy.sh /usr/local/k8s-init/haproxy/check_haproxy.sh
-  chmod +x /usr/local/k8s-init/haproxy/check_haproxy.sh
+  cp check_haproxy.sh /usr/local/k8s-init/keepalived/check_haproxy.sh
+  chmod +x /usr/local/k8s-init/keepalived/check_haproxy.sh
   # 以docker容器方式运行keepalived
   echo "以docker容器方式运行keepalived"
   docker run -d --name keepalived \
@@ -241,8 +256,8 @@ if [[ "$init_type" == "1" || "$init_type" == "2" ]]; then
   --cap-add=NET_BROADCAST \
   --cap-add=NET_RAW \
   --restart=always \
-  -v /usr/local/k8s-init/haproxy/keepalived.conf:/container/service/keepalived/assets/keepalived.conf \
-  -v /usr/local/k8s-init/haproxy/check_haproxy.sh:/usr/bin/check_haproxy.sh \
+  -v /usr/local/k8s-init/keepalived/keepalived.conf:/container/service/keepalived/assets/keepalived.conf \
+  -v /usr/local/k8s-init/keepalived/check_haproxy.sh:/usr/bin/check_haproxy.sh \
   osixia/keepalived:2.0.20 --copy-service
 fi
 
@@ -326,28 +341,30 @@ EOF
     # 清除master节点污点
     echo "清除master节点污点"
     kubectl taint nodes --all node-role.kubernetes.io/master-
-    # 修改kubelet参数
-    echo "修改kubelet参数（等待30秒）"
-    sleep 30
-    formatted_date=$(date +"%Y%m%d_%H%M%S")_$(date +%N | cut -c1-6)
-    cp /var/lib/kubelet/config.yaml /var/lib/kubelet/config.yaml.bak.$formatted_date
-    awk '
-    BEGIN { flag_system_reserved=0; flag_memory=0; }
-    /systemReserved:/ { flag_system_reserved=1; }
-    flag_system_reserved && /memory:/ { flag_memory=1; }
-    {
-      if (!flag_memory) {
-        print; # 默认打印当前行
-      } else {
-        spaces = $0;
-        sub(/memory:.*/, "", spaces); # 获取行首的空格
-        print spaces "memory: 256Mi";
-        flag_system_reserved=0; flag_memory=0;
-      }
-    }' /var/lib/kubelet/config.yaml > /var/lib/kubelet/config.yaml.tmp && mv /var/lib/kubelet/config.yaml.tmp /var/lib/kubelet/config.yaml
-    # 重启kubelet
-    echo "重启kubelet"
-    systemctl daemon-reload
-    systemctl restart kubelet
+
+#    # 修改kubelet参数
+#    echo "修改kubelet参数（等待30秒）"
+#    sleep 30
+#    formatted_date=$(date +"%Y%m%d_%H%M%S")_$(date +%N | cut -c1-6)
+#    cp /var/lib/kubelet/config.yaml /var/lib/kubelet/config.yaml.bak.$formatted_date
+#    awk '
+#    BEGIN { flag_system_reserved=0; flag_memory=0; }
+#    /systemReserved:/ { flag_system_reserved=1; }
+#    flag_system_reserved && /memory:/ { flag_memory=1; }
+#    {
+#      if (!flag_memory) {
+#        print; # 默认打印当前行
+#      } else {
+#        spaces = $0;
+#        sub(/memory:.*/, "", spaces); # 获取行首的空格
+#        print spaces "memory: 256Mi";
+#        flag_system_reserved=0; flag_memory=0;
+#      }
+#    }' /var/lib/kubelet/config.yaml > /var/lib/kubelet/config.yaml.tmp && mv /var/lib/kubelet/config.yaml.tmp /var/lib/kubelet/config.yaml
+#    # 重启kubelet
+#    echo "重启kubelet"
+#    systemctl daemon-reload
+#    systemctl restart kubelet
+
   fi
 fi

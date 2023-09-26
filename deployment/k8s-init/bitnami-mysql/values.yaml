@@ -456,7 +456,7 @@ primary:
     ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
     ##   GKE, AWS & OpenStack)
     ##
-    storageClass: "local-hostpath"
+    storageClass: "local-hostpath-retain"
     ## @param primary.persistence.annotations MySQL primary persistent volume claim annotations
     ##
     annotations: {}
@@ -848,7 +848,7 @@ secondary:
     ##   set, choosing the default provisioner.  (gp2 on AWS, standard on
     ##   GKE, AWS & OpenStack)
     ##
-    storageClass: "local-hostpath"
+    storageClass: "local-hostpath-retain"
     ## @param secondary.persistence.annotations MySQL secondary persistent volume claim annotations
     ##
     annotations: {}

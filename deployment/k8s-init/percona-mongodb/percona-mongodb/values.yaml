@@ -260,7 +260,7 @@ replsets:
         #   volume.beta.kubernetes.io/storage-class: example-hostpath
         # labels:
         #   rack: rack-22
-        storageClassName: "local-hostpath"
+        storageClassName: "local-hostpath-retain"
         accessModes: [ "ReadWriteOnce" ]
         resources:
           requests:
@@ -351,7 +351,7 @@ sharding:
         #   volume.beta.kubernetes.io/storage-class: example-hostpath
         # labels:
         #   rack: rack-22
-        storageClassName: "local-hostpath"
+        storageClassName: "local-hostpath-retain"
         accessModes: [ "ReadWriteOnce" ]
         resources:
           requests:

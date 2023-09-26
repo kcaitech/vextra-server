@@ -29,6 +29,10 @@ done
 
 # 设置时区
 echo "设置时区"
+apt update
+apt install -y systemd-timesyncd
+systemctl enable systemd-timesyncd
+systemctl start systemd-timesyncd
 timedatectl set-timezone Asia/Shanghai
 echo "NTP=cg.lzu.edu.cn" >> /etc/systemd/timesyncd.conf
 systemctl restart systemd-timesyncd
@@ -60,3 +64,20 @@ cp /etc/fstab /etc/fstab.bak.$formatted_date
 sed -i '/[ \t]swap[ \t]/ s/^/# /' /etc/fstab
 swapoff -a
 
+# 设置ssh参数
+echo "设置ssh参数"
+cp /etc/ssh/sshd_config /etc/ssh/sshd_config.bak.$formatted_date
+awk '
+/ClientAliveInterval [0-9]+/ {
+  print "ClientAliveInterval 60";
+  next
+}
+/ClientAliveCountMax [0-9]+/ {
+  print "ClientAliveCountMax 60";
+  next
+}
+{
+  print
+}
+' /etc/ssh/sshd_config > /etc/ssh/sshd_config.tmp && mv /etc/ssh/sshd_config.tmp /etc/ssh/sshd_config
+systemctl restart sshd
