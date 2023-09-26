@@ -136,7 +136,8 @@ func (s *ProjectService) GetProjectPermTypeByForUser(projectId int64, userId int
 	if !errors.Is(err, ErrRecordNotFound) {
 		return nil, err
 	}
-	return nil, nil
+	permNone := models.ProjectPermTypeNone
+	return &permNone, nil
 }
 
 type ProjectQuery struct {
