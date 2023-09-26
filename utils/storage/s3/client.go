@@ -1,6 +1,7 @@
 package s3
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"github.com/aws/aws-sdk-go/aws"
@@ -81,6 +82,36 @@ func (that *bucket) PutObject(putObjectInput *base.PutObjectInput) (*base.Upload
 	return &base.UploadInfo{
 		VersionID: versionID,
 	}, nil
+}
+
+func (that *bucket) GetObjectInfo(objectName string) (*base.ObjectInfo, error) {
+	result, err := that.client.client.HeadObject(&s3.HeadObjectInput{
+		Bucket: aws.String(that.config.BucketName),
+		Key:    aws.String(objectName),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &base.ObjectInfo{
+		VersionID: *result.VersionId,
+	}, nil
+}
+
+func (that *bucket) GetObject(objectName string) ([]byte, error) {
+	result, err := that.client.client.GetObject(&s3.GetObjectInput{
+		Bucket: aws.String(that.config.BucketName),
+		Key:    aws.String(objectName),
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer result.Body.Close()
+	buf := new(bytes.Buffer)
+	_, err = buf.ReadFrom(result.Body)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
 
 var authOpMap = map[int]string{

@@ -302,7 +302,7 @@ func UploadDocument(c *gin.Context) {
 			ws.Close()
 			return
 		}
-		if err == services.ErrRecordNotFound {
+		if errors.Is(err, services.ErrRecordNotFound) {
 			_ = documentAccessRecordService.Create(&models.DocumentAccessRecord{
 				UserId:         userId,
 				DocumentId:     documentId,
@@ -320,7 +320,10 @@ func UploadDocument(c *gin.Context) {
 		VersionId:  documentVersionId,
 		LastCmdId:  str.DefaultToInt(lastCmdId, 0),
 	}); err != nil {
-
+		resp.Message = "对象上传错误...."
+		_ = ws.WriteJSON(&resp)
+		ws.Close()
+		return
 	}
 
 	resp.Status = ResponseStatusSuccess

@@ -72,7 +72,6 @@ func UploadDocumentResource(c *gin.Context) {
 			resp.Message += "，无权限"
 		}
 		_ = ws.WriteJSON(&resp)
-		log.Println("权限校验失败", err, permType)
 		return
 	}
 

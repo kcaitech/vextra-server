@@ -1,6 +1,7 @@
 package minio
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -74,6 +75,40 @@ func (that *bucket) PutObject(putObjectInput *base.PutObjectInput) (*base.Upload
 	return &base.UploadInfo{
 		VersionID: result.VersionID,
 	}, nil
+}
+
+func (that *bucket) GetObjectInfo(objectName string) (*base.ObjectInfo, error) {
+	objectInfo, err := that.client.client.StatObject(
+		context.Background(),
+		that.config.BucketName,
+		objectName,
+		minio.StatObjectOptions{},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &base.ObjectInfo{
+		VersionID: objectInfo.VersionID,
+	}, nil
+}
+
+func (that *bucket) GetObject(objectName string) ([]byte, error) {
+	object, err := that.client.client.GetObject(
+		context.Background(),
+		that.config.BucketName,
+		objectName,
+		minio.GetObjectOptions{},
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer object.Close()
+	buf := new(bytes.Buffer)
+	_, err = buf.ReadFrom(object)
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
 
 var authOpMap = map[int]string{

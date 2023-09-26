@@ -36,6 +36,8 @@ type Bucket interface {
 	GenerateAccessKey(authPath string, authOp int, expires int, roleArn string, roleSessionName string) (*AccessKeyValue, error)
 	CopyObject(srcPath string, destPath string) (*UploadInfo, error)
 	CopyDirectory(srcDirPath string, destDirPath string) (*UploadInfo, error)
+	GetObjectInfo(objectName string) (*ObjectInfo, error)
+	GetObject(objectName string) ([]byte, error)
 }
 
 type BucketConfig struct {
@@ -52,11 +54,15 @@ type UploadInfo struct {
 	VersionID string `json:"versionId"`
 }
 
+type ObjectInfo struct {
+	VersionID string `json:"versionId"`
+}
+
 type DefaultBucket struct {
 	That Bucket
 }
 
-func (that *DefaultBucket) PubObject(objectName string, reader io.Reader, objectSize int64, contentType string) (*UploadInfo, error) {
+func (that *DefaultBucket) PubObject(putObjectInput *PutObjectInput) (*UploadInfo, error) {
 	return nil, errors.New("PubObject方法未实现")
 }
 

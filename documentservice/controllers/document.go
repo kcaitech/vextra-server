@@ -206,6 +206,47 @@ func CopyDocument(c *gin.Context) {
 		response.Fail(c, "复制失败")
 		return
 	}
+
+	documentMetaBytes, err := storage.Bucket.GetObject(targetDocumentPath + "/document-meta.json")
+	if err != nil {
+		log.Println("获取document-meta.json失败：", err)
+		response.Fail(c, "复制失败")
+		return
+	}
+	documentMeta := map[string]any{}
+	if err := bson.UnmarshalExtJSON(documentMetaBytes, true, &documentMeta); err != nil {
+		log.Println("documentMetaBytes转json失败：", err)
+		response.Fail(c, "复制失败")
+		return
+	}
+	for _, page := range documentMeta["pagesList"].(bson.A) {
+		pageItem, ok := page.(map[string]any)
+		if !ok {
+			log.Println("pageItem转map失败：", err)
+			response.Fail(c, "复制失败")
+			return
+		}
+		pageObjectInfo, err := storage.Bucket.GetObjectInfo(targetDocumentPath + "/pages/" + pageItem["id"].(string) + ".json")
+		if err != nil {
+			log.Println("获取pageObjectInfo失败：", err)
+			response.Fail(c, "复制失败")
+			return
+		}
+		pageItem["versionId"] = pageObjectInfo.VersionID
+	}
+	documentMetaBytes, err = bson.MarshalExtJSON(documentMeta, true, true)
+	if err != nil {
+		log.Println("documentMeta转json失败：", err)
+		response.Fail(c, "复制失败")
+		return
+	}
+	documentMetaUploadInfo, err := storage.Bucket.PutObjectByte(targetDocumentPath+"/document-meta.json", documentMetaBytes)
+	if err != nil {
+		log.Println("documentMeta上传失败：", err)
+		response.Fail(c, "复制失败")
+		return
+	}
+
 	// 复制文档
 	targetDocument := models.Document{
 		UserId:    userId,
@@ -215,9 +256,19 @@ func CopyDocument(c *gin.Context) {
 		Size:      sourceDocument.Size,
 		TeamId:    sourceDocument.TeamId,
 		ProjectId: sourceDocument.ProjectId,
+		VersionId: documentMetaUploadInfo.VersionID,
 	}
 	if err := documentService.Create(&targetDocument); err != nil {
 		response.Fail(c, "创建失败")
+		return
+	}
+	// 创建文档版本记录
+	if err := documentService.DocumentVersionService.Create(&models.DocumentVersion{
+		DocumentId: targetDocument.Id,
+		VersionId:  documentMetaUploadInfo.VersionID,
+		LastCmdId:  0,
+	}); err != nil {
+		log.Println("创建文档版本记录失败：", err)
 		return
 	}
 	// 复制cmd
@@ -247,6 +298,7 @@ func CopyDocument(c *gin.Context) {
 		item.DocumentId = targetDocument.Id
 		item.LastId = lastId
 		lastId = str.IntToString(item.Id)
+		item.VersionId = documentMetaUploadInfo.VersionID
 		return item
 	}, documentCmdList...)
 	_, err = documentCollection.InsertMany(nil, newDocumentCmdList)

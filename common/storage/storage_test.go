@@ -25,3 +25,15 @@ func TestCopyDirectory(t *testing.T) {
 		log.Fatalln("复制目录失败：" + err.Error())
 	}
 }
+
+func TestGetObjectInfo(t *testing.T) {
+	var err error
+	if err = Init("config_test.yaml"); err != nil {
+		log.Fatalln("storage初始化失败：" + err.Error())
+	}
+	var documentInfo *base.ObjectInfo
+	if documentInfo, err = Bucket.GetObjectInfo("9b4482f8-c1fd-47ce-b19b-2387b963f3f9/document-meta.json"); err != nil {
+		log.Fatalln("获取文件信息失败：" + err.Error())
+	}
+	log.Println(documentInfo.VersionID)
+}
