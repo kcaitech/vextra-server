@@ -20,6 +20,8 @@ func Init(filePath string) error {
 		providerConf = conf.Minio
 	case base.S3:
 		providerConf = conf.S3
+	case base.OSS:
+		providerConf = conf.Oss
 	default:
 		return errors.New("不支持的provider")
 	}

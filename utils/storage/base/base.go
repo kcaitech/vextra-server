@@ -23,7 +23,7 @@ type ClientConfig struct {
 	StsAccessKeyID     string `yaml:"stsAccessKeyID"`
 	StsSecretAccessKey string `yaml:"stsSecretAccessKey"`
 
-	// s3 sts
+	// s3/oss sts
 	StsEndpoint string `yaml:"stsEndpoint"`
 	AccountId   string `yaml:"accountId"`
 	RoleName    string `yaml:"roleName"`

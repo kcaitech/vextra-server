@@ -23,7 +23,7 @@ func TestHS256(t *testing.T) {
 		t.Fatal(err)
 	}
 	fmt.Println(jwtString)
-	jwtString = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2ODM5NjA2ODUsIm5iZiI6MTY4MzM1NTg4NSwiaWF0IjoxNjgzMzU1ODg1LCJkYXRhIjp7ImRhdGEiOnsiaWQiOiI4Iiwibmlja25hbWUiOiJJY2UuWiJ9fX0.AZsb_9SYPWAoQHjFD1S0PqY5Kq34yFtmhQ4hKN0BceE"
+	jwtString = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2OTY3MDg2MTAsIm5iZiI6MTY5NjEwMzgxMCwiaWF0IjoxNjk2MTAzODEwLCJkYXRhIjp7ImRhdGEiOnsiaWQiOiIxMTA2NzgzODE3MDc2NzM2MDAiLCJuaWNrbmFtZSI6IkpmZW5nIn19fQ.RTS7B1DYM4iJPZE3HOV6bcn1jv7pFSEiD10mdDyAMvg"
 	jwtParseRes, err := jwt.Parse(jwtString)
 	if err != nil {
 		t.Fatal(err)

@@ -11,6 +11,7 @@ type Configuration struct {
 	} `yaml:"storage"`
 	Minio base.Config `yaml:"minio"`
 	S3    base.Config `yaml:"s3"`
+	Oss   base.Config `yaml:"oss"`
 }
 
 var Config Configuration

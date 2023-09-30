@@ -27,7 +27,7 @@ func CreateJwt(jwtData *Data) (string, error) {
 	now := time.Now()
 	t.SetRegisteredClaims(jwt.Payload{
 		Exp: now.Add(time.Hour * time.Duration(config.Config.Jwt.ExpireHour)).Unix(), // 过期时间
-		Nbf: now.Unix(),                                                              // 生效时间
+		Nbf: now.Add((-1) * time.Minute).Unix(),                                      // 生效时间
 	})
 	token, err := t.General()
 	if err != nil {
@@ -40,7 +40,7 @@ func ParseJwt(token string) (*Data, error) {
 	t, _ := jwt.NewJwt(jwt.NewHS256Signer(config.Config.Jwt.Secret))
 	payload, err := t.Parse(token)
 	if err != nil {
-		if err == jwt.ErrTokenExpired {
+		if errors.Is(err, jwt.ErrTokenExpired) {
 			return nil, err
 		} else {
 			return nil, errors.New("无效token")
