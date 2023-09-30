@@ -118,7 +118,7 @@ var authOpMap = map[int]string{
 	base.AuthOpListObject: "s3:ListBucket",
 }
 
-func (that *bucket) GenerateAccessKey(authPath string, authOp int, expires int, roleArn string, roleSessionName string) (*base.AccessKeyValue, error) {
+func (that *bucket) GenerateAccessKey(authPath string, authOp int, expires int, roleSessionName string) (*base.AccessKeyValue, error) {
 	authPath = strings.TrimLeft(authPath, "/")
 	authOpList := make([]string, 0, strconv.IntSize)
 	authOpListDistinct := make(map[int]struct{}, strconv.IntSize)
@@ -147,6 +147,7 @@ func (that *bucket) GenerateAccessKey(authPath string, authOp int, expires int, 
 	if err != nil {
 		return nil, err
 	}
+	roleArn := ""
 	stsAssumeRole, err := credentials.NewSTSAssumeRole("http://"+that.client.config.Endpoint, credentials.STSAssumeRoleOptions{
 		AccessKey:       that.client.config.StsAccessKeyID,
 		SecretKey:       that.client.config.StsSecretAccessKey,

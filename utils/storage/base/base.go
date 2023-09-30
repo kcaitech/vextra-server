@@ -13,13 +13,20 @@ type Client interface {
 }
 
 type ClientConfig struct {
-	Provider           Provider `yaml:"provider"`
-	Endpoint           string   `yaml:"endpoint"`
-	Region             string   `yaml:"region"`
-	AccessKeyID        string   `yaml:"accessKeyID"`
-	SecretAccessKey    string   `yaml:"secretAccessKey"`
-	StsAccessKeyID     string   `yaml:"stsAccessKeyID"`
-	StsSecretAccessKey string   `yaml:"stsSecretAccessKey"`
+	Provider        Provider `yaml:"provider"`
+	Endpoint        string   `yaml:"endpoint"`
+	Region          string   `yaml:"region"`
+	AccessKeyID     string   `yaml:"accessKeyID"`
+	SecretAccessKey string   `yaml:"secretAccessKey"`
+
+	// minio sts
+	StsAccessKeyID     string `yaml:"stsAccessKeyID"`
+	StsSecretAccessKey string `yaml:"stsSecretAccessKey"`
+
+	// s3 sts
+	StsEndpoint string `yaml:"stsEndpoint"`
+	AccountId   string `yaml:"accountId"`
+	RoleName    string `yaml:"roleName"`
 }
 
 type PutObjectInput struct {
@@ -33,7 +40,7 @@ type Bucket interface {
 	PutObject(putObjectInput *PutObjectInput) (*UploadInfo, error)
 	PutObjectByte(objectName string, content []byte) (*UploadInfo, error)
 	PutObjectList(putObjectInputList []*PutObjectInput) ([]*UploadInfo, []error)
-	GenerateAccessKey(authPath string, authOp int, expires int, roleArn string, roleSessionName string) (*AccessKeyValue, error)
+	GenerateAccessKey(authPath string, authOp int, expires int, roleSessionName string) (*AccessKeyValue, error)
 	CopyObject(srcPath string, destPath string) (*UploadInfo, error)
 	CopyDirectory(srcDirPath string, destDirPath string) (*UploadInfo, error)
 	GetObjectInfo(objectName string) (*ObjectInfo, error)
@@ -123,6 +130,6 @@ const (
 	AuthOpAll        = AuthOpGetObject | AuthOpPutObject | AuthOpDelObject | AuthOpListObject
 )
 
-func (that *DefaultBucket) GenerateAccessKey(authPath string, authOp int, expires int) (*AccessKeyValue, error) {
+func (that *DefaultBucket) GenerateAccessKey(authPath string, authOp int, expires int, roleSessionName string) (*AccessKeyValue, error) {
 	return nil, errors.New("generateAccessKey方法未实现")
 }

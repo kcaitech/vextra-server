@@ -210,8 +210,8 @@ replsets:
           cpu: "300m"
           memory: "0.5G"
         requests:
-          cpu: "300m"
-          memory: "0.5G"
+          cpu: "100m"
+          memory: "100Mi"
       volumeSpec:
         # emptyDir: {}
         # hostPath:
@@ -251,8 +251,8 @@ replsets:
       limits:
         memory: "0.5G"
       requests:
-        cpu: "300m"
-        memory: "100M"
+        cpu: "100m"
+        memory: "100Mi"
     volumeSpec:
       # emptyDir: {}
       # hostPath:
@@ -346,8 +346,8 @@ sharding:
       limits:
         memory: "0.5G"
       requests:
-        cpu: "300m"
-        memory: "100M"
+        cpu: "100m"
+        memory: "100Mi"
     volumeSpec:
       # emptyDir: {}
       # hostPath:
@@ -422,7 +422,7 @@ sharding:
         memory: "0.5G"
       requests:
         cpu: "100m"
-        memory: "100M"
+        memory: "100Mi"
     expose:
       exposeType: ClusterIP
       # servicePerPod: true

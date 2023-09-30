@@ -66,7 +66,6 @@ func GetDocumentAccessKey(c *gin.Context) {
 		document.Path+"/*",
 		base.AuthOpGetObject|base.AuthOpListObject,
 		3600,
-		"",
 		"U"+str.IntToString(userId)+"D"+str.IntToString(documentId),
 	)
 	if err != nil {

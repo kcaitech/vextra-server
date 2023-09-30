@@ -13,8 +13,11 @@ minio:
 
 s3:
   endpoint: "oss-cn-hangzhou-internal.aliyuncs.com"
-  region: "hangzhou"
+  stsEndpoint: "sts-vpc.cn-hangzhou.aliyuncs.com"
+  region: "cn-hangzhou"
   accessKeyID: "LTAI5tSm1Y5obQCwVn7X9k2x"
   secretAccessKey: "0uXxQBqG8nQC7uiyipTX6F4JkEDlcB"
+  accountID: "1382280232399206"
+  roleName: "ramoss"
   bucketName: "protodesign-document"
   filesBucketName: "protodesign-files"

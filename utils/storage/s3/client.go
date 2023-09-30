@@ -16,9 +16,10 @@ import (
 )
 
 type client struct {
-	config *base.ClientConfig
-	sess   *session.Session
-	client *s3.S3
+	config  *base.ClientConfig
+	sess    *session.Session
+	stsSess *session.Session
+	client  *s3.S3
 }
 
 func NewClient(config *base.ClientConfig) (base.Client, error) {
@@ -27,15 +28,26 @@ func NewClient(config *base.ClientConfig) (base.Client, error) {
 		Region:           aws.String(config.Region),
 		Credentials:      credentials.NewStaticCredentials(config.AccessKeyID, config.SecretAccessKey, ""),
 		DisableSSL:       aws.Bool(true),
-		S3ForcePathStyle: aws.Bool(true),
+		S3ForcePathStyle: aws.Bool(false), // oss需要为false，minio需要为true
+	})
+	if err != nil {
+		return nil, err
+	}
+	stsSess, err := session.NewSession(&aws.Config{
+		Endpoint:         aws.String(config.StsEndpoint),
+		Region:           aws.String(config.Region),
+		Credentials:      credentials.NewStaticCredentials(config.AccessKeyID, config.SecretAccessKey, ""),
+		DisableSSL:       aws.Bool(true),
+		S3ForcePathStyle: aws.Bool(false), // oss需要为false，minio需要为true
 	})
 	if err != nil {
 		return nil, err
 	}
 	return &client{
-		config: config,
-		sess:   sess,
-		client: s3.New(sess),
+		config:  config,
+		sess:    sess,
+		stsSess: stsSess,
+		client:  s3.New(sess),
 	}, nil
 }
 
@@ -115,13 +127,13 @@ func (that *bucket) GetObject(objectName string) ([]byte, error) {
 }
 
 var authOpMap = map[int]string{
-	base.AuthOpGetObject:  "s3:GetObject",
-	base.AuthOpPutObject:  "s3:PutObject",
-	base.AuthOpDelObject:  "s3:DeleteObject",
-	base.AuthOpListObject: "s3:ListBucket",
+	base.AuthOpGetObject:  "oss:GetObject",
+	base.AuthOpPutObject:  "oss:PutObject",
+	base.AuthOpDelObject:  "oss:DeleteObject",
+	base.AuthOpListObject: "oss:ListBuckets",
 }
 
-func (that *bucket) GenerateAccessKey(authPath string, authOp int, expires int, roleArn string, roleSessionName string) (*base.AccessKeyValue, error) {
+func (that *bucket) GenerateAccessKey(authPath string, authOp int, expires int, roleSessionName string) (*base.AccessKeyValue, error) {
 	authPath = strings.TrimLeft(authPath, "/")
 	authOpList := make([]string, 0, strconv.IntSize)
 	authOpListDistinct := make(map[int]struct{}, strconv.IntSize)
@@ -136,13 +148,13 @@ func (that *bucket) GenerateAccessKey(authPath string, authOp int, expires int, 
 		}
 	}
 	policy, err := json.Marshal(map[string]any{
-		"Version": "2012-10-17",
+		"Version": "1",
 		"Statement": []map[string]any{
 			{
 				"Action": authOpList,
 				"Effect": "Allow",
 				"Resource": []string{
-					"arn:aws:s3:::" + that.config.BucketName + "/" + authPath,
+					"acs:oss:*:*:" + that.config.BucketName + "/" + authPath,
 				},
 			},
 		},
@@ -150,9 +162,10 @@ func (that *bucket) GenerateAccessKey(authPath string, authOp int, expires int, 
 	if err != nil {
 		return nil, err
 	}
-	stsSvc := sts.New(that.client.sess)
+	stsSvc := sts.New(that.client.stsSess)
+	roleArn := "acs:ram::" + that.client.config.AccountId + ":role/" + that.client.config.RoleName
 	result, err := stsSvc.AssumeRole(&sts.AssumeRoleInput{
-		RoleArn:         aws.String(roleArn), //"arn:aws:iam::123456789012:role/demo"
+		RoleArn:         aws.String(roleArn),
 		RoleSessionName: aws.String(roleSessionName),
 		Policy:          aws.String(string(policy)),
 		DurationSeconds: aws.Int64(int64(expires)),

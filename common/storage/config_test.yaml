@@ -17,5 +17,7 @@ s3:
   region: "zhuhai-1"
   accessKeyID: "Gathooh88mba5H3y2"
   secretAccessKey: "yFukp3vtIkUNck2XL3s2KOT4wyRPR71G2"
+  accountID: ""
+  roleName: ""
   bucketName: "document"
   filesBucketName: "files"
