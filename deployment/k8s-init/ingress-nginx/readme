@@ -1,0 +1,21 @@
+# 需要先将ingress-nginx的镜像上传至私有仓库
+# 使用devops\docker-registry\load-image.bat脚本完成
+.\load-image.bat registry.k8s.io ingress-nginx/controller:v1.9.0
+.\load-image.bat registry.k8s.io ingress-nginx/kube-webhook-certgen:v20230407
+
+# 部署ingress-nginx
+./install.sh
+
+# 测试
+cd test
+./run.sh
+# 进入测试容器
+ingressNginxIp=$(kubectl -n ingress-nginx get svc ingress-nginx-controller -o=jsonpath='{.spec.clusterIP}')
+../../../devops/test/run-netshoot.sh "--env=ingressNginxIp=$ingressNginxIp"
+# 测试
+curl httpd.default.svc:8000
+echo "$ingressNginxIp www.http123.com" >> /etc/hosts
+curl www.http123.com
+# 清除测试环境
+exit
+./clean.sh

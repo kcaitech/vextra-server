@@ -1,12 +1,20 @@
 storage:
-  provider: "minio"
+  provider: "s3"
 
 minio:
-  endpoint: "192.168.0.18:9000"
-  region: "zhuhai-1"
-  accessKeyID: "Gathooh88mba5H3y2"
-  secretAccessKey: "yFukp3vtIkUNck2XL3s2KOT4wyRPR71G2"
-  stsAccessKeyID: "Gathooh88mba5H3y1"
-  stsSecretAccessKey: "yFukp3vtIkUNck2XL3s2KOT4wyRPR71G1"
-  bucketName: "document"
-  filesBucketName: "files"
+  endpoint: "oss-cn-hangzhou-internal.aliyuncs.com"
+  region: "hangzhou"
+  accessKeyID: "LTAI5tSm1Y5obQCwVn7X9k2x"
+  secretAccessKey: "0uXxQBqG8nQC7uiyipTX6F4JkEDlcB"
+  stsAccessKeyID: "LTAI5tSm1Y5obQCwVn7X9k2x"
+  stsSecretAccessKey: "0uXxQBqG8nQC7uiyipTX6F4JkEDlcB"
+  bucketName: "protodesign-document"
+  filesBucketName: "protodesign-files"
+
+s3:
+  endpoint: "oss-cn-hangzhou-internal.aliyuncs.com"
+  region: "hangzhou"
+  accessKeyID: "LTAI5tSm1Y5obQCwVn7X9k2x"
+  secretAccessKey: "0uXxQBqG8nQC7uiyipTX6F4JkEDlcB"
+  bucketName: "protodesign-document"
+  filesBucketName: "protodesign-files"

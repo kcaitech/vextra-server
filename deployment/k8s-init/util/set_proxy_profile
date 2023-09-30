@@ -29,5 +29,5 @@ export http_proxy=$proxy_address
 export https_proxy=$proxy_address
 export HTTP_PROXY=$proxy_address
 export HTTPS_PROXY=$proxy_address
-export no_proxy=localhost,127.0.0.1,cluster-endpoint
-export NO_PROXY=localhost,127.0.0.1,cluster-endpoint
+export no_proxy=localhost,127.0.0.1,cluster-endpoint,kubernetes.oss-cn-hangzhou.aliyuncs.com
+export NO_PROXY=localhost,127.0.0.1,cluster-endpoint,kubernetes.oss-cn-hangzhou.aliyuncs.com

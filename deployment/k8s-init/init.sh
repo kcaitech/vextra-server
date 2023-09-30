@@ -80,4 +80,26 @@ awk '
   print
 }
 ' /etc/ssh/sshd_config > /etc/ssh/sshd_config.tmp && mv /etc/ssh/sshd_config.tmp /etc/ssh/sshd_config
-systemctl restart sshd
+service ssh restart
+
+# 关闭防火墙
+echo "关闭防火墙"
+systemctl stop ufw
+systemctl disable ufw
+
+# 清空iptables
+echo "清空iptables"
+iptables -F
+iptables -X
+iptables -Z
+iptables -t nat -F
+iptables -t nat -X
+iptables -t nat -Z
+iptables -t mangle -F
+iptables -t mangle -X
+iptables -t mangle -Z
+iptables -t raw -F
+iptables -t raw -X
+iptables -t raw -Z
+
+

@@ -120,9 +120,9 @@ fi
 
 # 获取docker-registry的域名和IP
 echo "请输入docker-registry的endpoint信息"
-read -r -p "域名（registry-endpoint.protodesign.cn）：" registry_domain
+read -r -p "域名（docker-registry.protodesign.cn）：" registry_domain
 if [[ "$registry_domain" == "" ]]; then
-  registry_domain="registry-endpoint.protodesign.cn"
+  registry_domain="docker-registry.protodesign.cn"
 fi
 read -r -p "IP（同一网段可只输入最后一个数字）（19）：" registry_ip
 if [[ "$registry_ip" == "" ]]; then

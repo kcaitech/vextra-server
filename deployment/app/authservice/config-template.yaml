@@ -2,7 +2,7 @@ server:
   port: "10001"
 
 db:
-  dsn: "root:$mysql_passwd@tcp(pxc-mysql-nodeport.pxc.svc.cluster.local:30100)/kcserver?charset=utf8&parseTime=True&loc=Local"
+  dsn: "root:$mysql_passwd@tcp(bitnami-mariadb-galera.bitnami-mariadb-galera.svc.cluster.local:30100)/kcserver?charset=utf8&parseTime=True&loc=Local"
 
 wx:
   appid: "wx42bb87f7f2e86a6e"

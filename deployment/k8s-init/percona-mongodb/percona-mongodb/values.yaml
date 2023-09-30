@@ -105,18 +105,20 @@ replsets:
     labels:
       app: percona-mongodb-rs
     # nodeSelector: {}
-    # livenessProbe:
-    #   failureThreshold: 4
-    #   initialDelaySeconds: 60
-    #   periodSeconds: 30
-    #   timeoutSeconds: 10
-    #   startupDelaySeconds: 7200
-    # readinessProbe:
-    #   failureThreshold: 8
-    #   initialDelaySeconds: 10
-    #   periodSeconds: 3
-    #   successThreshold: 1
-    #   timeoutSeconds: 2
+    livenessProbe:
+      failureThreshold: 20
+      initialDelaySeconds: 60
+      periodSeconds: 30
+      timeoutSeconds: 10
+      startupDelaySeconds: 7200
+    readinessProbe:
+      failureThreshold: 8
+      initialDelaySeconds: 10
+      periodSeconds: 3
+      successThreshold: 1
+      timeoutSeconds: 2
+      tcpSocket:
+        port: 27017
     # runtimeClassName: image-rc
     # storage:
     #   engine: wiredTiger
@@ -311,7 +313,12 @@ sharding:
     labels:
       app: percona-mongodb-config
     # nodeSelector: {}
-    # livenessProbe: {}
+    livenessProbe:
+      failureThreshold: 20
+      initialDelaySeconds: 60
+      periodSeconds: 30
+      timeoutSeconds: 10
+      startupDelaySeconds: 7200
     # readinessProbe: {}
     # runtimeClassName: image-rc
     # sidecars:
@@ -390,7 +397,12 @@ sharding:
     labels:
       app: percona-mongodb-mongos
     # nodeSelector: {}
-    # livenessProbe: {}
+    livenessProbe:
+      failureThreshold: 20
+      initialDelaySeconds: 60
+      periodSeconds: 30
+      timeoutSeconds: 10
+      startupDelaySeconds: 7200
     # readinessProbe: {}
     # runtimeClassName: image-rc
     # sidecars:

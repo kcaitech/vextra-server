@@ -1,8 +1,12 @@
 要在root用户下运行
 分别进入到需要安装的软件的目录
 1) 查看readme
-2) chmod +x install.sh 或 find . -type f -name "*.sh" -exec chmod +x {} \;
+2) chmod +x ins
+tall.sh 或 find . -type f -name "*.sh" -exec chmod +x {} \;
 3) ./install.sh
+
+卸载阿里云盾：
+./uninstall_aliyundun.sh
 
 典型顺序：
 1. chmod +x init.sh && ./init.sh
@@ -10,7 +14,7 @@
 3. helm
 4. kuboard
 5. openebs
-6. pxc-mysql
+6. bitnami-mariadb-galera
 7. percona-mongodb
 8. bitnami-redis
 9. minio

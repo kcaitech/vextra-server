@@ -31,6 +31,8 @@ spec:
               value: "/auth/htpasswd"
             - name: REGISTRY_STORAGE_DELETE_ENABLED
               value: "true"
+            - name: REGISTRY_PROXY_REMOTEURL
+              value: "https://jsoixv4u.mirror.aliyuncs.com"
           ports:
             - containerPort: 5000
               name: web

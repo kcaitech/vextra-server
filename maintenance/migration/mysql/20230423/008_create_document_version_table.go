@@ -8,7 +8,7 @@ import (
 type DocumentVersion struct {
 	BaseModel
 	DocumentId int64  `gorm:"index" json:"document_id"`
-	VersionId  string `gorm:"index;size:36" json:"version_id"`
+	VersionId  string `gorm:"index;size:64" json:"version_id"`
 	LastCmdId  int64  `gorm:"" json:"last_cmd_id"` // 此版本最后一个cmd的id
 }
 

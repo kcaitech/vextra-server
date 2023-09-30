@@ -17,6 +17,6 @@ spec:
   ports:
     - name: mongos
       protocol: TCP
-      port: 27017
+      port: 30200
       targetPort: 27017
       nodePort: 30200

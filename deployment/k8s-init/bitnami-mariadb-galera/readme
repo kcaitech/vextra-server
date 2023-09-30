@@ -1,0 +1,8 @@
+# 获取mysql root密码
+ROOT_PASSWORD=$(kubectl -n bitnami-mariadb-galera get secret bitnami-mariadb-galera -o jsonpath="{.data.mariadb-root-password}" | base64 -d)
+echo $ROOT_PASSWORD
+
+# 进入mysql
+kubectl -n bitnami-mariadb-galera run bitnami-mariadb-galera-client -it --rm --restart='Never' \
+--image docker.io/bitnami/mariadb-galera:11.0.3-debian-11-r33 --command \
+-- mysql -h bitnami-mariadb-galera.bitnami-mariadb-galera.svc.cluster.local -P 30100 -uroot -p$ROOT_PASSWORD
