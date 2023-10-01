@@ -97,11 +97,11 @@ func (that *bucket) GetObject(objectName string) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-var authOpMap = map[int]string{
-	base.AuthOpGetObject:  "oss:GetObject",
-	base.AuthOpPutObject:  "oss:PutObject",
-	base.AuthOpDelObject:  "oss:DeleteObject",
-	base.AuthOpListObject: "oss:ListObjects",
+var authOpMap = map[int][]string{
+	base.AuthOpGetObject:  {"oss:GetObject", "oss:GetObjectAcl", "oss:GetObjectVersion", "oss:GetObjectVersionAcl"},
+	base.AuthOpPutObject:  {"oss:PutObject", "oss:PutObjectAcl", "oss:PutObjectVersionAcl"},
+	base.AuthOpDelObject:  {"oss:DeleteObject", "oss:DeleteObjectVersion"},
+	base.AuthOpListObject: {"oss:ListObjects", "oss:ListObjectVersions"},
 }
 
 func (that *bucket) GenerateAccessKey(authPath string, authOp int, expires int, roleSessionName string) (*base.AccessKeyValue, error) {
@@ -114,7 +114,9 @@ func (that *bucket) GenerateAccessKey(authPath string, authOp int, expires int, 
 			continue
 		}
 		if authOp&(authOpValue) > 0 {
-			authOpList = append(authOpList, authOpMap[authOpValue])
+			for _, v := range authOpMap[authOpValue] {
+				authOpList = append(authOpList, v)
+			}
 			authOpListDistinct[authOpValue] = struct{}{}
 		}
 	}
@@ -143,8 +145,7 @@ func (that *bucket) GenerateAccessKey(authPath string, authOp int, expires int, 
 	request.Domain = that.client.config.StsEndpoint
 	request.RoleArn = roleArn
 	request.RoleSessionName = roleSessionName
-	//request.Policy = string(policy)
-	policy = policy
+	request.Policy = string(policy)
 	request.DurationSeconds = requests.NewInteger(expires)
 	response, err := stsClient.AssumeRole(request)
 	if err != nil {
