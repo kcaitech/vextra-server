@@ -99,6 +99,9 @@ func OpenDocCommentOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serve
 		pubsub := redis.Client.Subscribe(context.Background(), "Document Comment[DocumentId:"+documentIdStr+"]")
 		defer pubsub.Close()
 		for v := range pubsub.Channel() {
+			if tunnelServer.IsClose {
+				break
+			}
 			tunnelServer.ToClientChan <- []byte(v.Payload)
 		}
 	}()

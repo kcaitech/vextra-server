@@ -168,6 +168,9 @@ func OpenDocSelectionOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, ser
 				Data:   selectionData,
 			}
 			if data, err := json.Marshal(docSelectionOpData); err == nil {
+				if tunnelServer.IsClose {
+					return
+				}
 				tunnelServer.ToClientChan <- data
 			}
 		}
@@ -240,6 +243,9 @@ func OpenDocSelectionOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, ser
 					if data, err := json.Marshal(docSelectionOpData); err == nil {
 						redis.Client.Publish(context.Background(), "Document Selection[DocumentId:"+documentIdStr+"]", string(data))
 					}
+					return
+				}
+				if tunnelServer.IsClose {
 					return
 				}
 				tunnelServer.ToClientChan <- []byte(data.Payload)
