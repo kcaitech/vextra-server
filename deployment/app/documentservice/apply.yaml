@@ -78,6 +78,9 @@ spec:
             - name: redis-config
               mountPath: /app/common/redis/config
               readOnly: true
+            - name: safereview-config
+              mountPath: /app/common/safereview/config
+              readOnly: true
       volumes:
         - name: documentservice-config
           secret:
@@ -97,6 +100,9 @@ spec:
         - name: redis-config
           secret:
             secretName: redis-config
+        - name: safereview-config
+          secret:
+            secretName: safereview-config
 ---
 kind: Service
 apiVersion: v1

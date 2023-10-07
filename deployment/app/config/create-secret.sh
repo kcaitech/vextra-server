@@ -18,3 +18,4 @@ sed -i "s/\$mongodb_passwd/$mongodb_passwd/g" mongo-config.yaml
 ../update-secret.sh mongo-config config.yaml mongo-config.yaml
 
 ../update-secret.sh storage-config config.yaml storage-config.yaml
+../update-secret.sh safereview-config config.yaml safereview-config.yaml

@@ -7,6 +7,7 @@ import (
 	myInit "protodesign.cn/kcserver/common/init"
 	"protodesign.cn/kcserver/common/mongo"
 	"protodesign.cn/kcserver/common/redis"
+	"protodesign.cn/kcserver/common/safereview"
 	"protodesign.cn/kcserver/common/storage"
 	httpApi "protodesign.cn/kcserver/documentservice/api/v1/http"
 	myConfig "protodesign.cn/kcserver/documentservice/config"
@@ -21,6 +22,9 @@ func Init() {
 	}
 	if err := redis.Init(""); err != nil {
 		log.Fatalln("redis初始化失败：" + err.Error())
+	}
+	if err := safereview.Init(""); err != nil {
+		log.Fatalln("safereview初始化失败：" + err.Error())
 	}
 }
 
