@@ -16,3 +16,8 @@
 **/go.sum
 
 /deployment/devops/ssh-port-forward-internal/ssh_pids.txt
+/deployment/app/docop-server/passwd
+/deployment/app/config/jwt-config.yaml
+/deployment/app/config/storage-config.yaml
+
+**/config_test.yaml

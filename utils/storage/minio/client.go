@@ -48,6 +48,13 @@ func (that *client) NewBucket(config *base.BucketConfig) base.Bucket {
 	return instance
 }
 
+func (that *bucket) GetConfig() *base.Config {
+	return &base.Config{
+		ClientConfig: *that.client.config,
+		BucketConfig: *that.config,
+	}
+}
+
 func (that *bucket) PutObject(putObjectInput *base.PutObjectInput) (*base.UploadInfo, error) {
 	if putObjectInput.ContentType == "" {
 		putObjectInput.ContentType = "application/octet-stream"

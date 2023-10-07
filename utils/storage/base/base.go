@@ -37,6 +37,7 @@ type PutObjectInput struct {
 }
 
 type Bucket interface {
+	GetConfig() *Config
 	PutObject(putObjectInput *PutObjectInput) (*UploadInfo, error)
 	PutObjectByte(objectName string, content []byte) (*UploadInfo, error)
 	PutObjectList(putObjectInputList []*PutObjectInput) ([]*UploadInfo, []error)
@@ -67,6 +68,10 @@ type ObjectInfo struct {
 
 type DefaultBucket struct {
 	That Bucket
+}
+
+func (that *DefaultBucket) GetConfig() (*Config, error) {
+	return nil, errors.New("GetConfig方法未实现")
 }
 
 func (that *DefaultBucket) PubObject(putObjectInput *PutObjectInput) (*UploadInfo, error) {

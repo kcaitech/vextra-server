@@ -1,0 +1,7 @@
+provider: "ali"
+
+ali:
+  accessKeyId: "accessKeyId"
+  accessKeySecret: "accessKeySecret"
+  regionId: "cn-hangzhou"
+  endpoint: "green-cip.cn-hangzhou.aliyuncs.com"
