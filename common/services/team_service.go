@@ -123,7 +123,8 @@ func (s *TeamService) GetTeamPermTypeByForUser(teamId int64, userId int64) (*mod
 	var teamMember TeamMember
 	if err := s.TeamMemberService.Get(&teamMember, WhereArgs{Query: "team_id = ? and user_id = ?", Args: []any{teamId, userId}}); err != nil {
 		if errors.Is(err, ErrRecordNotFound) {
-			return nil, nil
+			permType := models.TeamPermTypeNone
+			return &permType, nil
 		}
 		return nil, err
 	}

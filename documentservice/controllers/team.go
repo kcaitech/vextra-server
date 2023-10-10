@@ -105,10 +105,10 @@ func GetTeamMemberList(c *gin.Context) {
 		return
 	}
 	teamService := services.NewTeamService()
-	if permType, err := teamService.GetTeamPermTypeByForUser(teamId, userId); err != nil {
+	if permType, err := teamService.GetTeamPermTypeByForUser(teamId, userId); err != nil || permType == nil {
 		response.Fail(c, "查询错误")
 		return
-	} else if permType == nil || *permType < models.TeamPermTypeReadOnly {
+	} else if *permType == models.TeamPermTypeNone || *permType < models.TeamPermTypeReadOnly {
 		response.Forbidden(c, "")
 		return
 	}
@@ -393,10 +393,10 @@ func ReviewTeamJoinRequest(c *gin.Context) {
 		return
 	}
 	if approvalCode == 1 {
-		if permType, err := teamService.GetTeamPermTypeByForUser(teamJoinRequest.TeamId, teamJoinRequest.UserId); err != nil {
+		if permType, err := teamService.GetTeamPermTypeByForUser(teamJoinRequest.TeamId, teamJoinRequest.UserId); err != nil || permType == nil {
 			response.Fail(c, "查询错误")
 			return
-		} else if permType == nil {
+		} else if *permType == models.TeamPermTypeNone {
 			if err := teamService.TeamMemberService.Create(&models.TeamMember{
 				TeamId:   teamJoinRequest.TeamId,
 				UserId:   teamJoinRequest.UserId,
@@ -442,10 +442,10 @@ func SetTeamInfo(c *gin.Context) {
 		return
 	}
 	teamService := services.NewTeamService()
-	if permType, err := teamService.GetTeamPermTypeByForUser(teamId, userId); err != nil {
+	if permType, err := teamService.GetTeamPermTypeByForUser(teamId, userId); err != nil || permType == nil {
 		response.Fail(c, "查询错误")
 		return
-	} else if permType == nil || *permType != models.TeamPermTypeCreator {
+	} else if *permType != models.TeamPermTypeCreator {
 		response.Forbidden(c, "")
 		return
 	}
@@ -511,10 +511,10 @@ func SetTeamInvited(c *gin.Context) {
 		return
 	}
 	teamService := services.NewTeamService()
-	if permType, err := teamService.GetTeamPermTypeByForUser(teamId, userId); err != nil {
+	if permType, err := teamService.GetTeamPermTypeByForUser(teamId, userId); err != nil || permType == nil {
 		response.Fail(c, "查询错误")
 		return
-	} else if permType == nil || *permType < models.TeamPermTypeAdmin {
+	} else if *permType < models.TeamPermTypeAdmin {
 		response.Forbidden(c, "")
 		return
 	}
@@ -585,10 +585,10 @@ func ExitTeam(c *gin.Context) {
 		return
 	}
 	teamService := services.NewTeamService()
-	if permType, err := teamService.GetTeamPermTypeByForUser(teamId, userId); err != nil {
+	if permType, err := teamService.GetTeamPermTypeByForUser(teamId, userId); err != nil || permType == nil {
 		response.Fail(c, "查询错误")
 		return
-	} else if permType == nil || *permType == models.TeamPermTypeCreator {
+	} else if *permType == models.TeamPermTypeCreator {
 		response.Forbidden(c, "")
 		return
 	}
@@ -643,11 +643,11 @@ func SetTeamMemberPermission(c *gin.Context) {
 		return
 	}
 	permType, err := teamService.GetTeamPermTypeByForUser(teamId, reqUserId)
-	if err != nil {
+	if err != nil || permType == nil {
 		response.Fail(c, "查询错误")
 		return
 	}
-	if permType != nil && *permType >= *selfPermType {
+	if *permType >= *selfPermType {
 		response.Forbidden(c, "")
 		return
 	}
@@ -762,10 +762,10 @@ func RemoveTeamMember(c *gin.Context) {
 		return
 	}
 	permType, err := teamService.GetTeamPermTypeByForUser(teamId, reqUserId)
-	if err != nil {
+	if err != nil || permType == nil {
 		response.Fail(c, "查询错误")
 		return
-	} else if permType != nil && *permType >= *selfPermType {
+	} else if *permType >= *selfPermType {
 		response.Forbidden(c, "")
 		return
 	}

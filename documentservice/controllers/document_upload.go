@@ -84,7 +84,7 @@ func UploadDocument(c *gin.Context) {
 		}
 		teamId = project.TeamId
 		permType, err := projectService.GetProjectPermTypeByForUser(projectId, userId)
-		if err != nil {
+		if err != nil || permType == nil {
 			log.Println("获取项目权限失败", err)
 		}
 		if err != nil || permType == nil || *permType < models.ProjectPermTypeEditable {

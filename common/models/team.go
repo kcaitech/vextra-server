@@ -9,6 +9,7 @@ const (
 	TeamPermTypeEditable                     // 可编辑
 	TeamPermTypeAdmin                        // 管理员
 	TeamPermTypeCreator                      // 创建者
+	TeamPermTypeNone     TeamPermType = 255  // 无权限
 )
 
 // Team 团队
