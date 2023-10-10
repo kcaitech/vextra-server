@@ -10,8 +10,7 @@ if "%SERVICE_NAME%"=="" (
     exit /b
 )
 if "%VERSION_TAG%"=="" (
-    echo "参数错误：build-image.bat [SERVICE_NAME] [VERSION_TAG]"
-    exit /b
+    set VERSION_TAG=latest
 )
 
 docker build -t %SERVICE_NAME%:%VERSION_TAG% -f ../../%SERVICE_NAME%/Dockerfile ../../
