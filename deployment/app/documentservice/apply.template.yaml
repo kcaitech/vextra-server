@@ -2,19 +2,19 @@ kind: Deployment
 apiVersion: apps/v1
 metadata:
   labels:
-    app: userservice
-  name: userservice
+    app: documentservice
+  name: documentservice
   namespace: kc
 spec:
   replicas: 1
   revisionHistoryLimit: 10
   selector:
     matchLabels:
-      app: userservice
+      app: documentservice
   template:
     metadata:
       labels:
-        app: userservice
+        app: documentservice
     spec:
       serviceAccountName: kc
       containers:
@@ -22,10 +22,10 @@ spec:
           env:
             - name: TZ
               value: "Asia/Shanghai"
-          image: "docker-registry.protodesign.cn:35000/userservice:latest"
+          image: "docker-registry.protodesign.cn:35000/documentservice:$version_tag"
           imagePullPolicy: Always
           ports:
-            - containerPort: 10002
+            - containerPort: 10003
               name: web
               protocol: TCP
           resources: {}
@@ -33,7 +33,7 @@ spec:
             failureThreshold: 300
             httpGet:
               path: /health_check
-              port: 10002
+              port: 10003
               scheme: HTTP
             initialDelaySeconds: 0
             periodSeconds: 1
@@ -43,7 +43,7 @@ spec:
             failureThreshold: 3
             httpGet:
               path: /health_check
-              port: 10002
+              port: 10003
               scheme: HTTP
             initialDelaySeconds: 0
             periodSeconds: 1
@@ -53,14 +53,14 @@ spec:
             failureThreshold: 3
             httpGet:
               path: /health_check
-              port: 10002
+              port: 10003
               scheme: HTTP
             initialDelaySeconds: 0
             periodSeconds: 10
             successThreshold: 1
             timeoutSeconds: 1
           volumeMounts:
-            - name: userservice-config
+            - name: documentservice-config
               mountPath: /app/config
               readOnly: true
             - name: jwt-config
@@ -78,10 +78,13 @@ spec:
             - name: redis-config
               mountPath: /app/common/redis/config
               readOnly: true
+            - name: safereview-config
+              mountPath: /app/common/safereview/config
+              readOnly: true
       volumes:
-        - name: userservice-config
+        - name: documentservice-config
           secret:
-            secretName: userservice-config
+            secretName: documentservice-config
         - name: jwt-config
           secret:
             secretName: jwt-config
@@ -97,18 +100,21 @@ spec:
         - name: redis-config
           secret:
             secretName: redis-config
+        - name: safereview-config
+          secret:
+            secretName: safereview-config
 ---
 kind: Service
 apiVersion: v1
 metadata:
-  name: userservice
+  name: documentservice
   namespace: kc
 spec:
   selector:
-    app: userservice
+    app: documentservice
   type: ClusterIP
   ports:
     - name: web
-      port: 10002
-      targetPort: 10002
+      port: 10003
+      targetPort: 10003
       protocol: TCP

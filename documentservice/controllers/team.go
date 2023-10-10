@@ -75,7 +75,7 @@ func CreateTeam(c *gin.Context) {
 		"description": team.Description,
 	}
 	if team.Avatar != "" {
-		result["avatar"] = common.StorageHost + team.Avatar
+		result["avatar"] = common.FileStorageHost + team.Avatar
 	}
 	response.Success(c, result)
 }
@@ -475,7 +475,7 @@ func SetTeamInfo(c *gin.Context) {
 		fileSize := fileHeader.Size
 		contentType := fileHeader.Header.Get("Content-Type")
 		if avatarPath, err := teamService.UploadTeamAvatarById(teamId, file, fileSize, contentType); err == nil {
-			result["avatar"] = common.StorageHost + avatarPath
+			result["avatar"] = common.FileStorageHost + avatarPath
 		}
 	}
 	response.Success(c, result)

@@ -6,9 +6,9 @@ metadata:
   name: httpd
 spec:
   ports:
-  - port: 80
+  - port: 8000
     protocol: TCP
-    targetPort: 8000
+    targetPort: 80
   selector:
     app: httpd
   type: ClusterIP

@@ -138,7 +138,7 @@ type wxLoginResp struct {
 
 func (resp *wxLoginResp) MarshalJSON() ([]byte, error) {
 	if strings.HasPrefix(resp.Avatar, "/") {
-		resp.Avatar = common.StorageHost + resp.Avatar
+		resp.Avatar = common.FileStorageHost + resp.Avatar
 	}
 	return json.Marshal(struct {
 		wxLoginResp

@@ -1,6 +1,5 @@
 storage:
-  provider: "minio"
-#  provider: "s3"
+  provider: "oss"
 
 minio:
   endpoint: "192.168.0.18:9000"
@@ -21,3 +20,14 @@ s3:
   roleName: ""
   bucketName: "document"
   filesBucketName: "files"
+
+oss:
+  endpoint: "oss-cn-hangzhou.aliyuncs.com"
+  stsEndpoint: "sts-vpc.cn-hangzhou.aliyuncs.com"
+  region: "cn-hangzhou"
+  accessKeyID: "LTAI5tSm1Y5obQCwVn7X9k2x"
+  secretAccessKey: "0uXxQBqG8nQC7uiyipTX6F4JkEDlcB"
+  accountId: "1382280232399206"
+  roleName: "ramoss"
+  bucketName: "protodesign-document"
+  filesBucketName: "protodesign-files"

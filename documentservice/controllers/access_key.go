@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"log"
+	"protodesign.cn/kcserver/common"
 	"protodesign.cn/kcserver/common/gin/auth"
 	"protodesign.cn/kcserver/common/gin/response"
 	"protodesign.cn/kcserver/common/models"
@@ -62,7 +63,7 @@ func GetDocumentAccessKey(c *gin.Context) {
 		}
 	}
 
-	accessKey, err := storage.Bucket.GenerateAccessKey(
+	accessKeyValue, err := storage.Bucket.GenerateAccessKey(
 		document.Path+"/*",
 		base.AuthOpGetObject|base.AuthOpListObject,
 		3600,
@@ -95,5 +96,16 @@ func GetDocumentAccessKey(c *gin.Context) {
 		}, "id = ?", documentAccessRecord.Id, &services.Unscoped{})
 	}
 
-	response.Success(c, accessKey)
+	storageConfig := storage.Bucket.GetConfig()
+
+	response.Success(c, map[string]any{
+		"access_key":        accessKeyValue.AccessKey,
+		"secret_access_key": accessKeyValue.SecretAccessKey,
+		"session_token":     accessKeyValue.SessionToken,
+		"signer_type":       accessKeyValue.SignerType,
+		"provider":          storageConfig.Provider,
+		"region":            storageConfig.Region,
+		"bucket_name":       storageConfig.BucketName,
+		"endpoint":          common.StorageHost,
+	})
 }

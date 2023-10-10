@@ -17,7 +17,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestReviewText(t *testing.T) {
-	response, err := Client.ReviewText("一夜情")
+	response, err := Client.ReviewText("习近平不好")
 	if err != nil {
 		t.Fatal(err)
 	}

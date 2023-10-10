@@ -179,7 +179,7 @@ func OpenDocSelectionOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, ser
 			SelectShapeIdList: []string{},
 			UserId:            userIdStr,
 			Permission:        permType,
-			Avatar:            common.StorageHost + user.Avatar,
+			Avatar:            common.FileStorageHost + user.Avatar,
 			Nickname:          user.Nickname,
 			EnterTime:         enterTime,
 		}
@@ -218,7 +218,7 @@ func OpenDocSelectionOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, ser
 				}
 				selectionData.UserId = userIdStr
 				selectionData.Permission = permType
-				selectionData.Avatar = common.StorageHost + user.Avatar
+				selectionData.Avatar = common.FileStorageHost + user.Avatar
 				selectionData.Nickname = user.Nickname
 				selectionData.EnterTime = enterTime
 				selectionDataJson, _ := json.Marshal(selectionData)

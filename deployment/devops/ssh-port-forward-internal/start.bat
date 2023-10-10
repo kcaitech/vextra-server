@@ -22,7 +22,7 @@ set ports[5]=9443:172.16.0.19:9443
 set ports[6]=35000:172.16.0.19:35000
 :: docker registry-ui
 set ports[7]=35001:172.16.0.19:35001
-:: pxc mysql
+:: bitnami-mariadb
 set ports[8]=30100:172.16.0.19:30100
 :: percona-mongodb
 set ports[9]=30200:172.16.0.19:30200

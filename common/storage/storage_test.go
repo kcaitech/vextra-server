@@ -2,6 +2,7 @@ package storage
 
 import (
 	"log"
+	"os"
 	"protodesign.cn/kcserver/utils/storage/base"
 	"testing"
 )
@@ -36,4 +37,24 @@ func TestGetObjectInfo(t *testing.T) {
 		log.Fatalln("获取文件信息失败：" + err.Error())
 	}
 	log.Println(documentInfo.VersionID)
+}
+
+func TestPutObject(t *testing.T) {
+	var err error
+	if err = Init("config_test.yaml"); err != nil {
+		log.Fatalln("storage初始化失败：" + err.Error())
+	}
+	// 读取本地的test_image.jpg文件
+	file, err := os.Open("test_image.jpg")
+	// 获取文件大小
+	fileInfo, _ := file.Stat()
+	fileSize := fileInfo.Size()
+	if _, err := FilesBucket.PutObject(&base.PutObjectInput{
+		ObjectName:  "/users/cbf9f052-1e92-4b2c-a899-12d8a5f47369/avatar/af93cb99-a945-413e-a099-e69d67e3ecf3.jpg",
+		Reader:      file,
+		ObjectSize:  fileSize,
+		ContentType: "image/jpeg",
+	}); err != nil {
+		log.Fatalln("上传文件失败：" + err.Error())
+	}
 }

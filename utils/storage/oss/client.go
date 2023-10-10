@@ -66,7 +66,7 @@ func (that *bucket) PutObject(putObjectInput *base.PutObjectInput) (*base.Upload
 	}
 	var retHeader http.Header
 	err := that.bucket.PutObject(
-		putObjectInput.ObjectName,
+		strings.TrimLeft(putObjectInput.ObjectName, "/"),
 		putObjectInput.Reader,
 		oss.ContentType(putObjectInput.ContentType),
 		oss.ContentLength(putObjectInput.ObjectSize),

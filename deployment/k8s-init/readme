@@ -19,6 +19,7 @@ tall.sh 或 find . -type f -name "*.sh" -exec chmod +x {} \;
 8. bitnami-redis
 9. minio
 10. docker-registry
+11. ingress-nginx
 
 部分安装操作前可使用以下脚本设置/取消http代理
 . ~/k8s-init/util/set_proxy_profile
