@@ -179,7 +179,7 @@ func (that *bucket) CopyDirectory(srcDirPath string, destDirPath string) (*base.
 	if srcDirPath == "" || srcDirPath == "/" || destDirPath == "" || destDirPath == "/" {
 		return nil, errors.New("路径不能为空")
 	}
-	result, err := that.bucket.ListObjects(oss.Prefix(srcDirPath), oss.Delimiter("/"))
+	result, err := that.bucket.ListObjectsV2(oss.Prefix(srcDirPath))
 	if err != nil {
 		return nil, err
 	}

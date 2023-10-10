@@ -209,7 +209,7 @@ func CopyDocument(c *gin.Context) {
 
 	documentMetaBytes, err := storage.Bucket.GetObject(targetDocumentPath + "/document-meta.json")
 	if err != nil {
-		log.Println("获取document-meta.json失败：", err)
+		log.Println("获取document-meta.json失败：", targetDocumentPath+"/document-meta.json", err)
 		response.Fail(c, "复制失败")
 		return
 	}
@@ -271,6 +271,7 @@ func CopyDocument(c *gin.Context) {
 		log.Println("创建文档版本记录失败：", err)
 		return
 	}
+
 	// 复制cmd
 	type DocumentCmd struct {
 		Id         int64  `json:"id" bson:"_id"`
@@ -278,7 +279,7 @@ func CopyDocument(c *gin.Context) {
 		UserId     int64  `json:"user_id" bson:"user_id"`
 		UnitId     string `json:"unit_id" bson:"unit_id"`
 		Cmd        bson.M `json:"cmd" bson:"cmd"`
-		LastId     string `json:"last_id" bson:"last_id"`
+		LastId     any    `json:"last_id" bson:"last_id"`
 		VersionId  string `json:"version_id" bson:"version_id"`
 	}
 	documentCmdList := make([]DocumentCmd, 0)
@@ -305,6 +306,36 @@ func CopyDocument(c *gin.Context) {
 	if err != nil {
 		log.Println("cmd复制失败：", err)
 	}
+
+	// 复制评论数据
+	documentCommentList := make([]UserComment, 0)
+	reqParams = bson.M{
+		"document_id": str.IntToString(documentId),
+	}
+	commentCollection := mongo.DB.Collection("comment")
+	findOptions = options.Find()
+	findOptions.SetSort(bson.D{{"record_created_at", -1}, {"_id", -1}})
+	if cur, err := commentCollection.Find(nil, reqParams, findOptions); err == nil {
+		_ = cur.All(nil, &documentCommentList)
+	}
+	commentIdMap := map[string]string{}
+	for i := 0; i < len(documentCommentList); i++ {
+		item := &documentCommentList[i]
+		newId := str.IntToString(snowflake.NextId())
+		commentIdMap[item.Id] = newId
+		item.Id = newId
+		item.DocumentId = str.IntToString(targetDocument.Id)
+	}
+	newDocumentCommentList := sliceutil.MapT(func(item UserComment) any {
+		item.ParentId = commentIdMap[item.ParentId]
+		item.RootId = commentIdMap[item.RootId]
+		return item
+	}, documentCommentList...)
+	_, err = commentCollection.InsertMany(nil, newDocumentCommentList)
+	if err != nil {
+		log.Println("评论复制失败：", err)
+	}
+
 	// 添加最近访问
 	documentAccessRecord := models.DocumentAccessRecord{
 		UserId:     userId,
