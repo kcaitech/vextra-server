@@ -11,7 +11,7 @@ find . -type f -name "*.sh" -exec chmod +x {} \;
 # 例如
 .\build-image.bat documentservice latest
 
-# 一次性构建所有servicename的镜像
+# 一次性构建所有service的镜像
 .\build-image-all.bat version_tag
 # 例如
 .\build-image-all.bat latest
@@ -21,5 +21,5 @@ find . -type f -name "*.sh" -exec chmod +x {} \;
 # 例如
 ./apply.sh documentservice
 
-# 一次性运行所有servicename的服务
+# 一次性运行所有service的服务
 ./apply-all.sh
