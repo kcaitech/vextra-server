@@ -186,7 +186,8 @@ func CopyDocument(c *gin.Context) {
 		return
 	}
 	if sourceDocument.ProjectId <= 0 {
-		if sourceDocument.UserId != userId {
+		var permType models.PermType
+		if err := services.NewDocumentService().GetPermTypeByDocumentAndUserId(&permType, documentId, userId); err != nil || permType < models.PermTypeEditable {
 			response.Forbidden(c, "")
 			return
 		}
