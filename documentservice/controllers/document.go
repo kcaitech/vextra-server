@@ -193,8 +193,7 @@ func CopyDocument(c *gin.Context) {
 	} else {
 		projectService := services.NewProjectService()
 		projectPermType, err := projectService.GetProjectPermTypeByForUser(sourceDocument.ProjectId, userId)
-		// 管理员以上权限或文档创建者且可编辑权限
-		if !(err == nil && projectPermType != nil && ((*projectPermType) >= models.ProjectPermTypeAdmin || ((*projectPermType) == models.ProjectPermTypeEditable && sourceDocument.UserId == userId))) {
+		if !(err == nil && projectPermType != nil && (*projectPermType) >= models.ProjectPermTypeEditable) { // 需有可编辑权限
 			response.Forbidden(c, "")
 			return
 		}
