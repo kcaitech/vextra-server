@@ -22,3 +22,5 @@
 /deployment/app/config/safereview-config.yaml
 
 **/config_test.yaml
+
+/maintenance/migration/mysql/config/config.yaml

@@ -779,3 +779,57 @@ func RemoveTeamMember(c *gin.Context) {
 	}
 	response.Success(c, "")
 }
+
+// SetTeamMemberNickname 设置团队成员昵称
+func SetTeamMemberNickname(c *gin.Context) {
+	userId, err := auth.GetUserId(c)
+	if err != nil {
+		response.Unauthorized(c)
+		return
+	}
+	var req struct {
+		TeamId   string `json:"team_id" binding:"required"`
+		UserId   string `json:"user_id" binding:"required"`
+		Nickname string `json:"nickname" binding:"required"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "")
+		return
+	}
+	teamId := str.DefaultToInt(req.TeamId, 0)
+	if teamId <= 0 {
+		response.BadRequest(c, "参数错误：team_id")
+		return
+	}
+	reqUserId := str.DefaultToInt(req.UserId, 0)
+	if reqUserId <= 0 {
+		response.BadRequest(c, "参数错误：user_id")
+		return
+	}
+	teamService := services.NewTeamService()
+	teamMemberService := teamService.TeamMemberService
+	if ok, err := teamMemberService.Exist("team_id = ? and user_id = ?", teamId, reqUserId); err != nil {
+		response.Fail(c, "查询错误")
+		return
+	} else if !ok {
+		response.BadRequest(c, "团队成员不存在")
+		return
+	}
+	if userId != reqUserId {
+		selfPermType, err := teamService.GetTeamPermTypeByForUser(teamId, userId)
+		if err != nil {
+			response.Fail(c, "查询错误")
+			return
+		} else if selfPermType == nil || *selfPermType < models.TeamPermTypeAdmin {
+			response.Forbidden(c, "")
+			return
+		}
+	}
+	if _, err := teamMemberService.UpdateColumns(map[string]any{
+		"nickname": req.Nickname,
+	}, "team_id = ? and user_id = ?", teamId, reqUserId); err != nil {
+		response.Fail(c, "更新错误")
+		return
+	}
+	response.Success(c, "")
+}

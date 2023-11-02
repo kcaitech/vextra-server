@@ -53,6 +53,7 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 		router.PUT("/team/member/perm", controllers.SetTeamMemberPermission)
 		router.PUT("/team/creator", controllers.ChangeTeamCreator)
 		router.DELETE("/team/member", controllers.RemoveTeamMember)
+		router.PUT("/team/member/nickname", controllers.SetTeamMemberNickname)
 		router.POST("/team/project", controllers.CreateProject)
 		router.GET("/team/project/list", controllers.GetProjectList)
 		router.GET("/team/project/member/list", controllers.GetProjectMemberList)

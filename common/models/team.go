@@ -30,9 +30,10 @@ func (model Team) MarshalJSON() ([]byte, error) {
 // TeamMember 团队成员
 type TeamMember struct {
 	BaseModel
-	TeamId   int64        `gorm:"not null" json:"team_id"`   // 团队ID
-	UserId   int64        `gorm:"not null" json:"user_id"`   // 用户ID
-	PermType TeamPermType `gorm:"not null" json:"perm_type"` // 权限类型
+	TeamId   int64        `gorm:"not null" json:"team_id"`          // 团队ID
+	UserId   int64        `gorm:"not null" json:"user_id"`          // 用户ID
+	PermType TeamPermType `gorm:"not null" json:"perm_type"`        // 权限类型
+	Nickname string       `gorm:"size:64;not null" json:"nickname"` // 团队成员昵称
 }
 
 func (model TeamMember) MarshalJSON() ([]byte, error) {

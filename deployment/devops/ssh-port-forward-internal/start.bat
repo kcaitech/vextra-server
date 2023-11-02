@@ -4,9 +4,9 @@ chcp 65001 > nul
 setlocal enabledelayedexpansion
 
 :: 如果存在ssh_pids文件则执行stop.bat脚本删除之前的ssh进程
-if exist ssh_pids.txt (
-    call stop.bat
-)
+:: if exist ssh_pids.txt (
+    :: call stop.bat
+:: )
 
 :: 定义端口映射规则
 :: 节点ssh
@@ -36,6 +36,11 @@ set length=0
 if defined ports[%length%] (
     set /a length+=1
     goto loop
+)
+if %length%==0 (
+    echo 未定义端口映射规则
+    pause > nul
+    exit /b
 )
 
 set /a end=length-1
