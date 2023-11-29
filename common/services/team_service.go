@@ -184,7 +184,7 @@ func (s *TeamService) FindTeamByUserId(userId int64) []TeamQueryResItem {
 }
 
 type TeamMemberQueryResItem struct {
-	TeamMember TeamMember          `gorm:"embedded;embeddedPrefix:team_member__" json:"-" table:""`
+	TeamMember TeamMember          `gorm:"embedded;embeddedPrefix:team_member__" json:"team_member" table:""`
 	Team       Team                `gorm:"embedded;embeddedPrefix:team__" json:"-" join:";inner;id,team_id"`
 	User       User                `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,user_id"`
 	PermType   models.TeamPermType `gorm:"-" json:"perm_type"`

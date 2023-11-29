@@ -9,6 +9,7 @@ import (
 	"log"
 	"protodesign.cn/kcserver/common/gin/auth"
 	"protodesign.cn/kcserver/common/gin/response"
+	"protodesign.cn/kcserver/common/jwt"
 	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/common/mongo"
 	"protodesign.cn/kcserver/common/services"
@@ -16,6 +17,7 @@ import (
 	"protodesign.cn/kcserver/common/storage"
 	"protodesign.cn/kcserver/utils/sliceutil"
 	"protodesign.cn/kcserver/utils/str"
+	"strings"
 )
 
 // GetUserDocumentList 获取用户的文档列表
@@ -162,26 +164,10 @@ type CopyDocumentReq struct {
 	DocId string `json:"doc_id" binding:"required"`
 }
 
-// CopyDocument 复制文档
-func CopyDocument(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
-	if err != nil {
-		response.Unauthorized(c)
-		return
-	}
-	var req CopyDocumentReq
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "")
-		return
-	}
-	documentId := str.DefaultToInt(req.DocId, 0)
-	if documentId <= 0 {
-		response.BadRequest(c, "参数错误：doc_id")
-		return
-	}
+func copyDocument(userId int64, documentId int64, c *gin.Context, documentName string) (result *services.AccessRecordAndFavoritesQueryResItem) {
 	documentService := services.NewDocumentService()
 	sourceDocument := models.Document{}
-	if err = documentService.Get(&sourceDocument, "id = ?", documentId); err != nil {
+	if err := documentService.Get(&sourceDocument, "id = ?", documentId); err != nil {
 		response.Forbidden(c, "")
 		return
 	}
@@ -199,6 +185,12 @@ func CopyDocument(c *gin.Context) {
 			return
 		}
 	}
+
+	if documentName == "" {
+		documentName = "%s_副本"
+	}
+	documentName = strings.ReplaceAll(documentName, "%s", sourceDocument.Name)
+
 	// 复制目录
 	targetDocumentPath := uuid.New().String()
 	if _, err := storage.Bucket.CopyDirectory(sourceDocument.Path, targetDocumentPath); err != nil {
@@ -252,7 +244,7 @@ func CopyDocument(c *gin.Context) {
 		UserId:    userId,
 		Path:      targetDocumentPath,
 		DocType:   sourceDocument.DocType,
-		Name:      sourceDocument.Name + "_副本",
+		Name:      documentName,
 		Size:      sourceDocument.Size,
 		TeamId:    sourceDocument.TeamId,
 		ProjectId: sourceDocument.ProjectId,
@@ -349,9 +341,91 @@ func CopyDocument(c *gin.Context) {
 		&services.ParamArgs{"?user_id": userId},
 		&services.WhereArgs{Query: "document_access_record.id = ? and document.deleted_at is null", Args: []any{documentAccessRecord.Id}},
 	)
-	var result *services.AccessRecordAndFavoritesQueryResItem
 	if len(resultList) > 0 {
 		result = &resultList[0]
 	}
+	return
+}
+
+// CopyDocument 复制文档
+func CopyDocument(c *gin.Context) {
+	userId, err := auth.GetUserId(c)
+	if err != nil {
+		response.Unauthorized(c)
+		return
+	}
+	var req CopyDocumentReq
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "")
+		return
+	}
+	documentId := str.DefaultToInt(req.DocId, 0)
+	if documentId <= 0 {
+		response.BadRequest(c, "参数错误：doc_id")
+		return
+	}
+	result := copyDocument(userId, documentId, c, "%s_副本")
+	if result != nil {
+		response.Success(c, result)
+	}
+}
+
+// CreateTest 创建测试文档环境
+func CreateTest(c *gin.Context) {
+	var req struct {
+		VerifyCode   string `json:"verify_code" binding:"required"`
+		UserId       string `json:"user_id" binding:"required"`
+		DocumentId   string `json:"document_id" binding:"required"`
+		DocumentId2  string `json:"document_id2"`
+		DocumentName string `json:"document_name" binding:"required,min=1"`
+	}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "")
+		return
+	}
+
+	if req.VerifyCode != "123456" {
+		response.Forbidden(c, "")
+		return
+	}
+
+	result := map[string]any{}
+
+	if req.DocumentId2 == "" {
+		userId := str.DefaultToInt(req.UserId, 0)
+		if userId <= 0 {
+			response.BadRequest(c, "参数错误：user_id")
+			return
+		}
+
+		documentId := str.DefaultToInt(req.DocumentId, 0)
+		if documentId <= 0 {
+			response.BadRequest(c, "参数错误：document_id")
+			return
+		}
+
+		result1 := copyDocument(userId, documentId, c, req.DocumentName)
+		if result1 == nil {
+			response.Fail(c, "创建文档失败")
+			return
+		}
+		models.StructToMap(result1, result)
+	} else {
+		result["document"] = map[string]any{
+			"id": req.DocumentId2,
+		}
+	}
+
+	// 创建JWT
+	token, err := jwt.CreateJwt(&jwt.Data{
+		Id:       req.UserId,
+		Nickname: "测试用户",
+	})
+	if err != nil {
+		response.Fail(c, err.Error())
+		return
+	}
+	result["token"] = token
+
 	response.Success(c, result)
 }

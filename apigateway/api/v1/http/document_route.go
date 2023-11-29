@@ -16,15 +16,17 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 
 	authorized := router.Group("/")
 	// 拦截一些内部服务
+	suffix := common.ApiVersionPath + "/documents"
 	authorized.Use(func(c *gin.Context) {
-		if strings.HasSuffix(c.Request.URL.Path, "/document_upload") &&
-			strings.HasSuffix(c.Request.URL.Path, "/resource_upload") {
+		if strings.HasPrefix(c.Request.URL.Path, suffix+"/document_upload") &&
+			strings.HasPrefix(c.Request.URL.Path, suffix+"/resource_upload") {
 			response.Abort(c, http.StatusNotFound, "", nil)
 		}
 	})
-	// 登陆验证，跳过websocket协议（handler函数内部另外校验）
+	// 登陆验证，跳过某些接口（接口内部另行校验）
 	authorized.Use(middlewares.AuthMiddlewareConn(func(c *gin.Context) bool {
-		return !strings.HasSuffix(c.Request.URL.Path, "/upload")
+		return !strings.HasPrefix(c.Request.URL.Path, suffix+"/upload") &&
+			!strings.HasPrefix(c.Request.URL.Path, suffix+"/test/")
 	}))
 	{
 		authorized.Any("/*path", handler)

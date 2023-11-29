@@ -285,30 +285,31 @@ func (s *DocumentService) GetDocumentInfoByDocumentAndUserId(documentId int64, u
 		"resource_type = ? and resource_id = ? and grantee_type = ?",
 		models.ResourceTypeDoc, documentId, models.GranteeTypeExternal,
 	)
-	if result.DocumentPermission.PermType == models.PermTypeNone {
-		projectId := str.DefaultToInt(result.Document.ProjectId, 0)
-		if projectId > 0 {
-			projectService := NewProjectService()
-			projectPermType, err := projectService.GetProjectPermTypeByForUser(projectId, userId)
-			if err == nil && projectPermType != nil {
-				result.DocumentPermission.PermType = (*projectPermType).ToPermType()
+	projectId := str.DefaultToInt(result.Document.ProjectId, 0)
+	if projectId > 0 {
+		projectService := NewProjectService()
+		projectPermType, err := projectService.GetProjectPermTypeByForUser(projectId, userId)
+		if err == nil && projectPermType != nil {
+			permType = (*projectPermType).ToPermType()
+			if permType > result.DocumentPermission.PermType {
+				result.DocumentPermission.PermType = permType
 			}
 		}
-		if result.DocumentPermission.PermType == models.PermTypeNone {
-			_ = s.DocumentPermissionService.Count(
-				&result.SharesCount,
-				"resource_type = ? and resource_id = ? and grantee_type = ?",
-				models.ResourceTypeDoc, documentId, models.GranteeTypeExternal,
-			)
-			if result.SharesCount < 5 {
-				switch result.Document.DocType {
-				case models.DocTypePublicReadable:
-					result.DocumentPermission.PermType = models.PermTypeReadOnly
-				case models.DocTypePublicCommentable:
-					result.DocumentPermission.PermType = models.PermTypeCommentable
-				case models.DocTypePublicEditable:
-					result.DocumentPermission.PermType = models.PermTypeEditable
-				}
+	}
+	if result.DocumentPermission.PermType == models.PermTypeNone {
+		_ = s.DocumentPermissionService.Count(
+			&result.SharesCount,
+			"resource_type = ? and resource_id = ? and grantee_type = ?",
+			models.ResourceTypeDoc, documentId, models.GranteeTypeExternal,
+		)
+		if result.SharesCount < 5 {
+			switch result.Document.DocType {
+			case models.DocTypePublicReadable:
+				result.DocumentPermission.PermType = models.PermTypeReadOnly
+			case models.DocTypePublicCommentable:
+				result.DocumentPermission.PermType = models.PermTypeCommentable
+			case models.DocTypePublicEditable:
+				result.DocumentPermission.PermType = models.PermTypeEditable
 			}
 		}
 	}

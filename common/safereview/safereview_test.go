@@ -17,11 +17,14 @@ func TestMain(m *testing.M) {
 }
 
 func TestReviewText(t *testing.T) {
+	t.Log("TestReviewText")
 	response, err := Client.ReviewText("习近平不好")
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log(response)
+	t.Log(response.Status)
+	t.Log(response.Labels)
+	t.Log(response.Reason)
 }
 
 func TestReviewPicture(t *testing.T) {
@@ -31,7 +34,8 @@ func TestReviewPicture(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log(response)
+	t.Log(response.Status)
+	t.Log(response.Result)
 }
 
 func TestReviewPictureFromStorage(t *testing.T) {
@@ -46,5 +50,6 @@ func TestReviewPictureFromStorage(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Log(response)
+	t.Log(response.Status)
+	t.Log(response.Result)
 }

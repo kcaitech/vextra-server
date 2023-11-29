@@ -224,8 +224,8 @@ func (that *Jwt) General() (string, error) {
 
 var ErrTokenExpired = errors.New("jwt已过期")
 
-// Parse 验证并解析JWT，返回Payload中的自定义数据
-func (that *Jwt) Parse(jwtString string) (res map[string]any, err error) {
+// ParsePayload 验证并解析JWT，返回Payload
+func (that *Jwt) ParsePayload(jwtString string) (res *Payload, err error) {
 	// 分割
 	splitRes := strings.Split(jwtString, ".")
 	if len(splitRes) != 3 {
@@ -262,6 +262,15 @@ func (that *Jwt) Parse(jwtString string) (res map[string]any, err error) {
 	that.payload.Data = map[string]any{}
 	if err = json.Unmarshal(temp, &that.payload); err != nil {
 		return res, errors.New("payload json解码失败")
+	}
+
+	return &that.payload, nil
+}
+
+// Parse 验证并解析JWT，返回Payload中的自定义数据
+func (that *Jwt) Parse(jwtString string) (res map[string]any, err error) {
+	if _, err = that.ParsePayload(jwtString); err != nil {
+		return res, err
 	}
 
 	// 验证有效性

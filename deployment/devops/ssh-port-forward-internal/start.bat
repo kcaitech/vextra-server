@@ -46,7 +46,7 @@ if %length%==0 (
 set /a end=length-1
 for /L %%i in (0,1,%end%) do (
     set port=!ports[%%i]!
-    powershell.exe -NoProfile -Command "$process = Start-Process -FilePath 'ssh' -ArgumentList '-N -L !port! root@192.168.0.18' -NoNewWindow -PassThru; $process.Id | Out-File -Append ssh_pids.txt"
+    powershell.exe -NoProfile -Command "$process = Start-Process -FilePath 'ssh' -ArgumentList '-N -L !port! root@192.168.0.18' -NoNewWindow -PassThru; $process.Id | Out-File ssh_pids.txt"
 )
 
 echo 脚本已执行...

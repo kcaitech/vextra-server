@@ -72,5 +72,6 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 		router.PUT("/team/project/favorite", controllers.SetProjectFavorite)
 		router.GET("/team/project/favorite/list", controllers.GetFavorProjectList)
 		router.POST("/team/project/document/move", controllers.MoveDocument)
+		router.POST("/test/001", controllers.CreateTest)
 	}
 }
