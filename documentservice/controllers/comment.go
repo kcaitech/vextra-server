@@ -15,6 +15,8 @@ import (
 	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/common/mongo"
 	"protodesign.cn/kcserver/common/redis"
+	"protodesign.cn/kcserver/common/safereview"
+	safereviewBase "protodesign.cn/kcserver/common/safereview/base"
 	"protodesign.cn/kcserver/common/services"
 	"protodesign.cn/kcserver/common/snowflake"
 	"protodesign.cn/kcserver/utils/str"
@@ -149,6 +151,14 @@ func PostUserComment(c *gin.Context) {
 		userComment.RecordCreatedAt = userComment.CreatedAt
 	}
 	userComment.Status = UserCommentStatusCreated
+
+	reviewResponse, err := safereview.Client.ReviewText(userComment.Content)
+	if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
+		log.Println("评论审核不通过", userComment.Content, err, reviewResponse)
+		response.Fail(c, "审核不通过")
+		return
+	}
+
 	commentCollection := mongo.DB.Collection("comment")
 	if _, err := commentCollection.InsertOne(nil, userComment); err != nil {
 		log.Println("mongo插入失败", err)
@@ -229,6 +239,14 @@ func PutUserComment(c *gin.Context) {
 		response.Forbidden(c, "")
 		return
 	}
+
+	reviewResponse, err := safereview.Client.ReviewText(userComment.Content)
+	if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
+		log.Println("评论审核不通过", userComment.Content, err, reviewResponse)
+		response.Fail(c, "审核不通过")
+		return
+	}
+
 	commentCollection := mongo.DB.Collection("comment")
 	if _, err := commentCollection.UpdateByID(nil, userComment.Id, bson.M{"$set": &userComment}); err != nil {
 		log.Println("mongo更新失败", err)

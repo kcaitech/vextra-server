@@ -1,11 +1,15 @@
 package controllers
 
 import (
+	"encoding/base64"
 	"github.com/gin-gonic/gin"
+	"log"
 	"protodesign.cn/kcserver/common"
 	"protodesign.cn/kcserver/common/gin/auth"
 	"protodesign.cn/kcserver/common/gin/response"
 	"protodesign.cn/kcserver/common/models"
+	"protodesign.cn/kcserver/common/safereview"
+	safereviewBase "protodesign.cn/kcserver/common/safereview/base"
 	"protodesign.cn/kcserver/common/services"
 	"strings"
 )
@@ -50,6 +54,14 @@ func SetNickname(c *gin.Context) {
 		response.BadRequest(c, err.Error())
 		return
 	}
+
+	reviewResponse, err := safereview.Client.ReviewText(req.Nickname)
+	if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
+		log.Println("昵称审核不通过", req.Nickname, err, reviewResponse)
+		response.Fail(c, "审核不通过")
+		return
+	}
+
 	userService := services.NewUserService()
 	if _, err := userService.UpdateColumnsById(userId, map[string]any{
 		"nickname": req.Nickname,
@@ -78,9 +90,20 @@ func SetAvatar(c *gin.Context) {
 		return
 	}
 	defer file.Close()
-	fileSize := fileHeader.Size
+	fileBytes := make([]byte, fileHeader.Size)
+	if _, err := file.Read(fileBytes); err != nil {
+		response.BadRequest(c, "读取文件失败")
+		return
+	}
 	contentType := fileHeader.Header.Get("Content-Type")
-	avatarPath, err := services.NewUserService().UploadUserAvatar(user, file, fileSize, contentType)
+	base64Str := base64.StdEncoding.EncodeToString(fileBytes)
+	reviewResponse, err := safereview.Client.ReviewPictureFromBase64(base64Str)
+	if err != nil || reviewResponse.Status != safereviewBase.ReviewImageResultPass {
+		log.Println("头像审核不通过", err, reviewResponse)
+		response.Fail(c, "头像审核不通过")
+		return
+	}
+	avatarPath, err := services.NewUserService().UploadUserAvatar(user, fileBytes, contentType)
 	if err != nil {
 		response.Fail(c, err.Error())
 		return

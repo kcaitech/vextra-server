@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/base64"
 	"errors"
 	"github.com/gin-gonic/gin"
 	"log"
@@ -8,6 +9,8 @@ import (
 	"protodesign.cn/kcserver/common/gin/auth"
 	"protodesign.cn/kcserver/common/gin/response"
 	"protodesign.cn/kcserver/common/models"
+	"protodesign.cn/kcserver/common/safereview"
+	safereviewBase "protodesign.cn/kcserver/common/safereview/base"
 	"protodesign.cn/kcserver/common/services"
 	"protodesign.cn/kcserver/utils/sliceutil"
 	"protodesign.cn/kcserver/utils/str"
@@ -35,6 +38,22 @@ func CreateTeam(c *gin.Context) {
 		response.BadRequest(c, "参数错误：name")
 		return
 	}
+
+	reviewResponse, err := safereview.Client.ReviewText(req.Name)
+	if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
+		log.Println("名称审核不通过", req.Name, err, reviewResponse)
+		response.Fail(c, "审核不通过")
+		return
+	}
+	if req.Description != "" {
+		reviewResponse, err = safereview.Client.ReviewText(req.Description)
+		if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
+			log.Println("描述审核不通过", req.Description, err, reviewResponse)
+			response.Fail(c, "审核不通过")
+			return
+		}
+	}
+
 	team := models.Team{
 		Name:        req.Name,
 		Description: req.Description,
@@ -53,9 +72,20 @@ func CreateTeam(c *gin.Context) {
 			return
 		}
 		defer file.Close()
-		fileSize := fileHeader.Size
+		fileBytes := make([]byte, fileHeader.Size)
+		if _, err := file.Read(fileBytes); err != nil {
+			response.BadRequest(c, "读取文件失败")
+			return
+		}
 		contentType := fileHeader.Header.Get("Content-Type")
-		_, _ = services.NewTeamService().UploadTeamAvatar(&team, file, fileSize, contentType)
+		base64Str := base64.StdEncoding.EncodeToString(fileBytes)
+		reviewResponse, err := safereview.Client.ReviewPictureFromBase64(base64Str)
+		if err != nil || reviewResponse.Status != safereviewBase.ReviewImageResultPass {
+			log.Println("头像审核不通过", err, reviewResponse)
+			response.Fail(c, "头像审核不通过")
+			return
+		}
+		_, _ = services.NewTeamService().UploadTeamAvatar(&team, fileBytes, contentType)
 	}
 
 	teamMemberService := services.NewTeamMemberService()
@@ -456,6 +486,22 @@ func SetTeamInfo(c *gin.Context) {
 		return
 	}
 	if req.Name != "" || req.Description != "" {
+		if req.Name != "" {
+			reviewResponse, err := safereview.Client.ReviewText(req.Name)
+			if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
+				log.Println("名称审核不通过", req.Name, err, reviewResponse)
+				response.Fail(c, "审核不通过")
+				return
+			}
+		}
+		if req.Description != "" {
+			reviewResponse, err := safereview.Client.ReviewText(req.Description)
+			if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
+				log.Println("描述审核不通过", req.Description, err, reviewResponse)
+				response.Fail(c, "审核不通过")
+				return
+			}
+		}
 		if _, err := teamService.UpdatesIgnoreZeroById(teamId, &models.Team{
 			Name:        req.Name,
 			Description: req.Description,
@@ -472,9 +518,20 @@ func SetTeamInfo(c *gin.Context) {
 			return
 		}
 		defer file.Close()
-		fileSize := fileHeader.Size
+		fileBytes := make([]byte, fileHeader.Size)
+		if _, err := file.Read(fileBytes); err != nil {
+			response.BadRequest(c, "读取文件失败")
+			return
+		}
 		contentType := fileHeader.Header.Get("Content-Type")
-		if avatarPath, err := teamService.UploadTeamAvatarById(teamId, file, fileSize, contentType); err == nil {
+		base64Str := base64.StdEncoding.EncodeToString(fileBytes)
+		reviewResponse, err := safereview.Client.ReviewPictureFromBase64(base64Str)
+		if err != nil || reviewResponse.Status != safereviewBase.ReviewImageResultPass {
+			log.Println("头像审核不通过", err, reviewResponse)
+			response.Fail(c, "头像审核不通过")
+			return
+		}
+		if avatarPath, err := teamService.UploadTeamAvatarById(teamId, fileBytes, contentType); err == nil {
 			result["avatar"] = common.FileStorageHost + avatarPath
 		}
 	}
@@ -825,6 +882,14 @@ func SetTeamMemberNickname(c *gin.Context) {
 			return
 		}
 	}
+
+	reviewResponse, err := safereview.Client.ReviewText(req.Nickname)
+	if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
+		log.Println("昵称审核不通过", req.Nickname, err, reviewResponse)
+		response.Fail(c, "审核不通过")
+		return
+	}
+
 	if _, err := teamMemberService.UpdateColumns(map[string]any{
 		"nickname": req.Nickname,
 	}, "team_id = ? and user_id = ?", teamId, reqUserId); err != nil {

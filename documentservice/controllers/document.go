@@ -12,6 +12,8 @@ import (
 	"protodesign.cn/kcserver/common/jwt"
 	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/common/mongo"
+	"protodesign.cn/kcserver/common/safereview"
+	safereviewBase "protodesign.cn/kcserver/common/safereview/base"
 	"protodesign.cn/kcserver/common/services"
 	"protodesign.cn/kcserver/common/snowflake"
 	"protodesign.cn/kcserver/common/storage"
@@ -146,6 +148,14 @@ func SetDocumentName(c *gin.Context) {
 			return
 		}
 	}
+
+	reviewResponse, err := safereview.Client.ReviewText(req.Name)
+	if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
+		log.Println("名称审核不通过", req.Name, err, reviewResponse)
+		response.Fail(c, "审核不通过")
+		return
+	}
+
 	if _, err = services.NewDocumentService().UpdateColumns(
 		map[string]any{"name": req.Name},
 		"id = ?", documentId,

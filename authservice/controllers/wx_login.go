@@ -286,7 +286,12 @@ func WxLogin(c *gin.Context) {
 					return
 				}
 				defer resp.Body.Close()
-				if _, err := services.NewUserService().UploadUserAvatar(user, resp.Body, resp.ContentLength, resp.Header.Get("Content-Type")); err != nil {
+				fileBytes := make([]byte, resp.ContentLength)
+				if _, err := resp.Body.Read(fileBytes); err != nil {
+					response.BadRequest(c, "读取文件失败")
+					return
+				}
+				if _, err := services.NewUserService().UploadUserAvatar(user, fileBytes, resp.Header.Get("Content-Type")); err != nil {
 					log.Println("上传头像失败：", err)
 					return
 				}

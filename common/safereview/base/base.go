@@ -3,20 +3,23 @@ package base
 type Provider string
 
 const (
-	Ali Provider = "ali"
+	Ali   Provider = "ali"
+	Baidu Provider = "baidu"
 )
 
 type Client interface {
 	ReviewText(text string) (*ReviewTextResponse, error)
-	ReviewPicture(imageUrl string) (*ReviewPictureResponse, error)
-	ReviewPictureFromStorage(regionName string, bucketName string, objectName string) (*ReviewPictureResponse, error)
+	ReviewPictureFromUrl(imageUrl string) (*ReviewImageResponse, error)
+	//ReviewPictureFromStorage(regionName string, bucketName string, objectName string) (*ReviewImageResponse, error)
+	ReviewPictureFromBase64(imageBase64 string) (*ReviewImageResponse, error)
 }
 
 type ReviewTextResult string
 
 const (
-	ReviewTextResultPass  ReviewTextResult = "pass"
-	ReviewTextResultBlock ReviewTextResult = "block"
+	ReviewTextResultPass      ReviewTextResult = "pass"
+	ReviewTextResultBlock     ReviewTextResult = "block"
+	ReviewTextResultSuspected ReviewTextResult = "suspected"
 )
 
 type ReviewTextResponse struct {
@@ -25,19 +28,20 @@ type ReviewTextResponse struct {
 	Labels []string
 }
 
-type ReviewPictureResult string
+type ReviewImageResult string
 
 const (
-	ReviewPictureResultPass  ReviewPictureResult = "pass"
-	ReviewPictureResultBlock ReviewPictureResult = "block"
+	ReviewImageResultPass      ReviewImageResult = "pass"
+	ReviewImageResultBlock     ReviewImageResult = "block"
+	ReviewImageResultSuspected ReviewImageResult = "suspected"
 )
 
-type ReviewPictureResultItem struct {
-	Labels     string
+type ReviewImageResultItem struct {
+	Reason     string
 	Confidence float64
 }
 
-type ReviewPictureResponse struct {
-	Status ReviewPictureResult
-	Result []ReviewPictureResultItem
+type ReviewImageResponse struct {
+	Status ReviewImageResult
+	Result []ReviewImageResultItem
 }

@@ -3,11 +3,9 @@ package services
 import (
 	"errors"
 	"fmt"
-	"io"
 	"protodesign.cn/kcserver/common"
 	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/common/storage"
-	storageBase "protodesign.cn/kcserver/utils/storage/base"
 	"protodesign.cn/kcserver/utils/str"
 	"protodesign.cn/kcserver/utils/time"
 	"strings"
@@ -67,7 +65,8 @@ func NewTeamJoinRequestMessageShowService() *TeamJoinRequestMessageShowService {
 	return that
 }
 
-func (s *TeamService) UploadTeamAvatar(team *models.Team, file io.Reader, fileSize int64, contentType string) (string, error) {
+func (s *TeamService) UploadTeamAvatar(team *models.Team, fileBytes []byte, contentType string) (string, error) {
+	fileSize := len(fileBytes)
 	if fileSize > 1024*1024*5 {
 		return "", errors.New("文件大小不能超过5MB")
 	}
@@ -93,12 +92,7 @@ func (s *TeamService) UploadTeamAvatar(team *models.Team, file io.Reader, fileSi
 	}
 	fileName := fmt.Sprintf("%s.%s", str.GetUid(), suffix)
 	avatarPath := fmt.Sprintf("/teams/%s/avatar/%s", team.Uid, fileName)
-	if _, err := storage.FilesBucket.PutObject(&storageBase.PutObjectInput{
-		ObjectName:  avatarPath,
-		Reader:      file,
-		ObjectSize:  fileSize,
-		ContentType: contentType,
-	}); err != nil {
+	if _, err := storage.FilesBucket.PutObjectByte(avatarPath, fileBytes); err != nil {
 		return "", errors.New("上传文件失败")
 	}
 	team.Avatar = avatarPath
@@ -110,12 +104,12 @@ func (s *TeamService) UploadTeamAvatar(team *models.Team, file io.Reader, fileSi
 	return avatarPath, nil
 }
 
-func (s *TeamService) UploadTeamAvatarById(teamId int64, file io.Reader, fileSize int64, contentType string) (string, error) {
+func (s *TeamService) UploadTeamAvatarById(teamId int64, fileBytes []byte, contentType string) (string, error) {
 	team := models.Team{}
 	if err := s.GetById(teamId, &team); err != nil {
 		return "", err
 	}
-	return s.UploadTeamAvatar(&team, file, fileSize, contentType)
+	return s.UploadTeamAvatar(&team, fileBytes, contentType)
 }
 
 // GetTeamPermTypeByForUser 获取用户在团队中的权限

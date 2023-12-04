@@ -3,10 +3,8 @@ package services
 import (
 	"errors"
 	"fmt"
-	"io"
 	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/common/storage"
-	storageBase "protodesign.cn/kcserver/utils/storage/base"
 	"protodesign.cn/kcserver/utils/str"
 )
 
@@ -31,7 +29,8 @@ func (s *UserService) GetByNickname(nickname string) (*models.User, error) {
 	return &modelData, nil
 }
 
-func (s *UserService) UploadUserAvatar(user *models.User, file io.Reader, fileSize int64, contentType string) (string, error) {
+func (s *UserService) UploadUserAvatar(user *models.User, fileBytes []byte, contentType string) (string, error) {
+	fileSize := len(fileBytes)
 	if fileSize > 1024*1024*5 {
 		return "", errors.New("文件大小不能超过5MB")
 	}
@@ -57,12 +56,7 @@ func (s *UserService) UploadUserAvatar(user *models.User, file io.Reader, fileSi
 	}
 	fileName := fmt.Sprintf("%s.%s", str.GetUid(), suffix)
 	avatarPath := fmt.Sprintf("/users/%s/avatar/%s", user.Uid, fileName)
-	if _, err := storage.FilesBucket.PutObject(&storageBase.PutObjectInput{
-		ObjectName:  avatarPath,
-		Reader:      file,
-		ObjectSize:  fileSize,
-		ContentType: contentType,
-	}); err != nil {
+	if _, err := storage.FilesBucket.PutObjectByte(avatarPath, fileBytes); err != nil {
 		return "", errors.New("上传文件失败")
 	}
 	user.Avatar = avatarPath

@@ -7,6 +7,8 @@ import (
 	"protodesign.cn/kcserver/common/gin/auth"
 	"protodesign.cn/kcserver/common/gin/response"
 	"protodesign.cn/kcserver/common/models"
+	"protodesign.cn/kcserver/common/safereview"
+	safereviewBase "protodesign.cn/kcserver/common/safereview/base"
 	"protodesign.cn/kcserver/common/services"
 	"protodesign.cn/kcserver/utils/sliceutil"
 	"protodesign.cn/kcserver/utils/str"
@@ -61,6 +63,22 @@ func CreateProject(c *gin.Context) {
 		response.Forbidden(c, "")
 		return
 	}
+
+	reviewResponse, err := safereview.Client.ReviewText(req.Name)
+	if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
+		log.Println("名称审核不通过", req.Name, err, reviewResponse)
+		response.Fail(c, "审核不通过")
+		return
+	}
+	if req.Description != "" {
+		reviewResponse, err = safereview.Client.ReviewText(req.Description)
+		if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
+			log.Println("描述审核不通过", req.Description, err, reviewResponse)
+			response.Fail(c, "审核不通过")
+			return
+		}
+	}
+
 	project := models.Project{
 		TeamId:      teamId,
 		Name:        req.Name,
@@ -468,6 +486,22 @@ func SetProjectInfo(c *gin.Context) {
 		return
 	}
 	if req.Name != "" || req.Description != "" {
+		if req.Name != "" {
+			reviewResponse, err := safereview.Client.ReviewText(req.Name)
+			if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
+				log.Println("名称审核不通过", req.Name, err, reviewResponse)
+				response.Fail(c, "审核不通过")
+				return
+			}
+		}
+		if req.Description != "" {
+			reviewResponse, err := safereview.Client.ReviewText(req.Description)
+			if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
+				log.Println("描述审核不通过", req.Description, err, reviewResponse)
+				response.Fail(c, "审核不通过")
+				return
+			}
+		}
 		if _, err := projectService.UpdatesIgnoreZeroById(projectId, &models.Project{
 			Name:        req.Name,
 			Description: req.Description,

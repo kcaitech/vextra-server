@@ -5,6 +5,7 @@ import (
 	"log"
 	"protodesign.cn/kcserver/common/gin/start"
 	myInit "protodesign.cn/kcserver/common/init"
+	"protodesign.cn/kcserver/common/safereview"
 	"protodesign.cn/kcserver/common/storage"
 	httpApi "protodesign.cn/kcserver/userservice/api/v1/http"
 	myConfig "protodesign.cn/kcserver/userservice/config"
@@ -13,6 +14,9 @@ import (
 func Init() {
 	if err := storage.Init(""); err != nil {
 		log.Fatalln("storage初始化失败：" + err.Error())
+	}
+	if err := safereview.Init(""); err != nil {
+		log.Fatalln("safereview初始化失败：" + err.Error())
 	}
 }
 

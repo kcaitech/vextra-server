@@ -3,6 +3,7 @@ package safereview
 import (
 	"errors"
 	"protodesign.cn/kcserver/common/safereview/ali"
+	"protodesign.cn/kcserver/common/safereview/baidu"
 	"protodesign.cn/kcserver/common/safereview/base"
 	"protodesign.cn/kcserver/common/safereview/config"
 )
@@ -18,6 +19,11 @@ func Init(filePath string) error {
 			return err
 		}
 		Client = ali.Client
+	case base.Baidu:
+		if err := baidu.Init(filePath); err != nil {
+			return err
+		}
+		Client = baidu.Client
 	default:
 		return errors.New("不支持的provider")
 	}

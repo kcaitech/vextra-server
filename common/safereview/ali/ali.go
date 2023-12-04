@@ -67,7 +67,7 @@ func (c *client) ReviewText(text string) (*base.ReviewTextResponse, error) {
 	}, nil
 }
 
-func (c *client) reviewPicture(serviceParameters string) (*base.ReviewPictureResponse, error) {
+func (c *client) reviewPicture(serviceParameters string) (*base.ReviewImageResponse, error) {
 	imageModerationRequest := &green20220302.ImageModerationRequest{
 		// 有效值参考：https://yundun.console.aliyun.com/?p=cts#/pictureReview/ruleConfig/cn-shanghai）
 		Service:           tea.String("baselineCheck"),
@@ -95,28 +95,28 @@ func (c *client) reviewPicture(serviceParameters string) (*base.ReviewPictureRes
 		return nil, errors.New("response body code异常：" + tea.ToString(*bodyCode) + "，message：" + tea.StringValue(bodyMessage))
 	}
 
-	result := sliceutil.MapT(func(item *green20220302.ImageModerationResponseBodyDataResult) base.ReviewPictureResultItem {
-		return base.ReviewPictureResultItem{
-			Labels:     tea.StringValue(item.Label),
+	result := sliceutil.MapT(func(item *green20220302.ImageModerationResponseBodyDataResult) base.ReviewImageResultItem {
+		return base.ReviewImageResultItem{
+			Reason:     tea.StringValue(item.Label),
 			Confidence: float64(tea.Float32Value(item.Confidence)),
 		}
 	}, bodyData.Result...)
-	result = sliceutil.FilterT(func(item base.ReviewPictureResultItem) bool {
-		return item.Labels != "nonLabel"
+	result = sliceutil.FilterT(func(item base.ReviewImageResultItem) bool {
+		return item.Reason != "nonLabel"
 	}, result...)
 
-	status := base.ReviewPictureResultPass
+	status := base.ReviewImageResultPass
 	if len(result) > 0 {
-		status = base.ReviewPictureResultBlock
+		status = base.ReviewImageResultBlock
 	}
 
-	return &base.ReviewPictureResponse{
+	return &base.ReviewImageResponse{
 		Status: status,
 		Result: result,
 	}, nil
 }
 
-func (c *client) ReviewPicture(imageUrl string) (*base.ReviewPictureResponse, error) {
+func (c *client) ReviewPictureFromUrl(imageUrl string) (*base.ReviewImageResponse, error) {
 	serviceParameters, _ := json.Marshal(
 		map[string]any{
 			"imageUrl": imageUrl,
@@ -125,7 +125,7 @@ func (c *client) ReviewPicture(imageUrl string) (*base.ReviewPictureResponse, er
 	return c.reviewPicture(string(serviceParameters))
 }
 
-func (c *client) ReviewPictureFromStorage(regionName string, bucketName string, objectName string) (*base.ReviewPictureResponse, error) {
+func (c *client) ReviewPictureFromStorage(regionName string, bucketName string, objectName string) (*base.ReviewImageResponse, error) {
 	serviceParameters, _ := json.Marshal(
 		map[string]any{
 			"ossRegionId":   regionName,
@@ -134,6 +134,10 @@ func (c *client) ReviewPictureFromStorage(regionName string, bucketName string, 
 		},
 	)
 	return c.reviewPicture(string(serviceParameters))
+}
+
+func (c *client) ReviewPictureFromBase64(imageBase64 string) (*base.ReviewImageResponse, error) {
+	return nil, errors.New("图片审核接口不支持base64格式")
 }
 
 var Client base.Client

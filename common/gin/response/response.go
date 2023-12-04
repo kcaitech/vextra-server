@@ -37,7 +37,7 @@ func Success(c *gin.Context, data any) Response {
 
 func Fail(c *gin.Context, message string) Response {
 	if message == "" {
-		message = "失败"
+		message = "操作失败"
 	}
 	return Resp(c, -1, message, nil)
 }

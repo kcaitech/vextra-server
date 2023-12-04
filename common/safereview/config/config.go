@@ -13,6 +13,11 @@ type Configuration struct {
 		RegionId        string `yaml:"regionId"`
 		Endpoint        string `yaml:"endpoint"`
 	} `yaml:"ali"`
+	Baidu struct {
+		AppId     string `yaml:"appId"`
+		ApiKey    string `yaml:"apiKey"`
+		SecretKey string `yaml:"secretKey"`
+	}
 }
 
 var Config Configuration
