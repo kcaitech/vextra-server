@@ -95,24 +95,31 @@ func (c *client) reviewPicture(serviceParameters string) (*base.ReviewImageRespo
 		return nil, errors.New("response body code异常：" + tea.ToString(*bodyCode) + "，message：" + tea.StringValue(bodyMessage))
 	}
 
-	result := sliceutil.MapT(func(item *green20220302.ImageModerationResponseBodyDataResult) base.ReviewImageResultItem {
+	results := sliceutil.MapT(func(item *green20220302.ImageModerationResponseBodyDataResult) base.ReviewImageResultItem {
 		return base.ReviewImageResultItem{
 			Reason:     tea.StringValue(item.Label),
 			Confidence: float64(tea.Float32Value(item.Confidence)),
 		}
 	}, bodyData.Result...)
-	result = sliceutil.FilterT(func(item base.ReviewImageResultItem) bool {
+	results = sliceutil.FilterT(func(item base.ReviewImageResultItem) bool {
 		return item.Reason != "nonLabel"
-	}, result...)
+	}, results...)
+	reason := strings.Join(
+		sliceutil.MapT(func(item base.ReviewImageResultItem) string {
+			return item.Reason
+		}, results...),
+		",",
+	)
 
 	status := base.ReviewImageResultPass
-	if len(result) > 0 {
+	if len(results) > 0 {
 		status = base.ReviewImageResultBlock
 	}
 
 	return &base.ReviewImageResponse{
 		Status: status,
-		Result: result,
+		Result: results,
+		Reason: reason,
 	}, nil
 }
 

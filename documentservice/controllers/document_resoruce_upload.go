@@ -1,11 +1,14 @@
 package controllers
 
 import (
+	"encoding/base64"
 	"errors"
 	"github.com/gin-gonic/gin"
 	"log"
 	"protodesign.cn/kcserver/common/gin/response"
 	"protodesign.cn/kcserver/common/models"
+	"protodesign.cn/kcserver/common/safereview"
+	safereviewBase "protodesign.cn/kcserver/common/safereview/base"
 	"protodesign.cn/kcserver/common/services"
 	"protodesign.cn/kcserver/common/storage"
 	"protodesign.cn/kcserver/utils/str"
@@ -105,6 +108,14 @@ func UploadDocumentResource(c *gin.Context) {
 			resp.Message = "ResourceData结构错误"
 			_ = ws.WriteJSON(&resp)
 			log.Println("ResourceData结构错误", err, len(resourceData))
+			return
+		}
+		base64Str := base64.StdEncoding.EncodeToString(resourceData)
+		reviewResponse, err := safereview.Client.ReviewPictureFromBase64(base64Str)
+		if err != nil || reviewResponse.Status != safereviewBase.ReviewImageResultPass {
+			resp.Message = "图片审核不通过"
+			log.Println("图片审核不通过", err, reviewResponse)
+			_ = ws.WriteJSON(&resp)
 			return
 		}
 		path := document.Path + "/medias/" + resourceHeader.Name

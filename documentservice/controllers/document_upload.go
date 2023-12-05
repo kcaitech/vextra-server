@@ -1,9 +1,12 @@
 package controllers
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"log"
+	"protodesign.cn/kcserver/common/safereview"
+	safereviewBase "protodesign.cn/kcserver/common/safereview/base"
 	"protodesign.cn/kcserver/utils/my_map"
 	"protodesign.cn/kcserver/utils/websocket"
 	"sync"
@@ -110,11 +113,13 @@ func UploadDocument(c *gin.Context) {
 	documentSize := uint64(0)
 
 	type UploadData struct {
-		DocumentMeta Data            `json:"document_meta"`
-		Pages        json.RawMessage `json:"pages"`
-		DocumentSyms json.RawMessage `json:"document_syms"`
-		MediaNames   []string        `json:"media_names"`
-		MediasSize   uint64          `json:"medias_size"`
+		DocumentMeta        Data            `json:"document_meta"`
+		Pages               json.RawMessage `json:"pages"`
+		DocumentSyms        json.RawMessage `json:"document_syms"`
+		MediaNames          []string        `json:"media_names"`
+		MediasSize          uint64          `json:"medias_size"`
+		DocumentText        string          `json:"document_text"`
+		PageImageBase64List []string        `json:"page_image_base64_list"`
 	}
 	uploadData := UploadData{}
 	if err := ws.ReadJSON(&uploadData); err != nil {
@@ -122,6 +127,41 @@ func UploadDocument(c *gin.Context) {
 		_ = ws.WriteJSON(&resp)
 		log.Println("UploadData结构错误", err)
 		return
+	}
+
+	if uploadData.DocumentText != "" {
+		reviewResponse, err := safereview.Client.ReviewText(uploadData.DocumentText)
+		if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
+			if isFirstUpload {
+				resp.Message = "文本审核不通过"
+				_ = ws.WriteJSON(&resp)
+				return
+			}
+			document.LockedAt = myTime.Time(time.Now())
+			document.LockedReason = "文本审核不通过：" + reviewResponse.Reason
+			_, _ = documentService.UpdatesById(documentId, &document)
+			resp.Message = "文本审核不通过"
+			_ = ws.WriteJSON(&resp)
+			return
+		}
+	}
+	if len(uploadData.PageImageBase64List) > 0 {
+		for _, base64Str := range uploadData.PageImageBase64List {
+			reviewResponse, err := safereview.Client.ReviewPictureFromBase64(base64Str)
+			if err != nil || reviewResponse.Status != safereviewBase.ReviewImageResultPass {
+				if isFirstUpload {
+					resp.Message = "图片审核不通过"
+					_ = ws.WriteJSON(&resp)
+					return
+				}
+				document.LockedAt = myTime.Time(time.Now())
+				document.LockedReason = "图片审核不通过：" + reviewResponse.Reason
+				_, _ = documentService.UpdatesById(documentId, &document)
+				resp.Message = "图片审核不通过"
+				_ = ws.WriteJSON(&resp)
+				return
+			}
+		}
 	}
 
 	uploadWaitGroup := sync.WaitGroup{}
@@ -187,6 +227,15 @@ func UploadDocument(c *gin.Context) {
 			path := docPath + "/medias/" + mediaName
 			media := nextMedia()
 			if media == nil {
+				return
+			}
+			base64Str := base64.StdEncoding.EncodeToString(media)
+			reviewResponse, err := safereview.Client.ReviewPictureFromBase64(base64Str)
+			if err != nil || reviewResponse.Status != safereviewBase.ReviewImageResultPass {
+				resp.Message = "图片审核不通过"
+				log.Println("图片审核不通过", err, reviewResponse)
+				_ = ws.WriteJSON(&resp)
+				ws.Close()
 				return
 			}
 			documentSize += uint64(len(media))

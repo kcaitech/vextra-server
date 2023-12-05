@@ -61,6 +61,12 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 			return nil
 		}
 	}
+	if !document.LockedAt.IsZero() && document.UserId != userId {
+		serverCmd.Message = "通道建立失败，审核不通过"
+		_ = clientWs.WriteJSON(&serverCmd)
+		log.Println("document ws建立失败，审核不通过", documentId)
+		return nil
+	}
 
 	serverWs, err := websocket.NewClient("ws://"+common.DocOpHost, nil)
 	if err != nil {

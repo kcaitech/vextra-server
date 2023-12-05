@@ -83,4 +83,5 @@ func TestReviewPictureFromBase64(t *testing.T) {
 	}
 	log.Println(response.Status)
 	log.Println(response.Result)
+	log.Println(response.Reason)
 }

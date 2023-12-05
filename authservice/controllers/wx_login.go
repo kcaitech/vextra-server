@@ -26,6 +26,7 @@ type wxLoginReq struct {
 	InviteCode string `json:"invite_code"`
 }
 
+// 验证码
 var InviteCodeList = []string{
 	"fo3yblC5",
 	"2gampt0q",

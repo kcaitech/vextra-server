@@ -101,6 +101,8 @@ func GetUserDocumentInfo(c *gin.Context) {
 	}
 	if result := services.NewDocumentService().GetDocumentInfoByDocumentAndUserId(documentId, userId, permType); result == nil {
 		response.BadRequest(c, "文档不存在")
+	} else if !result.Document.LockedAt.IsZero() && result.Document.UserId != userId {
+		response.Forbidden(c, "审核不通过")
 	} else {
 		response.Success(c, result)
 	}
@@ -179,6 +181,10 @@ func copyDocument(userId int64, documentId int64, c *gin.Context, documentName s
 	sourceDocument := models.Document{}
 	if err := documentService.Get(&sourceDocument, "id = ?", documentId); err != nil {
 		response.Forbidden(c, "")
+		return
+	}
+	if !sourceDocument.LockedAt.IsZero() {
+		response.Forbidden(c, "审核不通过")
 		return
 	}
 	if sourceDocument.ProjectId <= 0 {

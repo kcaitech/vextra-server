@@ -7,6 +7,7 @@ import (
 	"github.com/Baidu-AIP/golang-sdk/aip/censor"
 	"protodesign.cn/kcserver/common/safereview/base"
 	"protodesign.cn/kcserver/common/safereview/config"
+	myMath "protodesign.cn/kcserver/utils/math"
 	"protodesign.cn/kcserver/utils/sliceutil"
 	"strings"
 )
@@ -35,7 +36,7 @@ type TextResponse struct {
 	} `json:"data"`
 }
 
-func (c *client) ReviewText(text string) (*base.ReviewTextResponse, error) {
+func (c *client) reviewText(text string) (*base.ReviewTextResponse, error) {
 	resStr := c.TextCensor(text)
 	res := TextResponse{}
 	if err := json.Unmarshal([]byte(resStr), &res); err != nil {
@@ -74,6 +75,38 @@ func (c *client) ReviewText(text string) (*base.ReviewTextResponse, error) {
 		Reason: strings.Join(reasons, ","),
 		Labels: labels,
 	}, nil
+}
+
+func (c *client) ReviewText(text string) (*base.ReviewTextResponse, error) {
+	if len([]rune(text)) <= 5000 {
+		return c.reviewText(text)
+	}
+	textRuneList := []rune(text)
+	response, err := c.reviewText(string(textRuneList[0:5000]))
+	if err != nil {
+		return nil, err
+	}
+	count := myMath.IntDivideCeil(len(textRuneList)-100, 4900)
+	for i := 1; i < count; i++ {
+		start := i * 4900
+		end := i*4900 + 5000
+		if i == count-1 {
+			end = len(textRuneList)
+		}
+		partResponse, err := c.reviewText(string(textRuneList[start:end]))
+		if err != nil {
+			return nil, err
+		}
+		if partResponse.Status == base.ReviewTextResultPass {
+			continue
+		}
+		if response.Status == base.ReviewTextResultPass {
+			response = partResponse
+		}
+		response.Reason = response.Reason + "," + partResponse.Reason
+		response.Labels = append(response.Labels, partResponse.Labels...)
+	}
+	return response, nil
 }
 
 type ImageResponse struct {
@@ -123,16 +156,22 @@ func (c *client) reviewPictureParse(resStr string) (*base.ReviewImageResponse, e
 		if data.Probability != nil {
 			probability = *data.Probability
 		}
-
 		results = append(results, base.ReviewImageResultItem{
 			Reason:     data.Msg,
 			Confidence: probability,
 		})
 	}
+	reason := strings.Join(
+		sliceutil.MapT(func(item base.ReviewImageResultItem) string {
+			return item.Reason
+		}, results...),
+		",",
+	)
 
 	return &base.ReviewImageResponse{
 		Status: status,
 		Result: results,
+		Reason: reason,
 	}, nil
 }
 

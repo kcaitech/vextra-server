@@ -44,4 +44,5 @@ type ReviewImageResultItem struct {
 type ReviewImageResponse struct {
 	Status ReviewImageResult
 	Result []ReviewImageResultItem
+	Reason string
 }

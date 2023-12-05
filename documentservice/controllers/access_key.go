@@ -50,6 +50,10 @@ func GetDocumentAccessKey(c *gin.Context) {
 		response.Forbidden(c, "")
 		return
 	}
+	if !document.LockedAt.IsZero() && document.UserId != userId {
+		response.Forbidden(c, "审核不通过")
+		return
+	}
 	if documentPermission == nil && permSource == services.PermSourceTypePublish {
 		if err := documentService.DocumentPermissionService.Create(&models.DocumentPermission{
 			ResourceType: models.ResourceTypeDoc,

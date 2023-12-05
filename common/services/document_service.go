@@ -58,6 +58,7 @@ type Document struct {
 	TeamId    string           `json:"team_id"`
 	ProjectId string           `json:"project_id"`
 	PurgeBy   int64            `json:"purge_by"`
+	LockedAt  time.Time        `json:"locked_at"`
 }
 
 func (model Document) MarshalJSON() ([]byte, error) {
