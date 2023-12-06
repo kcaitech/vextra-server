@@ -66,10 +66,6 @@ func NewTeamJoinRequestMessageShowService() *TeamJoinRequestMessageShowService {
 }
 
 func (s *TeamService) UploadTeamAvatar(team *models.Team, fileBytes []byte, contentType string) (string, error) {
-	fileSize := len(fileBytes)
-	if fileSize > 1024*1024*5 {
-		return "", errors.New("文件大小不能超过5MB")
-	}
 	var suffix string
 	switch contentType {
 	case "image/jpeg":

@@ -84,6 +84,10 @@ func SetAvatar(c *gin.Context) {
 		response.BadRequest(c, "参数错误：file")
 		return
 	}
+	if fileHeader.Size > 2<<20 {
+		response.BadRequest(c, "文件大小不能超过2MB")
+		return
+	}
 	file, err := fileHeader.Open()
 	if err != nil {
 		response.BadRequest(c, "获取文件失败")

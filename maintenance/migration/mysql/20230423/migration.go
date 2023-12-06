@@ -63,5 +63,10 @@ func main() {
 		log.Fatalln("数据库迁移错误：" + err.Error())
 	}
 
+	log.Println("开始迁移Feedback表")
+	if err = FeedbackUp(mysql.DB); err != nil {
+		log.Fatalln("数据库迁移错误：" + err.Error())
+	}
+
 	log.Println("迁移结束")
 }

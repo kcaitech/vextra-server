@@ -66,6 +66,10 @@ func CreateTeam(c *gin.Context) {
 
 	fileHeader, err := c.FormFile("avatar")
 	if err == nil {
+		if fileHeader.Size > 2<<20 {
+			response.BadRequest(c, "文件大小不能超过2MB")
+			return
+		}
 		file, err := fileHeader.Open()
 		if err != nil {
 			response.BadRequest(c, "获取文件失败")
@@ -481,6 +485,10 @@ func SetTeamInfo(c *gin.Context) {
 	}
 	fileHeader, err := c.FormFile("avatar")
 	fileExists := err == nil
+	if fileExists && fileHeader.Size > 2<<20 {
+		response.BadRequest(c, "文件大小不能超过2MB")
+		return
+	}
 	if req.Name == "" && req.Description == "" && !fileExists {
 		response.BadRequest(c, "")
 		return

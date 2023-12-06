@@ -30,10 +30,6 @@ func (s *UserService) GetByNickname(nickname string) (*models.User, error) {
 }
 
 func (s *UserService) UploadUserAvatar(user *models.User, fileBytes []byte, contentType string) (string, error) {
-	fileSize := len(fileBytes)
-	if fileSize > 1024*1024*5 {
-		return "", errors.New("文件大小不能超过5MB")
-	}
 	var suffix string
 	switch contentType {
 	case "image/jpeg":
