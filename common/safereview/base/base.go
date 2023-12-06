@@ -26,6 +26,7 @@ type ReviewTextResponse struct {
 	Status ReviewTextResult
 	Reason string
 	Labels []string
+	Words  []string
 }
 
 type ReviewImageResult string

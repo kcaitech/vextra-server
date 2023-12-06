@@ -58,6 +58,7 @@ func (c *client) reviewText(text string) (*base.ReviewTextResponse, error) {
 
 	reasons := []string{}
 	labels := []string{}
+	words := []string{}
 	for _, data := range res.Data {
 		if data.ErrorCode != nil || !(data.Type != nil && data.SubType != nil) {
 			continue
@@ -65,15 +66,18 @@ func (c *client) reviewText(text string) (*base.ReviewTextResponse, error) {
 		reasons = append(reasons, data.Msg)
 		for _, hit := range data.Hits {
 			labels = append(labels, hit.DatasetName)
+			words = append(words, hit.Words...)
 		}
 	}
 	reasons = sliceutil.Unique(nil, reasons...)
 	labels = sliceutil.Unique(nil, labels...)
+	words = sliceutil.Unique(nil, words...)
 
 	return &base.ReviewTextResponse{
 		Status: status,
 		Reason: strings.Join(reasons, ","),
 		Labels: labels,
+		Words:  words,
 	}, nil
 }
 

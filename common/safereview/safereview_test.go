@@ -31,6 +31,7 @@ func TestReviewText(t *testing.T) {
 	log.Println(response.Status)
 	log.Println(response.Labels)
 	log.Println(response.Reason)
+	log.Println(response.Words)
 }
 
 func TestReviewPicture(t *testing.T) {

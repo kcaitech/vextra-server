@@ -31,6 +31,7 @@ type Document struct {
 	ProjectId    int64     `gorm:"index" json:"project_id"`
 	LockedAt     time.Time `gorm:"" json:"locked_at"`
 	LockedReason string    `gorm:"size:255" json:"locked_reason"`
+	LockedWords  string    `gorm:"size:255" json:"locked_words"`
 }
 
 func DocumentUp(db *gorm.DB) error {

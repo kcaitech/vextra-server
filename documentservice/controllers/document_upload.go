@@ -9,6 +9,7 @@ import (
 	safereviewBase "protodesign.cn/kcserver/common/safereview/base"
 	"protodesign.cn/kcserver/utils/my_map"
 	"protodesign.cn/kcserver/utils/websocket"
+	"strings"
 	"sync"
 	"time"
 
@@ -139,6 +140,7 @@ func UploadDocument(c *gin.Context) {
 			}
 			document.LockedAt = myTime.Time(time.Now())
 			document.LockedReason = "文本审核不通过：" + reviewResponse.Reason
+			document.LockedWords = strings.Join(reviewResponse.Words, ",")
 			_, _ = documentService.UpdatesById(documentId, &document)
 			resp.Message = "文本审核不通过"
 			_ = ws.WriteJSON(&resp)
