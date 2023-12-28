@@ -34,8 +34,13 @@ apt install -y systemd-timesyncd
 systemctl enable systemd-timesyncd
 systemctl start systemd-timesyncd
 timedatectl set-timezone Asia/Shanghai
-echo "NTP=cg.lzu.edu.cn" >> /etc/systemd/timesyncd.conf
+echo "NTP=ntp.tencent.com" >> /etc/systemd/timesyncd.conf
+echo "FallbackNTP=ntp1.tencent.com,ntp2.tencent.com,ntp3.tencent.com" >> /etc/systemd/timesyncd.conf
+echo "RootDistanceMaxSec=5" >> /etc/systemd/timesyncd.conf
+echo "PollIntervalMinSec=32" >> /etc/systemd/timesyncd.conf
+echo "PollIntervalMaxSec=2048" >> /etc/systemd/timesyncd.conf
 systemctl restart systemd-timesyncd
+timedatectl set-ntp on
 
 # 设置内核参数
 echo "设置内核参数"

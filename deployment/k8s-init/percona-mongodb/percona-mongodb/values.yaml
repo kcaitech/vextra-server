@@ -208,7 +208,7 @@ replsets:
       resources:
         limits:
           cpu: "300m"
-          memory: "0.5G"
+          memory: "1.5G"
         requests:
           cpu: "100m"
           memory: "100Mi"
@@ -344,7 +344,7 @@ sharding:
       #   some-label: some-key
     resources:
       limits:
-        memory: "0.5G"
+        memory: "0.75G"
       requests:
         cpu: "100m"
         memory: "100Mi"

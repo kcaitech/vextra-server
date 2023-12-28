@@ -74,5 +74,6 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 		router.POST("/team/project/document/move", controllers.MoveDocument)
 		router.POST("/feedback", controllers.PostFeedback)
 		router.POST("/test/001", controllers.CreateTest)
+		router.GET("/storage_auth", controllers.CheckStorageAuth)
 	}
 }

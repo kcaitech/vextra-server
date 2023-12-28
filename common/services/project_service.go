@@ -275,13 +275,18 @@ func (s *ProjectService) FindProjectMember(projectId int64) []ProjectMemberQuery
 	return result
 }
 
-type SelfProjectJoinRequestQuery struct {
+type BaseProjectJoinRequestQuery struct {
 	Project            Project            `gorm:"embedded;embeddedPrefix:project__" json:"project" join:";inner;id,project_id"`
 	ProjectJoinRequest ProjectJoinRequest `gorm:"embedded;embeddedPrefix:project_join_request__" json:"request" table:""`
 }
 
+type SelfProjectJoinRequestQuery struct {
+	BaseProjectJoinRequestQuery
+	User User `gorm:"embedded;embeddedPrefix:user__" json:"approver" join:";inner;id,processed_by"`
+}
+
 type ProjectJoinRequestQuery struct {
-	SelfProjectJoinRequestQuery
+	BaseProjectJoinRequestQuery
 	ProjectMember ProjectMember `gorm:"-" json:"-" join:";inner;project_id,project_id;user_id,?user_id"` // 自己的（非申请人的）权限
 	User          User          `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,user_id"`
 }

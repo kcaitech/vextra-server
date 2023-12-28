@@ -14,5 +14,6 @@
   "insecure-registries": [
     "docker-registry.protodesign.cn:35000",
     "docker-registry.protodesign.cn"
-  ]
+  ],
+  "bip": "172.17.0.1/16"
 }

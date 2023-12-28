@@ -284,3 +284,19 @@ func (that *Jwt) Parse(jwtString string) (res map[string]any, err error) {
 
 	return that.payload.Data, nil
 }
+
+// ParseExp 解析JWT中的过期时间
+func (that *Jwt) ParseExp(jwtString string) (int64, error) {
+	if _, err := that.ParsePayload(jwtString); err != nil {
+		return 0, err
+	}
+	return that.payload.Exp, nil
+}
+
+// ParseNbf 解析JWT中的生效时间
+func (that *Jwt) ParseNbf(jwtString string) (int64, error) {
+	if _, err := that.ParsePayload(jwtString); err != nil {
+		return 0, err
+	}
+	return that.payload.Nbf, nil
+}

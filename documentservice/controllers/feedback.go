@@ -17,7 +17,7 @@ func PostFeedback(c *gin.Context) {
 		return
 	}
 	var req struct {
-		Type    models.FeedbackType `json:"type" form:"type" binding:"required"`
+		Type    models.FeedbackType `json:"type" form:"type"`
 		Content string              `json:"content" form:"content" binding:"required"`
 		PageUrl string              `json:"page_url" form:"page_url" binding:"required"`
 	}

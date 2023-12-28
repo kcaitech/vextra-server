@@ -162,7 +162,7 @@ sleep 3
 apt install -y wget ca-certificates curl gnupg htop git jq tree
 
 # 安装docker
-./install-docker.sh
+./install-docker-ubuntu.sh
 
 # 设置containerd参数
 echo "设置containerd参数"

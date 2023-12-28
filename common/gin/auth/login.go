@@ -8,9 +8,20 @@ import (
 	"protodesign.cn/kcserver/utils/str"
 )
 
+func GetJwt(c *gin.Context) string {
+	return GetJwtFromAuthorization(c.GetHeader("Authorization"))
+}
+
 func GetJwtData(c *gin.Context) (*Data, error) {
-	token := GetJwtFromAuthorization(c.GetHeader("Authorization"))
-	return ParseJwt(token)
+	return ParseJwt(GetJwt(c))
+}
+
+func GetJwtExp(c *gin.Context) (int64, error) {
+	return ParseJwtExp(GetJwt(c))
+}
+
+func GetJwtNbf(c *gin.Context) (int64, error) {
+	return ParseJwtNbf(GetJwt(c))
 }
 
 func GetUserId(c *gin.Context) (int64, error) {

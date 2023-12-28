@@ -393,7 +393,7 @@ func CreateTest(c *gin.Context) {
 		UserId       string `json:"user_id" binding:"required"`
 		DocumentId   string `json:"document_id" binding:"required"`
 		DocumentId2  string `json:"document_id2"`
-		DocumentName string `json:"document_name" binding:"required,min=1"`
+		DocumentName string `json:"document_name" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, "")

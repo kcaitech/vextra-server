@@ -1,5 +1,5 @@
 storage:
-  provider: "oss"
+  provider: "minio"
 
 minio:
   endpoint: "192.168.0.18:9000"

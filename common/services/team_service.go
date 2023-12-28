@@ -204,13 +204,18 @@ func (model TeamJoinRequest) MarshalJSON() ([]byte, error) {
 	return models.MarshalJSON(model)
 }
 
-type SelfTeamJoinRequestsQueryResItem struct {
+type BsseTeamJoinRequestsQueryResItem struct {
 	Team            Team            `gorm:"embedded;embeddedPrefix:team__" json:"team" join:";inner;id,team_id"`
 	TeamJoinRequest TeamJoinRequest `gorm:"embedded;embeddedPrefix:team_join_request__" json:"request" table:""`
 }
 
+type SelfTeamJoinRequestsQueryResItem struct {
+	BsseTeamJoinRequestsQueryResItem
+	User User `gorm:"embedded;embeddedPrefix:user__" json:"approver" join:";inner;id,processed_by"`
+}
+
 type TeamJoinRequestQuery struct {
-	SelfTeamJoinRequestsQueryResItem
+	BsseTeamJoinRequestsQueryResItem
 	TeamMember TeamMember `gorm:"-" json:"-" join:";inner;team_id,team_id;user_id,?user_id"` // 自己的（非申请人的）权限
 	User       User       `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,user_id"`
 }

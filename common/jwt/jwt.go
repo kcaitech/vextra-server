@@ -60,6 +60,24 @@ func ParseJwt(token string) (*Data, error) {
 	return &jwtData, nil
 }
 
+func ParseJwtExp(token string) (int64, error) {
+	t, _ := jwt.NewJwt(jwt.NewHS256Signer(config.Config.Jwt.Secret))
+	exp, err := t.ParseExp(token)
+	if err != nil && !errors.Is(err, jwt.ErrTokenExpired) {
+		return 0, errors.New("无效token")
+	}
+	return exp, nil
+}
+
+func ParseJwtNbf(token string) (int64, error) {
+	t, _ := jwt.NewJwt(jwt.NewHS256Signer(config.Config.Jwt.Secret))
+	nbf, err := t.ParseNbf(token)
+	if err != nil && !errors.Is(err, jwt.ErrTokenExpired) {
+		return 0, errors.New("无效token")
+	}
+	return nbf, nil
+}
+
 func GetJwtFromAuthorization(authorization string) string {
 	if !strings.HasPrefix(authorization, "Bearer ") {
 		return ""

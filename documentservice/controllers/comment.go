@@ -240,11 +240,13 @@ func PutUserComment(c *gin.Context) {
 		return
 	}
 
-	reviewResponse, err := safereview.Client.ReviewText(userComment.Content)
-	if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
-		log.Println("评论审核不通过", userComment.Content, err, reviewResponse)
-		response.Fail(c, "审核不通过")
-		return
+	if userComment.Content != "" {
+		reviewResponse, err := safereview.Client.ReviewText(userComment.Content)
+		if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
+			log.Println("评论审核不通过", userComment.Content, err, reviewResponse)
+			response.Fail(c, "审核不通过")
+			return
+		}
 	}
 
 	commentCollection := mongo.DB.Collection("comment")
