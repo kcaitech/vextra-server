@@ -17,6 +17,7 @@
 
 /deployment/devops/ssh-port-forward-internal/ssh_pids.txt
 /deployment/app/docop-server/passwd
+/deployment/app/docop-server/passwd-minio
 /deployment/app/config/jwt-config.yaml
 /deployment/app/config/storage-config.yaml
 /deployment/app/config/safereview-config.yaml

@@ -479,7 +479,7 @@ func SetTeamInfo(c *gin.Context) {
 	if permType, err := teamService.GetTeamPermTypeByForUser(teamId, userId); err != nil || permType == nil {
 		response.Fail(c, "查询错误")
 		return
-	} else if *permType != models.TeamPermTypeCreator {
+	} else if *permType < models.TeamPermTypeAdmin {
 		response.Forbidden(c, "")
 		return
 	}

@@ -25,40 +25,43 @@ spec:
           image: "docker-registry.protodesign.cn:35000/docop-server:$version_tag"
           imagePullPolicy: Always
           ports:
+            - containerPort: 3000
+              name: manager
+              protocol: TCP
             - containerPort: 10010
-              name: web
+              name: server
               protocol: TCP
           resources: {}
-#          startupProbe:
-#            failureThreshold: 300
-#            httpGet:
-#              path: /health_check
-#              port: 10010
-#              scheme: HTTP
-#            initialDelaySeconds: 0
-#            periodSeconds: 1
-#            successThreshold: 1
-#            timeoutSeconds: 1
-#          readinessProbe:
-#            failureThreshold: 3
-#            httpGet:
-#              path: /health_check
-#              port: 10010
-#              scheme: HTTP
-#            initialDelaySeconds: 0
-#            periodSeconds: 1
-#            successThreshold: 1
-#            timeoutSeconds: 1
-#          livenessProbe:
-#            failureThreshold: 3
-#            httpGet:
-#              path: /health_check
-#              port: 10010
-#              scheme: HTTP
-#            initialDelaySeconds: 0
-#            periodSeconds: 10
-#            successThreshold: 1
-#            timeoutSeconds: 1
+          startupProbe:
+            failureThreshold: 300
+            httpGet:
+              path: /health_check
+              port: 3000
+              scheme: HTTP
+            initialDelaySeconds: 0
+            periodSeconds: 1
+            successThreshold: 1
+            timeoutSeconds: 1
+          readinessProbe:
+            failureThreshold: 3
+            httpGet:
+              path: /health_check
+              port: 3000
+              scheme: HTTP
+            initialDelaySeconds: 0
+            periodSeconds: 1
+            successThreshold: 1
+            timeoutSeconds: 1
+          livenessProbe:
+            failureThreshold: 10
+            httpGet:
+              path: /health_check
+              port: 3000
+              scheme: HTTP
+            initialDelaySeconds: 0
+            periodSeconds: 1
+            successThreshold: 1
+            timeoutSeconds: 1
           volumeMounts:
             - name: docop-server-config
               mountPath: /app/.env
@@ -79,6 +82,10 @@ spec:
     app: docop-server
   type: ClusterIP
   ports:
+    - name: manager
+      port: 3000
+      targetPort: 3000
+      protocol: TCP
     - name: web
       port: 10010
       targetPort: 10010

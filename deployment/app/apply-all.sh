@@ -17,3 +17,6 @@ cd -
 
 cd ./webapp && ./apply.sh $version_tag
 cd -
+
+#cd ./coop-test && ./apply.sh $version_tag
+#cd -

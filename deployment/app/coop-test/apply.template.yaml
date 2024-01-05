@@ -1,0 +1,26 @@
+kind: Job
+apiVersion: batch/v1
+metadata:
+  labels:
+    app: coop-test
+  name: coop-test
+  namespace: kc
+spec:
+  parallelism: 3  # 并发数
+  completions: 3  # 执行次数
+  backoffLimit: 0  # 失败重试次数
+  template:
+    metadata:
+      labels:
+        app: coop-test
+    spec:
+      serviceAccountName: kc
+      restartPolicy: Never
+      containers:
+        - name: app
+          env:
+            - name: TZ
+              value: "Asia/Shanghai"
+          image: "docker-registry.protodesign.cn:35000/coop-test:$version_tag"
+          imagePullPolicy: Always
+          resources: {}
