@@ -22,6 +22,10 @@ spec:
           env:
             - name: TZ
               value: "Asia/Shanghai"
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
           image: "docker-registry.protodesign.cn:35000/docop-server:$version_tag"
           imagePullPolicy: Always
           ports:
