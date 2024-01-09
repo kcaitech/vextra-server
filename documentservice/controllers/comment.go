@@ -221,7 +221,7 @@ func PutUserComment(c *gin.Context) {
 	}
 	comment, err := checkUserPermission(userId, userComment.Id, models.PermTypeCommentable)
 	if err != nil {
-		if err == errNoPermission {
+		if errors.Is(err, errNoPermission) {
 			response.Forbidden(c, "")
 			return
 		} else {
@@ -276,7 +276,7 @@ func DeleteUserComment(c *gin.Context) {
 	}
 	comment, err := checkUserPermission(userId, commentId, models.PermTypeCommentable)
 	if err != nil {
-		if err == errNoPermission {
+		if errors.Is(err, errNoPermission) {
 			response.Forbidden(c, "")
 			return
 		} else {
@@ -284,8 +284,13 @@ func DeleteUserComment(c *gin.Context) {
 			return
 		}
 	}
+	var document models.Document
+	if services.NewDocumentService().GetById(str.DefaultToInt(comment.DocumentId, 0), &document) != nil {
+		response.BadRequest(c, "文档不存在")
+		return
+	}
 	commentCollection := mongo.DB.Collection("comment")
-	if comment.User.Id != str.IntToString(userId) {
+	if document.UserId != userId && comment.User.Id != str.IntToString(userId) {
 		if str.DefaultToInt(comment.ParentId, 0) <= 0 {
 			response.Forbidden(c, "")
 			return
@@ -349,7 +354,7 @@ func SetUserCommentStatus(c *gin.Context) {
 	}
 	comment, err := checkUserPermission(userId, userComment.Id, models.PermTypeCommentable)
 	if err != nil {
-		if err == errNoPermission {
+		if errors.Is(err, errNoPermission) {
 			response.Forbidden(c, "")
 			return
 		} else {
