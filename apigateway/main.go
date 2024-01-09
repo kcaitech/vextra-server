@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"log"
 	httpApi "protodesign.cn/kcserver/apigateway/api/v1/http"
+	"protodesign.cn/kcserver/apigateway/common/k8s_api"
 	myConfig "protodesign.cn/kcserver/apigateway/config"
 	"protodesign.cn/kcserver/common/gin/start"
 	myInit "protodesign.cn/kcserver/common/init"
@@ -13,6 +14,9 @@ import (
 func Init() {
 	if err := redis.Init(""); err != nil {
 		log.Fatalln("redis初始化失败：" + err.Error())
+	}
+	if err := k8s_api.Init(); err != nil {
+		log.Fatalln("k8s初始化失败：" + err.Error())
 	}
 }
 

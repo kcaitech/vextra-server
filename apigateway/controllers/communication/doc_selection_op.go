@@ -131,7 +131,7 @@ func OpenDocSelectionOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, ser
 		return nil
 	}
 
-	enterTime := time.Now().UnixNano() / 1e6
+	enterTime := time.Now().UnixNano() / 1000000
 
 	tunnelId := uuid.New().String()
 	tunnelServer := &docSelectionTunnelServer{
