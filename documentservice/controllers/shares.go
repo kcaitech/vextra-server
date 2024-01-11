@@ -75,7 +75,7 @@ func SetDocumentShareType(c *gin.Context) {
 	documentService := services.NewDocumentService()
 	var document models.Document
 	if err := documentService.Get(&document, "id = ? and user_id = ?", documentId, userId); err != nil {
-		if err == services.ErrRecordNotFound {
+		if errors.Is(err, services.ErrRecordNotFound) {
 			response.Forbidden(c, "")
 		} else {
 			response.Fail(c, "查询错误")
@@ -230,7 +230,7 @@ func ApplyDocumentPermission(c *gin.Context) {
 	documentService := services.NewDocumentService()
 	var document models.Document
 	if err := documentService.GetById(documentId, &document); err != nil {
-		if err == services.ErrRecordNotFound {
+		if errors.Is(err, services.ErrRecordNotFound) {
 			response.BadRequest(c, "文档不存在")
 		} else {
 			response.Fail(c, "查询错误")

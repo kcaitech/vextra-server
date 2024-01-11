@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/gin-gonic/gin"
 	"io"
 	"log"
@@ -259,7 +260,7 @@ func WxLogin(c *gin.Context) {
 			response.Fail(c, "登陆失败")
 			return
 		}
-		if err == services.ErrRecordNotFound {
+		if errors.Is(err, services.ErrRecordNotFound) {
 			// 创建用户
 			t := Time(time.Now())
 			user = &models.User{

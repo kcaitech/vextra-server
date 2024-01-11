@@ -63,6 +63,15 @@ func FindIndex[T any](fn func(item T) bool, args ...T) int {
 	return -1
 }
 
+func Exists[T any](fn func(item T) bool, args ...T) bool {
+	for _, item := range args {
+		if fn(item) {
+			return true
+		}
+	}
+	return false
+}
+
 func Unique[T any](getKeyFn func(item T) any, args ...T) []T {
 	keys := map[any]struct{}{}
 	result := make([]T, 0, len(args))
@@ -83,4 +92,8 @@ func Unique[T any](getKeyFn func(item T) any, args ...T) []T {
 		}
 	}
 	return result
+}
+
+func ToAny(args ...any) []any {
+	return args
 }

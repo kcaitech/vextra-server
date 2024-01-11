@@ -221,7 +221,7 @@ func PutUserComment(c *gin.Context) {
 	}
 	comment, err := checkUserPermission(userId, userComment.Id, models.PermTypeCommentable)
 	if err != nil {
-		if err == errNoPermission {
+		if errors.Is(err, errNoPermission) {
 			response.Forbidden(c, "")
 			return
 		} else {
@@ -276,7 +276,7 @@ func DeleteUserComment(c *gin.Context) {
 	}
 	comment, err := checkUserPermission(userId, commentId, models.PermTypeCommentable)
 	if err != nil {
-		if err == errNoPermission {
+		if errors.Is(err, errNoPermission) {
 			response.Forbidden(c, "")
 			return
 		} else {
@@ -349,7 +349,7 @@ func SetUserCommentStatus(c *gin.Context) {
 	}
 	comment, err := checkUserPermission(userId, userComment.Id, models.PermTypeCommentable)
 	if err != nil {
-		if err == errNoPermission {
+		if errors.Is(err, errNoPermission) {
 			response.Forbidden(c, "")
 			return
 		} else {
