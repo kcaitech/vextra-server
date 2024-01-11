@@ -61,19 +61,65 @@ func GetPods() []string {
 	return nil
 }
 
-type podInfo struct {
+type PodInfo struct {
 	PodName     string
 	DocumentIds []string
 	UpdateTime  int64
 }
 
-var podInfoMap = make(map[string]*podInfo)
+var podInfoMap = make(map[string]*PodInfo)
 
-func GetPodInfo(podName string) *podInfo {
+func GetPodInfo(podName string) *PodInfo {
 	now := time.Now().UnixNano() / 1000000
-	podInfo, ok := podInfoMap[podName]
-	if ok && now-podInfo.UpdateTime < 1000*3 {
-		return podInfo
+	info, ok := podInfoMap[podName]
+	if ok && now-info.UpdateTime < 1000*3 {
+		return info
 	}
-	return podInfo
+	res := redis.Client.SIsMember(context.Background(), "DocopServer:podSet", podName)
+	if res.Err() != nil || !res.Val() {
+		delete(podInfoMap, podName)
+		return nil
+	}
+	documentList := redis.Client.SMembers(context.Background(), "DocopServer:documentSet[pod:"+podName+"]").Val()
+	if !ok {
+		info = &PodInfo{
+			PodName:     podName,
+			DocumentIds: documentList,
+			UpdateTime:  now,
+		}
+		podInfoMap[podName] = info
+	} else {
+		info.DocumentIds = documentList
+		info.UpdateTime = now
+	}
+	return info
+}
+
+func GetPodsInfo() []*PodInfo {
+	podList := GetPods()
+	if podList == nil {
+		return nil
+	}
+	var podInfoList []*PodInfo
+	for _, podName := range podList {
+		podInfo := GetPodInfo(podName)
+		if podInfo != nil {
+			podInfoList = append(podInfoList, podInfo)
+		}
+	}
+	return podInfoList
+}
+
+func GetPodByMinDocument() string {
+	podInfoList := GetPodsInfo()
+	if podInfoList == nil {
+		return ""
+	}
+	minDocumentPod := podInfoList[0]
+	for _, podInfo := range podInfoList {
+		if len(podInfo.DocumentIds) < len(minDocumentPod.DocumentIds) {
+			minDocumentPod = podInfo
+		}
+	}
+	return minDocumentPod.PodName
 }
