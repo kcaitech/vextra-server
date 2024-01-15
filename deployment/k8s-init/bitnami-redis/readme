@@ -11,6 +11,8 @@ redis-cli -h bitnami-redis.bitnami-redis.svc.cluster.local -p 30350 -a $REDIS_PA
 sentinel masters
 # 列出特定主节点的从节点
 sentinel slaves mymaster
+# 登录具体节点（addr、port替换为sentinel masters结果中的值）
+redis-cli -h addr -p port -a $REDIS_PASSWORD
 
 # 外部连接
 NODE_IP=$(kubectl -n bitnami-redis get nodes -o jsonpath="{.items[0].status.addresses[0].address}")

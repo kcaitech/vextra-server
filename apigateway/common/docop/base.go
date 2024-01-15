@@ -26,7 +26,7 @@ func delPodFromRedis(podName string) {
 }
 
 func GetPodByDocumentId(documentId string) string {
-	res := redis.Client.Get(context.Background(), "DocopServer:Pod[document:"+documentId+"]")
+	res := redis.Client.Get(context.Background(), "DocopServer:pod[document:"+documentId+"]")
 	if res.Err() != nil {
 		return ""
 	}
