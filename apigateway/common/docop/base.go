@@ -48,7 +48,7 @@ func GetPodByDocumentId(documentId string) string {
 }
 
 func GetPods() []string {
-	podList := redis.Client.SMembers(context.Background(), "DocopServer:podSet ").Val()
+	podList := redis.Client.SMembers(context.Background(), "DocopServer:podSet").Val()
 	pods := set.NewSet(podList...)
 	k8sPods := set.NewSet(k8s_api.GetDocOpPodsDefault()...)
 	diffPods := pods.Difference(k8sPods)
