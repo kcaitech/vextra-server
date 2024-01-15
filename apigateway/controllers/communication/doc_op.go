@@ -5,7 +5,6 @@ import (
 	"github.com/google/uuid"
 	"log"
 	"protodesign.cn/kcserver/apigateway/common/docop"
-	"protodesign.cn/kcserver/common"
 	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/common/services"
 	"protodesign.cn/kcserver/utils/str"
@@ -69,17 +68,15 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 		return nil
 	}
 
-	pod := docop.GetPodByDocumentId(documentIdStr)
-	if pod == "" {
-		serverCmd.Message = "通道建立失败，文档服务不可用"
+	docopUrl := docop.GetDocumentUrlRetry(documentIdStr)
+	if docopUrl == "" {
+		serverCmd.Message = "通道建立失败"
 		_ = clientWs.WriteJSON(&serverCmd)
-		log.Println("document ws建立失败，文档服务不可用", documentId)
+		log.Println("document ws建立失败，文档服务错误", documentId)
 		return nil
 	}
 
-	//podUrl := "http://" + pod + ":10011"
-
-	serverWs, err := websocket.NewClient("ws://"+common.DocOpHost, nil)
+	serverWs, err := websocket.NewClient(docopUrl, nil)
 	if err != nil {
 		serverCmd.Message = "通道建立失败"
 		_ = clientWs.WriteJSON(&serverCmd)

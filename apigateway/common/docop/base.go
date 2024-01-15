@@ -1,7 +1,12 @@
 package docop
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"io"
+	"log"
+	"net/http"
 	"protodesign.cn/kcserver/apigateway/common/k8s_api"
 	"protodesign.cn/kcserver/common/redis"
 	"protodesign.cn/kcserver/utils/set"
@@ -122,4 +127,72 @@ func GetPodByMinDocument() string {
 		}
 	}
 	return minDocumentPod.PodName
+}
+
+const docopServiceUrl = "docop-server-czf-headless.kc.svc.cluster.local"
+
+func GetDocumentUrl(documentId string) string {
+	pod := GetPodByDocumentId(documentId)
+	if pod != "" {
+		return "ws://" + pod + "." + docopServiceUrl + ":10011"
+	}
+
+	pod = GetPodByMinDocument()
+	if pod == "" {
+		return ""
+	}
+
+	managerAddUrl := "http://" + pod + "." + docopServiceUrl + ":10010" + "/add"
+
+	requestData := map[string]any{
+		"document_id": documentId,
+	}
+	jsonData, err := json.Marshal(requestData)
+	if err != nil {
+		return ""
+	}
+
+	req, err := http.NewRequest("POST", managerAddUrl, bytes.NewBuffer(jsonData))
+	if err != nil {
+		log.Println(managerAddUrl, "http.NewRequest err", err)
+		return ""
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Println(managerAddUrl, "client.Do err", err)
+		return ""
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Println(managerAddUrl, "io.ReadAll err", err)
+		return ""
+	}
+
+	if resp.StatusCode != 200 || string(body) != "success" {
+		log.Println(managerAddUrl, "请求失败", resp.StatusCode, string(body))
+		return ""
+	}
+
+	return "ws://" + pod + "." + docopServiceUrl + ":10011"
+}
+
+const getDocumentUrlRetryCount = 3
+const getDocumentUrlRetryInterval = 1
+
+func GetDocumentUrlRetry(documentId string) string {
+	for i := 0; i < getDocumentUrlRetryCount; i++ {
+		url := GetDocumentUrl(documentId)
+		if url != "" {
+			return url
+		}
+		if i < getDocumentUrlRetryCount-1 {
+			time.Sleep(time.Second * getDocumentUrlRetryInterval)
+		}
+	}
+	return ""
 }
