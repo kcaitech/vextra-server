@@ -129,7 +129,7 @@ func GetPodByMinDocument() string {
 	return minDocumentPod.PodName
 }
 
-const docopServiceUrl = "docop-server-czf-headless.kc.svc.cluster.local"
+const docopServiceUrl = "docop-server-headless.kc.svc.cluster.local"
 
 func GetDocumentUrl(documentId string) string {
 	pod := GetPodByDocumentId(documentId)

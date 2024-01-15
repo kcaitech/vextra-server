@@ -28,7 +28,7 @@ func Init() error {
 }
 
 var docOpNS = "kc"
-var docOpPodLabel = "app=docop-server-czf"
+var docOpPodLabel = "app=docop-server"
 
 var docOpPodsCache []string
 var docOpPodsCacheTime int64
