@@ -72,7 +72,7 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 	if docopUrl == "" {
 		serverCmd.Message = "通道建立失败"
 		_ = clientWs.WriteJSON(&serverCmd)
-		log.Println("document ws建立失败，文档服务错误", documentId)
+		log.Println("文档服务错误", documentId)
 		return nil
 	}
 

@@ -20,3 +20,6 @@ https://docs.docker.com/registry/spec/api/
 
 # docker-registry-ui
 http://docker-registry.protodesign.cn:35001
+
+# docker-registry清除镜像
+/bin/registry garbage-collect /etc/docker/registry/config.yml

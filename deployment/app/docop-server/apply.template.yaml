@@ -86,10 +86,6 @@ spec:
     app: docop-server
   type: ClusterIP
   ports:
-    - name: manager
-      port: 3000
-      targetPort: 3000
-      protocol: TCP
     - name: web
       port: 10010
       targetPort: 10010

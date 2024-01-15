@@ -117,7 +117,7 @@ func GetPodsInfo() []*PodInfo {
 
 func GetPodByMinDocument() string {
 	podInfoList := GetPodsInfo()
-	if podInfoList == nil {
+	if len(podInfoList) == 0 {
 		return ""
 	}
 	minDocumentPod := podInfoList[0]
@@ -145,7 +145,7 @@ func GetDocumentUrl(documentId string) string {
 	managerAddUrl := "http://" + pod + "." + docopServiceUrl + ":10010" + "/add"
 
 	requestData := map[string]any{
-		"document_id": documentId,
+		"documentId": documentId,
 	}
 	jsonData, err := json.Marshal(requestData)
 	if err != nil {

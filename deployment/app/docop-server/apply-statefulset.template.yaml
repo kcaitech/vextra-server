@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: docop-server-czf
+  name: docop-server-czf
+  namespace: kc
+spec:
+  serviceName: "docop-server-czf-headless"
+  replicas: 1
+  selector:
+    matchLabels:
+      app: docop-server-czf
+  template:
+    metadata:
+      labels:
+        app: docop-server-czf
+    spec:
+      containers:
+        - env:
+            - name: TZ
+              value: Asia/Shanghai
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  apiVersion: v1
+                  fieldPath: metadata.name
+          image: 'docker-registry.protodesign.cn:35000/docop-server:test.czf.latest'
+          imagePullPolicy: Always
+          name: app
+          ports:
+            - containerPort: 10010
+              name: manager
+              protocol: TCP
+            - containerPort: 10011
+              name: server
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /app/.env
+              name: docop-server-config
+              readOnly: true
+              subPath: .env
+      restartPolicy: Always
+      serviceAccountName: kc
+      volumes:
+        - name: docop-server-config
+          secret:
+            defaultMode: 420
+            secretName: docop-server-config
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: docop-server-headless
+  namespace: kc
+spec:
+  selector:
+    app: docop-server-czf
+  type: ClusterIP
+  ports:
+    - name: manager
+      port: 10010
+      targetPort: 10010
+      protocol: TCP
+    - name: server
+      port: 10011
+      targetPort: 10011
+      protocol: TCP
