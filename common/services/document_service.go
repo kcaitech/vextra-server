@@ -118,10 +118,12 @@ func (model DocumentPermissionRequests) MarshalJSON() ([]byte, error) {
 }
 
 type DocumentQueryResItem struct {
-	Document Document         `gorm:"embedded;embeddedPrefix:document__" json:"document" join:";inner;id,[#document_id document_id]"`
-	User     User             `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,[#user_id document.user_id]"`
-	Team     *DocumentTeam    `gorm:"embedded;embeddedPrefix:team__" json:"team" join:";left;id,document.team_id"`
-	Project  *DocumentProject `gorm:"embedded;embeddedPrefix:project__" json:"project" join:";left;id,document.project_id"`
+	Document         Document         `gorm:"embedded;embeddedPrefix:document__" json:"document" join:";inner;id,[#document_id document_id]"`
+	User             User             `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,[#user_id document.user_id]"`
+	Team             *DocumentTeam    `gorm:"embedded;embeddedPrefix:team__" json:"team" join:";left;id,document.team_id"`
+	Project          *DocumentProject `gorm:"embedded;embeddedPrefix:project__" json:"project" join:";left;id,document.project_id"`
+	UserTeamMember   *TeamMember      `gorm:"embedded;embeddedPrefix:tm__" json:"-" join:"team_member,tm;left;team_id,document.team_id;user_id,document.user_id"`
+	UserTeamNickname string           `gorm:"-" json:"user_team_nickname"`
 }
 
 type AccessRecordAndFavoritesQueryResItem struct {
@@ -163,8 +165,14 @@ func (s *DocumentService) FindDocumentByUserId(userId int64) *[]AccessRecordAndF
 		&result,
 		&ParamArgs{"?user_id": userId},
 		&WhereArgs{"document.user_id = ? and (document.project_id is null or document.project_id = 0)", []any{userId}},
+		&WhereArgs{"tm.deleted_at is null", []any{}},
 		&OrderLimitArgs{"document_access_record.last_access_time desc", 0},
 	)
+	for _, item := range result {
+		if item.UserTeamMember != nil {
+			item.UserTeamNickname = item.UserTeamMember.Nickname
+		}
+	}
 	return &result
 }
 

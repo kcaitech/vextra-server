@@ -147,6 +147,7 @@ type ProjectQuery struct {
 	SelfPermType         models.ProjectPermType `gorm:"-" json:"self_perm_type"`
 	IsInTeam             bool                   `gorm:"-" json:"is_in_team"`
 	IsInvited            bool                   `gorm:"-" json:"is_invited"`
+	UserTeamNickname     string                 `gorm:"-" json:"user_team_nickname"`
 }
 
 type SelfProjectQuery struct { // 通过邀请进入的项目
@@ -212,12 +213,14 @@ func (s *ProjectService) findProject(teamId int64, userId int64, projectIdList *
 		selfProjectQueryResult[i].IsInTeam = selfProjectQueryResult[i].SelfTeamMember.Id > 0
 		selfProjectQueryResult[i].IsInvited = true
 		result[i] = &selfProjectQueryResult[i].ProjectQuery
+		result[i].UserTeamNickname = selfProjectQueryResult[i].SelfTeamMember.Nickname
 	}
 	for i := range publishProjectQueryResult {
 		publishProjectQueryResult[i].SelfPermType = publishProjectQueryResult[i].Project.PermType
 		publishProjectQueryResult[i].IsInTeam = true
 		publishProjectQueryResult[i].IsInvited = false
 		result[i+selfProjectQueryResultLen] = &publishProjectQueryResult[i].ProjectQuery
+		result[i+selfProjectQueryResultLen].UserTeamNickname = publishProjectQueryResult[i].TeamMember.Nickname
 	}
 
 	return result
