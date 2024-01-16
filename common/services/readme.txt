@@ -40,6 +40,8 @@
             joinFields: field1,#field2 -> field1 ${paramArgs["#field2"][1:]}
             field1和${paramArgs["#field2"]}之间不会有"="连接符，示例：
                 joinFields: deleted_at,#is null -> deleted_at is null
+        若paramArgs["#param"]为"##"开头的字符串，则去掉"##"后以如下方式拼接：
+            joinFields: field1,##var -> field1 var
     动态参数: 以?开头的参数，如?param，最终会被替换为paramArgs["?param"]。对比模板参数，动态最终生成的sql语句中不会与main_table_name关联，而是替换为一个确定的值，类似where语句中的参数
         joinFields: field1,?field2 -> field1 = ${paramArgs["?field2"]}
     --------------------------------------------------------------------------------------------------------------------

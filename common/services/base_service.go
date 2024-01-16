@@ -1068,6 +1068,9 @@ func generateJoinArgs(dataType reflect.Type, mainTable string, paramArgs ParamAr
 				return
 			}
 			if strings.HasPrefix(joinField, "#") {
+				if strings.HasPrefix(joinField, "##") {
+					joinField = joinField[1:]
+				}
 				joinFieldParamArgAny, ok := paramArgs[joinField]
 				if joinFieldParamArg, ok1 := joinFieldParamArgAny.(string); ok && ok1 {
 					joinField = joinFieldParamArg
