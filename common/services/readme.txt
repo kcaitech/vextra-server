@@ -7,7 +7,7 @@
     参数说明：
     table: 表名，若在table标签或join标签中设置了表别名，则此处也需要设为同样的表别名
     --------------------------------------------------------------------------------------------------------------------
-    join:"${table};${joinType};${id,[#document_id document_id]}"
+    join:"${table};${joinType};${joinFields}"
     参数说明：
     table: 要连接的表名
         格式：
@@ -20,18 +20,26 @@
         right: 右连接
     joinFields: 连接字段
         格式：
-        field: field = main_table_name.field
-        field1,(table_name.)field2: field1 = (table_name.)field2
-            table_name为可选参数，支持模板参数
-            field2支持模板参数和动态参数
-        field1,[(table_name.)field2_1 (table_name.)field2_2 (table_name.)field2_n ...]: field1 = (table_name.)field2_x
-            table_name为可选参数，支持模板参数
-            field2_x支持模板参数和动态参数
-            会从[(table_name.)field2_1 (table_name.)field2_2 (table_name.)field2_n ...]中选出第一个可用的参数使用
+        field:
+            field = main_table_name.field
+        field1,(table_name.)field2:
+            field1 = (table_name.)field2
+                table_name为可选参数，支持模板参数
+                field2支持模板参数和动态参数
+        field1,[(table_name.)field2_1 (table_name.)field2_2 (table_name.)field2_n ...]:
+            field1 = (table_name.)field2_x
+                table_name为可选参数，支持模板参数
+                field2_x支持模板参数和动态参数
+                会从[(table_name.)field2_1 (table_name.)field2_2 (table_name.)field2_n ...]中选出第一个可用的参数来使用
     --------------------------------------------------------------------------------------------------------------------
     模板参数和动态参数说明:
     模板参数: 以#开头的参数，如#param，最终会被替换为paramArgs["#param"]
-        joinFields: field1,#field2 -> field1 = main_table_name.${paramArgs["#field2"]}
+        若paramArgs["#param"]为非"#"开头的字符串：
+            joinFields: field1,#field2 -> field1 = main_table_name.${paramArgs["#field2"]}
+        若paramArgs["#param"]为"#"开头的字符串，则去掉"#"后以如下方式拼接：
+            joinFields: field1,#field2 -> field1 ${paramArgs["#field2"][1:]}
+            field1和${paramArgs["#field2"]}之间不会有"="连接符，示例：
+                joinFields: deleted_at,#is null -> deleted_at is null
     动态参数: 以?开头的参数，如?param，最终会被替换为paramArgs["?param"]。对比模板参数，动态最终生成的sql语句中不会与main_table_name关联，而是替换为一个确定的值，类似where语句中的参数
         joinFields: field1,?field2 -> field1 = ${paramArgs["?field2"]}
     --------------------------------------------------------------------------------------------------------------------

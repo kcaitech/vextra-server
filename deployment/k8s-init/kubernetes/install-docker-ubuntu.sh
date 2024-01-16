@@ -4,6 +4,12 @@ set -e
 
 echo "安装docker"
 
+# 检查docker命令是否存在
+if command -v docker >/dev/null 2>&1; then
+    echo "Docker已安装"
+    exit 0
+fi
+
 #for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do apt remove -y $pkg; done
 
 apt install -y ca-certificates curl gnupg
