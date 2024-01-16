@@ -144,17 +144,18 @@ type ProjectQuery struct {
 	Project              Project                `gorm:"embedded;embeddedPrefix:p__" json:"project" table:"p"`
 	CreatorProjectMember ProjectMember          `gorm:"embedded;embeddedPrefix:pm__" json:"-" join:"project_member,pm;inner;project_id,id;perm_type,?creator_perm_type"`
 	CreatorUser          User                   `gorm:"embedded;embeddedPrefix:u__" json:"creator" join:"user,u;inner;id,pm.user_id"`
+	CreatorTeamMember    TeamMember             `gorm:"embedded;embeddedPrefix:ctm__" json:"-" join:"team_member,ctm;left;team_id;user_id,pm.user_id"`
+	CreatorTeamNickname  string                 `gorm:"-" json:"creator_team_nickname"`
 	SelfPermType         models.ProjectPermType `gorm:"-" json:"self_perm_type"`
 	IsInTeam             bool                   `gorm:"-" json:"is_in_team"`
 	IsInvited            bool                   `gorm:"-" json:"is_invited"`
-	UserTeamNickname     string                 `gorm:"-" json:"user_team_nickname"`
 }
 
 type SelfProjectQuery struct { // 通过邀请进入的项目
 	ProjectQuery
 	SelfProjectMember ProjectMember `gorm:"embedded;embeddedPrefix:pm1__" json:"-" join:"project_member,pm1;inner;project_id,id;user_id,?user_id"`
 	SelfUser          User          `gorm:"embedded;embeddedPrefix:u1__" json:"-" join:"user,u1;inner;id,pm1.user_id"`
-	SelfTeamMember    TeamMember    `gorm:"embedded;embeddedPrefix:tm__" join:"team_member,tm;left;deleted_at,#deleted_at;team_id,team_id;user_id,?user_id"`
+	SelfTeamMember    TeamMember    `gorm:"embedded;embeddedPrefix:tm__" join:"team_member,tm;left;deleted_at,##is null;team_id,team_id;user_id,?user_id"`
 }
 
 type PublishProjectQuery struct { // 通过项目的团队公开权限进入的项目
@@ -180,7 +181,7 @@ func (s *ProjectService) findProject(teamId int64, userId int64, projectIdList *
 	_ = s.Find(
 		&selfProjectQueryResult,
 		&As{BaseService: s, Alias: "p"},
-		&ParamArgs{"?creator_perm_type": models.ProjectPermTypeCreator, "?user_id": userId, "#deleted_at": "#is null"},
+		&ParamArgs{"?creator_perm_type": models.ProjectPermTypeCreator, "?user_id": userId},
 		&whereArgsList1,
 		&OrderLimitArgs{"pm1.id desc", 0},
 	)
@@ -213,14 +214,14 @@ func (s *ProjectService) findProject(teamId int64, userId int64, projectIdList *
 		selfProjectQueryResult[i].IsInTeam = selfProjectQueryResult[i].SelfTeamMember.Id > 0
 		selfProjectQueryResult[i].IsInvited = true
 		result[i] = &selfProjectQueryResult[i].ProjectQuery
-		result[i].UserTeamNickname = selfProjectQueryResult[i].SelfTeamMember.Nickname
+		result[i].CreatorTeamNickname = result[i].CreatorTeamMember.Nickname
 	}
 	for i := range publishProjectQueryResult {
 		publishProjectQueryResult[i].SelfPermType = publishProjectQueryResult[i].Project.PermType
 		publishProjectQueryResult[i].IsInTeam = true
 		publishProjectQueryResult[i].IsInvited = false
 		result[i+selfProjectQueryResultLen] = &publishProjectQueryResult[i].ProjectQuery
-		result[i+selfProjectQueryResultLen].UserTeamNickname = publishProjectQueryResult[i].TeamMember.Nickname
+		result[i+selfProjectQueryResultLen].CreatorTeamNickname = result[i+selfProjectQueryResultLen].CreatorTeamMember.Nickname
 	}
 
 	return result
