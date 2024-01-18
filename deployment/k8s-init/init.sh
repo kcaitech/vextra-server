@@ -27,21 +27,6 @@ for node in "${master_nodes[@]}"; do
   fi
 done
 
-# 设置时区
-echo "设置时区"
-apt update
-apt install -y systemd-timesyncd
-systemctl enable systemd-timesyncd
-systemctl start systemd-timesyncd
-timedatectl set-timezone Asia/Shanghai
-echo "NTP=ntp.tencent.com" >> /etc/systemd/timesyncd.conf
-echo "FallbackNTP=ntp1.tencent.com,ntp2.tencent.com,ntp3.tencent.com" >> /etc/systemd/timesyncd.conf
-echo "RootDistanceMaxSec=5" >> /etc/systemd/timesyncd.conf
-echo "PollIntervalMinSec=32" >> /etc/systemd/timesyncd.conf
-echo "PollIntervalMaxSec=2048" >> /etc/systemd/timesyncd.conf
-systemctl restart systemd-timesyncd
-timedatectl set-ntp on
-
 # 设置内核参数
 echo "设置内核参数"
 echo "overlay" >> /etc/modules-load.d/k8s.conf
@@ -58,9 +43,23 @@ echo "设置apt源"
 formatted_date=$(date +"%Y%m%d_%H%M%S")_$(date +%N | cut -c1-6)
 cp /etc/apt/sources.list /etc/apt/sources.list.bak.$formatted_date
 sed -i 's@//.*archive.ubuntu.com@//mirrors.ustc.edu.cn@g' /etc/apt/sources.list
+apt update
+
+# 设置时区
+echo "设置时区"
+apt install -y systemd-timesyncd
+systemctl enable systemd-timesyncd
+systemctl start systemd-timesyncd
+timedatectl set-timezone Asia/Shanghai
+echo "NTP=ntp.tencent.com" >> /etc/systemd/timesyncd.conf
+echo "FallbackNTP=ntp1.tencent.com,ntp2.tencent.com,ntp3.tencent.com" >> /etc/systemd/timesyncd.conf
+echo "RootDistanceMaxSec=5" >> /etc/systemd/timesyncd.conf
+echo "PollIntervalMinSec=32" >> /etc/systemd/timesyncd.conf
+echo "PollIntervalMaxSec=2048" >> /etc/systemd/timesyncd.conf
+systemctl restart systemd-timesyncd
+timedatectl set-ntp on
 
 # 安装IO监控工具
-apt update
 apt install -y iotop
 
 # 禁用swap
