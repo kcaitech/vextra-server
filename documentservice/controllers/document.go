@@ -310,9 +310,11 @@ func copyDocument(userId int64, documentId int64, c *gin.Context, documentName s
 		item.VersionId = documentMetaUploadInfo.VersionID
 		return item
 	}, documentCmdList...)
-	_, err = documentCollection.InsertMany(nil, newDocumentCmdList)
-	if err != nil {
-		log.Println("cmd复制失败：", err)
+	if len(newDocumentCmdList) > 0 {
+		_, err = documentCollection.InsertMany(nil, newDocumentCmdList)
+		if err != nil {
+			log.Println("cmd复制失败：", err)
+		}
 	}
 
 	// 复制评论数据
@@ -339,9 +341,11 @@ func copyDocument(userId int64, documentId int64, c *gin.Context, documentName s
 		item.RootId = commentIdMap[item.RootId]
 		return item
 	}, documentCommentList...)
-	_, err = commentCollection.InsertMany(nil, newDocumentCommentList)
-	if err != nil {
-		log.Println("评论复制失败：", err)
+	if len(newDocumentCommentList) > 0 {
+		_, err = commentCollection.InsertMany(nil, newDocumentCommentList)
+		if err != nil {
+			log.Println("评论复制失败：", err)
+		}
 	}
 
 	// 添加最近访问
