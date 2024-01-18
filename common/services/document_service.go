@@ -122,7 +122,7 @@ type DocumentQueryResItem struct {
 	User             User             `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,[#user_id document.user_id]"`
 	Team             *DocumentTeam    `gorm:"embedded;embeddedPrefix:team__" json:"team" join:";left;id,document.team_id"`
 	Project          *DocumentProject `gorm:"embedded;embeddedPrefix:project__" json:"project" join:";left;id,document.project_id"`
-	UserTeamMember   *TeamMember      `gorm:"embedded;embeddedPrefix:tm__" json:"tm" join:"team_member,tm;left;team_id,document.team_id;user_id,document.user_id;deleted_at,##is null"`
+	UserTeamMember   *TeamMember      `gorm:"embedded;embeddedPrefix:tm__" json:"-" join:"team_member,tm;left;team_id,document.team_id;user_id,document.user_id;deleted_at,##is null"`
 	UserTeamNickname string           `gorm:"-" json:"user_team_nickname"`
 }
 
@@ -155,6 +155,11 @@ func (s *DocumentService) FindRecycleBinByUserId(userId int64, projectId int64) 
 		&OrderLimitArgs{"document_access_record.last_access_time desc", 0},
 		&Unscoped{},
 	)
+	for i, _ := range result {
+		if result[i].UserTeamMember != nil {
+			result[i].UserTeamNickname = result[i].UserTeamMember.Nickname
+		}
+	}
 	return &result
 }
 
@@ -299,7 +304,7 @@ func (s *DocumentService) GetDocumentInfoByDocumentAndUserId(documentId int64, u
 		projectPermType, err := projectService.GetProjectPermTypeByForUser(projectId, userId)
 		if err == nil && projectPermType != nil {
 			permType = (*projectPermType).ToPermType()
-			if permType > result.DocumentPermission.PermType {
+			if permType <= models.PermTypeCommentable || permType > result.DocumentPermission.PermType {
 				result.DocumentPermission.PermType = permType
 			}
 		}
@@ -356,10 +361,33 @@ func (s *DocumentService) GetDocumentPermissionByDocumentAndUserId(permType *mod
 	} else if errors.Is(err, ErrRecordNotFound) {
 		documentPermission = nil
 	}
-	if document.UserId == userId {
-		*permType = models.PermTypeEditable
-		return documentPermission, PermSourceTypeCreator, nil
+
+	// 项目成员权限
+	projectService := NewProjectService()
+	var projectPermType *models.ProjectPermType = nil
+	if document.ProjectId != 0 {
+		var err error
+		projectPermType, err = projectService.GetProjectPermTypeByForUser(document.ProjectId, userId)
+		if err != nil {
+			return nil, PermSourceTypeNone, err
+		}
 	}
+
+	if document.UserId == userId {
+		if document.ProjectId == 0 || *projectPermType >= models.ProjectPermTypeEditable {
+			*permType = models.PermTypeEditable
+			return documentPermission, PermSourceTypeCreator, nil
+		} else {
+			switch *projectPermType {
+			case models.ProjectPermTypeReadOnly:
+				*permType = models.PermTypeReadOnly
+			case models.ProjectPermTypeCommentable:
+				*permType = models.PermTypeCommentable
+			}
+			return documentPermission, PermSourceTypeCreator, nil
+		}
+	}
+
 	// 自定义权限和公共权限
 	var permSource DocumentPermSourceType
 	*permType = models.PermTypeNone
@@ -397,12 +425,8 @@ func (s *DocumentService) GetDocumentPermissionByDocumentAndUserId(permType *mod
 	if document.ProjectId == 0 {
 		return documentPermission, permSource, nil
 	}
+
 	// 项目成员权限
-	projectService := NewProjectService()
-	projectPermType, err := projectService.GetProjectPermTypeByForUser(document.ProjectId, userId)
-	if err != nil {
-		return nil, PermSourceTypeNone, err
-	}
 	if *permType > (*projectPermType).ToPermType() || (*permType == (*projectPermType).ToPermType() && permSource == PermSourceTypeCustom) {
 		return documentPermission, permSource, nil
 	} else {

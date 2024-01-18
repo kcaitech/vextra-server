@@ -169,7 +169,7 @@ func DeleteProject(c *gin.Context) {
 		response.Fail(c, "权限查询错误")
 		return
 	}
-	if *permType == models.ProjectPermTypeNone || *permType < models.ProjectPermTypeAdmin {
+	if *permType == models.ProjectPermTypeNone || *permType < models.ProjectPermTypeCreator {
 		response.Forbidden(c, "")
 		return
 	}
