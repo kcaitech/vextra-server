@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"github.com/gin-gonic/gin"
 	"protodesign.cn/kcserver/common/gin/auth"
 	"protodesign.cn/kcserver/common/gin/response"
@@ -32,7 +33,7 @@ func DeleteUserDocumentAccessRecord(c *gin.Context) {
 	}
 	if _, err := services.NewDocumentService().DocumentAccessRecordService.Delete(
 		"user_id = ? and id = ?", userId, accessRecordId,
-	); err != nil && err != services.ErrRecordNotFound {
+	); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
 		response.Fail(c, "删除错误")
 		return
 	}

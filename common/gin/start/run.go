@@ -12,8 +12,9 @@ func Run(config *BaseConfiguration, afterInit func(router *gin.Engine)) {
 
 	//gin.SetMode(gin.DebugMode)
 	gin.SetMode(gin.ReleaseMode)
-	router := gin.Default()
+	router := gin.New()
 	//router.MaxMultipartMemory = 10 << 20 // 10 MiB
+	router.Use(gin.Recovery())
 	router.Use(middlewares.ErrorHandler())
 
 	afterInit(router)

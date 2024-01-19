@@ -36,9 +36,9 @@ func DeleteUserShare(c *gin.Context) {
 		response.BadRequest(c, "参数错误：share_id")
 		return
 	}
-	if _, err := services.NewDocumentService().DocumentPermissionService.Delete(
+	if _, err := services.NewDocumentService().DocumentPermissionService.HardDelete(
 		"grantee_type = ? and grantee_id = ? and id = ?", models.GranteeTypeExternal, userId, permissionId,
-	); err != nil && err != services.ErrRecordNotFound {
+	); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
 		response.Fail(c, "删除错误")
 		return
 	}

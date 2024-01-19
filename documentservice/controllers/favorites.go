@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"github.com/gin-gonic/gin"
 	"protodesign.cn/kcserver/common/gin/auth"
 	"protodesign.cn/kcserver/common/gin/response"
@@ -55,7 +56,7 @@ func SetUserDocumentFavoriteStatus(c *gin.Context) {
 		services.JoinArgsRaw{Join: "inner join document on document.id = document_favorites.document_id"},
 		services.SelectArgs{Select: "document_favorites.*"},
 	); err != nil {
-		if err != services.ErrRecordNotFound {
+		if !errors.Is(err, services.ErrRecordNotFound) {
 			response.Fail(c, "查询错误")
 			return
 		}
