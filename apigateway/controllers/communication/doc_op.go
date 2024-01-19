@@ -9,6 +9,7 @@ import (
 	"protodesign.cn/kcserver/common/services"
 	"protodesign.cn/kcserver/utils/str"
 	"protodesign.cn/kcserver/utils/websocket"
+	"time"
 )
 
 func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd ServerCmd, data Data) *Tunnel {
@@ -68,21 +69,32 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 		return nil
 	}
 
-	docopUrl := docop.GetDocumentUrlRetry(documentIdStr)
-	if docopUrl == "" {
-		serverCmd.Message = "通道建立失败"
-		_ = clientWs.WriteJSON(&serverCmd)
-		log.Println("文档服务错误", documentId)
-		return nil
-	}
+	var serverWs *websocket.Ws
+	const createWsRetryCount = 6
+	const createWsRetryInterval = 1
 
-	serverWs, err := websocket.NewClient(docopUrl, nil)
-	if err != nil {
+	var err error
+	for i := 0; i < createWsRetryCount; i++ {
+		docopUrl := docop.GetDocumentUrl(documentIdStr)
+		if docopUrl == "" {
+			goto _continue
+		}
+		serverWs, err = websocket.NewClient(docopUrl, nil)
+		if err == nil {
+			break
+		}
+	_continue:
+		if i < createWsRetryCount-1 {
+			time.Sleep(time.Second * createWsRetryInterval)
+		}
+	}
+	if serverWs == nil {
 		serverCmd.Message = "通道建立失败"
 		_ = clientWs.WriteJSON(&serverCmd)
 		log.Println("document ws建立失败", err)
 		return nil
 	}
+
 	if err := serverWs.WriteJSON(Data{
 		"documentId":    documentIdStr,
 		"userId":        str.IntToString(userId),

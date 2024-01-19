@@ -10,8 +10,8 @@ import (
 func Run(config *BaseConfiguration, afterInit func(router *gin.Engine)) {
 	log.Println("开始运行")
 
-	gin.SetMode(gin.DebugMode)
-	//gin.SetMode(gin.ReleaseMode)
+	//gin.SetMode(gin.DebugMode)
+	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	//router.MaxMultipartMemory = 10 << 20 // 10 MiB
 	router.Use(middlewares.ErrorHandler())
