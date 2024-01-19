@@ -6,6 +6,7 @@ const (
 	// test环境
 	//StorageHost     = "https://storage.protodesign.cn"
 	//FileStorageHost = "https://storage.protodesign.cn/files"
+
 	// 正式环境
 	StorageHost     = "https://storage1.protodesign.cn"
 	FileStorageHost = "https://storage2.protodesign.cn"
