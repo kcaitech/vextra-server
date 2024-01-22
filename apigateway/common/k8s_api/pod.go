@@ -42,7 +42,7 @@ func GetDocOpPods() []string {
 		return nil
 	}
 	runningPods := sliceutil.FilterT(func(pod corev1.Pod) bool {
-		return pod.Status.Phase == corev1.PodRunning
+		return pod.Status.Phase == corev1.PodRunning && pod.ObjectMeta.DeletionTimestamp == nil
 	}, pods.Items...)
 	docOpPodsCache = sliceutil.MapT(func(pod corev1.Pod) string {
 		return pod.Name
