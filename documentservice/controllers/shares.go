@@ -136,10 +136,31 @@ func GetDocumentSharesList(c *gin.Context) {
 		return
 	}
 	documentService := services.NewDocumentService()
-	var count int64
-	if err := documentService.Count(&count, "id = ? and user_id = ?", documentId, userId); err != nil || count <= 0 {
+	var document models.Document
+	if err := documentService.Get(&document, "id = ?", documentId); err != nil {
+		if errors.Is(err, services.ErrRecordNotFound) {
+			response.Forbidden(c, "")
+		} else {
+			log.Println("查询错误", err)
+			response.BadRequest(c, "文档不存在")
+		}
+		return
+	}
+	if document.ProjectId == 0 && document.UserId != userId {
 		response.Forbidden(c, "")
 		return
+	} else if document.ProjectId != 0 {
+		projectService := services.NewProjectService()
+		permType, err := projectService.GetProjectPermTypeByForUser(document.ProjectId, userId)
+		if err != nil || permType == nil {
+			log.Println("权限查询错误", err)
+			response.Fail(c, "")
+			return
+		}
+		if (document.UserId != userId && *permType < models.ProjectPermTypeAdmin) || (document.UserId == userId && *permType < models.ProjectPermTypeCommentable) {
+			response.Forbidden(c, "")
+			return
+		}
 	}
 	response.Success(c, documentService.FindSharesByDocumentId(documentId))
 }
