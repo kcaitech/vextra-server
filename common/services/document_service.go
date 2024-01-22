@@ -529,3 +529,26 @@ func NewDocumentVersionService() *DocumentVersionService {
 	that.That = that
 	return that
 }
+
+type DocumentPermissionQuery struct {
+	models.DefaultModelData
+	DocumentPermission DocumentPermission `gorm:"embedded;embeddedPrefix:document_permission__" json:"-" table:""`
+	Document           Document           `gorm:"embedded;embeddedPrefix:document__" json:"-" join:";inner;id,resource_id"`
+	User               User               `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,grantee_id"`
+}
+
+func (model DocumentPermissionQuery) MarshalJSON() ([]byte, error) {
+	return models.MarshalJSON(model)
+}
+
+func (s *DocumentPermissionService) GetDocumentPermissionByPermId(documentPermissionId int64) (*DocumentPermissionQuery, error) {
+	var result DocumentPermissionQuery
+	if err := s.Get(
+		&result,
+		"document_permission.id = ?",
+		documentPermissionId,
+	); err != nil {
+		return nil, err
+	}
+	return &result, nil
+}

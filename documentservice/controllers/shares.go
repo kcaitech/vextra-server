@@ -72,15 +72,34 @@ func SetDocumentShareType(c *gin.Context) {
 		response.BadRequest(c, "参数错误：doc_type")
 		return
 	}
+
 	documentService := services.NewDocumentService()
 	var document models.Document
-	if err := documentService.Get(&document, "id = ? and user_id = ?", documentId, userId); err != nil {
+	if err := documentService.Get(&document, "id = ?", documentId); err != nil {
 		if errors.Is(err, services.ErrRecordNotFound) {
 			response.Forbidden(c, "")
 		} else {
-			response.Fail(c, "查询错误")
+			log.Println("查询错误", err)
+			response.Fail(c, "")
 		}
 		return
+	}
+	if document.ProjectId == 0 && document.UserId != userId {
+		response.Forbidden(c, "")
+		return
+	} else if document.ProjectId != 0 {
+		projectService := services.NewProjectService()
+		// 权限校验
+		permType, err := projectService.GetProjectPermTypeByForUser(document.ProjectId, userId)
+		if err != nil || permType == nil {
+			log.Println("权限查询错误", err)
+			response.Fail(c, "")
+			return
+		}
+		if (document.UserId != userId && *permType < models.ProjectPermTypeAdmin) || (document.UserId == userId && *permType < models.ProjectPermTypeCommentable) {
+			response.Forbidden(c, "")
+			return
+		}
 	}
 	document.DocType = docType
 	if _, err := documentService.UpdatesById(documentId, &document); err != nil {
@@ -153,18 +172,34 @@ func SetDocumentSharePermission(c *gin.Context) {
 		return
 	}
 	documentPermissionService := services.NewDocumentService().DocumentPermissionService
-	var count int64
-	if err := documentPermissionService.Count(
-		&count,
-		&services.JoinArgsRaw{Join: "inner join document on document.id = document_permission.resource_id", Args: nil},
-		&services.WhereArgs{Query: "document_permission.resource_type = ? and document_permission.id = ? and document.user_id = ?", Args: []any{models.ResourceTypeDoc, permissionId, userId}},
-	); err != nil || count <= 0 {
-		if err != nil {
-			response.Fail(c, "更新错误")
+	documentPermission, err := documentPermissionService.GetDocumentPermissionByPermId(permissionId)
+	if err != nil {
+		if errors.Is(err, services.ErrRecordNotFound) {
+			log.Println("数据不存在", err)
+			response.BadRequest(c, "数据不存在")
 		} else {
-			response.Forbidden(c, "")
+			log.Println("查询错误", err)
+			response.Fail(c, "")
 		}
 		return
+	}
+	// 权限校验
+	projectId := str.DefaultToInt(documentPermission.Document.ProjectId, 0)
+	if projectId == 0 && documentPermission.Document.UserId != userId {
+		response.Forbidden(c, "")
+		return
+	} else if projectId != 0 {
+		projectService := services.NewProjectService()
+		permType, err := projectService.GetProjectPermTypeByForUser(projectId, userId)
+		if err != nil || permType == nil {
+			log.Println("权限查询错误", err)
+			response.Fail(c, "")
+			return
+		}
+		if (documentPermission.Document.UserId != userId && *permType < models.ProjectPermTypeAdmin) || (documentPermission.Document.UserId == userId && *permType < models.ProjectPermTypeCommentable) {
+			response.Forbidden(c, "")
+			return
+		}
 	}
 	_, _ = services.NewDocumentService().DocumentPermissionService.UpdateColumns(
 		map[string]any{"perm_type": permType, "perm_source_type": models.PermSourceTypeCustom},
