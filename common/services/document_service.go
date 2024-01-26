@@ -4,8 +4,8 @@ import (
 	"errors"
 	"protodesign.cn/kcserver/common"
 	"protodesign.cn/kcserver/common/models"
+	"protodesign.cn/kcserver/utils/math"
 	"protodesign.cn/kcserver/utils/sliceutil"
-	"protodesign.cn/kcserver/utils/str"
 	"protodesign.cn/kcserver/utils/time"
 	"strings"
 )
@@ -278,7 +278,8 @@ type DocumentInfoQueryRes struct {
 }
 
 // GetDocumentInfoByDocumentAndUserId 查询某个文档对某个用户的信息
-func (s *DocumentService) GetDocumentInfoByDocumentAndUserId(documentId int64, userId int64, permType models.PermType) *DocumentInfoQueryRes {
+// 若传入permTypeForQueryApplicationCount不为models.PermTypeNone，则会返回该用户对该文档此权限的历史申请数量
+func (s *DocumentService) GetDocumentInfoByDocumentAndUserId(documentId int64, userId int64, permTypeForQueryApplicationCount models.PermType) *DocumentInfoQueryRes {
 	var result DocumentInfoQueryRes
 	if err := s.Get(
 		&result,
@@ -288,68 +289,36 @@ func (s *DocumentService) GetDocumentInfoByDocumentAndUserId(documentId int64, u
 	); err != nil {
 		return nil
 	}
-	if result.User.Id == userId {
-		result.DocumentPermission.PermType = models.PermTypeEditable
-	} else if result.Document.DocType == models.DocTypePrivate {
-		result.DocumentPermission.PermType = models.PermTypeNone
+
+	if err := s.GetPermTypeByDocumentAndUserId(&result.DocumentPermission.PermType, documentId, userId); err != nil {
+		return nil
 	}
-	_ = s.DocumentPermissionService.Count(
-		&result.SharesCount,
-		"resource_type = ? and resource_id = ? and grantee_type = ?",
-		models.ResourceTypeDoc, documentId, models.GranteeTypeExternal,
-	)
-	projectId := str.DefaultToInt(result.Document.ProjectId, 0)
-	if projectId > 0 {
-		projectService := NewProjectService()
-		projectPermType, err := projectService.GetProjectPermTypeByForUser(projectId, userId)
-		if err == nil && projectPermType != nil {
-			permType = (*projectPermType).ToPermType()
-			if permType <= models.PermTypeCommentable || permType > result.DocumentPermission.PermType {
-				result.DocumentPermission.PermType = permType
-			}
-		}
-	}
-	if result.DocumentPermission.PermType == models.PermTypeNone {
-		_ = s.DocumentPermissionService.Count(
-			&result.SharesCount,
-			"resource_type = ? and resource_id = ? and grantee_type = ?",
-			models.ResourceTypeDoc, documentId, models.GranteeTypeExternal,
-		)
-		if result.SharesCount < 5 {
-			switch result.Document.DocType {
-			case models.DocTypePublicReadable:
-				result.DocumentPermission.PermType = models.PermTypeReadOnly
-			case models.DocTypePublicCommentable:
-				result.DocumentPermission.PermType = models.PermTypeCommentable
-			case models.DocTypePublicEditable:
-				result.DocumentPermission.PermType = models.PermTypeEditable
-			}
-		}
-	}
+
 	_ = s.DocumentPermissionRequestsService.Find(&result.DocumentPermissionRequests, "user_id = ? and document_id = ?", userId, documentId)
-	if permType != models.PermTypeNone {
+	if permTypeForQueryApplicationCount != models.PermTypeNone {
 		result.ApplicationCount = int64(len(sliceutil.FilterT(func(item DocumentPermissionRequests) bool {
-			return item.PermType == permType
+			return item.PermType == permTypeForQueryApplicationCount
 		}, result.DocumentPermissionRequests...)))
 	}
 	return &result
 }
 
-type DocumentPermSourceType uint8 // 文档权限来源
-
-const (
-	PermSourceTypeNone    DocumentPermSourceType = iota // 无权限
-	PermSourceTypeCreator                               // 创建者
-	PermSourceTypeCustom                                // 自定义
-	PermSourceTypePublish                               // 公共权限
-	PermSourceTypeProject                               // 项目成员权限
-)
+/*
+文档权限优先级
+1. 若为公共文档，取Max（现有权限，公共权限，项目权限）
+2. 若为私有文档
+	2.1 若项目权限大于等于现有权限，取项目权限
+	2.2 若项目权限小于现有权限（此时项目权限必为只读或可评论）
+		2.2.1 若为创建者权限，取项目权限
+		2.2.2 否则，取现有权限（此时为自定义权限）
+其中，现有权限=创建者权限+已加入的自定义权限+已加入的公共权限
+*/
 
 // GetDocumentPermissionByDocumentAndUserId 获取用户的文档权限记录和用户的文档权限（包含文档本身的公共权限）
-func (s *DocumentService) GetDocumentPermissionByDocumentAndUserId(permType *models.PermType, documentId int64, userId int64) (*models.DocumentPermission, DocumentPermSourceType, error) {
+func (s *DocumentService) GetDocumentPermissionByDocumentAndUserId(permType *models.PermType, documentId int64, userId int64) (*models.DocumentPermission, error) {
 	var document models.Document
 	if err := s.GetById(documentId, &document); err != nil {
-		return nil, PermSourceTypeNone, err
+		return nil, err
 	}
 	documentPermission := &models.DocumentPermission{}
 	if err := s.DocumentPermissionService.Get(
@@ -357,90 +326,59 @@ func (s *DocumentService) GetDocumentPermissionByDocumentAndUserId(permType *mod
 		"resource_type = ? and resource_id = ? and grantee_type = ? and grantee_id = ?",
 		models.ResourceTypeDoc, documentId, models.GranteeTypeExternal, userId,
 	); err != nil && !errors.Is(err, ErrRecordNotFound) {
-		return nil, PermSourceTypeNone, err
+		return nil, err
 	} else if errors.Is(err, ErrRecordNotFound) {
 		documentPermission = nil
 	}
 
-	// 项目成员权限
-	projectService := NewProjectService()
-	var projectPermType *models.ProjectPermType = nil
-	if document.ProjectId != 0 {
-		var err error
-		projectPermType, err = projectService.GetProjectPermTypeByForUser(document.ProjectId, userId)
-		if err != nil {
-			return nil, PermSourceTypeNone, err
-		}
-	}
+	currentPermType := documentPermission.PermType // 现有权限
+	publicPermType := models.PermTypeNone          // 公共权限
+	projectPermType := models.PermTypeNone         // 项目权限
 
-	if document.UserId == userId {
-		if document.ProjectId == 0 || *projectPermType >= models.ProjectPermTypeEditable {
-			*permType = models.PermTypeEditable
-			return documentPermission, PermSourceTypeCreator, nil
-		} else {
-			switch *projectPermType {
-			case models.ProjectPermTypeReadOnly:
-				*permType = models.PermTypeReadOnly
-			case models.ProjectPermTypeCommentable:
-				*permType = models.PermTypeCommentable
-			}
-			return documentPermission, PermSourceTypeCreator, nil
-		}
-	}
-
-	// 自定义权限和公共权限
-	var permSource DocumentPermSourceType
-	*permType = models.PermTypeNone
-	if documentPermission != nil {
-		*permType = documentPermission.PermType
-		permSource = PermSourceTypeCustom
-	}
-	if document.DocType == models.DocTypePrivate {
-		*permType = models.PermTypeNone
-		permSource = PermSourceTypeNone
-	} else if *permType == models.PermTypeNone {
+	isPublic := document.DocType >= models.DocTypePublicReadable // 是否为公共文档
+	if isPublic {
 		var sharesCount int64
-		if err := s.DocumentPermissionService.Count(
+		_ = s.DocumentPermissionService.Count(
 			&sharesCount,
 			"resource_type = ? and resource_id = ? and grantee_type = ?",
 			models.ResourceTypeDoc, documentId, models.GranteeTypeExternal,
-		); err != nil {
-			return nil, PermSourceTypeNone, err
-		}
-		if sharesCount >= 5 {
-			*permType = models.PermTypeNone
-			permSource = PermSourceTypeNone
-		} else {
+		)
+		if sharesCount < 5 {
 			switch document.DocType {
 			case models.DocTypePublicReadable:
-				*permType = models.PermTypeReadOnly
+				publicPermType = models.PermTypeReadOnly
 			case models.DocTypePublicCommentable:
-				*permType = models.PermTypeCommentable
+				publicPermType = models.PermTypeCommentable
 			case models.DocTypePublicEditable:
-				*permType = models.PermTypeEditable
+				publicPermType = models.PermTypeEditable
 			}
-			permSource = PermSourceTypePublish
 		}
-	}
-	if document.ProjectId == 0 {
-		return documentPermission, permSource, nil
 	}
 
-	// 项目成员权限
-	if *permType > (*projectPermType).ToPermType() || (*permType == (*projectPermType).ToPermType() && permSource == PermSourceTypeCustom) {
-		return documentPermission, permSource, nil
-	} else {
-		*permType = models.PermType(*projectPermType)
-		if *permType > models.PermTypeEditable {
-			*permType = models.PermTypeEditable
-		}
-		return documentPermission, PermSourceTypeProject, nil
+	isCreator := document.UserId == userId // 是否为创建者
+	if isCreator {
+		currentPermType = models.PermTypeEditable
 	}
+
+	projectService := NewProjectService()
+	if _projectPermType, err := projectService.GetProjectPermTypeByForUser(document.ProjectId, userId); err == nil && _projectPermType != nil {
+		projectPermType = (*_projectPermType).ToPermType()
+	}
+
+	if isPublic { // 公共文档取Max（现有权限，公共权限，项目权限）
+		*permType = models.PermType(math.Max(uint8(currentPermType), uint8(publicPermType), uint8(projectPermType)))
+	} else if projectPermType >= currentPermType || isCreator { // 私有文档，项目权限大于等于现有权限，或项目权限小于现有权限且为创建者，取项目权限
+		*permType = projectPermType
+	} else { // 私有文档，项目权限小于现有权限且不为创建者，取现有权限
+		*permType = currentPermType
+	}
+
+	return documentPermission, nil
 }
 
 // GetPermTypeByDocumentAndUserId 获取用户对文档的权限（包含文档本身的公共权限）
 func (s *DocumentService) GetPermTypeByDocumentAndUserId(permType *models.PermType, documentId int64, userId int64) error {
-	if _, _, err := s.GetDocumentPermissionByDocumentAndUserId(permType, documentId, userId); err != nil {
+	if _, err := s.GetDocumentPermissionByDocumentAndUserId(permType, documentId, userId); err != nil {
 		return err
 	}
 	return nil

@@ -40,9 +40,8 @@ func GetDocumentAccessKey(c *gin.Context) {
 	}
 
 	var permType models.PermType
-	var permSource services.DocumentPermSourceType
 	var documentPermission *models.DocumentPermission
-	if documentPermission, permSource, err = documentService.GetDocumentPermissionByDocumentAndUserId(&permType, documentId, userId); err != nil {
+	if documentPermission, err = documentService.GetDocumentPermissionByDocumentAndUserId(&permType, documentId, userId); err != nil {
 		response.Fail(c, "")
 		return
 	}
@@ -54,7 +53,7 @@ func GetDocumentAccessKey(c *gin.Context) {
 		response.Forbidden(c, "审核不通过")
 		return
 	}
-	if documentPermission == nil && permSource == services.PermSourceTypePublish {
+	if documentPermission == nil {
 		if err := documentService.DocumentPermissionService.Create(&models.DocumentPermission{
 			ResourceType: models.ResourceTypeDoc,
 			ResourceId:   documentId,
