@@ -424,7 +424,7 @@ func ReviewDocumentPermissionRequest(c *gin.Context) {
 	}
 	if approvalCode == 1 {
 		var permType models.PermType
-		documentPermission, err := documentService.GetDocumentPermissionByDocumentAndUserId(
+		documentPermission, _, err := documentService.GetDocumentPermissionByDocumentAndUserId(
 			&permType,
 			documentPermissionRequest.DocumentId,
 			documentPermissionRequest.UserId,

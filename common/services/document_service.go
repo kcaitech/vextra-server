@@ -307,18 +307,23 @@ func (s *DocumentService) GetDocumentInfoByDocumentAndUserId(documentId int64, u
 文档权限优先级
 1. 若为公共文档，取Max（现有权限，公共权限，项目权限）
 2. 若为私有文档
-	2.1 若项目权限大于等于现有权限，取项目权限
-	2.2 若项目权限小于现有权限（此时项目权限必为只读或可评论）
-		2.2.1 若为创建者权限，取项目权限
-		2.2.2 否则，取现有权限（此时为自定义权限）
+	2.1 若不为项目文档，取现有权限
+	2.2 若为项目文档
+		2.2.1 若项目权限大于等于现有权限，取项目权限
+		2.2.2 若项目权限小于现有权限（此时项目权限必为只读或可评论）
+			2.2.2.1 若为创建者权限，取项目权限
+			2.2.2.2 否则，取现有权限（此时为自定义权限）
 其中，现有权限=创建者权限+已加入的自定义权限+已加入的公共权限
 */
 
 // GetDocumentPermissionByDocumentAndUserId 获取用户的文档权限记录和用户的文档权限（包含文档本身的公共权限）
-func (s *DocumentService) GetDocumentPermissionByDocumentAndUserId(permType *models.PermType, documentId int64, userId int64) (*models.DocumentPermission, error) {
+// 返回值第2个参数：是否为公共权限
+func (s *DocumentService) GetDocumentPermissionByDocumentAndUserId(permType *models.PermType, documentId int64, userId int64) (*models.DocumentPermission, bool, error) {
+	isPublicPerm := false
+
 	var document models.Document
 	if err := s.GetById(documentId, &document); err != nil {
-		return nil, err
+		return nil, isPublicPerm, err
 	}
 	documentPermission := &models.DocumentPermission{}
 	if err := s.DocumentPermissionService.Get(
@@ -326,14 +331,18 @@ func (s *DocumentService) GetDocumentPermissionByDocumentAndUserId(permType *mod
 		"resource_type = ? and resource_id = ? and grantee_type = ? and grantee_id = ?",
 		models.ResourceTypeDoc, documentId, models.GranteeTypeExternal, userId,
 	); err != nil && !errors.Is(err, ErrRecordNotFound) {
-		return nil, err
+		return nil, isPublicPerm, err
 	} else if errors.Is(err, ErrRecordNotFound) {
 		documentPermission = nil
 	}
 
-	currentPermType := documentPermission.PermType // 现有权限
-	publicPermType := models.PermTypeNone          // 公共权限
-	projectPermType := models.PermTypeNone         // 项目权限
+	currentPermType := models.PermTypeNone // 现有权限
+	publicPermType := models.PermTypeNone  // 公共权限
+	projectPermType := models.PermTypeNone // 项目权限
+
+	if documentPermission != nil {
+		currentPermType = documentPermission.PermType
+	}
 
 	isPublic := document.DocType >= models.DocTypePublicReadable // 是否为公共文档
 	if isPublic {
@@ -360,25 +369,33 @@ func (s *DocumentService) GetDocumentPermissionByDocumentAndUserId(permType *mod
 		currentPermType = models.PermTypeEditable
 	}
 
-	projectService := NewProjectService()
-	if _projectPermType, err := projectService.GetProjectPermTypeByForUser(document.ProjectId, userId); err == nil && _projectPermType != nil {
-		projectPermType = (*_projectPermType).ToPermType()
+	isProjectDocument := document.ProjectId > 0 // 是否为项目文档
+	if isProjectDocument {
+		projectService := NewProjectService()
+		if _projectPermType, err := projectService.GetProjectPermTypeByForUser(document.ProjectId, userId); err == nil && _projectPermType != nil {
+			projectPermType = (*_projectPermType).ToPermType()
+		}
 	}
 
 	if isPublic { // 公共文档取Max（现有权限，公共权限，项目权限）
 		*permType = models.PermType(math.Max(uint8(currentPermType), uint8(publicPermType), uint8(projectPermType)))
-	} else if projectPermType >= currentPermType || isCreator { // 私有文档，项目权限大于等于现有权限，或项目权限小于现有权限且为创建者，取项目权限
+		if publicPermType > currentPermType && publicPermType > projectPermType {
+			isPublicPerm = true
+		}
+	} else if !isProjectDocument { // 私有文档，非项目文档，取现有权限
+		*permType = currentPermType
+	} else if projectPermType >= currentPermType || isCreator { // 私有文档，项目文档，项目权限大于等于现有权限，或项目权限小于现有权限且为创建者，取项目权限
 		*permType = projectPermType
-	} else { // 私有文档，项目权限小于现有权限且不为创建者，取现有权限
+	} else { // 私有文档，项目文档，项目权限小于现有权限且不为创建者（即为自定义权限），取现有权限
 		*permType = currentPermType
 	}
 
-	return documentPermission, nil
+	return documentPermission, isPublicPerm, nil
 }
 
 // GetPermTypeByDocumentAndUserId 获取用户对文档的权限（包含文档本身的公共权限）
 func (s *DocumentService) GetPermTypeByDocumentAndUserId(permType *models.PermType, documentId int64, userId int64) error {
-	if _, err := s.GetDocumentPermissionByDocumentAndUserId(permType, documentId, userId); err != nil {
+	if _, _, err := s.GetDocumentPermissionByDocumentAndUserId(permType, documentId, userId); err != nil {
 		return err
 	}
 	return nil
