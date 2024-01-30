@@ -12,7 +12,9 @@ import (
 	"protodesign.cn/kcserver/common/services"
 	"protodesign.cn/kcserver/common/storage"
 	"protodesign.cn/kcserver/utils/str"
+	myTime "protodesign.cn/kcserver/utils/time"
 	"protodesign.cn/kcserver/utils/websocket"
+	"time"
 )
 
 func UploadDocumentResource(c *gin.Context) {
@@ -110,14 +112,6 @@ func UploadDocumentResource(c *gin.Context) {
 			log.Println("ResourceData结构错误", err, len(resourceData))
 			return
 		}
-		base64Str := base64.StdEncoding.EncodeToString(resourceData)
-		reviewResponse, err := safereview.Client.ReviewPictureFromBase64(base64Str)
-		if err != nil || reviewResponse.Status != safereviewBase.ReviewImageResultPass {
-			resp.Message = "图片审核不通过"
-			log.Println("图片审核不通过", err, reviewResponse)
-			_ = ws.WriteJSON(&resp)
-			return
-		}
 		path := document.Path + "/medias/" + resourceHeader.Name
 		if _, err = storage.Bucket.PutObjectByte(path, resourceData); err != nil {
 			resp.Message = "上传失败"
@@ -127,5 +121,17 @@ func UploadDocumentResource(c *gin.Context) {
 		}
 		resp.Status = ResponseStatusSuccess
 		_ = ws.WriteJSON(&resp)
+
+		go func() {
+			base64Str := base64.StdEncoding.EncodeToString(resourceData)
+			reviewResponse, err := safereview.Client.ReviewPictureFromBase64(base64Str)
+			if err != nil || reviewResponse.Status != safereviewBase.ReviewImageResultPass {
+				log.Println("图片审核不通过", err, reviewResponse)
+				document.LockedAt = myTime.Time(time.Now())
+				document.LockedReason += "[图片审核不通过：" + reviewResponse.Reason + "]"
+				_, _ = documentService.UpdatesById(documentId, &document)
+
+			}
+		}()
 	}
 }

@@ -155,8 +155,19 @@ func PostUserComment(c *gin.Context) {
 	reviewResponse, err := safereview.Client.ReviewText(userComment.Content)
 	if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
 		log.Println("评论审核不通过", userComment.Content, err, reviewResponse)
-		response.Fail(c, "审核不通过")
-		return
+		documentService := services.NewDocumentService()
+		var document models.Document
+		if documentService.GetById(documentId, &document) != nil {
+			log.Println("文档不存在", documentId)
+			response.Fail(c, "文档不存在")
+			return
+		}
+		document.LockedAt = myTime.Time(time.Now())
+		document.LockedReason = "文本审核不通过：" + reviewResponse.Reason
+		if wordsBytes, err := json.Marshal(reviewResponse.Words); err == nil {
+			document.LockedWords = string(wordsBytes)
+		}
+		_, _ = documentService.UpdatesById(documentId, &document)
 	}
 
 	commentCollection := mongo.DB.Collection("comment")
