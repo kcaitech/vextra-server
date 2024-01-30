@@ -7,6 +7,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
+	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
 	"log"
 	"protodesign.cn/kcserver/common/config"
@@ -30,6 +31,7 @@ func Init(config *config.BaseConfiguration) {
 		log.Fatalf("连接数据库失败: %v", err)
 	}
 	//DB = DB.Debug()
+	DB.Logger = DB.Logger.LogMode(logger.Silent)
 }
 
 type DeletedAt gorm.DeletedAt
