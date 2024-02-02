@@ -32,8 +32,8 @@ func (server *docSelectionTunnelServer) WriteMessage(messageType websocket.Messa
 		return websocket.ErrClosed
 	}
 	defer func() {
-		if err := recover(); err != nil {
-			log.Println("通道写入时panic", err)
+		if err1 := recover(); err1 != nil {
+			log.Println("通道写入时panic", err1)
 			err = websocket.ErrClosed
 		}
 	}()

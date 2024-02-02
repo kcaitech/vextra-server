@@ -149,7 +149,15 @@ func UploadDocument(c *gin.Context) {
 		}
 	}
 	if len(uploadData.PageImageBase64List) > 0 {
-		for _, base64Str := range uploadData.PageImageBase64List {
+		for i, base64Str := range uploadData.PageImageBase64List {
+			path := docPath + "/page_image/" + str.IntToString(int64(i)) + ".png"
+			image, err := base64.StdEncoding.DecodeString(base64Str)
+			if err != nil {
+				log.Println("图片base64解码错误", err)
+			} else if _, err := storage.Bucket.PutObjectByte(path, image); err != nil {
+				log.Println("图片上传错误", err)
+			}
+
 			reviewResponse, err := safereview.Client.ReviewPictureFromBase64(base64Str)
 			if err != nil || reviewResponse.Status != safereviewBase.ReviewImageResultPass {
 				if isFirstUpload {
