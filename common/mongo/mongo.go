@@ -22,3 +22,9 @@ func Init(filePath string) error {
 	DB = Client.Database(conf.Mongo.Db)
 	return nil
 }
+
+type SessionContext = mongo.SessionContext
+
+func WithSession(ctx context.Context, sess mongo.Session, fn func(mongo.SessionContext) error) error {
+	return mongo.WithSession(ctx, sess, fn)
+}
