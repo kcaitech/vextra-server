@@ -55,13 +55,6 @@ type ReceiveData struct {
 	To   string `json:"to"`   // pullCmds
 }
 
-type SendData struct {
-	Type string `json:"type"` // commitResult pullCmdsResult update
-	Cmds string `json:"cmds"` // pullCmdsResult update
-	From string `json:"from"` // pullCmdsResult
-	To   string `json:"to"`   // pullCmdsResult
-}
-
 type CmdItem struct {
 	Id           int64  `json:"id" bson:"_id"`
 	BatchStartId int64  `json:"batch_start_id" bson:"batch_start_id"`
@@ -70,6 +63,13 @@ type CmdItem struct {
 	DocumentId   int64  `json:"document_id" bson:"document_id"`
 	UserId       int64  `json:"user_id" bson:"user_id"`
 	Cmd          bson.M `json:"cmd" bson:"cmd"`
+}
+
+type SendData struct {
+	Type     string `json:"type"`                // commitResult pullCmdsResult update
+	CmdsData string `json:"cmds_data,omitempty"` // pullCmdsResult update
+	From     string `json:"from,omitempty"`      // pullCmdsResult
+	To       string `json:"to,omitempty"`        // pullCmdsResult
 }
 
 func (cmdItem CmdItem) MarshalJSON() ([]byte, error) {
@@ -180,7 +180,7 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 				cmdItemList[i].BatchLength = batchLength
 			}
 
-			cmdItemsData, err := json.Marshal(cmdItemList)
+			cmdItemListData, err := json.Marshal(cmdItemList)
 			if err != nil {
 				log.Println("json编码错误 cmdItemsData", err)
 				return errors.New("数据插入失败")
@@ -214,10 +214,10 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 			}
 			session.EndSession(ctx)
 
-			redis.Client.Publish(context.Background(), "Document Op[DocumentId:"+documentIdStr+"]", cmdItemsData)
+			redis.Client.Publish(context.Background(), "Document Op[DocumentId:"+documentIdStr+"]", cmdItemListData)
 
 		} else if receiveData.Type == "pullCmds" {
-			var cmdItems []CmdItem
+			var cmdItemList []CmdItem
 			fromId := str.DefaultToInt(receiveData.From, 0)
 			toId := str.DefaultToInt(receiveData.To, 0)
 			if fromId <= 0 || toId <= 0 {
@@ -231,24 +231,28 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 				log.Println("数据查询失败", err)
 				return errors.New("数据查询失败")
 			}
-			if err := cur.All(nil, &cmdItems); err != nil {
+			if err := cur.All(nil, &cmdItemList); err != nil {
 				log.Println("数据查询失败", err)
 				return errors.New("数据查询失败")
 			}
-			cmdItemsData, err := json.Marshal(cmdItems)
+			cmdItemListData, err := json.Marshal(cmdItemList)
 			if err != nil {
 				log.Println("json编码错误 cmdItemsData", err)
 				return errors.New("数据查询失败")
 			}
-			if err := tunnel.Client.WriteJSONLock(false, &ServerCmd{
+			if err := tunnel.Client.WriteJSONLock(true, &ServerCmd{
 				CmdType: ServerCmdTypeTunnelData,
 				CmdId:   uuid.New().String(),
-				Data: CmdData{"tunnel_id": tunnel.Id, "data_type": websocket.MessageTypeText, "data": SendData{
-					Type: "pullCmdsResult",
-					Cmds: string(cmdItemsData),
-					From: receiveData.From,
-					To:   receiveData.To,
-				}},
+				Data: CmdData{
+					"tunnel_id": tunnel.Id,
+					"data_type": websocket.MessageTypeText,
+					"data": SendData{
+						Type:     "pullCmdsResult",
+						CmdsData: string(cmdItemListData),
+						From:     receiveData.From,
+						To:       receiveData.To,
+					},
+				},
 			}); err != nil {
 				log.Println("数据发送失败", err)
 				return errors.New("数据查询失败")
@@ -268,13 +272,17 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 				log.Println("读取redis订阅消息失败", err)
 				return
 			}
-			if err := tunnel.Client.WriteJSONLock(false, &ServerCmd{
+			if err := tunnel.Client.WriteJSONLock(true, &ServerCmd{
 				CmdType: ServerCmdTypeTunnelData,
 				CmdId:   uuid.New().String(),
-				Data: CmdData{"tunnel_id": tunnel.Id, "data_type": websocket.MessageTypeText, "data": &SendData{
-					Type: "update",
-					Cmds: msg.Payload,
-				}},
+				Data: CmdData{
+					"tunnel_id": tunnel.Id,
+					"data_type": websocket.MessageTypeText,
+					"data": SendData{
+						Type:     "update",
+						CmdsData: msg.Payload,
+					},
+				},
 			}); err != nil {
 				log.Println("数据发送失败", err)
 				return

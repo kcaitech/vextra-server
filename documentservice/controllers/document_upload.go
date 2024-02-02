@@ -115,7 +115,7 @@ func UploadDocument(c *gin.Context) {
 	type UploadData struct {
 		DocumentMeta        Data            `json:"document_meta"`
 		Pages               json.RawMessage `json:"pages"`
-		DocumentSyms        json.RawMessage `json:"document_syms"`
+		FreeSymbols         json.RawMessage `json:"freesymbols"`
 		MediaNames          []string        `json:"media_names"`
 		MediasSize          uint64          `json:"medias_size"`
 		DocumentText        string          `json:"document_text"`
@@ -311,16 +311,16 @@ func UploadDocument(c *gin.Context) {
 	documentVersionId := putObjectResult.VersionID
 	documentSize += uint64(len(uploadData.DocumentMeta))
 
-	// 上传document-syms.json
-	symsPath := docPath + "/document-syms.json"
-	if _, err := storage.Bucket.PutObjectByte(symsPath, uploadData.DocumentSyms); err != nil {
+	// 上传freesymbols.json
+	freeSymbolsPath := docPath + "/freesymbols.json"
+	if _, err := storage.Bucket.PutObjectByte(freeSymbolsPath, uploadData.FreeSymbols); err != nil {
 		resp.Message = "对象上传错误"
-		log.Println("document-syms.json上传错误", err)
+		log.Println("freesymbols.json上传错误", err)
 		_ = ws.WriteJSON(&resp)
 		ws.Close()
 		return
 	}
-	documentSize += uint64(len(uploadData.DocumentSyms))
+	documentSize += uint64(len(uploadData.FreeSymbols))
 
 	// 获取文档名称
 	documentName, _ := uploadData.DocumentMeta["name"].(string)
