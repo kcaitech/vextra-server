@@ -309,54 +309,49 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 		return nil
 	}
 
-	// 根据版本号发送初始cmdList数据
-	cmdItemList := make([]CmdItem, 0)
-	documentCollection := mongo.DB.Collection("document1")
-	reqParams := bson.M{
-		"document_id": documentId,
-	}
-	findOptions := options.Find()
-	findOptions.SetSort(bson.D{{"_id", 1}})
-	cur, err := documentCollection.Find(nil, reqParams, findOptions)
-	if err != nil {
-		serverCmd.Message = "通道建立失败，数据查询失败"
-		_ = clientWs.WriteJSON(&serverCmd)
-		log.Println("cmdList查询失败", err)
-		return nil
-	}
-	if err := cur.All(nil, &cmdItemList); err != nil {
-		serverCmd.Message = "通道建立失败，数据查询失败"
-		_ = clientWs.WriteJSON(&serverCmd)
-		log.Println("cmdList查询失败", err)
-		return nil
-	}
-	cmdItemListData, err := json.Marshal(cmdItemList)
-	if err != nil {
-		serverCmd.Message = "通道建立失败，数据异常"
-		_ = clientWs.WriteJSON(&serverCmd)
-		log.Println("json编码错误 cmdItemsData", err)
-		return nil
-	}
-	if err := tunnel.Client.WriteJSONLock(true, &ServerCmd{
-		CmdType: ServerCmdTypeTunnelData,
-		CmdId:   uuid.New().String(),
-		Data: CmdData{
-			"tunnel_id": tunnel.Id,
-			"data_type": websocket.MessageTypeText,
-			"data": SendData{
-				Type:     "update",
-				CmdsData: string(cmdItemListData),
-			},
-		},
-	}); err != nil {
-		log.Println("初始数据发送失败", err)
-		return nil
-	}
-
 	go func() {
+		defer tunnelServer.Close()
+
+		// 根据版本号发送初始cmdList数据
+		cmdItemList := make([]CmdItem, 0)
+		documentCollection := mongo.DB.Collection("document1")
+		reqParams := bson.M{
+			"document_id": documentId,
+		}
+		findOptions := options.Find()
+		findOptions.SetSort(bson.D{{"_id", 1}})
+		cur, err := documentCollection.Find(nil, reqParams, findOptions)
+		if err != nil {
+			log.Println("cmdList查询失败", err)
+			return
+		}
+		if err := cur.All(nil, &cmdItemList); err != nil {
+			log.Println("cmdList查询失败", err)
+			return
+		}
+		cmdItemListData, err := json.Marshal(cmdItemList)
+		if err != nil {
+			log.Println("json编码错误 cmdItemsData", err)
+			return
+		}
+		if err := tunnel.Client.WriteJSONLock(true, &ServerCmd{
+			CmdType: ServerCmdTypeTunnelData,
+			CmdId:   uuid.New().String(),
+			Data: CmdData{
+				"tunnel_id": tunnel.Id,
+				"data_type": websocket.MessageTypeText,
+				"data": SendData{
+					Type:     "update",
+					CmdsData: string(cmdItemListData),
+				},
+			},
+		}); err != nil {
+			log.Println("初始数据发送失败", err)
+			return
+		}
+
 		pubsub := redis.Client.Subscribe(context.Background(), "Document Op[DocumentId:"+documentIdStr+"]")
 		defer pubsub.Close()
-		defer tunnelServer.Close()
 		for {
 			msg, err := pubsub.ReceiveMessage(context.Background())
 			if err != nil {
