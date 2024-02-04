@@ -272,7 +272,7 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 			}
 			cur, err := mongo.DB.Collection("document1").Find(nil, bson.M{
 				"document_id": documentId,
-				"_id":         bson.M{"$gte": fromId, "$lt": toId},
+				"_id":         bson.M{"$gte": fromId, "$lte": toId},
 			})
 			if err != nil {
 				log.Println("数据查询失败", err)
