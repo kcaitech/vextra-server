@@ -1,11 +1,14 @@
 package redis
 
 import (
+	"github.com/go-redsync/redsync/v4"
+	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
 	"github.com/redis/go-redis/v9"
 	"protodesign.cn/kcserver/common/redis/config"
 )
 
 var Client *redis.Client
+var RedSync *redsync.Redsync
 
 func Init(filePath string) error {
 	conf := config.LoadConfig(filePath)
@@ -24,5 +27,10 @@ func Init(filePath string) error {
 			DB:       conf.Redis.Db,
 		})
 	}
+
+	RedSync = redsync.New(goredis.NewPool(Client))
+
 	return nil
 }
+
+const Nil = redis.Nil
