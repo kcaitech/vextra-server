@@ -58,6 +58,17 @@ type ReceiveData struct {
 	To   string `json:"to"`   // pullCmds
 }
 
+type Cmd struct {
+	Id          string   `json:"id" bson:"id"`
+	BaseVer     string   `json:"baseVer" bson:"baseVer"`
+	BatchId     string   `json:"batchId" bson:"batchId"`
+	Ops         []bson.M `json:"ops" bson:"ops"`
+	IsRecovery  bool     `json:"isRecovery" bson:"isRecovery"`
+	Description string   `json:"description" bson:"description"`
+	Time        int64    `json:"time" bson:"time"`
+	Posttime    int64    `json:"posttime" bson:"posttime"`
+}
+
 type CmdItem struct {
 	Id           int64  `json:"id" bson:"_id"`
 	PreviousId   int64  `json:"previous_id" bson:"previous_id"`
@@ -66,7 +77,12 @@ type CmdItem struct {
 	BatchLength  int    `json:"batch_length" bson:"batch_length"`
 	DocumentId   int64  `json:"document_id" bson:"document_id"`
 	UserId       int64  `json:"user_id" bson:"user_id"`
-	Cmd          bson.M `json:"cmd" bson:"cmd"`
+	Cmd          Cmd    `json:"cmd" bson:"cmd"`
+	CmdId        string `json:"cmd_id" bson:"cmd_id"`
+}
+
+func (cmdItem CmdItem) MarshalJSON() ([]byte, error) {
+	return models.MarshalJSON(cmdItem)
 }
 
 type SendData struct {
@@ -74,10 +90,6 @@ type SendData struct {
 	CmdsData string `json:"cmds_data,omitempty"` // pullCmdsResult update
 	From     string `json:"from,omitempty"`      // pullCmdsResult
 	To       string `json:"to,omitempty"`        // pullCmdsResult
-}
-
-func (cmdItem CmdItem) MarshalJSON() ([]byte, error) {
-	return models.MarshalJSON(cmdItem)
 }
 
 func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd ServerCmd, data Data) *Tunnel {
@@ -158,7 +170,7 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 				return errors.New("无权限")
 
 			}
-			var cmds []map[string]any
+			var cmds []Cmd
 			if err := json.Unmarshal([]byte(receiveData.Cmds), &cmds); err != nil {
 				log.Println("数据解析失败", err)
 				return errors.New("数据解析失败")
@@ -209,7 +221,7 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 				}
 			}
 
-			cmdItemList := sliceutil.MapT(func(cmd map[string]any) CmdItem {
+			cmdItemList := sliceutil.MapT(func(cmd Cmd) CmdItem {
 				cmdItem := CmdItem{
 					Id:           snowflake.NextId(),
 					PreviousId:   previousId,
@@ -219,6 +231,7 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 					DocumentId:   documentId,
 					UserId:       userId,
 					Cmd:          cmd,
+					CmdId:        cmd.Id,
 				}
 				previousId = cmdItem.Id
 				return cmdItem
@@ -244,7 +257,7 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 				log.Println("事务开启失败 StartSession", err)
 				return errors.New("数据插入失败")
 			}
-			if err := mongo.WithSession(mongoCtx, session, func(sc mongo.SessionContext) error {
+			if err = mongo.WithSession(mongoCtx, session, func(sc mongo.SessionContext) error {
 				_, err := mongo.DB.Collection("document1").InsertMany(nil, sliceutil.ConvertToAnySlice(cmdItemList))
 				if err != nil {
 					log.Println("数据插入失败", err)
@@ -262,6 +275,9 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 				_ = session.CommitTransaction(mongoCtx)
 			}
 			session.EndSession(mongoCtx)
+			if err != nil {
+				return err
+			}
 
 		} else if receiveData.Type == "pullCmds" {
 			var cmdItemList []CmdItem
