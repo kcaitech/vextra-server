@@ -276,6 +276,20 @@ func UploadDocument(c *gin.Context) {
 		return
 	}
 
+	freesymbolsVersionId := ""
+	// 上传freesymbols.json
+	freeSymbolsPath := docPath + "/freesymbols.json"
+	if result, err := storage.Bucket.PutObjectByte(freeSymbolsPath, uploadData.FreeSymbols); err != nil {
+		resp.Message = "对象上传错误"
+		log.Println("freesymbols.json上传错误", err)
+		_ = ws.WriteJSON(&resp)
+		ws.Close()
+		return
+	} else {
+		freesymbolsVersionId = result.VersionID
+	}
+	documentSize += uint64(len(uploadData.FreeSymbols))
+
 	// 设置versionId
 	pagesList := uploadData.DocumentMeta["pagesList"].([]any)
 	for _, page := range pagesList {
@@ -291,6 +305,7 @@ func UploadDocument(c *gin.Context) {
 		pageItem["versionId"] = versionId
 	}
 	uploadData.DocumentMeta["lastCmdId"] = lastCmdId
+	uploadData.DocumentMeta["freesymbolsVersionId"] = freesymbolsVersionId
 	// 上传document-meta.json
 	documentMetaStr, err := json.Marshal(uploadData.DocumentMeta)
 	if err != nil {
@@ -310,17 +325,6 @@ func UploadDocument(c *gin.Context) {
 	}
 	documentVersionId := putObjectResult.VersionID
 	documentSize += uint64(len(uploadData.DocumentMeta))
-
-	// 上传freesymbols.json
-	freeSymbolsPath := docPath + "/freesymbols.json"
-	if _, err := storage.Bucket.PutObjectByte(freeSymbolsPath, uploadData.FreeSymbols); err != nil {
-		resp.Message = "对象上传错误"
-		log.Println("freesymbols.json上传错误", err)
-		_ = ws.WriteJSON(&resp)
-		ws.Close()
-		return
-	}
-	documentSize += uint64(len(uploadData.FreeSymbols))
 
 	// 获取文档名称
 	documentName, _ := uploadData.DocumentMeta["name"].(string)
