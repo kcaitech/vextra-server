@@ -59,7 +59,6 @@ type ReceiveData struct {
 }
 
 type Cmd struct {
-	Id          string   `json:"id" bson:"id"`
 	BaseVer     string   `json:"baseVer" bson:"baseVer"`
 	BatchId     string   `json:"batchId" bson:"batchId"`
 	Ops         []bson.M `json:"ops" bson:"ops"`
@@ -67,6 +66,11 @@ type Cmd struct {
 	Description string   `json:"description" bson:"description"`
 	Time        int64    `json:"time" bson:"time"`
 	Posttime    int64    `json:"posttime" bson:"posttime"`
+}
+
+type ReceiveCmd struct {
+	Cmd
+	Id string `json:"id" bson:"id"`
 }
 
 type CmdItem struct {
@@ -170,7 +174,7 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 				return errors.New("无权限")
 
 			}
-			var cmds []Cmd
+			var cmds []ReceiveCmd
 			if err := json.Unmarshal([]byte(receiveData.Cmds), &cmds); err != nil {
 				log.Println("数据解析失败", err)
 				return errors.New("数据解析失败")
@@ -221,7 +225,7 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 				}
 			}
 
-			cmdItemList := sliceutil.MapT(func(cmd Cmd) CmdItem {
+			cmdItemList := sliceutil.MapT(func(cmd ReceiveCmd) CmdItem {
 				cmdItem := CmdItem{
 					Id:           snowflake.NextId(),
 					PreviousId:   previousId,
@@ -230,7 +234,7 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 					BatchLength:  0,
 					DocumentId:   documentId,
 					UserId:       userId,
-					Cmd:          cmd,
+					Cmd:          cmd.Cmd,
 					CmdId:        cmd.Id,
 				}
 				previousId = cmdItem.Id
