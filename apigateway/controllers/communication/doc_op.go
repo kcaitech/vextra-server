@@ -283,13 +283,23 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 			var cmdItemList []CmdItem
 			fromId := str.DefaultToInt(receiveData.From, 0)
 			toId := str.DefaultToInt(receiveData.To, 0)
-			if fromId <= 0 || toId <= 0 {
+			if fromId <= 0 {
 				return errors.New("参数错误")
+			}
+			idFilter := bson.M{
+				"$gte": fromId,
+			}
+			findOptions := options.Find()
+			findOptions.SetSort(bson.D{{"_id", 1}})
+			if toId > 0 {
+				idFilter["$lte"] = toId
+			} else {
+				findOptions.SetLimit(100)
 			}
 			cur, err := mongo.DB.Collection("document1").Find(nil, bson.M{
 				"document_id": documentId,
-				"_id":         bson.M{"$gte": fromId, "$lte": toId},
-			})
+				"_id":         idFilter,
+			}, findOptions)
 			if err != nil {
 				log.Println("数据查询失败", err)
 				return errors.New("数据查询失败")
