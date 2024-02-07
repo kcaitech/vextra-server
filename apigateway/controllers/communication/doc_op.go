@@ -8,6 +8,9 @@ import (
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readconcern"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 	"log"
 	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/common/mongo"
@@ -69,11 +72,11 @@ type Cmd struct {
 }
 
 type ReceiveCmd struct {
-	Cmd
-	Id string `json:"id" bson:"id"`
+	Cmd `json:",inline" bson:",inline"`
+	Id  string `json:"id" bson:"id"`
 }
 
-type CmdItem struct {
+type CmdItem0 struct {
 	Id           int64  `json:"id" bson:"_id"`
 	PreviousId   int64  `json:"previous_id" bson:"previous_id"`
 	BatchStartId int64  `json:"batch_start_id" bson:"batch_start_id"`
@@ -81,8 +84,12 @@ type CmdItem struct {
 	BatchLength  int    `json:"batch_length" bson:"batch_length"`
 	DocumentId   int64  `json:"document_id" bson:"document_id"`
 	UserId       int64  `json:"user_id" bson:"user_id"`
-	Cmd          Cmd    `json:"cmd" bson:"cmd"`
 	CmdId        string `json:"cmd_id" bson:"cmd_id"`
+}
+
+type CmdItem struct {
+	CmdItem0 `json:",inline" bson:",inline"`
+	Cmd      Cmd `json:"cmd" bson:"cmd"`
 }
 
 func (cmdItem CmdItem) MarshalJSON() ([]byte, error) {
@@ -163,6 +170,11 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 
 	docOpMutex := redis.RedSync.NewMutex("docOpSync[DocumentId:"+documentIdStr+"]", redsync.WithExpiry(time.Second*10))
 
+	txnOptions := options.Transaction()
+	txnOptions.SetReadConcern(readconcern.Snapshot())
+	txnOptions.SetReadPreference(readpref.PrimaryPreferred())
+	txnOptions.SetWriteConcern(writeconcern.New(writeconcern.WMajority()))
+
 	tunnel.ReceiveFromClient = func(tunnelDataType TunnelDataType, data []byte, serverCmd ServerCmd) error {
 		var receiveData ReceiveData
 		if err := json.Unmarshal(data, &receiveData); err != nil {
@@ -227,19 +239,30 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 
 			cmdItemList := sliceutil.MapT(func(cmd ReceiveCmd) CmdItem {
 				cmdItem := CmdItem{
-					Id:           snowflake.NextId(),
-					PreviousId:   previousId,
-					BatchStartId: 0,
-					BatchEndId:   0,
-					BatchLength:  0,
-					DocumentId:   documentId,
-					UserId:       userId,
-					Cmd:          cmd.Cmd,
-					CmdId:        cmd.Id,
+					CmdItem0: CmdItem0{
+						Id:           snowflake.NextId(),
+						PreviousId:   previousId,
+						BatchStartId: 0,
+						BatchEndId:   0,
+						BatchLength:  0,
+						DocumentId:   documentId,
+						UserId:       userId,
+						CmdId:        cmd.Id,
+					},
+					Cmd: cmd.Cmd,
 				}
 				previousId = cmdItem.Id
 				return cmdItem
 			}, cmds...)
+
+			cmdItem0List := sliceutil.MapT(func(cmdItem CmdItem) CmdItem0 {
+				return cmdItem.CmdItem0
+			}, cmdItemList...)
+			cmdItem0ListString := ""
+			if cmdItem0ListStringByte, err := json.Marshal(cmdItem0List); err != nil {
+				cmdItem0ListString = string(cmdItem0ListStringByte)
+			}
+
 			batchStartId := cmdItemList[0].Id
 			batchEndId := cmdItemList[len(cmdItemList)-1].Id
 			batchLength := len(cmdItemList)
@@ -255,32 +278,45 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 				return errors.New("数据插入失败")
 			}
 
-			mongoCtx := context.Background()
-			session, err := mongo.Client.StartSession()
-			if err != nil {
-				log.Println("事务开启失败 StartSession", err)
-				return errors.New("数据插入失败")
-			}
-			if err = mongo.WithSession(mongoCtx, session, func(sc mongo.SessionContext) error {
-				_, err := mongo.DB.Collection("document1").InsertMany(nil, sliceutil.ConvertToAnySlice(cmdItemList))
-				if err != nil {
-					log.Println("数据插入失败", err)
+			if err := mongo.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
+				if _, err := sessionContext.WithTransaction(context.Background(), func(sessionContext mongo.SessionContext) (any, error) {
+					documentCollection := mongo.DB.Collection("document1")
+					//var i int
+					//var cmdItem CmdItem
+					//for i, cmdItem = range cmdItemList {
+					//	if _, err := documentCollection.InsertOne(sessionContext, cmdItem); err != nil {
+					//		log.Println("数据插入失败："+cmdItem0ListString, err)
+					//		break
+					//	}
+					//}
+					//if i > 0 {
+					//	previousId = cmdItemList[i-1].Id
+					//	if _, err = redis.Client.Set(context.Background(), "Document LastCmdId[DocumentId:"+documentIdStr+"]", previousId, time.Second*1).Result(); err != nil {
+					//		log.Println("Document LastCmdId[DocumentId:"+documentIdStr+"]"+"设置失败", err)
+					//		return nil, errors.New("数据插入失败")
+					//	}
+					//}
+					//if i < len(cmdItemList) {
+					//	return nil, errors.New("数据插入失败")
+					//}
+					if _, err := documentCollection.InsertMany(sessionContext, sliceutil.ConvertToAnySlice(cmdItemList)); err != nil {
+						log.Println("数据插入失败："+cmdItem0ListString, err)
+						return nil, errors.New("数据插入失败")
+					}
+					if _, err = redis.Client.Set(context.Background(), "Document LastCmdId[DocumentId:"+documentIdStr+"]", previousId, time.Second*1).Result(); err != nil {
+						log.Println("Document LastCmdId[DocumentId:"+documentIdStr+"]"+"设置失败", err)
+						return nil, errors.New("数据插入失败")
+					}
+					redis.Client.Publish(context.Background(), "Document Op[DocumentId:"+documentIdStr+"]", cmdItemListData)
+					return nil, nil
+				}, txnOptions); err != nil {
+					log.Println("事务执行失败", err)
 					return errors.New("数据插入失败")
 				}
-				if _, err = redis.Client.Set(context.Background(), "Document LastCmdId[DocumentId:"+documentIdStr+"]", previousId, time.Second*60*10).Result(); err != nil {
-					log.Println("Document LastCmdId[DocumentId:"+documentIdStr+"]"+"设置失败", err)
-					return errors.New("数据插入失败")
-				}
-				redis.Client.Publish(context.Background(), "Document Op[DocumentId:"+documentIdStr+"]", cmdItemListData)
 				return nil
 			}); err != nil {
-				_ = session.AbortTransaction(mongoCtx)
-			} else {
-				_ = session.CommitTransaction(mongoCtx)
-			}
-			session.EndSession(mongoCtx)
-			if err != nil {
-				return err
+				redis.Client.Del(context.Background(), "Document LastCmdId[DocumentId:"+documentIdStr+"]")
+				return errors.New("数据插入失败")
 			}
 
 		} else if receiveData.Type == "pullCmds" {

@@ -4,6 +4,9 @@ import (
 	"context"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readconcern"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
+	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 	"protodesign.cn/kcserver/common/mongo/config"
 	"time"
 )
@@ -16,7 +19,12 @@ func Init(filePath string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	var err error
-	if Client, err = mongo.Connect(ctx, options.Client().ApplyURI(conf.Mongo.Uri)); err != nil {
+	option := options.Client().ApplyURI(conf.Mongo.Uri)
+	//option.SetReadConcern(readconcern.Majority())
+	option.SetReadConcern(readconcern.Snapshot())
+	option.SetReadPreference(readpref.PrimaryPreferred())
+	option.SetWriteConcern(writeconcern.New(writeconcern.WMajority()))
+	if Client, err = mongo.Connect(ctx, option); err != nil {
 		return err
 	}
 	DB = Client.Database(conf.Mongo.Db)
@@ -27,4 +35,8 @@ type SessionContext = mongo.SessionContext
 
 func WithSession(ctx context.Context, sess mongo.Session, fn func(mongo.SessionContext) error) error {
 	return mongo.WithSession(ctx, sess, fn)
+}
+
+func UseSession(ctx context.Context, fn func(mongo.SessionContext) error) error {
+	return Client.UseSession(ctx, fn)
 }
