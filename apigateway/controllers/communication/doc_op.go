@@ -281,24 +281,6 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 			if err := mongo.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
 				if _, err := sessionContext.WithTransaction(context.Background(), func(sessionContext mongo.SessionContext) (any, error) {
 					documentCollection := mongo.DB.Collection("document1")
-					//var i int
-					//var cmdItem CmdItem
-					//for i, cmdItem = range cmdItemList {
-					//	if _, err := documentCollection.InsertOne(sessionContext, cmdItem); err != nil {
-					//		log.Println("数据插入失败："+cmdItem0ListString, err)
-					//		break
-					//	}
-					//}
-					//if i > 0 {
-					//	previousId = cmdItemList[i-1].Id
-					//	if _, err = redis.Client.Set(context.Background(), "Document LastCmdId[DocumentId:"+documentIdStr+"]", previousId, time.Second*1).Result(); err != nil {
-					//		log.Println("Document LastCmdId[DocumentId:"+documentIdStr+"]"+"设置失败", err)
-					//		return nil, errors.New("数据插入失败")
-					//	}
-					//}
-					//if i < len(cmdItemList) {
-					//	return nil, errors.New("数据插入失败")
-					//}
 					if _, err := documentCollection.InsertMany(sessionContext, sliceutil.ConvertToAnySlice(cmdItemList)); err != nil {
 						log.Println("数据插入失败："+cmdItem0ListString, err)
 						return nil, errors.New("数据插入失败")
