@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 	"log"
+	doc_versioning_service "protodesign.cn/kcserver/apigateway/common/doc-versioning-service"
 	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/common/mongo"
 	"protodesign.cn/kcserver/common/redis"
@@ -168,7 +169,7 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 		Client: clientWs,
 	}
 
-	docOpMutex := redis.RedSync.NewMutex("docOpSync[DocumentId:"+documentIdStr+"]", redsync.WithExpiry(time.Second*10))
+	documentOpMutex := redis.RedSync.NewMutex("Document Op Mutex[DocumentId:"+documentIdStr+"]", redsync.WithExpiry(time.Second*10))
 
 	txnOptions := options.Transaction()
 	txnOptions.SetReadConcern(readconcern.Snapshot())
@@ -196,13 +197,13 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 			}
 
 			// 上锁
-			if err := docOpMutex.Lock(); err != nil {
-				log.Println("获取锁失败 docOpMutex.Lock", err)
+			if err := documentOpMutex.Lock(); err != nil {
+				log.Println(documentId, "获取锁失败 documentOpMutex.Lock", err)
 				return errors.New("数据插入失败")
 			}
 			defer func() {
-				if _, err := docOpMutex.Unlock(); err != nil {
-					log.Println("释放锁失败 docOpMutex.Unlock", err)
+				if _, err := documentOpMutex.Unlock(); err != nil {
+					log.Println(documentId, "释放锁失败 documentOpMutex.Unlock", err)
 				}
 			}()
 
@@ -295,6 +296,7 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 					log.Println("事务执行失败", err)
 					return errors.New("数据插入失败")
 				}
+				doc_versioning_service.Trigger(documentId)
 				return nil
 			}); err != nil {
 				redis.Client.Del(context.Background(), "Document LastCmdId[DocumentId:"+documentIdStr+"]")
