@@ -189,8 +189,10 @@ func OpenDocSelectionOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, ser
 			UserId: userIdStr,
 			Data:   selectionData,
 		}
+		// todo 使用Document Selection Data[DocumentId:{documentId}][UserId:{UserId}]单独存储用户的选区数据，并设置有效期，配合Keys、MGet即可获取文档中所有用户的选区数据
 		if docSelectionOpDataJson, err := json.Marshal(docSelectionOpData); err == nil {
 			redis.Client.HSet(context.Background(), "Document Selection Data[DocumentId:"+documentIdStr+"]", userIdStr, string(selectionDataJson))
+			redis.Client.Expire(context.Background(), "Document Selection Data[DocumentId:"+documentIdStr+"]", time.Hour*1)
 			redis.Client.Publish(context.Background(), "Document Selection[DocumentId:"+documentIdStr+"]", string(docSelectionOpDataJson))
 		}
 		// 开始转发
@@ -232,6 +234,7 @@ func OpenDocSelectionOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, ser
 					continue
 				} else {
 					redis.Client.HSet(context.Background(), "Document Selection Data[DocumentId:"+documentIdStr+"]", userIdStr, string(selectionDataJson))
+					redis.Client.Expire(context.Background(), "Document Selection Data[DocumentId:"+documentIdStr+"]", time.Hour*1)
 					redis.Client.Publish(context.Background(), "Document Selection[DocumentId:"+documentIdStr+"]", string(docSelectionOpDataJson))
 				}
 			case data, ok := <-subscribeChan:

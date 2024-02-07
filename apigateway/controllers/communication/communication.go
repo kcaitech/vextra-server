@@ -267,7 +267,7 @@ func Communication(c *gin.Context) {
 			}
 			if err := tunnel.ReceiveFromClient(tunnelDataType, data, serverCmd); err != nil {
 				serverCmd.Message = err.Error()
-				log.Println("数据发送失败", err)
+				log.Println("ReceiveFromClient error:", err)
 				_ = ws.WriteJSON(&serverCmd)
 				continue
 			} else {
