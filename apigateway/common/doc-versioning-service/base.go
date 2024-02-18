@@ -102,6 +102,9 @@ func Trigger(documentId int64) {
 	}
 	if resp.StatusCode != 200 || string(body) != "success" {
 		log.Println(generateApiUrl, "请求失败", resp.StatusCode, string(body))
-		return
+	}
+	// 更新redis
+	if _, err := redis.Client.Set(context.Background(), "Document Versioning LastUpdateTime[DocumentId:"+documentIdStr+"]", time.Now().UnixMilli(), time.Hour*1).Result(); err != nil {
+		log.Println("redis.Client.Set err", err)
 	}
 }

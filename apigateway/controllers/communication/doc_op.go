@@ -98,10 +98,12 @@ func (cmdItem CmdItem) MarshalJSON() ([]byte, error) {
 }
 
 type SendData struct {
-	Type     string `json:"type"`                // commitResult pullCmdsResult update
-	CmdsData string `json:"cmds_data,omitempty"` // pullCmdsResult update
-	From     string `json:"from,omitempty"`      // pullCmdsResult
-	To       string `json:"to,omitempty"`        // pullCmdsResult
+	Type       string   `json:"type"`                  // pullCmdsResult update errorInvalidParams errorNoPermission errorInsertFailed errorPullCmdsFailed
+	CmdsData   string   `json:"cmds_data,omitempty"`   // pullCmdsResult update
+	From       string   `json:"from,omitempty"`        // pullCmdsResult errorPullCmdsFailed
+	To         string   `json:"to,omitempty"`          // pullCmdsResult errorPullCmdsFailed
+	PreviousId string   `json:"previous_id,omitempty"` // pullCmdsResult
+	CmdIdList  []string `json:"cmd_id_list,omitempty"` // errorInsertFailed
 }
 
 func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd ServerCmd, data Data) *Tunnel {
@@ -169,6 +171,84 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 		Client: clientWs,
 	}
 
+	_send := func(data SendData) error {
+		return tunnel.Client.WriteJSONLock(true, &ServerCmd{
+			CmdType: ServerCmdTypeTunnelData,
+			CmdId:   uuid.New().String(),
+			Data: CmdData{
+				"tunnel_id": tunnel.Id,
+				"data_type": websocket.MessageTypeText,
+				"data":      data,
+			},
+		})
+	}
+	// 参数格式错误
+	sendErrorInvalidParams := func() error {
+		return _send(SendData{
+			Type: "errorInvalidParams",
+		})
+	}
+	// 无权限
+	sendErrorNoPermission := func() error {
+		return _send(SendData{
+			Type: "errorNoPermission",
+		})
+	}
+	// 数据插入失败
+	sendErrorInsertFailed := func(cmdIdList []string) error {
+		return _send(SendData{
+			Type:      "errorInsertFailed",
+			CmdIdList: cmdIdList,
+		})
+	}
+	// 发送更新数据
+	sendUpdate := func(cmdsData string) error {
+		return _send(SendData{
+			Type:     "update",
+			CmdsData: cmdsData,
+		})
+	}
+	// 拉取数据失败
+	sendErrorPullCmdsFailed := func(from string, to string) error {
+		return _send(SendData{
+			Type: "errorPullCmdsFailed",
+			From: from,
+			To:   to,
+		})
+	}
+
+	// 从redis中获取最后一条cmd的id，若redis中没有则从mongodb中获取
+	getPreviousId := func() (int64, error) {
+		previousId, err := redis.Client.Get(context.Background(), "Document LastCmdId[DocumentId:"+documentIdStr+"]").Int64()
+		if err != nil {
+			if err != redis.Nil {
+				log.Println("Document LastCmdId[DocumentId:"+documentIdStr+"]"+"获取失败", err)
+				return 0, err
+			}
+			cmdItemList := make([]CmdItem, 0)
+			documentCollection := mongo.DB.Collection("document1")
+			reqParams := bson.M{
+				"document_id": documentId,
+			}
+			findOptions := options.Find()
+			findOptions.SetSort(bson.D{{"_id", -1}})
+			findOptions.SetLimit(1)
+			cur, err := documentCollection.Find(nil, reqParams, findOptions)
+			if err != nil {
+				return 0, err
+			}
+			if err := cur.All(nil, &cmdItemList); err != nil {
+				return 0, err
+			}
+			if len(cmdItemList) > 0 {
+				previousId = cmdItemList[0].Id
+			} else {
+				previousId = 0
+			}
+		}
+		return previousId, nil
+	}
+
 	documentOpMutex := redis.RedSync.NewMutex("Document Op Mutex[DocumentId:"+documentIdStr+"]", redsync.WithExpiry(time.Second*10))
 
 	txnOptions := options.Transaction()
@@ -180,25 +260,33 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 		var receiveData ReceiveData
 		if err := json.Unmarshal(data, &receiveData); err != nil {
 			log.Println("数据解析失败", err)
+			_ = sendErrorInvalidParams()
 			return errors.New("数据解析失败")
 		}
 		if receiveData.Type == "commit" {
 			if permType < models.PermTypeEditable {
+				_ = sendErrorNoPermission()
 				return errors.New("无权限")
 
 			}
 			var cmds []ReceiveCmd
 			if err := json.Unmarshal([]byte(receiveData.Cmds), &cmds); err != nil {
 				log.Println("数据解析失败", err)
+				_ = sendErrorInvalidParams()
 				return errors.New("数据解析失败")
 			}
 			if len(cmds) == 0 {
+				_ = sendErrorInvalidParams()
 				return nil
 			}
+			cmdIdList := sliceutil.MapT(func(cmd ReceiveCmd) string {
+				return cmd.Id
+			}, cmds...)
 
 			// 上锁
 			if err := documentOpMutex.Lock(); err != nil {
 				log.Println(documentId, "获取锁失败 documentOpMutex.Lock", err)
+				_ = sendErrorInsertFailed(cmdIdList)
 				return errors.New("数据插入失败")
 			}
 			defer func() {
@@ -208,34 +296,11 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 			}()
 
 			// 从redis中获取最后一条cmd的id，若redis中没有则从mongodb中获取
-			previousId, err := redis.Client.Get(context.Background(), "Document LastCmdId[DocumentId:"+documentIdStr+"]").Int64()
+			previousId, err := getPreviousId()
 			if err != nil {
-				if err != redis.Nil {
-					log.Println("Document LastCmdId[DocumentId:"+documentIdStr+"]"+"获取失败", err)
-					return errors.New("数据插入失败")
-				}
-				cmdItemList := make([]CmdItem, 0)
-				documentCollection := mongo.DB.Collection("document1")
-				reqParams := bson.M{
-					"document_id": documentId,
-				}
-				findOptions := options.Find()
-				findOptions.SetSort(bson.D{{"_id", -1}})
-				findOptions.SetLimit(1)
-				cur, err := documentCollection.Find(nil, reqParams, findOptions)
-				if err != nil {
-					log.Println("lastCmdId查询失败", err)
-					return errors.New("数据插入失败")
-				}
-				if err := cur.All(nil, &cmdItemList); err != nil {
-					log.Println("lastCmdId查询失败", err)
-					return errors.New("数据插入失败")
-				}
-				if len(cmdItemList) > 0 {
-					previousId = cmdItemList[0].Id
-				} else {
-					previousId = 0
-				}
+				log.Println(documentId, "lastCmdId查询失败", err)
+				_ = sendErrorInsertFailed(cmdIdList)
+				return errors.New("数据插入失败")
 			}
 
 			cmdItemList := sliceutil.MapT(func(cmd ReceiveCmd) CmdItem {
@@ -276,6 +341,7 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 			cmdItemListData, err := json.Marshal(cmdItemList)
 			if err != nil {
 				log.Println("json编码错误 cmdItemsData", err)
+				_ = sendErrorInsertFailed(cmdIdList)
 				return errors.New("数据插入失败")
 			}
 
@@ -300,6 +366,7 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 				return nil
 			}); err != nil {
 				redis.Client.Del(context.Background(), "Document LastCmdId[DocumentId:"+documentIdStr+"]")
+				_ = sendErrorInsertFailed(cmdIdList)
 				return errors.New("数据插入失败")
 			}
 
@@ -308,6 +375,7 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 			fromId := str.DefaultToInt(receiveData.From, 0)
 			toId := str.DefaultToInt(receiveData.To, 0)
 			if fromId <= 0 {
+				_ = sendErrorInvalidParams()
 				return errors.New("参数错误")
 			}
 			idFilter := bson.M{
@@ -318,7 +386,7 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 			if toId > 0 {
 				idFilter["$lte"] = toId
 			} else {
-				findOptions.SetLimit(100)
+				//findOptions.SetLimit(100)
 			}
 			cur, err := mongo.DB.Collection("document1").Find(nil, bson.M{
 				"document_id": documentId,
@@ -326,15 +394,24 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 			}, findOptions)
 			if err != nil {
 				log.Println("数据查询失败", err)
+				_ = sendErrorPullCmdsFailed(receiveData.From, receiveData.To)
 				return errors.New("数据查询失败")
 			}
 			if err := cur.All(nil, &cmdItemList); err != nil {
 				log.Println("数据查询失败", err)
+				_ = sendErrorPullCmdsFailed(receiveData.From, receiveData.To)
 				return errors.New("数据查询失败")
 			}
 			cmdItemListData, err := json.Marshal(cmdItemList)
 			if err != nil {
 				log.Println("json编码错误 cmdItemsData", err)
+				_ = sendErrorPullCmdsFailed(receiveData.From, receiveData.To)
+				return errors.New("数据查询失败")
+			}
+			previousId, err := getPreviousId()
+			if err != nil {
+				log.Println(documentId, "lastCmdId查询失败", err)
+				_ = sendErrorPullCmdsFailed(receiveData.From, receiveData.To)
 				return errors.New("数据查询失败")
 			}
 			if err := tunnel.Client.WriteJSONLock(true, &ServerCmd{
@@ -344,14 +421,16 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 					"tunnel_id": tunnel.Id,
 					"data_type": websocket.MessageTypeText,
 					"data": SendData{
-						Type:     "pullCmdsResult",
-						CmdsData: string(cmdItemListData),
-						From:     receiveData.From,
-						To:       receiveData.To,
+						Type:       "pullCmdsResult",
+						CmdsData:   string(cmdItemListData),
+						From:       receiveData.From,
+						To:         receiveData.To,
+						PreviousId: str.IntToString(previousId),
 					},
 				},
 			}); err != nil {
 				log.Println("数据发送失败", err)
+				_ = sendErrorPullCmdsFailed(receiveData.From, receiveData.To)
 				return errors.New("数据查询失败")
 			}
 		}
@@ -408,18 +487,7 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 				log.Println("读取redis订阅消息失败", err)
 				return
 			}
-			if err := tunnel.Client.WriteJSONLock(true, &ServerCmd{
-				CmdType: ServerCmdTypeTunnelData,
-				CmdId:   uuid.New().String(),
-				Data: CmdData{
-					"tunnel_id": tunnel.Id,
-					"data_type": websocket.MessageTypeText,
-					"data": SendData{
-						Type:     "update",
-						CmdsData: msg.Payload,
-					},
-				},
-			}); err != nil {
+			if err := sendUpdate(msg.Payload); err != nil {
 				log.Println("数据发送失败", err)
 				return
 			}
