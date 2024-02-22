@@ -94,7 +94,16 @@ func (ws *Ws) Unlock() {
 	ws.unlockReadLock()
 }
 
+func isGwsClosedError(err error) bool {
+	_, ok := err.(*gws.CloseError)
+	return ok
+}
+
 const UseOfClosedNetworkConnectionWarn = "use of closed network connection"
+
+func isClosedError(err error) bool {
+	return isGwsClosedError(err) || errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) || strings.Contains(err.Error(), UseOfClosedNetworkConnectionWarn)
+}
 
 func (ws *Ws) WriteMessageLock(needLock bool, messageType MessageType, data []byte) error {
 	if needLock {
@@ -105,7 +114,7 @@ func (ws *Ws) WriteMessageLock(needLock bool, messageType MessageType, data []by
 		return ErrClosed
 	}
 	err := ws.ws.WriteMessage(int(messageType), data)
-	if err != nil && strings.Contains(err.Error(), UseOfClosedNetworkConnectionWarn) {
+	if err != nil && isClosedError(err) {
 		return ErrClosed
 	}
 	return err
@@ -120,7 +129,7 @@ func (ws *Ws) WriteJSONLock(needLock bool, v any) error {
 		return ErrClosed
 	}
 	err := ws.ws.WriteJSON(v)
-	if err != nil && strings.Contains(err.Error(), UseOfClosedNetworkConnectionWarn) {
+	if err != nil && isClosedError(err) {
 		return ErrClosed
 	}
 	return err
@@ -136,7 +145,7 @@ func (ws *Ws) ReadMessageLock(needLock bool) (MessageType, []byte, error) {
 	}
 	messageType, data, err := ws.ws.ReadMessage()
 	if err != nil {
-		if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) || strings.Contains(err.Error(), UseOfClosedNetworkConnectionWarn) {
+		if isClosedError(err) {
 			return MessageTypeNone, data, ErrClosed
 		}
 		return MessageTypeNone, data, err
@@ -159,7 +168,7 @@ func (ws *Ws) ReadJSONLock(needLock bool, v any) error {
 		return ErrClosed
 	}
 	err := ws.ws.ReadJSON(v)
-	if err != nil && (errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) || strings.Contains(err.Error(), UseOfClosedNetworkConnectionWarn)) {
+	if err != nil && isClosedError(err) {
 		return ErrClosed
 	}
 	return err

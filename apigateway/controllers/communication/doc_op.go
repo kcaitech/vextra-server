@@ -146,8 +146,8 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 		return nil
 	}
 	// 验证文档版本信息
+	var documentVersion models.DocumentVersion
 	if versionId != "" {
-		var documentVersion models.DocumentVersion
 		if err := documentService.DocumentVersionService.Get(&documentVersion, "document_id = ? and version_id = ?", documentId, versionId); err != nil {
 			serverCmd.Message = "通道建立失败，文档版本错误"
 			_ = clientWs.WriteJSON(&serverCmd)
@@ -374,10 +374,6 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 			var cmdItemList []CmdItem
 			fromId := str.DefaultToInt(receiveData.From, 0)
 			toId := str.DefaultToInt(receiveData.To, 0)
-			if fromId <= 0 {
-				_ = sendErrorInvalidParams()
-				return errors.New("参数错误")
-			}
 			idFilter := bson.M{
 				"$gte": fromId,
 			}
@@ -446,6 +442,9 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 		documentCollection := mongo.DB.Collection("document1")
 		reqParams := bson.M{
 			"document_id": documentId,
+			"_id": bson.M{
+				"$gt": documentVersion.LastCmdId,
+			},
 		}
 		findOptions := options.Find()
 		findOptions.SetSort(bson.D{{"_id", 1}})
