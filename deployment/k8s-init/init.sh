@@ -105,5 +105,3 @@ iptables -t mangle -Z
 iptables -t raw -F
 iptables -t raw -X
 iptables -t raw -Z
-
-

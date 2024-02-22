@@ -13,6 +13,7 @@ sentinel masters
 sentinel slaves mymaster
 # 登录具体节点（addr、port替换为sentinel masters结果中的值）
 redis-cli -h addr -p port -a $REDIS_PASSWORD
+# redis-cli -h bitnami-redis-node-0.bitnami-redis -p 30301 -a $REDIS_PASSWORD
 
 # 外部连接
 NODE_IP=$(kubectl -n bitnami-redis get nodes -o jsonpath="{.items[0].status.addresses[0].address}")

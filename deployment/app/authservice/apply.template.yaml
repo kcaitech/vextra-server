@@ -22,7 +22,7 @@ spec:
           env:
             - name: TZ
               value: "Asia/Shanghai"
-          image: "docker-registry.protodesign.cn:35000/authservice:$version_tag"
+          image: "registry.protodesign.cn:36000/kcserver/authservice:$version_tag"
           imagePullPolicy: Always
           ports:
             - containerPort: 10001

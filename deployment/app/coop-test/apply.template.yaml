@@ -21,6 +21,6 @@ spec:
           env:
             - name: TZ
               value: "Asia/Shanghai"
-          image: "docker-registry.protodesign.cn:35000/coop-test:$version_tag"
+          image: "registry.protodesign.cn:36000/kcserver/coop-test:$version_tag"
           imagePullPolicy: Always
           resources: {}

@@ -120,13 +120,13 @@ fi
 
 # 获取docker-registry的域名和IP
 echo "请输入docker-registry的endpoint信息"
-read -r -p "域名（docker-registry.protodesign.cn）：" registry_domain
+read -r -p "域名（registry.protodesign.cn）：" registry_domain
 if [[ "$registry_domain" == "" ]]; then
-  registry_domain="docker-registry.protodesign.cn"
+  registry_domain="registry.protodesign.cn"
 fi
-read -r -p "IP（同一网段可只输入最后一个数字）（19）：" registry_ip
+read -r -p "IP（同一网段可只输入最后一个数字）（121.199.25.192）：" registry_ip
 if [[ "$registry_ip" == "" ]]; then
-    registry_ip="19"
+    registry_ip="121.199.25.192"
 fi
 if [[ "$registry_ip" =~ ^[0-9]+$ ]]; then
   registry_ip="${this_ip%.*}.$registry_ip"
@@ -175,8 +175,8 @@ awk '/\[plugins\."io\.containerd\.grpc\.v1\.cri"\.registry\.mirrors\]/ {
   prefix = substr($0, 1, indent);  # 提取行前的空白字符
   print prefix "  [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"docker.io\"]";
   print prefix "    endpoint = [\"https://jsoixv4u.mirror.aliyuncs.com\", \"https://registry-1.docker.io\"]";
-  print prefix "  [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"docker-registry.protodesign.cn:35000\"]";
-  print prefix "    endpoint = [\"http://docker-registry.protodesign.cn:35000\"]";
+  print prefix "  [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"registry.protodesign.cn:36000\"]";
+  print prefix "    endpoint = [\"http://registry.protodesign.cn:36000\"]";
   next;
 }
 1' /etc/containerd/config.toml > /etc/containerd/config.toml.tmp && mv /etc/containerd/config.toml.tmp /etc/containerd/config.toml

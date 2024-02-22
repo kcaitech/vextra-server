@@ -14,6 +14,6 @@ if "%VERSION_TAG%"=="" (
 )
 
 docker build -t %SERVICE_NAME%:%VERSION_TAG% -f ../../%SERVICE_NAME%/Dockerfile ../../
-docker tag %SERVICE_NAME%:%VERSION_TAG% docker-registry.protodesign.cn:35000/%SERVICE_NAME%:%VERSION_TAG%
-docker login docker-registry.protodesign.cn:35000 -u kcai -p kcai1212
-docker push docker-registry.protodesign.cn:35000/%SERVICE_NAME%:%VERSION_TAG%
+docker tag %SERVICE_NAME%:%VERSION_TAG% registry.protodesign.cn:36000/kcserver/%SERVICE_NAME%:%VERSION_TAG%
+docker login registry.protodesign.cn:36000 -u admin -p Kcai1212
+docker push registry.protodesign.cn:36000/kcserver/%SERVICE_NAME%:%VERSION_TAG%
