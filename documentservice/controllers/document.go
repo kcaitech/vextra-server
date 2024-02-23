@@ -341,6 +341,7 @@ func copyDocument(userId int64, documentId int64, c *gin.Context, documentName s
 		item.BatchEndId = idMap[item.BatchEndId]
 	}
 	if len(newDocumentCmdList) > 0 {
+		newDocumentCmdList[0].Cmd["baseVer"] = ""
 		_, err = documentCollection.InsertMany(nil, sliceutil.ConvertToAnySlice(newDocumentCmdList))
 		if err != nil {
 			log.Println("cmd复制失败：", err)
