@@ -207,6 +207,12 @@ func copyDocument(userId int64, documentId int64, c *gin.Context, documentName s
 	}
 	documentName = strings.ReplaceAll(documentName, "%s", sourceDocument.Name)
 
+	documentVersion := models.DocumentVersion{}
+	if err := documentService.DocumentVersionService.Get(&documentVersion, "document_id = ? and version_id = ?", documentId, sourceDocument.VersionId); err != nil {
+		response.Fail(c, "获取文档版本失败")
+		return
+	}
+
 	// 复制目录
 	targetDocumentPath := uuid.New().String()
 	if _, err := storage.Bucket.CopyDirectory(sourceDocument.Path, targetDocumentPath); err != nil {
@@ -303,7 +309,9 @@ func copyDocument(userId int64, documentId int64, c *gin.Context, documentName s
 	documentCmdList := make([]DocumentCmd, 0)
 	reqParams := bson.M{
 		"document_id": documentId,
-		"version_id":  sourceDocument.VersionId,
+		"_id": bson.M{
+			"$gt": documentVersion.LastCmdId,
+		},
 	}
 	documentCollection := mongo.DB.Collection("document1")
 	findOptions := options.Find()
