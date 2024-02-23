@@ -227,6 +227,7 @@ func copyDocument(userId int64, documentId int64, c *gin.Context, documentName s
 		response.Fail(c, "复制失败")
 		return
 	}
+
 	for _, page := range documentMeta["pagesList"].(bson.A) {
 		pageItem, ok := page.(map[string]any)
 		if !ok {
@@ -242,6 +243,15 @@ func copyDocument(userId int64, documentId int64, c *gin.Context, documentName s
 		}
 		pageItem["versionId"] = pageObjectInfo.VersionID
 	}
+
+	freeSymbolsOjectInfo, err := storage.Bucket.GetObjectInfo(targetDocumentPath + "/freesymbols.json")
+	if err != nil {
+		log.Println("获取freeSymbolsOjectInfo失败：", err)
+		response.Fail(c, "复制失败")
+		return
+	}
+	documentMeta["freesymbolsVersionId"] = freeSymbolsOjectInfo.VersionID
+
 	documentMetaBytes, err = bson.MarshalExtJSON(documentMeta, true, true)
 	if err != nil {
 		log.Println("documentMeta转json失败：", err)
@@ -295,7 +305,7 @@ func copyDocument(userId int64, documentId int64, c *gin.Context, documentName s
 		"document_id": documentId,
 		"version_id":  sourceDocument.VersionId,
 	}
-	documentCollection := mongo.DB.Collection("document")
+	documentCollection := mongo.DB.Collection("document1")
 	findOptions := options.Find()
 	findOptions.SetSort(bson.D{{"_id", 1}})
 	if cur, err := documentCollection.Find(nil, reqParams, findOptions); err == nil {
