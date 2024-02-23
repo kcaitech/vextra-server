@@ -298,13 +298,15 @@ func copyDocument(userId int64, documentId int64, c *gin.Context, documentName s
 
 	// 复制cmd
 	type DocumentCmd struct {
-		Id         int64  `json:"id" bson:"_id"`
-		DocumentId int64  `json:"document_id" bson:"document_id"`
-		UserId     int64  `json:"user_id" bson:"user_id"`
-		UnitId     string `json:"unit_id" bson:"unit_id"`
-		Cmd        bson.M `json:"cmd" bson:"cmd"`
-		LastId     any    `json:"last_id" bson:"last_id"`
-		VersionId  string `json:"version_id" bson:"version_id"`
+		Id           int64  `json:"id" bson:"_id"`
+		PreviousId   int64  `json:"previous_id" bson:"previous_id"`
+		BatchStartId int64  `json:"batch_start_id" bson:"batch_start_id"`
+		BatchEndId   int64  `json:"batch_end_id" bson:"batch_end_id"`
+		BatchLength  int    `json:"batch_length" bson:"batch_length"`
+		DocumentId   int64  `json:"document_id" bson:"document_id"`
+		UserId       int64  `json:"user_id" bson:"user_id"`
+		CmdId        string `json:"cmd_id" bson:"cmd_id"`
+		Cmd          bson.M `json:"cmd" bson:"cmd"`
 	}
 	documentCmdList := make([]DocumentCmd, 0)
 	reqParams := bson.M{
@@ -319,17 +321,27 @@ func copyDocument(userId int64, documentId int64, c *gin.Context, documentName s
 	if cur, err := documentCollection.Find(nil, reqParams, findOptions); err == nil {
 		_ = cur.All(nil, &documentCmdList)
 	}
-	lastId := ""
-	newDocumentCmdList := sliceutil.MapT(func(item DocumentCmd) any {
+	lastId := int64(0)
+	newDocumentCmdList := sliceutil.MapT(func(item DocumentCmd) DocumentCmd {
 		item.Id = snowflake.NextId()
+		item.PreviousId = lastId
 		item.DocumentId = targetDocument.Id
-		item.LastId = lastId
-		lastId = str.IntToString(item.Id)
-		item.VersionId = documentMetaUploadInfo.VersionID
+		lastId = item.Id
 		return item
 	}, documentCmdList...)
+	idMap := map[int64]int64{
+		0: 0,
+	}
+	for i := 0; i < len(newDocumentCmdList); i++ {
+		idMap[documentCmdList[i].Id] = newDocumentCmdList[i].Id
+	}
+	for i := 0; i < len(newDocumentCmdList); i++ {
+		item := &newDocumentCmdList[i]
+		item.BatchStartId = idMap[item.BatchStartId]
+		item.BatchEndId = idMap[item.BatchEndId]
+	}
 	if len(newDocumentCmdList) > 0 {
-		_, err = documentCollection.InsertMany(nil, newDocumentCmdList)
+		_, err = documentCollection.InsertMany(nil, sliceutil.ConvertToAnySlice(newDocumentCmdList))
 		if err != nil {
 			log.Println("cmd复制失败：", err)
 		}
