@@ -22,5 +22,5 @@ spec:
             - name: TZ
               value: "Asia/Shanghai"
           image: "registry.protodesign.cn:36000/kcserver/coop-test:$version_tag"
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           resources: {}

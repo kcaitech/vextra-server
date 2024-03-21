@@ -27,7 +27,7 @@ spec:
                 fieldRef:
                   fieldPath: metadata.name
           image: "registry.protodesign.cn:36000/kcserver/docop-server:$version_tag"
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
               name: manager

@@ -23,7 +23,7 @@ spec:
             - name: TZ
               value: "Asia/Shanghai"
           image: "registry.protodesign.cn:36000/kcserver/webapp:$version_tag"
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
               name: web

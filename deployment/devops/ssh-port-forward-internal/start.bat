@@ -3,6 +3,8 @@
 chcp 65001 > nul
 setlocal enabledelayedexpansion
 
+call add_ssh_key.bat root@192.168.0.18 22
+
 :: 如果存在ssh_pids文件则执行stop.bat脚本删除之前的ssh进程
 :: if exist ssh_pids.txt (
     :: call stop.bat
