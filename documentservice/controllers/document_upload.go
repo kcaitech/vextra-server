@@ -110,6 +110,14 @@ func UploadDocument(c *gin.Context) {
 		docPath = document.Path
 	}
 
+	newDocument := models.Document{
+		UserId:    userId,
+		Path:      docPath,
+		DocType:   models.DocTypeShareable,
+		TeamId:    teamId,
+		ProjectId: projectId,
+	}
+
 	documentSize := uint64(0)
 
 	type UploadData struct {
@@ -130,51 +138,44 @@ func UploadDocument(c *gin.Context) {
 	}
 
 	if uploadData.DocumentText != "" {
-		reviewResponse, err := safereview.Client.ReviewText(uploadData.DocumentText)
-		if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
-			if isFirstUpload {
-				resp.Message = "文本审核不通过"
-				_ = ws.WriteJSON(&resp)
-				return
+		go func() {
+			reviewResponse, err := safereview.Client.ReviewText(uploadData.DocumentText)
+			if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
+				newDocument.LockedAt = myTime.Time(time.Now())
+				newDocument.LockedReason = "文本审核不通过：" + reviewResponse.Reason
+				if wordsBytes, err := json.Marshal(reviewResponse.Words); err == nil {
+					newDocument.LockedWords += string(wordsBytes)
+				}
 			}
-			document.LockedAt = myTime.Time(time.Now())
-			document.LockedReason = "文本审核不通过：" + reviewResponse.Reason
-			if wordsBytes, err := json.Marshal(reviewResponse.Words); err == nil {
-				document.LockedWords = string(wordsBytes)
-			}
-			_, _ = documentService.UpdatesById(documentId, &document)
-			resp.Message = "文本审核不通过"
-			_ = ws.WriteJSON(&resp)
-			return
-		}
+		}()
 	}
 	if len(uploadData.PageImageBase64List) > 0 {
-		for i, base64Str := range uploadData.PageImageBase64List {
-			path := docPath + "/page_image/" + str.IntToString(int64(i)) + ".png"
-			image, err := base64.StdEncoding.DecodeString(base64Str)
-			if err != nil {
-				log.Println("图片base64解码错误", err)
-			} else if _, err := storage.Bucket.PutObjectByte(path, image); err != nil {
-				log.Println("图片上传错误", err)
-			}
-
-			reviewResponse, err := safereview.Client.ReviewPictureFromBase64(base64Str)
-			if err != nil || reviewResponse.Status != safereviewBase.ReviewImageResultPass {
-				if isFirstUpload {
-					resp.Message = "图片审核不通过"
-					_ = ws.WriteJSON(&resp)
-					return
+		go func() {
+			needUpdateDocument := false
+			for i, base64Str := range uploadData.PageImageBase64List {
+				path := docPath + "/page_image/" + str.IntToString(int64(i)) + ".png"
+				image, err := base64.StdEncoding.DecodeString(base64Str)
+				if err != nil {
+					log.Println("图片base64解码错误", err)
+				} else if _, err := storage.Bucket.PutObjectByte(path, image); err != nil {
+					log.Println("图片上传错误", err)
 				}
-				document.LockedAt = myTime.Time(time.Now())
-				document.LockedReason = "图片审核不通过：" + reviewResponse.Reason
-				_, _ = documentService.UpdatesById(documentId, &document)
-				resp.Message = "图片审核不通过"
-				_ = ws.WriteJSON(&resp)
-				return
+				if len(base64Str) == 0 {
+					continue
+				}
+				reviewResponse, err := safereview.Client.ReviewPictureFromBase64(base64Str)
+				if err != nil || reviewResponse.Status != safereviewBase.ReviewImageResultPass {
+					newDocument.LockedAt = myTime.Time(time.Now())
+					newDocument.LockedReason += "{图片审核不通过[page:" + str.IntToString(int64(i)) + "]：" + reviewResponse.Reason + "}"
+					needUpdateDocument = true
+				}
 			}
-		}
+			if needUpdateDocument {
+				_, _ = documentService.UpdatesById(newDocument.Id, &newDocument)
+			}
+		}()
 	}
-	if !document.LockedAt.IsZero() {
+	if !newDocument.LockedAt.IsZero() && !isFirstUpload {
 		_, _ = documentService.UpdateColumnsById(documentId, map[string]any{
 			"locked_at": nil,
 		})
@@ -188,6 +189,7 @@ func UploadDocument(c *gin.Context) {
 	}
 	if err := json.Unmarshal(uploadData.Pages, &pages); err != nil {
 		resp.Message = "Pages内有元素缺少Id " + err.Error()
+		log.Println("Pages内有元素缺少Id", err)
 		_ = ws.WriteJSON(&resp)
 		ws.Close()
 		return
@@ -195,6 +197,7 @@ func UploadDocument(c *gin.Context) {
 	var pagesRaw []json.RawMessage
 	if err := json.Unmarshal(uploadData.Pages, &pagesRaw); err != nil {
 		resp.Message = "Pages格式错误 " + err.Error()
+		log.Println("Pages格式错误", err)
 		_ = ws.WriteJSON(&resp)
 		ws.Close()
 		return
@@ -227,33 +230,37 @@ func UploadDocument(c *gin.Context) {
 			messageType, data, err := ws.ReadMessage()
 			if err != nil {
 				resp.Message = "ws连接异常"
+				log.Println("ws连接异常", err)
 				_ = ws.WriteJSON(&resp)
 				ws.Close()
 				return nil
 			}
 			if messageType != websocket.MessageTypeBinary {
 				resp.Message = "media格式错误"
+				log.Println("media格式错误")
 				_ = ws.WriteJSON(&resp)
 				ws.Close()
 				return nil
 			}
 			return data
 		}
+		mediaInfoList := make([]struct {
+			Name    string
+			Content []byte
+		}, len(uploadData.MediaNames))
 		for _, mediaName := range uploadData.MediaNames {
 			path := docPath + "/medias/" + mediaName
 			media := nextMedia()
 			if media == nil {
 				return
 			}
-			base64Str := base64.StdEncoding.EncodeToString(media)
-			reviewResponse, err := safereview.Client.ReviewPictureFromBase64(base64Str)
-			if err != nil || reviewResponse.Status != safereviewBase.ReviewImageResultPass {
-				resp.Message = "图片审核不通过"
-				log.Println("图片审核不通过", err, reviewResponse)
-				_ = ws.WriteJSON(&resp)
-				ws.Close()
-				return
-			}
+			mediaInfoList = append(mediaInfoList, struct {
+				Name    string
+				Content []byte
+			}{
+				Name:    mediaName,
+				Content: media,
+			})
 			documentSize += uint64(len(media))
 			uploadWaitGroup.Add(1)
 			go func(path string, media []byte) {
@@ -267,13 +274,34 @@ func UploadDocument(c *gin.Context) {
 				}
 			}(path, media)
 		}
+		if len(mediaInfoList) > 0 {
+			go func() {
+				needUpdateDocument := false
+				for _, mediaInfo := range mediaInfoList {
+					base64Str := base64.StdEncoding.EncodeToString(mediaInfo.Content)
+					if len(mediaInfo.Content) == 0 || len(base64Str) == 0 {
+						continue
+					}
+					reviewResponse, err := safereview.Client.ReviewPictureFromBase64(base64Str)
+					if err != nil || reviewResponse.Status != safereviewBase.ReviewImageResultPass {
+						log.Println("图片审核不通过", err, reviewResponse)
+						newDocument.LockedAt = myTime.Time(time.Now())
+						newDocument.LockedReason += "{图片审核不通过[media:" + mediaInfo.Name + "]：" + reviewResponse.Reason + "}"
+						needUpdateDocument = true
+					}
+				}
+				if needUpdateDocument {
+					_, _ = documentService.UpdatesById(newDocument.Id, &newDocument)
+				}
+			}()
+		}
 	} else {
 		documentSize += uploadData.MediasSize
 	}
 
 	uploadWaitGroup.Wait()
 	if ws.IsClose() {
-		return
+		log.Println("ws已关闭")
 	}
 
 	freesymbolsVersionId := ""
@@ -298,6 +326,7 @@ func UploadDocument(c *gin.Context) {
 		versionId, ok2 := idToVersionId.Get(pageId)
 		if !ok || !ok1 || !ok2 {
 			resp.Message = "pagesList格式错误"
+			log.Println("pagesList格式错误")
 			_ = ws.WriteJSON(&resp)
 			ws.Close()
 			return
@@ -310,6 +339,7 @@ func UploadDocument(c *gin.Context) {
 	documentMetaStr, err := json.Marshal(uploadData.DocumentMeta)
 	if err != nil {
 		resp.Message = "document-meta.json格式错误"
+		log.Println("document-meta.json格式错误", err)
 		_ = ws.WriteJSON(&resp)
 		ws.Close()
 		return
@@ -332,18 +362,12 @@ func UploadDocument(c *gin.Context) {
 	// 创建文档记录和历史记录
 	now := myTime.Time(time.Now())
 	if isFirstUpload {
-		newDocument := models.Document{
-			UserId:    userId,
-			Path:      docPath,
-			DocType:   models.DocTypeShareable,
-			Name:      documentName,
-			Size:      documentSize,
-			VersionId: documentVersionId,
-			TeamId:    teamId,
-			ProjectId: projectId,
-		}
+		newDocument.Name = documentName
+		newDocument.Size = documentSize
+		newDocument.VersionId = documentVersionId
 		if err := documentService.Create(&newDocument); err != nil {
 			resp.Message = "对象上传错误."
+			log.Println("对象上传错误", err)
 			_ = ws.WriteJSON(&resp)
 			ws.Close()
 			return
@@ -359,6 +383,7 @@ func UploadDocument(c *gin.Context) {
 		document.VersionId = documentVersionId
 		if _, err := documentService.UpdatesById(documentId, &document); err != nil {
 			resp.Message = "对象上传错误.."
+			log.Println("对象上传错误..", err)
 			_ = ws.WriteJSON(&resp)
 			ws.Close()
 			return
@@ -367,6 +392,7 @@ func UploadDocument(c *gin.Context) {
 		err := documentAccessRecordService.Get(&documentAccessRecord, "user_id = ? and document_id = ?", userId, documentId)
 		if err != nil && !errors.Is(err, services.ErrRecordNotFound) {
 			resp.Message = "对象上传错误..."
+			log.Println("对象上传错误...", err)
 			_ = ws.WriteJSON(&resp)
 			ws.Close()
 			return
@@ -390,6 +416,7 @@ func UploadDocument(c *gin.Context) {
 		LastCmdId:  str.DefaultToInt(lastCmdId, 0),
 	}); err != nil {
 		resp.Message = "对象上传错误...."
+		log.Println("对象上传错误....", err)
 		_ = ws.WriteJSON(&resp)
 		ws.Close()
 		return
