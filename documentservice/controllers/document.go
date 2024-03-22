@@ -172,6 +172,64 @@ func SetDocumentName(c *gin.Context) {
 	response.Success(c, "")
 }
 
+var Default62RadixChars = []string{
+	"0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
+	"a", "b", "c", "d", "e", "f", "g", "h", "i", "j",
+	"k", "l", "m", "n", "o", "p", "q", "r", "s", "t",
+	"u", "v", "w", "x", "y", "z", "A", "B", "C", "D",
+	"E", "F", "G", "H", "I", "J", "K", "L", "M", "N",
+	"O", "P", "Q", "R", "S", "T", "U", "V", "W", "X",
+	"Y", "Z",
+}
+
+type RadixConvert struct {
+	radix         int
+	radixChars    []string
+	radixCharsMap map[string]int
+}
+
+func NewRadixConvert(radix int, radixChars []string) (*RadixConvert, error) {
+	if radix < 2 || radix > len(radixChars) {
+		return nil, errors.New("radix的取值必须在2-RadixChars.length之间")
+	}
+	radixCharsMap := map[string]int{}
+	for i, v := range radixChars {
+		radixCharsMap[v] = i
+	}
+	return &RadixConvert{
+		radix:         radix,
+		radixChars:    radixChars,
+		radixCharsMap: radixCharsMap,
+	}, nil
+}
+
+// From 整数转radix进制字符串
+func (rc *RadixConvert) From(num int64) string {
+	if num == 0 {
+		return rc.radixChars[0]
+	} else if num < 0 {
+		return "-" + rc.From(-num)
+	}
+	result := ""
+	for num > 0 {
+		result = rc.radixChars[num%int64(rc.radix)] + result
+		num /= int64(rc.radix)
+	}
+	return result
+}
+
+// To radix进制字符串转整数
+func (rc *RadixConvert) To(str string) int64 {
+	if str[0] == '-' {
+		return -rc.To(str[1:])
+	}
+	result := int64(0)
+	for _, v := range str {
+		result = result*int64(rc.radix) + int64(rc.radixCharsMap[string(v)])
+	}
+	return result
+}
+
 type CopyDocumentReq struct {
 	DocId string `json:"doc_id" binding:"required"`
 }
@@ -189,7 +247,7 @@ func copyDocument(userId int64, documentId int64, c *gin.Context, documentName s
 	}
 	if sourceDocument.ProjectId <= 0 {
 		var permType models.PermType
-		if err := services.NewDocumentService().GetPermTypeByDocumentAndUserId(&permType, documentId, userId); err != nil || permType < models.PermTypeEditable {
+		if err := documentService.GetPermTypeByDocumentAndUserId(&permType, documentId, userId); err != nil || permType < models.PermTypeEditable {
 			response.Forbidden(c, "")
 			return
 		}
@@ -202,6 +260,12 @@ func copyDocument(userId int64, documentId int64, c *gin.Context, documentName s
 		}
 	}
 
+	radixConvert, err := NewRadixConvert(62, Default62RadixChars)
+	if err != nil {
+		log.Println("radixConvert初始化失败：", err)
+		return
+	}
+
 	if documentName == "" {
 		documentName = "%s_副本"
 	}
@@ -211,6 +275,70 @@ func copyDocument(userId int64, documentId int64, c *gin.Context, documentName s
 	if err := documentService.DocumentVersionService.Get(&documentVersion, "document_id = ? and version_id = ?", documentId, sourceDocument.VersionId); err != nil {
 		response.Fail(c, "获取文档版本失败")
 		return
+	}
+
+	// 获取文档cmd
+	type DocumentCmd struct {
+		Id           int64  `json:"id" bson:"_id"`
+		PreviousId   int64  `json:"previous_id" bson:"previous_id"`
+		BatchStartId int64  `json:"batch_start_id" bson:"batch_start_id"`
+		BatchEndId   int64  `json:"batch_end_id" bson:"batch_end_id"`
+		BatchLength  int    `json:"batch_length" bson:"batch_length"`
+		DocumentId   int64  `json:"document_id" bson:"document_id"`
+		UserId       int64  `json:"user_id" bson:"user_id"`
+		CmdId        string `json:"cmd_id" bson:"cmd_id"`
+		Cmd          bson.M `json:"cmd" bson:"cmd"`
+	}
+	documentCmdList := make([]DocumentCmd, 0)
+	reqParams := bson.M{
+		"document_id": documentId,
+		"_id": bson.M{
+			"$gt": documentVersion.LastCmdId,
+		},
+	}
+	documentCollection := mongo.DB.Collection("document1")
+	findOptions := options.Find()
+	findOptions.SetSort(bson.D{{"_id", 1}})
+	if cur, err := documentCollection.Find(nil, reqParams, findOptions); err == nil {
+		_ = cur.All(nil, &documentCmdList)
+	}
+	// 获取Cmd中的baseVer字段
+	baseVerList := sliceutil.MapT(func(item DocumentCmd) int64 {
+		return radixConvert.To(item.Cmd["baseVer"].(string))
+	}, documentCmdList...)
+	// 找到最小的baseVer
+	minBaseVer := int64(0)
+	if len(baseVerList) > 0 {
+		minBaseVer = baseVerList[0]
+	}
+	for i := 1; i < len(baseVerList); i++ {
+		if baseVerList[i] < minBaseVer {
+			minBaseVer = baseVerList[i]
+		}
+	}
+	// 获取minBaseVer到documentVersion.LastCmdId之间的cmd
+	reqParams = bson.M{
+		"document_id": documentId,
+		"_id": bson.M{
+			"$gte": minBaseVer,
+			"$lte": documentVersion.LastCmdId,
+		},
+	}
+	baseVerCmdList := make([]DocumentCmd, 0)
+	if cur, err := documentCollection.Find(nil, reqParams, findOptions); err == nil {
+		_ = cur.All(nil, &baseVerCmdList)
+	}
+	documentCmdList1 := append(baseVerCmdList, documentCmdList...)
+	// 生成新id
+	idMap := map[int64]int64{
+		0: 0,
+	}
+	for i := 0; i < len(documentCmdList1); i++ {
+		idMap[documentCmdList1[i].Id] = snowflake.NextId()
+	}
+	lastCmdId := int64(0)
+	if len(baseVerCmdList) > 0 {
+		lastCmdId = idMap[baseVerCmdList[len(baseVerCmdList)-1].Id]
 	}
 
 	// 复制目录
@@ -256,6 +384,7 @@ func copyDocument(userId int64, documentId int64, c *gin.Context, documentName s
 		response.Fail(c, "复制失败")
 		return
 	}
+	documentMeta["lastCmdId"] = str.IntToString(lastCmdId)
 	documentMeta["freesymbolsVersionId"] = freeSymbolsOjectInfo.VersionID
 
 	documentMetaBytes, err = bson.MarshalExtJSON(documentMeta, true, true)
@@ -286,66 +415,42 @@ func copyDocument(userId int64, documentId int64, c *gin.Context, documentName s
 		response.Fail(c, "创建失败")
 		return
 	}
-	// 创建文档版本记录
-	if err := documentService.DocumentVersionService.Create(&models.DocumentVersion{
-		DocumentId: targetDocument.Id,
-		VersionId:  documentMetaUploadInfo.VersionID,
-		LastCmdId:  0,
-	}); err != nil {
-		log.Println("创建文档版本记录失败：", err)
-		return
-	}
 
 	// 复制cmd
-	type DocumentCmd struct {
-		Id           int64  `json:"id" bson:"_id"`
-		PreviousId   int64  `json:"previous_id" bson:"previous_id"`
-		BatchStartId int64  `json:"batch_start_id" bson:"batch_start_id"`
-		BatchEndId   int64  `json:"batch_end_id" bson:"batch_end_id"`
-		BatchLength  int    `json:"batch_length" bson:"batch_length"`
-		DocumentId   int64  `json:"document_id" bson:"document_id"`
-		UserId       int64  `json:"user_id" bson:"user_id"`
-		CmdId        string `json:"cmd_id" bson:"cmd_id"`
-		Cmd          bson.M `json:"cmd" bson:"cmd"`
-	}
-	documentCmdList := make([]DocumentCmd, 0)
-	reqParams := bson.M{
-		"document_id": documentId,
-		"_id": bson.M{
-			"$gt": documentVersion.LastCmdId,
-		},
-	}
-	documentCollection := mongo.DB.Collection("document1")
-	findOptions := options.Find()
-	findOptions.SetSort(bson.D{{"_id", 1}})
-	if cur, err := documentCollection.Find(nil, reqParams, findOptions); err == nil {
-		_ = cur.All(nil, &documentCmdList)
-	}
+	// 设置Id、PreviousId、DocumentId、BatchStartId、BatchEndId
 	lastId := int64(0)
 	newDocumentCmdList := sliceutil.MapT(func(item DocumentCmd) DocumentCmd {
-		item.Id = snowflake.NextId()
+		item.Id = idMap[item.Id]
 		item.PreviousId = lastId
 		item.DocumentId = targetDocument.Id
 		lastId = item.Id
 		return item
-	}, documentCmdList...)
-	idMap := map[int64]int64{
-		0: 0,
-	}
-	for i := 0; i < len(newDocumentCmdList); i++ {
-		idMap[documentCmdList[i].Id] = newDocumentCmdList[i].Id
-	}
+	}, documentCmdList1...)
 	for i := 0; i < len(newDocumentCmdList); i++ {
 		item := &newDocumentCmdList[i]
 		item.BatchStartId = idMap[item.BatchStartId]
 		item.BatchEndId = idMap[item.BatchEndId]
 	}
+	// 设置documentCmdList中的Cmd.baseVer
+	for i := 0; i < len(documentCmdList); i++ {
+		item := &documentCmdList[i]
+		item.Cmd["baseVer"] = radixConvert.From(idMap[radixConvert.To(item.Cmd["baseVer"].(string))])
+	}
 	if len(newDocumentCmdList) > 0 {
-		newDocumentCmdList[0].Cmd["baseVer"] = ""
 		_, err = documentCollection.InsertMany(nil, sliceutil.ConvertToAnySlice(newDocumentCmdList))
 		if err != nil {
 			log.Println("cmd复制失败：", err)
 		}
+	}
+
+	// 创建文档版本
+	if err := documentService.DocumentVersionService.Create(&models.DocumentVersion{
+		DocumentId: targetDocument.Id,
+		VersionId:  documentMetaUploadInfo.VersionID,
+		LastCmdId:  lastCmdId,
+	}); err != nil {
+		log.Println("创建文档版本记录失败：", err)
+		return
 	}
 
 	// 复制评论数据
