@@ -197,7 +197,7 @@ func (that *Jwt) General() (string, error) {
 	if err != nil {
 		return "", errors.New("header json编码失败")
 	}
-	that._headerBase64 = base64.RawURLEncoding.EncodeToString(temp)
+	that._headerBase64 = base64.StdEncoding.EncodeToString(temp)
 
 	// Payload
 	temp, err = json.Marshal(that.payload)
@@ -205,14 +205,14 @@ func (that *Jwt) General() (string, error) {
 		return "", errors.New("payload json编码失败")
 	}
 	that._payloadJson = string(temp)
-	that._payloadBase64 = base64.RawURLEncoding.EncodeToString(temp)
+	that._payloadBase64 = base64.StdEncoding.EncodeToString(temp)
 
 	// Signature
 	that.signature, err = that.encryptor.sign([]byte(that._headerBase64 + "." + that._payloadBase64))
 	if err != nil {
 		return "", errors.New("签名失败")
 	}
-	that._signatureBase64 = base64.RawURLEncoding.EncodeToString(that.signature)
+	that._signatureBase64 = base64.StdEncoding.EncodeToString(that.signature)
 	if err != nil {
 		return "", errors.New("signature base64编码失败")
 	}
@@ -236,7 +236,7 @@ func (that *Jwt) ParsePayload(jwtString string) (res *Payload, err error) {
 	var temp []byte
 
 	// Signature
-	if that.signature, err = base64.RawURLEncoding.DecodeString(that._signatureBase64); err != nil {
+	if that.signature, err = base64.StdEncoding.DecodeString(that._signatureBase64); err != nil {
 		return res, errors.New("signature格式错误")
 	}
 	if !that.encryptor.verify([]byte(that._headerBase64+"."+that._payloadBase64), that.signature) {
@@ -244,7 +244,7 @@ func (that *Jwt) ParsePayload(jwtString string) (res *Payload, err error) {
 	}
 
 	// Header
-	if temp, err = base64.RawURLEncoding.DecodeString(that._headerBase64); err != nil {
+	if temp, err = base64.StdEncoding.DecodeString(that._headerBase64); err != nil {
 		return res, errors.New("header base64解码失败")
 	}
 	if err = json.Unmarshal(temp, &that.header); err != nil {
@@ -255,7 +255,7 @@ func (that *Jwt) ParsePayload(jwtString string) (res *Payload, err error) {
 	}
 
 	// Payload
-	if temp, err = base64.RawURLEncoding.DecodeString(that._payloadBase64); err != nil {
+	if temp, err = base64.StdEncoding.DecodeString(that._payloadBase64); err != nil {
 		return res, errors.New("payload base64解码失败")
 	}
 	that._payloadJson = string(temp)
