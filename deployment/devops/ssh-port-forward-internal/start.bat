@@ -31,8 +31,10 @@ set ports[9]=30200:172.16.0.19:30200
 :: bitnami-redis
 set ports[10]=30300:172.16.0.19:30300
 set ports[11]=30500:172.16.0.19:30500
+:: mariadb
+set ports[12]=33306:172.16.0.22:3306
 :: documentservice
-set ports[12]=32003:172.16.0.19:32003
+set ports[13]=32003:172.16.0.19:32003
 
 :: 获取数组长度
 set length=0
