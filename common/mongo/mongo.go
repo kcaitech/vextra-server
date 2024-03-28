@@ -4,7 +4,6 @@ import (
 	"context"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readconcern"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 	"protodesign.cn/kcserver/common/mongo/config"
@@ -21,7 +20,7 @@ func Init(filePath string) error {
 	var err error
 	option := options.Client().ApplyURI(conf.Mongo.Uri)
 	//option.SetReadConcern(readconcern.Majority())
-	option.SetReadConcern(readconcern.Snapshot())
+	//option.SetReadConcern(readconcern.Snapshot())
 	option.SetReadPreference(readpref.PrimaryPreferred())
 	option.SetWriteConcern(writeconcern.New(writeconcern.WMajority()))
 	if Client, err = mongo.Connect(ctx, option); err != nil {

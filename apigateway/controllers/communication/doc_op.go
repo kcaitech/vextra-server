@@ -8,9 +8,6 @@ import (
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.mongodb.org/mongo-driver/mongo/readconcern"
-	"go.mongodb.org/mongo-driver/mongo/readpref"
-	"go.mongodb.org/mongo-driver/mongo/writeconcern"
 	"log"
 	doc_versioning_service "protodesign.cn/kcserver/apigateway/common/doc-versioning-service"
 	"protodesign.cn/kcserver/common/models"
@@ -251,11 +248,6 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 
 	documentOpMutex := redis.RedSync.NewMutex("Document Op Mutex[DocumentId:"+documentIdStr+"]", redsync.WithExpiry(time.Second*10))
 
-	txnOptions := options.Transaction()
-	txnOptions.SetReadConcern(readconcern.Snapshot())
-	txnOptions.SetReadPreference(readpref.PrimaryPreferred())
-	txnOptions.SetWriteConcern(writeconcern.New(writeconcern.WMajority()))
-
 	tunnel.ReceiveFromClient = func(tunnelDataType TunnelDataType, data []byte, serverCmd ServerCmd) error {
 		var receiveData ReceiveData
 		if err := json.Unmarshal(data, &receiveData); err != nil {
@@ -345,26 +337,32 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 				return errors.New("数据插入失败")
 			}
 
-			if err := mongo.UseSession(context.Background(), func(sessionContext mongo.SessionContext) error {
-				if _, err := sessionContext.WithTransaction(context.Background(), func(sessionContext mongo.SessionContext) (any, error) {
-					documentCollection := mongo.DB.Collection("document1")
-					if _, err := documentCollection.InsertMany(sessionContext, sliceutil.ConvertToAnySlice(cmdItemList)); err != nil {
-						log.Println("数据插入失败："+cmdItem0ListString, err)
-						return nil, errors.New("数据插入失败")
-					}
-					if _, err = redis.Client.Set(context.Background(), "Document LastCmdId[DocumentId:"+documentIdStr+"]", previousId, time.Second*1).Result(); err != nil {
-						log.Println("Document LastCmdId[DocumentId:"+documentIdStr+"]"+"设置失败", err)
-						return nil, errors.New("数据插入失败")
-					}
-					redis.Client.Publish(context.Background(), "Document Op[DocumentId:"+documentIdStr+"]", cmdItemListData)
-					return nil, nil
-				}, txnOptions); err != nil {
-					log.Println("事务执行失败", err)
+			documentCollection := mongo.DB.Collection("document1")
+			if func() error {
+				if _, err := documentCollection.InsertMany(context.Background(), sliceutil.ConvertToAnySlice(cmdItemList)); err != nil {
+					log.Println("数据插入失败："+cmdItem0ListString, err)
 					return errors.New("数据插入失败")
 				}
+				if _, err = redis.Client.Set(context.Background(), "Document LastCmdId[DocumentId:"+documentIdStr+"]", previousId, time.Second*1).Result(); err != nil {
+					log.Println("Document LastCmdId[DocumentId:"+documentIdStr+"]"+"设置失败", err)
+					return errors.New("数据插入失败")
+				}
+				redis.Client.Publish(context.Background(), "Document Op[DocumentId:"+documentIdStr+"]", cmdItemListData)
 				doc_versioning_service.Trigger(documentId)
 				return nil
-			}); err != nil {
+			}() != nil {
+				// 删除已插入的数据（cmdItemList）
+				if res, err := documentCollection.DeleteMany(context.Background(), bson.M{
+					"document_id": documentId,
+					"_id": bson.M{
+						"$in": sliceutil.MapT(func(cmdItem CmdItem) int64 {
+							return cmdItem.Id
+						}, cmdItemList...),
+					},
+				}); err != nil {
+					log.Println("数据删除失败", err, res)
+					// todo 删除失败的处理
+				}
 				redis.Client.Del(context.Background(), "Document LastCmdId[DocumentId:"+documentIdStr+"]")
 				_ = sendErrorInsertFailed(cmdIdList)
 				return errors.New("数据插入失败")
