@@ -12,6 +12,7 @@ import (
 
 var Client *mongo.Client
 var DB *mongo.Database
+var IsDuplicateKeyError = mongo.IsDuplicateKeyError
 
 func Init(filePath string) error {
 	conf := config.LoadConfig(filePath)

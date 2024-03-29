@@ -328,6 +328,7 @@ func WxLogin(c *gin.Context) {
 			return
 		}
 	}
+
 	// 创建JWT
 	token, err := jwt.CreateJwt(&jwt.Data{
 		Id:       str.IntToString(user.Id),

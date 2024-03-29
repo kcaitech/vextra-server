@@ -101,6 +101,7 @@ type SendData struct {
 	To         string   `json:"to,omitempty"`          // pullCmdsResult errorPullCmdsFailed
 	PreviousId string   `json:"previous_id,omitempty"` // pullCmdsResult
 	CmdIdList  []string `json:"cmd_id_list,omitempty"` // errorInsertFailed
+	Data       any      `json:"data,omitempty"`        // errorInsertFailed
 }
 
 func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd ServerCmd, data Data) *Tunnel {
@@ -192,10 +193,11 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 		})
 	}
 	// 数据插入失败
-	sendErrorInsertFailed := func(cmdIdList []string) error {
+	sendErrorInsertFailed := func(cmdIdList []string, data any) error {
 		return _send(SendData{
 			Type:      "errorInsertFailed",
 			CmdIdList: cmdIdList,
+			Data:      data,
 		})
 	}
 	// 发送更新数据
@@ -278,7 +280,7 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 			// 上锁
 			if err := documentOpMutex.Lock(); err != nil {
 				log.Println(documentId, "获取锁失败 documentOpMutex.Lock", err)
-				_ = sendErrorInsertFailed(cmdIdList)
+				_ = sendErrorInsertFailed(cmdIdList, nil)
 				return errors.New("数据插入失败")
 			}
 			defer func() {
@@ -291,7 +293,7 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 			previousId, err := getPreviousId()
 			if err != nil {
 				log.Println(documentId, "lastCmdId查询失败", err)
-				_ = sendErrorInsertFailed(cmdIdList)
+				_ = sendErrorInsertFailed(cmdIdList, nil)
 				return errors.New("数据插入失败")
 			}
 
@@ -333,14 +335,41 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 			cmdItemListData, err := json.Marshal(cmdItemList)
 			if err != nil {
 				log.Println("json编码错误 cmdItemsData", err)
-				_ = sendErrorInsertFailed(cmdIdList)
+				_ = sendErrorInsertFailed(cmdIdList, nil)
 				return errors.New("数据插入失败")
 			}
 
 			documentCollection := mongo.DB.Collection("document1")
+			var duplicateCmd *CmdItem
 			if func() error {
-				if _, err := documentCollection.InsertMany(context.Background(), sliceutil.ConvertToAnySlice(cmdItemList)); err != nil {
+				if insertRes, err := documentCollection.InsertMany(context.Background(), sliceutil.ConvertToAnySlice(cmdItemList)); err != nil {
 					log.Println("数据插入失败："+cmdItem0ListString, err)
+
+					// duplicate key error
+					if mongo.IsDuplicateKeyError(err) {
+						index := 0
+						if insertRes != nil && len(insertRes.InsertedIDs) > 0 {
+							lastInsertedID := insertRes.InsertedIDs[len(insertRes.InsertedIDs)-1]
+							for i, cmdItem := range cmdItemList {
+								if cmdItem.Id == lastInsertedID {
+									index = i + 1
+									break
+								}
+							}
+							if index == 0 {
+								index = -1
+							}
+						}
+						if index >= 0 {
+							duplicateCmdId := &cmdItemList[index].Id
+							// 从mongodb中获取重复的cmd
+							duplicateCmd = &CmdItem{}
+							if err := documentCollection.FindOne(context.Background(), bson.M{"_id": duplicateCmdId}).Decode(duplicateCmd); err != nil {
+								log.Println("重复数据查询失败", duplicateCmdId, err)
+							}
+						}
+					}
+
 					return errors.New("数据插入失败")
 				}
 				if _, err = redis.Client.Set(context.Background(), "Document LastCmdId[DocumentId:"+documentIdStr+"]", previousId, time.Second*1).Result(); err != nil {
@@ -364,7 +393,12 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 					// todo 删除失败的处理
 				}
 				redis.Client.Del(context.Background(), "Document LastCmdId[DocumentId:"+documentIdStr+"]")
-				_ = sendErrorInsertFailed(cmdIdList)
+				insertFailedData := map[string]any{}
+				if duplicateCmd != nil {
+					insertFailedData["type"] = "duplicate"
+					insertFailedData["duplicateCmd"] = duplicateCmd
+				}
+				_ = sendErrorInsertFailed(cmdIdList, insertFailedData)
 				return errors.New("数据插入失败")
 			}
 
