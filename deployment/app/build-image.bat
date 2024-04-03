@@ -13,6 +13,9 @@ if "%VERSION_TAG%"=="" (
     set VERSION_TAG=latest
 )
 
+:: 构建builder镜像：
+:: docker build --target builder -t builder_image:latest -f ../../%SERVICE_NAME%/Dockerfile ../../
+
 docker build -t %SERVICE_NAME%:%VERSION_TAG% -f ../../%SERVICE_NAME%/Dockerfile ../../
 docker tag %SERVICE_NAME%:%VERSION_TAG% registry.protodesign.cn:36000/kcserver/%SERVICE_NAME%:%VERSION_TAG%
 docker login registry.protodesign.cn:36000 -u admin -p Kcai1212

@@ -35,6 +35,8 @@ set ports[11]=30500:172.16.0.19:30500
 set ports[12]=33306:172.16.0.22:3306
 :: documentservice
 set ports[13]=32003:172.16.0.19:32003
+:: png-to-svg
+set ports[14]=10050:172.16.0.21:10050
 
 :: 获取数组长度
 set length=0
