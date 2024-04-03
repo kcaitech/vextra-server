@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"encoding/json"
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -356,13 +357,13 @@ func copyDocument(userId int64, documentId int64, c *gin.Context, documentName s
 		return
 	}
 	documentMeta := map[string]any{}
-	if err := bson.UnmarshalExtJSON(documentMetaBytes, true, &documentMeta); err != nil {
+	if err := json.Unmarshal(documentMetaBytes, &documentMeta); err != nil {
 		log.Println("documentMetaBytes转json失败：", err)
 		response.Fail(c, "复制失败")
 		return
 	}
 
-	for _, page := range documentMeta["pagesList"].(bson.A) {
+	for _, page := range documentMeta["pagesList"].([]any) {
 		pageItem, ok := page.(map[string]any)
 		if !ok {
 			log.Println("pageItem转map失败：", err)
@@ -387,7 +388,7 @@ func copyDocument(userId int64, documentId int64, c *gin.Context, documentName s
 	documentMeta["lastCmdId"] = str.IntToString(lastCmdId)
 	documentMeta["freesymbolsVersionId"] = freeSymbolsOjectInfo.VersionID
 
-	documentMetaBytes, err = bson.MarshalExtJSON(documentMeta, true, true)
+	documentMetaBytes, err = json.Marshal(documentMeta)
 	if err != nil {
 		log.Println("documentMeta转json失败：", err)
 		response.Fail(c, "复制失败")
