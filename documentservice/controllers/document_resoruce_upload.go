@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 	"log"
 	"protodesign.cn/kcserver/common/gin/response"
 	"protodesign.cn/kcserver/common/models"
@@ -121,6 +122,7 @@ func UploadDocumentResource(c *gin.Context) {
 		}
 		resp.Status = ResponseStatusSuccess
 		_ = ws.WriteJSON(&resp)
+		documentService.DB.Model(&document).Where("id = ?", documentId).UpdateColumn("size", gorm.Expr("size + ?", len(resourceData)))
 
 		go func() {
 			base64Str := base64.StdEncoding.EncodeToString(resourceData)
@@ -130,7 +132,6 @@ func UploadDocumentResource(c *gin.Context) {
 				document.LockedAt = myTime.Time(time.Now())
 				document.LockedReason += "[图片审核不通过：" + reviewResponse.Reason + "]"
 				_, _ = documentService.UpdatesById(documentId, &document)
-
 			}
 		}()
 	}
