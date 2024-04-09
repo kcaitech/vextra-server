@@ -5,11 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"github.com/Baidu-AIP/golang-sdk/aip/censor"
+	"math/rand"
 	"protodesign.cn/kcserver/common/safereview/base"
 	"protodesign.cn/kcserver/common/safereview/config"
 	myMath "protodesign.cn/kcserver/utils/math"
 	"protodesign.cn/kcserver/utils/sliceutil"
 	"strings"
+	"time"
 )
 
 type client struct {
@@ -36,7 +38,7 @@ type TextResponse struct {
 	} `json:"data"`
 }
 
-func (c *client) reviewText(text string) (*base.ReviewTextResponse, error) {
+func (c *client) reviewText0(text string) (*base.ReviewTextResponse, error) {
 	resStr := c.TextCensor(text)
 	res := TextResponse{}
 	if err := json.Unmarshal([]byte(resStr), &res); err != nil {
@@ -79,6 +81,20 @@ func (c *client) reviewText(text string) (*base.ReviewTextResponse, error) {
 		Labels: labels,
 		Words:  words,
 	}, nil
+}
+
+func (c *client) reviewText(text string) (*base.ReviewTextResponse, error) {
+	for i := 0; i < 10; i++ {
+		res, err := c.reviewText0(text)
+		if err == nil {
+			return res, nil
+		} else if strings.Contains(err.Error(), "qps request limit") {
+			time.Sleep(time.Duration(400+rand.Intn(200)) * time.Millisecond) // 等待500+-100ms
+		} else {
+			return nil, err
+		}
+	}
+	return nil, errors.New("qps request limit")
 }
 
 func (c *client) ReviewText(text string) (*base.ReviewTextResponse, error) {
@@ -179,12 +195,39 @@ func (c *client) reviewPictureParse(resStr string) (*base.ReviewImageResponse, e
 	}, nil
 }
 
+type reviewPictureType uint8
+
+const (
+	reviewPictureTypeUrl reviewPictureType = iota
+	reviewPictureTypeBase64
+)
+
+func (c *client) reviewPicture(t reviewPictureType, imageValue string) (*base.ReviewImageResponse, error) {
+	var imgCensorFunc func(imgUrl string, options map[string]interface{}) (result string)
+	if t == reviewPictureTypeUrl {
+		imgCensorFunc = c.ImgCensorUrl
+	} else if t == reviewPictureTypeBase64 {
+		imgCensorFunc = c.ImgCensor
+	}
+	for i := 0; i < 10; i++ {
+		res, err := c.reviewPictureParse(imgCensorFunc(imageValue, nil))
+		if err == nil {
+			return res, nil
+		} else if strings.Contains(err.Error(), "qps request limit") {
+			time.Sleep(time.Duration(400+rand.Intn(200)) * time.Millisecond) // 等待500+-100ms
+		} else {
+			return nil, err
+		}
+	}
+	return nil, errors.New("qps request limit")
+}
+
 func (c *client) ReviewPictureFromUrl(imageUrl string) (*base.ReviewImageResponse, error) {
-	return c.reviewPictureParse(c.ImgCensorUrl(imageUrl, nil))
+	return c.reviewPicture(reviewPictureTypeUrl, imageUrl)
 }
 
 func (c *client) ReviewPictureFromBase64(imageBase64 string) (*base.ReviewImageResponse, error) {
-	return c.reviewPictureParse(c.ImgCensor(imageBase64, nil))
+	return c.reviewPicture(reviewPictureTypeBase64, imageBase64)
 }
 
 var Client base.Client

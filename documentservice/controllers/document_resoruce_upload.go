@@ -127,7 +127,10 @@ func UploadDocumentResource(c *gin.Context) {
 		go func() {
 			base64Str := base64.StdEncoding.EncodeToString(resourceData)
 			reviewResponse, err := safereview.Client.ReviewPictureFromBase64(base64Str)
-			if err != nil || reviewResponse.Status != safereviewBase.ReviewImageResultPass {
+			if err != nil {
+				log.Println("图片审核失败", err)
+				return
+			} else if reviewResponse.Status != safereviewBase.ReviewImageResultPass {
 				log.Println("图片审核不通过", err, reviewResponse)
 				document.LockedAt = myTime.Time(time.Now())
 				document.LockedReason += "[图片审核不通过：" + reviewResponse.Reason + "]"

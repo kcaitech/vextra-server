@@ -102,7 +102,12 @@ func SetAvatar(c *gin.Context) {
 	contentType := fileHeader.Header.Get("Content-Type")
 	base64Str := base64.StdEncoding.EncodeToString(fileBytes)
 	reviewResponse, err := safereview.Client.ReviewPictureFromBase64(base64Str)
-	if err != nil || reviewResponse.Status != safereviewBase.ReviewImageResultPass {
+	if err != nil {
+		log.Println("头像审核失败", err)
+		response.Fail(c, "头像审核失败")
+		return
+
+	} else if reviewResponse.Status != safereviewBase.ReviewImageResultPass {
 		log.Println("头像审核不通过", err, reviewResponse)
 		response.Fail(c, "头像审核不通过")
 		return

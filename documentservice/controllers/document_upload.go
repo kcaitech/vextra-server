@@ -164,7 +164,10 @@ func UploadDocument(c *gin.Context) {
 					continue
 				}
 				reviewResponse, err := safereview.Client.ReviewPictureFromBase64(base64Str)
-				if err != nil || reviewResponse.Status != safereviewBase.ReviewImageResultPass {
+				if err != nil {
+					log.Println("图片审核失败", err)
+					continue
+				} else if reviewResponse.Status != safereviewBase.ReviewImageResultPass {
 					newDocument.LockedAt = myTime.Time(time.Now())
 					newDocument.LockedReason += "{图片审核不通过[page:" + str.IntToString(int64(i)) + "]：" + reviewResponse.Reason + "}"
 					needUpdateDocument = true
@@ -283,7 +286,10 @@ func UploadDocument(c *gin.Context) {
 						continue
 					}
 					reviewResponse, err := safereview.Client.ReviewPictureFromBase64(base64Str)
-					if err != nil || reviewResponse.Status != safereviewBase.ReviewImageResultPass {
+					if err != nil {
+						log.Println("图片审核失败", err)
+						continue
+					} else if reviewResponse.Status != safereviewBase.ReviewImageResultPass {
 						log.Println("图片审核不通过", err, reviewResponse)
 						newDocument.LockedAt = myTime.Time(time.Now())
 						newDocument.LockedReason += "{图片审核不通过[media:" + mediaInfo.Name + "]：" + reviewResponse.Reason + "}"
