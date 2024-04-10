@@ -315,10 +315,10 @@ func ApplyDocumentPermission(c *gin.Context) {
 		response.BadRequest(c, "申请次数已达上限")
 		return
 	}
-	if documentInfoQueryRes.SharesCount >= 5 && documentInfoQueryRes.DocumentPermission.PermType == 0 {
-		response.BadRequest(c, "分享数量已达上限")
-		return
-	}
+	//if documentInfoQueryRes.SharesCount >= 5 && documentInfoQueryRes.DocumentPermission.PermType == 0 {
+	//	response.BadRequest(c, "分享数量已达上限")
+	//	return
+	//}
 	if err := documentService.DocumentPermissionRequestsService.Create(&models.DocumentPermissionRequests{
 		UserId:         userId,
 		DocumentId:     documentId,

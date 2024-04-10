@@ -27,8 +27,7 @@ type wxLoginReq struct {
 	InviteCode string `json:"invite_code"`
 }
 
-// 验证码
-var InviteCodeList = []string{
+var InviteCodeList = []string{ // 邀请码
 	"fo3yblC5",
 	"2gampt0q",
 	"d2z8ARv6",
@@ -130,6 +129,8 @@ var InviteCodeList = []string{
 	"G2kcS9S8",
 	"I9EjetnU",
 }
+
+const IsInviteCodeCheck = false // 是否开启邀请码校验
 
 type wxLoginResp struct {
 	Id       string `json:"id"`
@@ -273,6 +274,7 @@ func WxLogin(c *gin.Context) {
 				Avatar:                   wxUserInfoResp.Headimgurl,
 				Uid:                      str.GetUid(),
 				WxLoginCode:              req.Code,
+				IsActivated:              !IsInviteCodeCheck,
 			}
 			err := userService.Create(user)
 			if err != nil {
@@ -301,7 +303,7 @@ func WxLogin(c *gin.Context) {
 		}
 	}
 
-	if !user.IsActivated {
+	if IsInviteCodeCheck && !user.IsActivated {
 		user.WxLoginCode = req.Code
 		_, _ = userService.Updates(user)
 		// 邀请码校验

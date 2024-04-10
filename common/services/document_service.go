@@ -346,21 +346,28 @@ func (s *DocumentService) GetDocumentPermissionByDocumentAndUserId(permType *mod
 
 	isPublic := document.DocType >= models.DocTypePublicReadable // 是否为公共文档
 	if isPublic {
-		var sharesCount int64
-		_ = s.DocumentPermissionService.Count(
-			&sharesCount,
-			"resource_type = ? and resource_id = ? and grantee_type = ?",
-			models.ResourceTypeDoc, documentId, models.GranteeTypeExternal,
-		)
-		if sharesCount < 5 {
-			switch document.DocType {
-			case models.DocTypePublicReadable:
-				publicPermType = models.PermTypeReadOnly
-			case models.DocTypePublicCommentable:
-				publicPermType = models.PermTypeCommentable
-			case models.DocTypePublicEditable:
-				publicPermType = models.PermTypeEditable
-			}
+		//var sharesCount int64
+		//_ = s.DocumentPermissionService.Count(
+		//	&sharesCount,
+		//	"resource_type = ? and resource_id = ? and grantee_type = ?",
+		//	models.ResourceTypeDoc, documentId, models.GranteeTypeExternal,
+		//)
+		//if sharesCount < 5 {
+		//	if document.DocType == models.DocTypePublicReadable {
+		//		publicPermType = models.PermTypeReadOnly
+		//	} else if document.DocType == models.DocTypePublicCommentable {
+		//		publicPermType = models.PermTypeCommentable
+		//	} else if document.DocType == models.DocTypePublicEditable {
+		//		publicPermType = models.PermTypeEditable
+		//	}
+		//}
+
+		if document.DocType == models.DocTypePublicReadable {
+			publicPermType = models.PermTypeReadOnly
+		} else if document.DocType == models.DocTypePublicCommentable {
+			publicPermType = models.PermTypeCommentable
+		} else if document.DocType == models.DocTypePublicEditable {
+			publicPermType = models.PermTypeEditable
 		}
 	}
 
@@ -384,9 +391,9 @@ func (s *DocumentService) GetDocumentPermissionByDocumentAndUserId(permType *mod
 		}
 	} else if !isProjectDocument { // 私有文档，非项目文档，取现有权限
 		*permType = currentPermType
-	} else if projectPermType >= currentPermType || isCreator { // 私有文档，项目文档，项目权限大于等于现有权限，或项目权限小于现有权限且为创建者，取项目权限
+	} else if projectPermType >= currentPermType || isCreator { // 私有文档 && 项目文档， 项目权限大于等于现有权限，或项目权限小于现有权限且为创建者，取项目权限
 		*permType = projectPermType
-	} else { // 私有文档，项目文档，项目权限小于现有权限且不为创建者（即为自定义权限），取现有权限
+	} else { // 私有文档 && 项目文档，项目权限小于现有权限且不为创建者（即为自定义权限），取现有权限
 		*permType = currentPermType
 	}
 
