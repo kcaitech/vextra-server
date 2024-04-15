@@ -19,7 +19,8 @@ func loadUserRoutes(api *gin.RouterGroup) {
 		//		"nickname": "1",
 		//	})
 		//})
-		router.POST("/login/wx", controllers.WxLogin)
+		router.POST("/login/wx", controllers.WxOpenWebLogin)
+		router.POST("/login/wx_mp", controllers.WxMpLogin)
 		router.POST("/refresh_token", controllers.RefreshToken)
 	}
 }

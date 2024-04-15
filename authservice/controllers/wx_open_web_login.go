@@ -21,7 +21,7 @@ import (
 	"time"
 )
 
-type wxLoginReq struct {
+type wxOpenWebLoginReq struct {
 	Id         string `json:"id"`
 	Code       string `json:"code" binding:"required"`
 	InviteCode string `json:"invite_code"`
@@ -132,32 +132,32 @@ var InviteCodeList = []string{ // 邀请码
 
 const IsInviteCodeCheck = false // 是否开启邀请码校验
 
-type wxLoginResp struct {
+type wxOpenWebLoginResp struct {
 	Id       string `json:"id"`
 	Nickname string `json:"nickname"`
 	Token    string `json:"token"`
 	Avatar   string `json:"avatar"`
 }
 
-func (resp *wxLoginResp) MarshalJSON() ([]byte, error) {
+func (resp *wxOpenWebLoginResp) MarshalJSON() ([]byte, error) {
 	if strings.HasPrefix(resp.Avatar, "/") {
 		resp.Avatar = common.FileStorageHost + resp.Avatar
 	}
 	return json.Marshal(struct {
-		wxLoginResp
-	}{wxLoginResp: *resp})
+		wxOpenWebLoginResp
+	}{wxOpenWebLoginResp: *resp})
 }
 
-type wxAccessTokenResp struct {
+type wxOpenWebAccessTokenResp struct {
 	AccessToken  string `json:"access_token"`
 	ExpiresIn    int    `json:"expires_in"`
 	RefreshToken string `json:"refresh_token"`
 	Openid       string `json:"openid"`
 	Scope        string `json:"scope"`
-	Unionid      string `json:"unionid"`
+	UnionId      string `json:"unionid"`
 }
 
-type wxUserInfoResp struct {
+type wxOpenWebUserInfoResp struct {
 	Openid     string   `json:"openid"`
 	Nickname   string   `json:"nickname"`
 	Sex        int      `json:"sex"`
@@ -166,12 +166,12 @@ type wxUserInfoResp struct {
 	Country    string   `json:"country"`
 	Headimgurl string   `json:"headimgurl"`
 	Privilege  []string `json:"privilege"`
-	Unionid    string   `json:"unionid"`
+	UnionId    string   `json:"unionid"`
 }
 
-// WxLogin 微信登录
-func WxLogin(c *gin.Context) {
-	var req wxLoginReq
+// WxOpenWebLogin 微信开放平台网站登录
+func WxOpenWebLogin(c *gin.Context) {
+	var req wxOpenWebLoginReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, err.Error())
 		return
@@ -208,15 +208,15 @@ func WxLogin(c *gin.Context) {
 			return
 		}
 		// json解析
-		var wxAccessTokenResp wxAccessTokenResp
+		var wxAccessTokenResp wxOpenWebAccessTokenResp
 		err = json.Unmarshal(body, &wxAccessTokenResp)
 		if err != nil {
 			log.Println(err)
 			response.Fail(c, "登陆失败")
 			return
 		}
-		if wxAccessTokenResp.Openid == "" {
-			log.Println("OpenId为空", string(body))
+		if wxAccessTokenResp.Openid == "" || wxAccessTokenResp.UnionId == "" {
+			log.Println("OpenId或UnionId为空", string(body))
 			response.Fail(c, "登陆失败")
 			return
 		}
@@ -242,7 +242,7 @@ func WxLogin(c *gin.Context) {
 			return
 		}
 		// json解析
-		var wxUserInfoResp wxUserInfoResp
+		var wxUserInfoResp wxOpenWebUserInfoResp
 		err = json.Unmarshal(body, &wxUserInfoResp)
 		if err != nil {
 			log.Println(err)
@@ -267,6 +267,7 @@ func WxLogin(c *gin.Context) {
 			user = &models.User{
 				Nickname:                 wxUserInfoResp.Nickname,
 				WxOpenId:                 wxAccessTokenResp.Openid,
+				WxUnionId:                wxAccessTokenResp.UnionId,
 				WxAccessToken:            wxAccessTokenResp.AccessToken,
 				WxAccessTokenCreateTime:  t,
 				WxRefreshToken:           wxAccessTokenResp.RefreshToken,
@@ -300,6 +301,9 @@ func WxLogin(c *gin.Context) {
 					return
 				}
 			}(user, wxUserInfoResp.Headimgurl)
+		} else {
+			user.WxUnionId = wxAccessTokenResp.UnionId
+			_, _ = userService.Updates(user)
 		}
 	}
 
@@ -341,7 +345,7 @@ func WxLogin(c *gin.Context) {
 		return
 	}
 
-	response.Success(c, &wxLoginResp{
+	response.Success(c, &wxOpenWebLoginResp{
 		Id:       str.IntToString(user.Id),
 		Nickname: user.Nickname,
 		Token:    token,
