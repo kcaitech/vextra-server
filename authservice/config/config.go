@@ -10,6 +10,10 @@ type Configuration struct {
 		Appid  string `yaml:"appid"`
 		Secret string `yaml:"secret"`
 	} `yaml:"wx"`
+	WxMp struct {
+		Appid  string `yaml:"appid"`
+		Secret string `yaml:"secret"`
+	} `yaml:"wxMp"`
 }
 
 var Config Configuration

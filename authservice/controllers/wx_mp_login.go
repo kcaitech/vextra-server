@@ -72,8 +72,8 @@ func WxMpLogin(c *gin.Context) {
 		// Code换取AccessToken
 		// 发起请求
 		queryParams := url.Values{}
-		queryParams.Set("appid", config.Config.Wx.Appid)
-		queryParams.Set("secret", config.Config.Wx.Secret)
+		queryParams.Set("appid", config.Config.WxMp.Appid)
+		queryParams.Set("secret", config.Config.WxMp.Secret)
 		queryParams.Set("js_code", req.Code)
 		queryParams.Set("grant_type", "authorization_code")
 		resp, err := http.Get("https://api.weixin.qq.com/sns/jscode2session" + "?" + queryParams.Encode())
