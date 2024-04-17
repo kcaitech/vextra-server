@@ -3,6 +3,7 @@ package controllers
 import (
 	"crypto/hmac"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"github.com/gin-gonic/gin"
@@ -37,7 +38,7 @@ type wxMpAccessTokenResp struct {
 	UnionId    string `json:"unionid"`
 	ErrMsg     string `json:"errmsg"`
 	Openid     string `json:"openid"`
-	ErrCode    string `json:"errcode"`
+	ErrCode    int32  `json:"errcode"`
 }
 
 type wxMpUserInfoResp struct {
@@ -117,7 +118,7 @@ func WxMpLogin(c *gin.Context) {
 			secret := "123456"
 			h := hmac.New(sha256.New, []byte(secret))
 			h.Write([]byte(wxAccessTokenResp.UnionId))
-			s := h.Sum(nil)
+			s := base64.StdEncoding.EncodeToString(h.Sum(nil))
 			nickname := "wx_" + string(s[len(s)-12:]) + str.GetRandomAlphaStr(4)
 			user = &models.User{
 				Nickname:                 nickname,

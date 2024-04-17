@@ -17,3 +17,4 @@ services:
       - ./conf.d:/etc/nginx/conf.d
       - ./log:/var/log/nginx
       - ./cert:/etc/nginx/cert
+      - ./html:/usr/share/nginx/html

@@ -24,7 +24,7 @@ type User struct {
 	WxMpLoginCode            string    `gorm:"size:64" json:"wx_mp_login_code"`
 
 	// 微信开放平台UnionId
-	WxUnionId string `gorm:"size:64" json:"wx_union_id"`
+	WxUnionId string `gorm:"unique;size:64" json:"wx_union_id"`
 
 	Avatar      string `gorm:"size:256" json:"avatar"`
 	Uid         string `gorm:"unique;size:64" json:"uid"`

@@ -303,7 +303,9 @@ func WxOpenWebLogin(c *gin.Context) {
 			}(user, wxUserInfoResp.Headimgurl)
 		} else {
 			user.WxUnionId = wxAccessTokenResp.UnionId
-			_, _ = userService.Updates(user)
+			if _, err := userService.UpdatesIgnoreZero(user); err != nil {
+				log.Println("更新UnionId失败：", err)
+			}
 		}
 	}
 
