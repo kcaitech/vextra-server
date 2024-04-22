@@ -18,6 +18,7 @@ import (
 	"protodesign.cn/kcserver/utils/sliceutil"
 	"protodesign.cn/kcserver/utils/str"
 	myTime "protodesign.cn/kcserver/utils/time"
+	"strings"
 	"time"
 )
 
@@ -499,16 +500,12 @@ func GetUserDocumentPerm(c *gin.Context) {
 
 // GetWxMpCode 获取微信小程序码
 func GetWxMpCode(c *gin.Context) {
-	_, err := auth.GetUserId(c)
-	if err != nil {
-		response.Unauthorized(c)
+	scene := c.Query("scene")
+	if len(scene) > 32 {
+		response.BadRequest(c, "参数错误：scene")
 		return
 	}
-	documentId := str.DefaultToInt(c.Query("doc_id"), 0)
-	if documentId <= 0 {
-		response.BadRequest(c, "参数错误：doc_id")
-		return
-	}
+
 	page := c.Query("page")
 
 	// 发起请求
@@ -544,10 +541,8 @@ func GetWxMpCode(c *gin.Context) {
 	// 发起请求
 	queryParams = url.Values{}
 	queryParams.Set("access_token", wxAccessTokenResp.AccessToken)
-	scene := url.Values{}
-	scene.Set("d", radixConvert.From(documentId))
 	requestData := map[string]any{
-		"scene":      scene.Encode(),
+		"scene":      scene,
 		"check_path": true,
 		// release trial develop
 		"env_version": "develop",
@@ -576,7 +571,7 @@ func GetWxMpCode(c *gin.Context) {
 	body, err = io.ReadAll(resp.Body)
 
 	contentType := resp.Header.Get("Content-Type")
-	if contentType == "application/json" {
+	if strings.Contains(contentType, "application/json") {
 		if err != nil {
 			log.Println(err)
 			response.Fail(c, "获取失败")
