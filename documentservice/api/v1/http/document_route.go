@@ -32,6 +32,7 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 		router.POST("/shares/apply", controllers.ApplyDocumentPermission)
 		router.GET("/shares/apply", controllers.GetDocumentPermissionRequestsList)
 		router.POST("/shares/apply/audit", controllers.ReviewDocumentPermissionRequest)
+		router.POST("/shares/wx_mp_code", controllers.GetWxMpCode)
 		router.GET("/comments", controllers.GetDocumentComment)
 		router.POST("/comment", controllers.PostUserComment)
 		router.PUT("/comment", controllers.PutUserComment)
