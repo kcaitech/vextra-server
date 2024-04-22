@@ -509,6 +509,7 @@ func GetWxMpCode(c *gin.Context) {
 		response.BadRequest(c, "参数错误：doc_id")
 		return
 	}
+	page := c.Query("page")
 
 	// 发起请求
 	// 获取AccessToken
@@ -545,9 +546,8 @@ func GetWxMpCode(c *gin.Context) {
 	queryParams.Set("access_token", wxAccessTokenResp.AccessToken)
 	scene := url.Values{}
 	scene.Set("d", radixConvert.From(documentId))
-	requestBodyBytes, _ := json.Marshal(map[string]any{
+	requestData := map[string]any{
 		"scene":      scene.Encode(),
-		"page":       "pages/index/index",
 		"check_path": true,
 		// release trial develop
 		"env_version": "develop",
@@ -559,7 +559,11 @@ func GetWxMpCode(c *gin.Context) {
 			"b": 0,
 		},
 		"is_hyaline": false,
-	})
+	}
+	if page != "" {
+		requestData["page"] = page
+	}
+	requestBodyBytes, _ := json.Marshal(requestData)
 	resp, err = http.Post("https://api.weixin.qq.com/wxa/getwxacodeunlimit"+"?"+queryParams.Encode(), "application/json", bytes.NewBuffer(requestBodyBytes))
 	if err != nil {
 		log.Println(err)
