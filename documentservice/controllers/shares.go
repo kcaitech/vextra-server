@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"github.com/gin-gonic/gin"
@@ -567,10 +568,11 @@ func GetWxMpCode(c *gin.Context) {
 	}
 	defer resp.Body.Close()
 
+	// 读取响应
+	body, err = io.ReadAll(resp.Body)
+
 	contentType := resp.Header.Get("Content-Type")
 	if contentType == "application/json" {
-		// 读取响应
-		body, err = io.ReadAll(resp.Body)
 		if err != nil {
 			log.Println(err)
 			response.Fail(c, "获取失败")
@@ -581,5 +583,9 @@ func GetWxMpCode(c *gin.Context) {
 		return
 	}
 
-	c.DataFromReader(http.StatusOK, resp.ContentLength, contentType, resp.Body, map[string]string{})
+	imageType := "image/png"
+	if contentType != "" {
+		imageType = contentType
+	}
+	response.Success(c, "data:"+imageType+";base64,"+base64.StdEncoding.EncodeToString(body))
 }
