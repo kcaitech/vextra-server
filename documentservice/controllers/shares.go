@@ -1,13 +1,19 @@
 package controllers
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"github.com/gin-gonic/gin"
+	"io"
 	"log"
+	"net/http"
+	"net/url"
 	"protodesign.cn/kcserver/common/gin/auth"
 	"protodesign.cn/kcserver/common/gin/response"
 	"protodesign.cn/kcserver/common/models"
 	"protodesign.cn/kcserver/common/services"
+	"protodesign.cn/kcserver/documentservice/config"
 	"protodesign.cn/kcserver/utils/sliceutil"
 	"protodesign.cn/kcserver/utils/str"
 	myTime "protodesign.cn/kcserver/utils/time"
@@ -465,6 +471,11 @@ type UserDocumentPermResp struct {
 	PermType models.PermType `json:"perm_type"`
 }
 
+type wxMpAccessTokenResp struct {
+	AccessToken string `json:"access_token"`
+	ExpiresIn   int    `json:"expires_in"`
+}
+
 // GetUserDocumentPerm 获取文档权限
 func GetUserDocumentPerm(c *gin.Context) {
 	userId, err := auth.GetUserId(c)
@@ -483,4 +494,92 @@ func GetUserDocumentPerm(c *gin.Context) {
 		return
 	}
 	response.Success(c, result)
+}
+
+// GetWxMpCode 获取微信小程序码
+func GetWxMpCode(c *gin.Context) {
+	_, err := auth.GetUserId(c)
+	if err != nil {
+		response.Unauthorized(c)
+		return
+	}
+	documentId := str.DefaultToInt(c.Query("doc_id"), 0)
+	if documentId <= 0 {
+		response.BadRequest(c, "参数错误：doc_id")
+		return
+	}
+
+	// 发起请求
+	// 获取AccessToken
+	queryParams := url.Values{}
+	queryParams.Set("appid", config.Config.WxMp.Appid)
+	queryParams.Set("secret", config.Config.WxMp.Secret)
+	queryParams.Set("grant_type", "client_credential")
+	resp, err := http.Get("https://api.weixin.qq.com/cgi-bin/token" + "?" + queryParams.Encode())
+	if err != nil {
+		log.Println(err)
+		response.Fail(c, "获取失败")
+		return
+	}
+	defer resp.Body.Close()
+	// 读取响应
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Println(err)
+		response.Fail(c, "获取失败")
+		return
+	}
+	// json解析
+	var wxAccessTokenResp wxMpAccessTokenResp
+	err = json.Unmarshal(body, &wxAccessTokenResp)
+	if err != nil {
+		log.Println(err)
+		response.Fail(c, "获取失败")
+		return
+	}
+
+	// 获取小程序码
+	// 发起请求
+	queryParams = url.Values{}
+	queryParams.Set("access_token", wxAccessTokenResp.AccessToken)
+	scene := url.Values{}
+	scene.Set("d", radixConvert.From(documentId))
+	requestBodyBytes, _ := json.Marshal(map[string]any{
+		"scene":      scene.Encode(),
+		"page":       "pages/index/index",
+		"check_path": true,
+		// release trial develop
+		"env_version": "develop",
+		"width":       430,
+		"auto_color":  false,
+		"line_color": map[string]int{
+			"r": 0,
+			"g": 0,
+			"b": 0,
+		},
+		"is_hyaline": false,
+	})
+	resp, err = http.Post("https://api.weixin.qq.com/wxa/getwxacodeunlimit"+"?"+queryParams.Encode(), "application/json", bytes.NewBuffer(requestBodyBytes))
+	if err != nil {
+		log.Println(err)
+		response.Fail(c, "获取失败")
+		return
+	}
+	defer resp.Body.Close()
+
+	contentType := resp.Header.Get("Content-Type")
+	if contentType == "application/json" {
+		// 读取响应
+		body, err = io.ReadAll(resp.Body)
+		if err != nil {
+			log.Println(err)
+			response.Fail(c, "获取失败")
+			return
+		}
+		log.Println("获取小程序码失败", string(body))
+		response.Fail(c, "获取失败")
+		return
+	}
+
+	c.DataFromReader(http.StatusOK, resp.ContentLength, contentType, resp.Body, map[string]string{})
 }
