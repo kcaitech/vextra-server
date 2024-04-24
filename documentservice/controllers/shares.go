@@ -542,7 +542,6 @@ func GetWxMpCode(c *gin.Context) {
 	queryParams = url.Values{}
 	queryParams.Set("access_token", wxAccessTokenResp.AccessToken)
 	requestData := map[string]any{
-		"scene":      scene,
 		"check_path": true,
 		// release trial develop
 		"env_version": "develop",
@@ -554,6 +553,11 @@ func GetWxMpCode(c *gin.Context) {
 			"b": 0,
 		},
 		"is_hyaline": false,
+	}
+	if scene != "" {
+		// 前端使用了encodeURIComponent编码，这里要先解码
+		scene, _ = url.QueryUnescape(scene)
+		requestData["scene"] = scene
 	}
 	if page != "" {
 		requestData["page"] = page
