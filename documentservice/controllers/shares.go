@@ -544,7 +544,7 @@ func GetWxMpCode(c *gin.Context) {
 	requestData := map[string]any{
 		"check_path": true,
 		// release trial develop
-		"env_version": "develop",
+		"env_version": "trial",
 		"width":       430,
 		"auto_color":  false,
 		"line_color": map[string]int{
