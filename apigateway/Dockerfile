@@ -1,5 +1,5 @@
-#FROM golang:1.20-alpine as builder
-FROM builder_image:latest as builder
+#FROM golang:1.21-alpine as builder
+FROM kcserver-builder_image:latest as builder
 
 ENV GO111MODULE=on \
     CGO_ENABLED=0 \

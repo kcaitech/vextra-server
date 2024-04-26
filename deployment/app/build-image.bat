@@ -14,7 +14,7 @@ if "%VERSION_TAG%"=="" (
 )
 
 :: 构建builder镜像：
-:: docker build --target builder -t builder_image:latest -f ../../%SERVICE_NAME%/Dockerfile ../../
+:: docker build --target builder -t kcserver-builder_image:latest -f ../../%SERVICE_NAME%/Dockerfile ../../
 
 docker build -t %SERVICE_NAME%:%VERSION_TAG% -f ../../%SERVICE_NAME%/Dockerfile ../../
 docker tag %SERVICE_NAME%:%VERSION_TAG% registry.protodesign.cn:36000/kcserver/%SERVICE_NAME%:%VERSION_TAG%
