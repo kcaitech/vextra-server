@@ -508,6 +508,16 @@ func GetWxMpCode(c *gin.Context) {
 
 	page := c.Query("page")
 
+	// release trial develop
+	envVersion := c.Query("env_version")
+	if envVersion == "" {
+		envVersion = "release"
+	}
+	if envVersion != "release" && envVersion != "trial" && envVersion != "develop" {
+		response.BadRequest(c, "参数错误：env_version")
+		return
+	}
+
 	// 发起请求
 	// 获取AccessToken
 	queryParams := url.Values{}
@@ -542,9 +552,8 @@ func GetWxMpCode(c *gin.Context) {
 	queryParams = url.Values{}
 	queryParams.Set("access_token", wxAccessTokenResp.AccessToken)
 	requestData := map[string]any{
-		"check_path": true,
-		// release trial develop
-		"env_version": "trial",
+		"check_path":  true,
+		"env_version": envVersion,
 		"width":       430,
 		"auto_color":  false,
 		"line_color": map[string]int{
