@@ -561,7 +561,7 @@ func GetWxMpCode(c *gin.Context) {
 			"g": 0,
 			"b": 0,
 		},
-		"is_hyaline": false,
+		"is_hyaline": true,
 	}
 	if scene != "" {
 		// 前端使用了encodeURIComponent编码，这里要先解码
