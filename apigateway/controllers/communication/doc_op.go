@@ -67,6 +67,7 @@ type Cmd struct {
 	Description string   `json:"description" bson:"description"`
 	Time        int64    `json:"time" bson:"time"`
 	Posttime    int64    `json:"posttime" bson:"posttime"`
+	DataFmtVer  int64    `json:"dataFmtVer,omitempty" bson:"dataFmtVer,omitempty"`
 }
 
 type ReceiveCmd struct {
