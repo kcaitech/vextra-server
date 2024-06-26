@@ -1,6 +1,7 @@
-package models
+package main
 
 import (
+	"gorm.io/gorm"
 	"protodesign.cn/kcserver/utils/time"
 )
 
@@ -31,6 +32,16 @@ type User struct {
 	IsActivated bool   `gorm:"default:false" json:"is_activated"`
 }
 
-func (model User) MarshalJSON() ([]byte, error) {
-	return MarshalJSON(model)
+func UserUp(db *gorm.DB) error {
+	if err := db.AutoMigrate(&User{}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func UserDown(db *gorm.DB) error {
+	if err := db.Migrator().DropTable(&User{}); err != nil {
+		return err
+	}
+	return nil
 }
