@@ -362,12 +362,13 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 							}
 						}
 						if index >= 0 {
-							duplicateCmdId := cmdItemList[index].Id
 							// 从mongodb中获取重复的cmd
-							duplicateCmd = &CmdItem{}
-							if err := documentCollection.FindOne(context.Background(), bson.M{"_id": duplicateCmdId}).Decode(duplicateCmd); err != nil {
-								log.Println("重复数据查询失败", duplicateCmdId, err)
-							}
+							//duplicateCmdId := cmdItemList[index].Id
+							//duplicateCmd = &CmdItem{}
+							//if err := documentCollection.FindOne(context.Background(), bson.M{"_id": duplicateCmdId}).Decode(duplicateCmd); err != nil {
+							//	log.Println("重复数据查询失败", duplicateCmdId, err)
+							//}
+							duplicateCmd = &cmdItemList[index]
 						}
 					}
 
