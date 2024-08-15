@@ -1,6 +1,7 @@
-package models
+package main
 
 import (
+	"gorm.io/gorm"
 	"protodesign.cn/kcserver/utils/time"
 )
 
@@ -32,6 +33,16 @@ type User struct {
 	WebAppChannel string `gorm:"size:64" json:"web_app_channel"`
 }
 
-func (model User) MarshalJSON() ([]byte, error) {
-	return MarshalJSON(model)
+func UserUp(db *gorm.DB) error {
+	if err := db.AutoMigrate(&User{}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func UserDown(db *gorm.DB) error {
+	if err := db.Migrator().DropTable(&User{}); err != nil {
+		return err
+	}
+	return nil
 }
