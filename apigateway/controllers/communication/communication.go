@@ -28,8 +28,8 @@ func getTunnelDataByCmdData(tunnelCmdData TunnelCmdData, ws *websocket.Ws) (Tunn
 		return dataType, tunnelCmdData.Data
 	} else {
 		messageType, data, err := ws.ReadMessage()
-		if err != nil || messageType != websocket.MessageTypeBinary || len(data) == 0 {
-			log.Println("binary data错误", err)
+		if err != nil || messageType != websocket.MessageTypeBinary {
+			log.Println("binary data错误", err, messageType)
 			return TunnelDataTypeNone, nil
 		}
 		return dataType, data
@@ -260,7 +260,7 @@ func Communication(c *gin.Context) {
 				continue
 			}
 			tunnelDataType, data := getTunnelDataByCmdData(clientTunnelCmdData, ws)
-			if len(data) == 0 {
+			if tunnelDataType == TunnelDataTypeNone {
 				serverCmd.Message = "数据错误"
 				_ = ws.WriteJSON(&serverCmd)
 				continue
