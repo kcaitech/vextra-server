@@ -39,12 +39,17 @@ func (s *AppVersionService) GetLatest(userId int64) *models.AppVersion {
 			&OrderLimitArgs{"code desc", 1},
 		)
 	} else {
-		_ = s.Get(
+		if s.Get(
 			&result,
 			&OrderLimitArgs{"code desc", 1},
 			"web_app_channel = ?",
 			user.WebAppChannel,
-		)
+		) != nil {
+			_ = s.Get(
+				&result,
+				&OrderLimitArgs{"code desc", 1},
+			)
+		}
 	}
 	return &result
 }
