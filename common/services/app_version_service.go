@@ -36,6 +36,7 @@ func (s *AppVersionService) GetLatest(userId int64) *models.AppVersion {
 	if !userExists || user.WebAppChannel == "" {
 		_ = s.Get(
 			&result,
+			"web_app_channel is null or web_app_channel = ''",
 			&OrderLimitArgs{"code desc", 1},
 		)
 	} else {
@@ -47,6 +48,7 @@ func (s *AppVersionService) GetLatest(userId int64) *models.AppVersion {
 		) != nil {
 			_ = s.Get(
 				&result,
+				"web_app_channel is null or web_app_channel = ''",
 				&OrderLimitArgs{"code desc", 1},
 			)
 		}
