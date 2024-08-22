@@ -98,7 +98,6 @@ func UploadDocumentResource(c *gin.Context) {
 		resourceHeader := ResourceHeader{}
 		if err := ws.ReadJSON(&resourceHeader); err != nil || resourceHeader.Name == "" {
 			if errors.Is(err, websocket.ErrClosed) {
-				log.Println("ws连接关闭", err)
 				return
 			}
 			resp.Message = "ResourceHeader结构错误"
@@ -108,18 +107,23 @@ func UploadDocumentResource(c *gin.Context) {
 		}
 		messageType, resourceData, err := ws.ReadMessage()
 		if messageType != websocket.MessageTypeBinary || err != nil || len(resourceData) == 0 {
+			if errors.Is(err, websocket.ErrClosed) {
+				return
+			}
 			resp.Message = "ResourceData结构错误"
 			_ = ws.WriteJSON(&resp)
 			log.Println("ResourceData结构错误", err, len(resourceData))
 			return
 		}
 		path := document.Path + "/medias/" + resourceHeader.Name
+		log.Println("开始上传", documentId, path)
 		if _, err = storage.Bucket.PutObjectByte(path, resourceData); err != nil {
 			resp.Message = "上传失败"
 			_ = ws.WriteJSON(&resp)
-			log.Println("上传失败", err)
+			log.Println("上传失败", documentId, path, err)
 			return
 		}
+		log.Println("上传成功", documentId, path)
 		resp.Status = ResponseStatusSuccess
 		_ = ws.WriteJSON(&resp)
 		documentService.DB.Model(&document).Where("id = ?", documentId).UpdateColumn("size", gorm.Expr("size + ?", len(resourceData)))
