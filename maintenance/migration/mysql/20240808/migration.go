@@ -21,6 +21,10 @@ func main() {
 	if err = UserUp(mysql.DB); err != nil {
 		log.Fatalln("数据库迁移错误：" + err.Error())
 	}
+	log.Println("开始迁移Options表")
+	if err = OptionsUp(mysql.DB); err != nil {
+		log.Fatalln("数据库迁移错误：" + err.Error())
+	}
 
 	log.Println("迁移结束")
 }

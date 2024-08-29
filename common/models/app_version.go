@@ -14,6 +14,7 @@ type AppVersion struct {
 	CmdVersion    int64     `gorm:"index;not null" json:"cmd_version"`
 	PublishTime   time.Time `gorm:"index;not null;type:datetime(6)" json:"publish_time"`
 	Desc          string    `gorm:"not null" json:"desc"`
+	Detail        string    `gorm:"not null" json:"detail"`
 }
 
 func (model AppVersion) MarshalJSON() ([]byte, error) {

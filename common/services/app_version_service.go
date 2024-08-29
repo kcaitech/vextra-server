@@ -32,14 +32,18 @@ func (s *AppVersionService) GetLatest(userId int64) *models.AppVersion {
 	var user models.User
 	userExists := userService.Get(&user, "id = ?", userId) == nil
 
+	optionsService := NewOptionsService()
+	defaultWebAppChannel, _ := optionsService.GetOne("DEFAULT_WEB_APP_CHANNEL")
+
 	var result models.AppVersion
-	if !userExists || user.WebAppChannel == "" {
+	if !userExists || user.WebAppChannel == "" { // 用户不存在或用户存在但WebAppChannel不为空
 		_ = s.Get(
 			&result,
-			"web_app_channel is null or web_app_channel = ''",
+			"web_app_channel is null or web_app_channel = ?",
+			defaultWebAppChannel,
 			&OrderLimitArgs{"code desc", 1},
 		)
-	} else {
+	} else { // 用户存在且WebAppChannel不为空
 		if s.Get(
 			&result,
 			"web_app_channel = ?",
@@ -48,7 +52,8 @@ func (s *AppVersionService) GetLatest(userId int64) *models.AppVersion {
 		) != nil {
 			_ = s.Get(
 				&result,
-				"web_app_channel is null or web_app_channel = ''",
+				"web_app_channel is null or web_app_channel = ?",
+				defaultWebAppChannel,
 				&OrderLimitArgs{"code desc", 1},
 			)
 		}
