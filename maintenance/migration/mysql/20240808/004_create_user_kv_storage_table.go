@@ -1,0 +1,27 @@
+package main
+
+import (
+	"gorm.io/gorm"
+)
+
+// UserKVStorage 配置表
+type UserKVStorage struct {
+	BaseModel
+	UserId int64  `gorm:"index;uniqueIndex:idx_user_key" json:"user_id"`
+	Key    string `gorm:"index;uniqueIndex:idx_user_key;not null" json:"key"`
+	Value  string `gorm:"not null" json:"value"`
+}
+
+func UserKVStorageUp(db *gorm.DB) error {
+	if err := db.AutoMigrate(&UserKVStorage{}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func UserKVStorageDown(db *gorm.DB) error {
+	if err := db.Migrator().DropTable(&UserKVStorage{}); err != nil {
+		return err
+	}
+	return nil
+}
