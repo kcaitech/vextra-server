@@ -8,7 +8,12 @@ import (
 // User 用户
 type User struct {
 	BaseModel
-	Nickname string `gorm:"size:64" json:"nickname"`
+
+	Nickname      string `gorm:"size:64" json:"nickname"`
+	Avatar        string `gorm:"size:256" json:"avatar"`
+	Uid           string `gorm:"unique;size:64" json:"uid"`
+	IsActivated   bool   `gorm:"default:false" json:"is_activated"`
+	WebAppChannel string `gorm:"size:64" json:"web_app_channel"`
 
 	// 微信开放平台网页应用
 	WxOpenId                 string    `gorm:"index;uniqueIndex:wx_openid_unique;size:64" json:"wx_open_id"`
@@ -26,11 +31,6 @@ type User struct {
 
 	// 微信开放平台UnionId
 	WxUnionId string `gorm:"unique;size:64" json:"wx_union_id"`
-
-	Avatar        string `gorm:"size:256" json:"avatar"`
-	Uid           string `gorm:"unique;size:64" json:"uid"`
-	IsActivated   bool   `gorm:"default:false" json:"is_activated"`
-	WebAppChannel string `gorm:"size:64" json:"web_app_channel"`
 }
 
 func UserUp(db *gorm.DB) error {
