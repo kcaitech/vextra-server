@@ -30,8 +30,9 @@ func Init(config *config.BaseConfiguration) {
 	if err != nil {
 		log.Fatalf("连接数据库失败: %v", err)
 	}
-	//DB = DB.Debug()
 	DB.Logger = DB.Logger.LogMode(logger.Silent)
+	//DB = DB.Debug()
+	//DB.Logger = DB.Logger.LogMode(logger.Info)
 }
 
 type DeletedAt gorm.DeletedAt

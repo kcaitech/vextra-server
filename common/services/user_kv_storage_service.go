@@ -21,7 +21,7 @@ func (s *UserKVStorageService) GetOne(userId int64, key string) (string, error) 
 	var result models.UserKVStorage
 	if s.Get(
 		&result,
-		"deleted_at is null and user_id = ? and key = ?",
+		"user_id = ? and `key` = ?",
 		userId,
 		key,
 	) == nil {
@@ -34,7 +34,7 @@ func (s *UserKVStorageService) SetOne(userId int64, key string, value string) bo
 	var result models.UserKVStorage
 	if s.Get(
 		&result,
-		"deleted_at is null and user_id = ? and key = ?",
+		"user_id = ? and `key` = ?",
 		userId,
 		key,
 	) == nil {

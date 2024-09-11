@@ -59,6 +59,12 @@ func SetUserKVStorage(c *gin.Context) {
 		response.BadRequest(c, "参数错误：key")
 		return
 	}
+	if len(sliceutil.FilterT(func(code string) bool {
+		return req.Key == code
+	}, AllowedKeyList...)) == 0 {
+		response.BadRequest(c, "不允许的key: "+req.Key)
+		return
+	}
 
 	userKVStorageService := services.NewUserKVStorageService()
 	if !userKVStorageService.SetOne(userId, req.Key, req.Value) {

@@ -30,7 +30,7 @@ func (s *OptionsService) GetOne(_type string) (string, error) {
 	return "", errors.New("not found")
 }
 
-func (s *OptionsService) SetOne(_type, detail string) bool {
+func (s *OptionsService) SetOne(_type string, detail string) bool {
 	var result models.Options
 	if s.Get(
 		&result,
