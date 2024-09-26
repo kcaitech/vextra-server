@@ -1,0 +1,24 @@
+version: "3"
+
+services:
+  kcserver:
+    # build:
+    #   context: ../../
+    #   dockerfile: ./Dockerfile
+    image: kcserver:latest
+    container_name: kcserver
+    restart: always
+    environment:
+      TZ: Asia/Shanghai
+    networks:
+      kcserver:
+
+    ports:
+      - "10003:10003"
+    volumes:
+      - ./config/:/app/config/
+      - ./log/:/app/log/
+
+networks:
+  kcserver:
+    external: true
