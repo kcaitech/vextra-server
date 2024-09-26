@@ -1,0 +1,103 @@
+package http
+
+import (
+	"github.com/gin-gonic/gin"
+	// "net/http"
+	"kcaitech.com/kcserver/middlewares"
+	"kcaitech.com/kcserver/common"
+	// "kcaitech.com/kcserver/common/gin/response"
+	// . "kcaitech.com/kcserver/common/gin/reverse_proxy"
+	"strings"
+	controllers "kcaitech.com/kcserver/controllers/document"
+)
+
+func loadDocumentRoutes(api *gin.RouterGroup) {
+	_router := api.Group("/documents")
+
+	router := _router.Group("/")
+	// 拦截一些内部服务
+	suffix := common.ApiVersionPath + "/documents"
+	// router.Use(func(c *gin.Context) {
+	// 	if strings.HasPrefix(c.Request.URL.Path, suffix+"/document_upload") &&
+	// 		strings.HasPrefix(c.Request.URL.Path, suffix+"/resource_upload") {
+	// 		response.Abort(c, http.StatusNotFound, "", nil)
+	// 	}
+	// })
+	// 登陆验证，跳过某些接口（接口内部另行校验）
+	router.Use(middlewares.AuthMiddlewareConn(func(c *gin.Context) bool {
+		return !strings.HasPrefix(c.Request.URL.Path, suffix+"/upload") &&
+			!strings.HasPrefix(c.Request.URL.Path, suffix+"/test/") &&
+			!strings.HasPrefix(c.Request.URL.Path, suffix+"/shares/wx_mp_code")
+	}))
+
+	{
+		router.GET("/document_upload", controllers.UploadDocument)
+		router.GET("/resource_upload", controllers.UploadDocumentResource)
+		router.GET("/access_records", controllers.GetUserDocumentAccessRecordsList)
+		router.DELETE("/access_record", controllers.DeleteUserDocumentAccessRecord)
+		router.GET("/favorites", controllers.GetUserDocumentFavoritesList)
+		router.PUT("/favorites", controllers.SetUserDocumentFavoriteStatus)
+		router.GET("/", controllers.GetUserDocumentList)
+		router.DELETE("/", controllers.DeleteUserDocument)
+		router.PUT("/name", controllers.SetDocumentName)
+		router.GET("/shares", controllers.GetUserDocumentSharesList)
+		router.DELETE("/share", controllers.DeleteUserShare)
+		router.GET("/recycle_bin", controllers.GetUserRecycleBinDocumentList)
+		router.PUT("/recycle_bin", controllers.RestoreUserRecycleBinDocument)
+		router.DELETE("/recycle_bin", controllers.DeleteUserRecycleBinDocument)
+		router.GET("/info", controllers.GetUserDocumentInfo)
+		router.GET("/permission", controllers.GetUserDocumentPerm)
+		router.GET("/access_key", controllers.GetDocumentAccessKey)
+		router.PUT("/shares/set", controllers.SetDocumentShareType)
+		router.GET("/shares/all", controllers.GetDocumentSharesList)
+		router.PUT("/shares", controllers.SetDocumentSharePermission)
+		router.DELETE("/shares", controllers.DeleteDocumentSharePermission)
+		router.POST("/shares/apply", controllers.ApplyDocumentPermission)
+		router.GET("/shares/apply", controllers.GetDocumentPermissionRequestsList)
+		router.POST("/shares/apply/audit", controllers.ReviewDocumentPermissionRequest)
+		router.GET("/shares/wx_mp_code", controllers.GetWxMpCode)
+		router.GET("/comments", controllers.GetDocumentComment)
+		router.POST("/comment", controllers.PostUserComment)
+		router.PUT("/comment", controllers.PutUserComment)
+		router.DELETE("/comment", controllers.DeleteUserComment)
+		router.PUT("/comment/status", controllers.SetUserCommentStatus)
+		router.POST("/copy", controllers.CopyDocument)
+		router.POST("/team", controllers.CreateTeam)
+		router.GET("/team/list", controllers.GetTeamList)
+		router.GET("/team/member/list", controllers.GetTeamMemberList)
+		router.DELETE("/team", controllers.DeleteTeam)
+		router.POST("/team/apply", controllers.ApplyJoinTeam)
+		router.GET("/team/apply", controllers.GetTeamJoinRequestList)
+		router.GET("/team/self_apply", controllers.GetSelfTeamJoinRequestList)
+		router.POST("/team/apply/audit", controllers.ReviewTeamJoinRequest)
+		router.PUT("/team/info", controllers.SetTeamInfo)
+		router.PUT("/team/invited", controllers.SetTeamInvited)
+		router.GET("/team/info/invited", controllers.GetTeamInvitedInfo)
+		router.POST("/team/exit", controllers.ExitTeam)
+		router.PUT("/team/member/perm", controllers.SetTeamMemberPermission)
+		router.PUT("/team/creator", controllers.ChangeTeamCreator)
+		router.DELETE("/team/member", controllers.RemoveTeamMember)
+		router.PUT("/team/member/nickname", controllers.SetTeamMemberNickname)
+		router.POST("/team/project", controllers.CreateProject)
+		router.GET("/team/project/list", controllers.GetProjectList)
+		router.GET("/team/project/member/list", controllers.GetProjectMemberList)
+		router.DELETE("/team/project", controllers.DeleteProject)
+		router.POST("/team/project/apply", controllers.ApplyJoinProject)
+		router.GET("/team/project/apply", controllers.GetProjectJoinRequestList)
+		router.GET("/team/project/self_apply", controllers.GetSelfProjectJoinRequestList)
+		router.POST("/team/project/apply/audit", controllers.ReviewProjectJoinRequest)
+		router.PUT("/team/project/info", controllers.SetProjectInfo)
+		router.PUT("/team/project/invited", controllers.SetProjectInvited)
+		router.GET("/team/project/info/invited", controllers.GetProjectInvitedInfo)
+		router.POST("/team/project/exit", controllers.ExitProject)
+		router.PUT("/team/project/member/perm", controllers.SetProjectMemberPermission)
+		router.PUT("/team/project/creator", controllers.ChangeProjectCreator)
+		router.DELETE("/team/project/member", controllers.RemoveProjectMember)
+		router.PUT("/team/project/favorite", controllers.SetProjectFavorite)
+		router.GET("/team/project/favorite/list", controllers.GetFavorProjectList)
+		router.POST("/team/project/document/move", controllers.MoveDocument)
+		router.POST("/feedback", controllers.PostFeedback)
+		router.POST("/test/001", controllers.CreateTest)
+		router.GET("/storage_auth", controllers.CheckStorageAuth)
+	}
+}

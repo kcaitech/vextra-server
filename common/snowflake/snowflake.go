@@ -2,8 +2,8 @@ package snowflake
 
 import (
 	"log"
-	"protodesign.cn/kcserver/common/snowflake/config"
-	s "protodesign.cn/kcserver/utils/snowflake"
+	"kcaitech.com/kcserver/common/snowflake/config"
+	s "kcaitech.com/kcserver/utils/snowflake"
 )
 
 var snowFlake *s.SnowFlake

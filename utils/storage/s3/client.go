@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/aws/aws-sdk-go/service/sts"
-	"protodesign.cn/kcserver/utils/storage/base"
+	"kcaitech.com/kcserver/utils/storage/base"
 	"strconv"
 	"strings"
 )

@@ -5,7 +5,7 @@ chcp 65001 > nul
 
 set SOURCE_REGISTRY=%1
 set SOURCE_REPOSITORY=%2
-set TARGET_REGISTRY=docker-registry.protodesign.cn:35000
+set TARGET_REGISTRY=docker-registry.kcaitech.com:35000
 set TARGET_REPOSITORY=%3
 if "%SOURCE_REGISTRY%"=="" (
     echo Usage: %0 SOURCE_REGISTRY SOURCE_REPOSITORY [TARGET_REPOSITORY]

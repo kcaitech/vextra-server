@@ -12,9 +12,9 @@
     "http://hub-mirror.c.163.com"
   ],
   "insecure-registries": [
-    "docker-registry.protodesign.cn:35000",
-    "docker-registry.protodesign.cn",
-    "registry.protodesign.cn:36000"
+    "docker-registry.kcaitech.com:35000",
+    "docker-registry.kcaitech.com",
+    "registry.kcaitech.com:36000"
   ],
   "bip": "172.17.0.1/16"
 }

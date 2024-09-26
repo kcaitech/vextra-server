@@ -3,7 +3,7 @@ package storage
 import (
 	"log"
 	"os"
-	"protodesign.cn/kcserver/utils/storage/base"
+	"kcaitech.com/kcserver/utils/storage/base"
 	"testing"
 )
 

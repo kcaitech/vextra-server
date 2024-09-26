@@ -8,9 +8,9 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"net/http"
-	"protodesign.cn/kcserver/common/safereview/base"
-	"protodesign.cn/kcserver/common/safereview/config"
-	"protodesign.cn/kcserver/utils/sliceutil"
+	"kcaitech.com/kcserver/common/safereview/base"
+	"kcaitech.com/kcserver/common/safereview/config"
+	"kcaitech.com/kcserver/utils/sliceutil"
 	"strings"
 )
 

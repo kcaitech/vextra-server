@@ -6,7 +6,7 @@ import (
 	"io"
 	"log"
 	"os"
-	"protodesign.cn/kcserver/common/storage"
+	"kcaitech.com/kcserver/common/storage"
 	"testing"
 	"time"
 )
@@ -37,7 +37,7 @@ func TestReviewText(t *testing.T) {
 func TestReviewPicture(t *testing.T) {
 	response, err := Client.ReviewPictureFromUrl(
 		//"https://img.alicdn.com/tfs/TB1U4r9AeH2gK0jSZJnXXaT1FXa-2880-480.png",
-		"https://storage1.protodesign.cn/0000000000000000000/medias/images.jpg?Expires=1701428203&OSSAccessKeyId=TMP.3KfXnUrcedsEhsiQMh14bseRCk6q8FK58yZ8MMsYiHk3HEYqsBV8mdX2vX4pZtrG2vh69SCCG4ANL2H4e6AaiUnFxpHJey&Signature=7mMlaP2yFut6U52%2FHHEMF3eZfPQ%3D",
+		"https://storage1.kcaitech.com/0000000000000000000/medias/images.jpg?Expires=1701428203&OSSAccessKeyId=TMP.3KfXnUrcedsEhsiQMh14bseRCk6q8FK58yZ8MMsYiHk3HEYqsBV8mdX2vX4pZtrG2vh69SCCG4ANL2H4e6AaiUnFxpHJey&Signature=7mMlaP2yFut6U52%2FHHEMF3eZfPQ%3D",
 	)
 	if err != nil {
 		t.Fatal(err)

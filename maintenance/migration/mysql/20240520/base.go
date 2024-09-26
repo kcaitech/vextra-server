@@ -4,7 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"gorm.io/gorm"
-	myTime "protodesign.cn/kcserver/utils/time"
+	myTime "kcaitech.com/kcserver/utils/time"
 	"time"
 )
 

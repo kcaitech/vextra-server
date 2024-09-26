@@ -8,7 +8,7 @@ import (
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/sts"
 	"github.com/aliyun/aliyun-oss-go-sdk/oss"
 	"net/http"
-	"protodesign.cn/kcserver/utils/storage/base"
+	"kcaitech.com/kcserver/utils/storage/base"
 	"strconv"
 	"strings"
 )

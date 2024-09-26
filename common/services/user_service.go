@@ -3,9 +3,9 @@ package services
 import (
 	"errors"
 	"fmt"
-	"protodesign.cn/kcserver/common/models"
-	"protodesign.cn/kcserver/common/storage"
-	"protodesign.cn/kcserver/utils/str"
+	"kcaitech.com/kcserver/common/models"
+	"kcaitech.com/kcserver/common/storage"
+	"kcaitech.com/kcserver/utils/str"
 )
 
 type UserService struct {

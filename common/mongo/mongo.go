@@ -6,7 +6,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"go.mongodb.org/mongo-driver/mongo/writeconcern"
-	"protodesign.cn/kcserver/common/mongo/config"
+	"kcaitech.com/kcserver/common/mongo/config"
 	"time"
 )
 

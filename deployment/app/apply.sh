@@ -14,7 +14,8 @@ kubectl create ns kc || true
 
 cd "$SERVICE_NAME"
 cp config-template.yaml config.yaml
-mysql_passwd=$(kubectl -n bitnami-mariadb-galera get secret bitnami-mariadb-galera -o jsonpath="{.data.mariadb-root-password}" | base64 -d)
+# mysql_passwd=$(kubectl -n bitnami-mariadb-galera get secret bitnami-mariadb-galera -o jsonpath="{.data.mariadb-root-password}" | base64 -d)
+mysql_passwd='_IpFCT^*pui~Mac7~0%SIicRq@Z6rtzE'
 sed -i "s/\$mysql_passwd/$mysql_passwd/g" config.yaml
 ../update-secret.sh "$SERVICE_NAME-config" config.yaml config.yaml
 cd ../config && ./create-secret.sh

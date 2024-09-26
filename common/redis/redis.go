@@ -4,7 +4,7 @@ import (
 	"github.com/go-redsync/redsync/v4"
 	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
 	"github.com/redis/go-redis/v9"
-	"protodesign.cn/kcserver/common/redis/config"
+	"kcaitech.com/kcserver/common/redis/config"
 )
 
 var Client *redis.Client

@@ -1,4 +1,4 @@
-module protodesign.cn/kcserver/utils
+module kcaitech.com/kcserver/utils
 
 go 1.20
 

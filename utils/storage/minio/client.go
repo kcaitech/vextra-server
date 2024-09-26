@@ -8,7 +8,7 @@ import (
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
 	"log"
-	"protodesign.cn/kcserver/utils/storage/base"
+	"kcaitech.com/kcserver/utils/storage/base"
 	"strconv"
 	"strings"
 )

@@ -1,28 +1,28 @@
 /.idea
-/docker_compose/nginx/kc_home
-/docker_compose/nginx/cert/
-/docker_compose/mysql/data
-/docker_compose/minio/data
-/docker_compose/kafka/data
-/docker_compose/kafka/logs
-/docker_compose/redis/data
+/.VSCodeCounter
+
+/deployment/docker_compose/nginx/kc_home
+/deployment/docker_compose/nginx/cert/
+/deployment/docker_compose/mysql/data
+/deployment/docker_compose/minio/data
+/deployment/docker_compose/kafka/data
+/deployment/docker_compose/kafka/logs
+/deployment/docker_compose/redis/data
+/deployment/docker_compose/mongo/data
 /id_ed25519
 
-/apigateway/log
-/authservice/log
-/userservice/log
-/documentservice/log
+/deployment/localtest/mysql/
+/deployment/localtest/minio/
+/deployment/localtest/redis/
+/deployment/localtest/mongodb/
+
+/log
 
 **/go.sum
 
 /deployment/devops/ssh-port-forward-internal/ssh_pids.txt
-/deployment/app/docop-server/passwd
-/deployment/app/docop-server/passwd-minio
 /deployment/app/config/jwt-config.yaml
 /deployment/app/config/storage-config.yaml
 /deployment/app/config/safereview-config.yaml
 
-**/config_test.yaml
 
-/maintenance/migration/mysql/config/config.yaml
-/common/safereview/test_image_0.jpg

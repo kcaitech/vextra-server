@@ -1,10 +1,10 @@
-module protodesign.cn/kcserver/orm
+module kcaitech.com/kcserver/orm
 
 go 1.20
 
 require (
 	github.com/go-sql-driver/mysql v1.7.1
-	protodesign.cn/kcserver/utils v0.0.0
+	kcaitech.com/kcserver/utils v0.0.0
 )
 
-replace protodesign.cn/kcserver/utils => ../utils
+replace kcaitech.com/kcserver/utils => ../utils

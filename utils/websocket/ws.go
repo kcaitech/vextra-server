@@ -5,7 +5,7 @@ import (
 	gws "github.com/gorilla/websocket"
 	"io"
 	"net/http"
-	"protodesign.cn/kcserver/utils/str"
+	"kcaitech.com/kcserver/utils/str"
 	"strings"
 	"sync"
 )

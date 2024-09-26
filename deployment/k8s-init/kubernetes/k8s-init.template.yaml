@@ -64,9 +64,9 @@ apiServer:
     - kubernetes.default.svc.cluster.local
     - localhost
     - 127.0.0.1
-    - protodesign.cn
-    - www.protodesign.cn
-    - api.protodesign.cn
-    - test.protodesign.cn
+    - kcaitech.com
+    - www.kcaitech.com
+    - api.kcaitech.com
+    - test.kcaitech.com
     - $apiserver_domain
     - $apiserver_ip

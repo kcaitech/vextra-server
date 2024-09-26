@@ -3,8 +3,8 @@ package start
 import (
 	"github.com/gin-gonic/gin"
 	"log"
-	. "protodesign.cn/kcserver/common/config"
-	"protodesign.cn/kcserver/common/gin/middlewares"
+	. "kcaitech.com/kcserver/common/config"
+	"kcaitech.com/kcserver/common/gin/middlewares"
 )
 
 func Run(config *BaseConfiguration, afterInit func(router *gin.Engine)) {

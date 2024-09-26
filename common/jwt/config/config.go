@@ -1,7 +1,7 @@
 package config
 
 import (
-	"protodesign.cn/kcserver/common/config"
+	"kcaitech.com/kcserver/common/config"
 )
 
 type Configuration struct {

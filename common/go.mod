@@ -1,4 +1,4 @@
-module protodesign.cn/kcserver/common
+module kcaitech.com/kcserver/common
 
 go 1.20
 
@@ -63,7 +63,7 @@ require (
 	github.com/redis/go-redis/v9 v9.0.5
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/mysql v1.5.0
-	protodesign.cn/kcserver/utils v0.0.0
+	kcaitech.com/kcserver/utils v0.0.0
 )
 
 require (
@@ -88,4 +88,4 @@ require (
 	golang.org/x/time v0.3.0 // indirect
 )
 
-replace protodesign.cn/kcserver/utils => ../utils
+replace kcaitech.com/kcserver/utils => ../utils

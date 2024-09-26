@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"net/http/httputil"
 	"net/url"
-	"protodesign.cn/kcserver/common/gin/response"
+	"kcaitech.com/kcserver/common/gin/response"
 )
 
 func NewReverseProxyHandler(targetURLStr string) func(*gin.Context) {

@@ -2,10 +2,10 @@ package storage
 
 import (
 	"errors"
-	"protodesign.cn/kcserver/utils/storage/base"
-	"protodesign.cn/kcserver/utils/storage/minio"
-	"protodesign.cn/kcserver/utils/storage/oss"
-	"protodesign.cn/kcserver/utils/storage/s3"
+	"kcaitech.com/kcserver/utils/storage/base"
+	"kcaitech.com/kcserver/utils/storage/minio"
+	"kcaitech.com/kcserver/utils/storage/oss"
+	"kcaitech.com/kcserver/utils/storage/s3"
 )
 
 func NewClient(config *base.ClientConfig) (base.Client, error) {

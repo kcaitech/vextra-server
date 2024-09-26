@@ -1,0 +1,17 @@
+version: "3"
+
+services:
+  redis:
+    container_name: redis-v1.0.1
+    image: "redis:alpine"
+    restart: always
+    volumes:
+      - "./data:/data"
+    networks:
+      - redis_net_1
+    command: redis-server --appendonly yes
+
+
+networks:
+  redis_net_1:
+    external: true

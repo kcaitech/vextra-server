@@ -2,10 +2,10 @@ package safereview
 
 import (
 	"errors"
-	"protodesign.cn/kcserver/common/safereview/ali"
-	"protodesign.cn/kcserver/common/safereview/baidu"
-	"protodesign.cn/kcserver/common/safereview/base"
-	"protodesign.cn/kcserver/common/safereview/config"
+	"kcaitech.com/kcserver/common/safereview/ali"
+	"kcaitech.com/kcserver/common/safereview/baidu"
+	"kcaitech.com/kcserver/common/safereview/base"
+	"kcaitech.com/kcserver/common/safereview/config"
 )
 
 var Client base.Client

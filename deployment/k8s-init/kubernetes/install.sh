@@ -120,9 +120,9 @@ fi
 
 # 获取docker-registry的域名和IP
 echo "请输入docker-registry的endpoint信息"
-read -r -p "域名（registry.protodesign.cn）：" registry_domain
+read -r -p "域名（registry.kcaitech.com）：" registry_domain
 if [[ "$registry_domain" == "" ]]; then
-  registry_domain="registry.protodesign.cn"
+  registry_domain="registry.kcaitech.com"
 fi
 read -r -p "IP（同一网段可只输入最后一个数字）（121.199.25.192）：" registry_ip
 if [[ "$registry_ip" == "" ]]; then
@@ -175,8 +175,8 @@ awk '/\[plugins\."io\.containerd\.grpc\.v1\.cri"\.registry\.mirrors\]/ {
   prefix = substr($0, 1, indent);  # 提取行前的空白字符
   print prefix "  [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"docker.io\"]";
   print prefix "    endpoint = [\"https://jsoixv4u.mirror.aliyuncs.com\", \"https://registry-1.docker.io\"]";
-  print prefix "  [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"registry.protodesign.cn:36000\"]";
-  print prefix "    endpoint = [\"http://registry.protodesign.cn:36000\"]";
+  print prefix "  [plugins.\"io.containerd.grpc.v1.cri\".registry.mirrors.\"registry.kcaitech.com:36000\"]";
+  print prefix "    endpoint = [\"http://registry.kcaitech.com:36000\"]";
   next;
 }
 1' /etc/containerd/config.toml > /etc/containerd/config.toml.tmp && mv /etc/containerd/config.toml.tmp /etc/containerd/config.toml

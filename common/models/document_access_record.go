@@ -1,6 +1,6 @@
 package models
 
-import "protodesign.cn/kcserver/utils/time"
+import "kcaitech.com/kcserver/utils/time"
 
 // DocumentAccessRecord 文档访问记录
 type DocumentAccessRecord struct {

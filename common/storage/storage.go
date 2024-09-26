@@ -2,9 +2,9 @@ package storage
 
 import (
 	"errors"
-	"protodesign.cn/kcserver/common/storage/config"
-	"protodesign.cn/kcserver/utils/storage"
-	"protodesign.cn/kcserver/utils/storage/base"
+	"kcaitech.com/kcserver/common/storage/config"
+	"kcaitech.com/kcserver/utils/storage"
+	"kcaitech.com/kcserver/utils/storage/base"
 )
 
 var Client base.Client

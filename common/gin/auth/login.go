@@ -2,10 +2,10 @@ package auth
 
 import (
 	"github.com/gin-gonic/gin"
-	. "protodesign.cn/kcserver/common/jwt"
-	"protodesign.cn/kcserver/common/models"
-	"protodesign.cn/kcserver/common/services"
-	"protodesign.cn/kcserver/utils/str"
+	. "kcaitech.com/kcserver/common/jwt"
+	"kcaitech.com/kcserver/common/models"
+	"kcaitech.com/kcserver/common/services"
+	"kcaitech.com/kcserver/utils/str"
 )
 
 func GetJwt(c *gin.Context) string {

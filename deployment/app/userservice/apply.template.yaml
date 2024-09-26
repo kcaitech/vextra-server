@@ -22,7 +22,7 @@ spec:
           env:
             - name: TZ
               value: "Asia/Shanghai"
-          image: "registry.protodesign.cn:36000/kcserver/userservice:$version_tag"
+          image: "registry.kcaitech.com:36000/kcserver/userservice:$version_tag"
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 10002

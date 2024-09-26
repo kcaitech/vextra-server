@@ -17,7 +17,7 @@ kubectl -n docker-registry create secret generic docker-registry-auth-secret \
 kubectl apply -f docker-registry-apply.yaml
 
 # 安装docker-registry-ui
-docker_registry_ip=$(nslookup docker-registry.protodesign.cn | grep Address | tail -1 | awk '{print $2}')
+docker_registry_ip=$(nslookup docker-registry.kcaitech.com | grep Address | tail -1 | awk '{print $2}')
 echo "docker_registry_ip: $docker_registry_ip"
 cp docker-registry-ui-apply-template.yaml docker-registry-ui-apply.yaml
 sed -i "s/\$docker_registry_ip/$docker_registry_ip/g" docker-registry-ui-apply.yaml

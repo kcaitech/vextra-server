@@ -4,7 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
-	"protodesign.cn/kcserver/common/gin/response"
+	"kcaitech.com/kcserver/common/gin/response"
 )
 
 func ErrorHandler() gin.HandlerFunc {

@@ -1,7 +1,7 @@
 package models
 
 import (
-	"protodesign.cn/kcserver/utils/time"
+	"kcaitech.com/kcserver/utils/time"
 )
 
 // AppVersion App版本

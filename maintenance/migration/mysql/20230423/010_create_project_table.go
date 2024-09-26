@@ -2,7 +2,7 @@ package main
 
 import (
 	"gorm.io/gorm"
-	"protodesign.cn/kcserver/utils/time"
+	"kcaitech.com/kcserver/utils/time"
 )
 
 type ProjectPermType uint8

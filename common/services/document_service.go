@@ -2,11 +2,11 @@ package services
 
 import (
 	"errors"
-	"protodesign.cn/kcserver/common"
-	"protodesign.cn/kcserver/common/models"
-	"protodesign.cn/kcserver/utils/math"
-	"protodesign.cn/kcserver/utils/sliceutil"
-	"protodesign.cn/kcserver/utils/time"
+	"kcaitech.com/kcserver/common"
+	"kcaitech.com/kcserver/common/models"
+	"kcaitech.com/kcserver/utils/math"
+	"kcaitech.com/kcserver/utils/sliceutil"
+	"kcaitech.com/kcserver/utils/time"
 	"strings"
 )
 

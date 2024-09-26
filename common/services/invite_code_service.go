@@ -1,7 +1,7 @@
 package services
 
 import (
-	"protodesign.cn/kcserver/common/models"
+	"kcaitech.com/kcserver/common/models"
 )
 
 type InviteCodeService struct {

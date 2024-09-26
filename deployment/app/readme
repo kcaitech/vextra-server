@@ -2,7 +2,7 @@
 find . -type f -name "*.sh" -exec chmod +x {} \;
 
 # 创建docker-registry访问密钥（k8s）
-./create-docker-registry-auth.sh
+./create-service-account.sh
 
 # servicename取值：apigateway authservice userservice documentservice
 

@@ -2,7 +2,7 @@ package services
 
 import (
 	"errors"
-	"protodesign.cn/kcserver/common/models"
+	"kcaitech.com/kcserver/common/models"
 )
 
 type UserKVStorageService struct {

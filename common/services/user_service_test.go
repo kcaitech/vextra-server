@@ -2,9 +2,9 @@ package services
 
 import (
 	"log"
-	"protodesign.cn/kcserver/common/config"
-	"protodesign.cn/kcserver/common/models"
-	"protodesign.cn/kcserver/common/snowflake"
+	"kcaitech.com/kcserver/common/config"
+	"kcaitech.com/kcserver/common/models"
+	"kcaitech.com/kcserver/common/snowflake"
 	"testing"
 )
 

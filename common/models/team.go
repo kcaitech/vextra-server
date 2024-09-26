@@ -1,6 +1,6 @@
 package models
 
-import "protodesign.cn/kcserver/utils/time"
+import "kcaitech.com/kcserver/utils/time"
 
 type TeamPermType uint8
 

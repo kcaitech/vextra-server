@@ -3,8 +3,8 @@ package jwt
 import (
 	"encoding/json"
 	"errors"
-	"protodesign.cn/kcserver/common/jwt/config"
-	"protodesign.cn/kcserver/utils/jwt"
+	"kcaitech.com/kcserver/common/jwt/config"
+	"kcaitech.com/kcserver/utils/jwt"
 	"strings"
 	"time"
 )

@@ -2,7 +2,7 @@ package services
 
 import (
 	"log"
-	"protodesign.cn/kcserver/utils/sliceutil"
+	"kcaitech.com/kcserver/utils/sliceutil"
 	"testing"
 )
 
