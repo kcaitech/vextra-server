@@ -15,21 +15,21 @@ import (
 	"kcaitech.com/kcserver/common/snowflake"
 )
 
-func Init() {
+func Init() *config.Configuration {
 
 	configDir := "config/"
 	conf := config.LoadConfig(configDir + "config.yaml")
 
-	jwtConfig = configDir + conf.Jwt.Ref
-	snowflakeConfig = configDir + conf.Snowflake.Ref
-	storageConfig = configDir + conf.Storage.Ref
-	mongoConfig = configDir + conf.MongoDb.Ref
-	redisConfig = configDir + conf.Redis.Ref
-	safereviewConfig = configDir + conf.SafeReiew.Ref
+	jwtConfig := configDir + conf.Jwt.Ref
+	snowflakeConfig := configDir + conf.Snowflake.Ref
+	storageConfig := configDir + conf.Storage.Ref
+	mongoConfig := configDir + conf.MongoDb.Ref
+	redisConfig := configDir + conf.Redis.Ref
+	safereviewConfig := configDir + conf.SafeReiew.Ref
 
 	jwt.Init(jwtConfig)
 	snowflake.Init(snowflakeConfig)
-	models.Init(conf.BaseConfiguration)
+	models.Init(&conf.BaseConfiguration)
 
 	if err := storage.Init(storageConfig); err != nil {
 		log.Fatalln("storage init fail:" + err.Error())
@@ -43,12 +43,13 @@ func Init() {
 	if err := safereview.Init(safereviewConfig); err != nil {
 		log.Fatalln("safereview init fail:" + err.Error())
 	}
+
+	return conf
 }
 
 func main() {
-	Init()
-	conf := &config.Config.BaseConfiguration
-	start.Run(conf, func(router *gin.Engine) {
+	conf := Init()
+	start.Run(&conf.BaseConfiguration, func(router *gin.Engine) {
 		httpApi.LoadRoutes(router)
 	})
 }

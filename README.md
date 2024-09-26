@@ -1,55 +1,27 @@
 # kcserver
 
-kcserver是一个使用Golang开发的微服务应用，其中包含以下微服务：
+## 模块介绍
+middlewares，鉴权中间件等
+api，对外服务api
+config，服务相关配置
+controllers，业务代码
 
-- apigateway：API网关，用于接收和分发HTTP请求，并提供负载均衡、鉴权等功能。
-- authservice：登录模块，处理用户登录验证和授权。
-- userservice：用户模块，提供用户信息管理服务。
-
-## 架构设计
-
-整个应用采用微服务架构设计，每个微服务之间独立运作，通过gRPC实现服务之间的数据交互。
-
-以下是各个微服务的功能介绍：
-
-### API网关
-
-API网关作为整个系统的入口，负责接收所有的HTTP请求，并将请求转发给对应的微服务处理。API网关还负责负载均衡、鉴权、请求限流等任务。
-
-### 登录模块
-
-登录模块用于处理用户的登录验证和授权。用户在登录时，登录模块将验证用户身份，并生成对应的授权Token。Token将作为后续所有请求的身份凭证，确保用户的访问权限。
-
-### 用户模块
-
-用户模块提供用户信息的相关服务。
-
-## 使用说明
-
-各个微服务都可以独立编译和部署，使用时需要分别启动各个微服务，并配置好对应的参数，配置文件：config/config.yaml。
-
-### API网关
-
-API网关需要配置以下参数：
-
+### config
 - `server.port`：服务监听的端口
 - `db.dsn`：数据库连接串
 
-### 登录模块
 
-登录模块需要配置以下参数：
+# TODO
+1. 前端先不使用communication上传文档及资源
+2. 本地环境搭建
+3. 本地mock redis,mongo,mysql,safereview
+4. test
+5. 多版本灰度上线
+6. 实现ws的router，重构communication
+7. 前后端接口模块，schema生成ts及go
 
-- `server.port`：服务监听的端口
-- `db.dsn`：数据库连接串
 
-### 用户模块
-
-用户模块需要配置以下参数：
-
-- `server.port`：服务监听的端口
-- `db.dsn`：数据库连接串
-
-## 开发说明
-
-1. 克隆代码到本地。
-2. 分别进入各个微服务的文件夹，执行`docker-compose up -d`启动各个微服务。
+## 构建
+docker pull golang:1.22-alpine
+docker pull alpine:3.17
+docker build  -t kcserver:latest  .

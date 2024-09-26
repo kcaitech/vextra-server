@@ -31,9 +31,8 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 	}))
 
 	{
-		// 这两个现在走communication
-		// router.GET("/document_upload", controllers.UploadDocument)
-		// router.GET("/resource_upload", controllers.UploadDocumentResource)
+		router.GET("/document_upload", controllers.UploadDocument)
+		router.GET("/resource_upload", controllers.UploadDocumentResource)
 		router.GET("/access_records", controllers.GetUserDocumentAccessRecordsList)
 		router.DELETE("/access_record", controllers.DeleteUserDocumentAccessRecord)
 		router.GET("/favorites", controllers.GetUserDocumentFavoritesList)

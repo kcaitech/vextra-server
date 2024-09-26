@@ -208,12 +208,12 @@ func Communication(c *gin.Context) {
 			switch clientCmd.TunnelType {
 			case TunnelTypeDocOp:
 				tunnel = OpenDocOpTunnel(ws, clientCmdData, serverCmd, Data{"userId": userId})
-			case TunnelTypeDocResourceUpload:
-				tunnel = OpenDocResourceUploadTunnel(ws, clientCmdData, serverCmd, Data{"userId": userId})
+			// case TunnelTypeDocResourceUpload:
+			// 	tunnel = OpenDocResourceUploadTunnel(ws, clientCmdData, serverCmd, Data{"userId": userId})
 			case TunnelTypeDocCommentOp:
 				tunnel = OpenDocCommentOpTunnel(ws, clientCmdData, serverCmd, Data{"userId": userId})
-			case TunnelTypeDocUpload:
-				tunnel = OpenDocUploadTunnel(ws, clientCmdData, serverCmd, Data{"userId": userId})
+			// case TunnelTypeDocUpload:
+			// 	tunnel = OpenDocUploadTunnel(ws, clientCmdData, serverCmd, Data{"userId": userId})
 			case TunnelTypeDocSelectionOp:
 				tunnel = OpenDocSelectionOpTunnel(ws, clientCmdData, serverCmd, Data{"userId": userId})
 			default:
