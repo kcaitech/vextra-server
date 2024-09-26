@@ -2,7 +2,7 @@ server:
   port: "10003"
 
 db:
-#  dsn: "root:_IpFCT^*pui~Mac7~0%SIicRq@Z6rtzE@tcp(db_1:3306)/kcserver?charset=utf8&parseTime=True&loc=Local"
+  #  dsn: "root:_IpFCT^*pui~Mac7~0%SIicRq@Z6rtzE@tcp(db_1:3306)/kcserver?charset=utf8&parseTime=True&loc=Local"
   dsn: "root:_IpFCT^*pui~Mac7~0%SIicRq@Z6rtzE@tcp(192.168.0.18:33306)/kcserver?charset=utf8&parseTime=True&loc=Local"
 
 wx:
@@ -15,3 +15,21 @@ wxMp:
 
 documentVersionServer:
   host: "doc-versioning-service.kc.svc.cluster.local:10040"
+
+jwt:
+  ref: "jwt.yaml"
+
+mongodb:
+  ref: "mongodb.yaml"
+
+redis:
+  ref: "redis.yaml"
+
+saferview:
+  ref: "saferview.yaml"
+
+snowflake:
+  ref: "snowflake.yaml"
+
+storage:
+  ref: "storage.yaml"

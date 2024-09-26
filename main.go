@@ -17,23 +17,30 @@ import (
 
 func Init() {
 
-	jwt.Init("config/jwt.yaml")
+	configDir := "config/"
+	conf := config.LoadConfig(configDir + "config.yaml")
 
-	snowflake.Init("config/snowflake.yaml")
+	jwtConfig = configDir + conf.Jwt.Ref
+	snowflakeConfig = configDir + conf.Snowflake.Ref
+	storageConfig = configDir + conf.Storage.Ref
+	mongoConfig = configDir + conf.MongoDb.Ref
+	redisConfig = configDir + conf.Redis.Ref
+	safereviewConfig = configDir + conf.SafeReiew.Ref
 
-	conf := &config.LoadConfig("config/config.yaml").BaseConfiguration
-	models.Init(conf)
+	jwt.Init(jwtConfig)
+	snowflake.Init(snowflakeConfig)
+	models.Init(conf.BaseConfiguration)
 
-	if err := storage.Init("config/storage.yaml"); err != nil {
+	if err := storage.Init(storageConfig); err != nil {
 		log.Fatalln("storage init fail:" + err.Error())
 	}
-	if err := mongo.Init("config/mongodb.yaml"); err != nil {
+	if err := mongo.Init(mongoConfig); err != nil {
 		log.Fatalln("mongo init fail:" + err.Error())
 	}
-	if err := redis.Init("config/redis.yaml"); err != nil {
+	if err := redis.Init(redisConfig); err != nil {
 		log.Fatalln("redis init fail:" + err.Error())
 	}
-	if err := safereview.Init("config/safereview.yaml"); err != nil {
+	if err := safereview.Init(safereviewConfig); err != nil {
 		log.Fatalln("safereview init fail:" + err.Error())
 	}
 }

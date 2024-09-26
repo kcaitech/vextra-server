@@ -17,6 +17,24 @@ type Configuration struct {
 	DocumentVersionServer struct {
 		Host string `yaml:"host"`
 	} `yaml:"documentVersionServer"`
+	Jwt struct {
+		Ref string `yaml:"ref"`
+	} `yaml:"jwt"`
+	MongoDb struct {
+		Ref string `yaml:"ref"`
+	} `yaml:"mongodb"`
+	Redis struct {
+		Ref string `yaml:"ref"`
+	} `yaml:"redis"`
+	SafeReiew struct {
+		Ref string `yaml:"ref"`
+	} `yaml:"safereview"`
+	Snowflake struct {
+		Ref string `yaml:"ref"`
+	} `yaml:"snowflake"`
+	Storage struct {
+		Ref string `yaml:"ref"`
+	} `yaml:"storage"`
 }
 
 var Config Configuration
