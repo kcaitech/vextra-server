@@ -11,7 +11,7 @@
 /deployment/docker_compose/mongo/data
 /id_ed25519
 
-/deployment/localtest/mysql/
+/deployment/localtest/mysql/data/
 /deployment/localtest/minio/
 /deployment/localtest/redis/
 /deployment/localtest/mongodb/

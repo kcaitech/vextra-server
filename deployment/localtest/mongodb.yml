@@ -1,4 +1,3 @@
-version: '3'
 
 services:
   mongo:
@@ -12,7 +11,7 @@ services:
     environment:
       TZ: Asia/Shanghai
       MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: "_IpFCT^*pui~Mac7~0%SIicRq@Z6rtzE"
+      MONGO_INITDB_ROOT_PASSWORD: jKKsinkjilKKLSW
     volumes:
       - ./mongodb:/data/db
 

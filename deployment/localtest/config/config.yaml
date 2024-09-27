@@ -3,7 +3,7 @@ server:
 
 db:
   #  dsn: "root:_IpFCT^*pui~Mac7~0%SIicRq@Z6rtzE@tcp(db_1:3306)/kcserver?charset=utf8&parseTime=True&loc=Local"
-  dsn: "root:_IpFCT^*pui~Mac7~0%SIicRq@Z6rtzE@tcp(mysql:33060)/kcserver?charset=utf8&parseTime=True&loc=Local"
+  dsn: "root:_IpFCT^*pui~Mac7~0%SIicRq@Z6rtzE@tcp(mysql:3306)/kcserver?charset=utf8&parseTime=True&loc=Local"
 
 wx:
   appid: "xxx"
@@ -25,8 +25,8 @@ mongodb:
 redis:
   ref: "redis.yaml"
 
-saferview:
-  ref: "saferview.yaml"
+safereview:
+  ref: "safereview.yaml"
 
 snowflake:
   ref: "snowflake.yaml"

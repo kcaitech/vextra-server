@@ -25,8 +25,8 @@ mongodb:
 redis:
   ref: "redis.yaml"
 
-saferview:
-  ref: "saferview.yaml"
+safereview:
+  ref: "safereview.yaml"
 
 snowflake:
   ref: "snowflake.yaml"

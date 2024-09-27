@@ -25,3 +25,10 @@ controllers，业务代码
 docker pull golang:1.22-alpine
 docker pull alpine:3.17
 docker build  -t kcserver:latest  .
+
+
+
+## go编辑慢
+go env #查看GOPROXY=https://proxy.golang.org,direct换成国内的其中一个
+go env -w  GOPROXY=https://goproxy.cn,direct
+go env -w GOPROXY=https://mirrors.aliyun.com/goproxy/,direct
