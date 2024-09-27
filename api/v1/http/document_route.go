@@ -25,9 +25,9 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 	// })
 	// 登陆验证，跳过某些接口（接口内部另行校验）
 	router.Use(middlewares.AuthMiddlewareConn(func(c *gin.Context) bool {
-		return !strings.HasPrefix(c.Request.URL.Path, suffix+"/upload") &&
-			!strings.HasPrefix(c.Request.URL.Path, suffix+"/test/") &&
-			!strings.HasPrefix(c.Request.URL.Path, suffix+"/shares/wx_mp_code")
+		// return !strings.HasPrefix(c.Request.URL.Path, suffix+"/upload") &&
+			return !strings.HasPrefix(c.Request.URL.Path, suffix+"/test/") &&
+			!strings.HasPrefix(c.Request.URL.Path, suffix+"/shares/wx_mp_code") // 这应该放到app里
 	}))
 
 	{
