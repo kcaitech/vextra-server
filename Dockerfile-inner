@@ -1,4 +1,4 @@
-FROM golang:1.22-alpine AS builder
+FROM golang:1.22-alpine as builder
 # FROM kcserver-builder_image:latest as builder
 
 ENV GO111MODULE=on \
@@ -18,9 +18,9 @@ RUN rm -rf ./*
 COPY ./ .
 COPY ./utils ./utils
 COPY ./common ./common
-RUN go mod download && go mod tidy -v && go build -ldflags "-s -w" -o kcserver ./main.go
+RUN go mod download && go mod tidy -v && go build -ldflags "-s -w" -o kcserver ./innerserver.go
 
-FROM alpine:3.17 AS runner
+FROM alpine:3.17 as runner
 WORKDIR /app
 COPY --from=builder /app/kcserver/ /app/
 # COPY --from=builder /app/kcserver/src/config /app/config/
@@ -29,4 +29,4 @@ COPY --from=builder /usr/share/zoneinfo/Asia/Shanghai /etc/localtime/
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 RUN mkdir -p /app/log && touch /app/log/all.log
-CMD [/app/kcserver | tee /app/log/all.log 2>&1]
+CMD /app/kcserver | tee /app/log/all.log 2>&1
