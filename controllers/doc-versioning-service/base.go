@@ -1,17 +1,18 @@
 package doc_versioning_service
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"github.com/go-redsync/redsync/v4"
 	"io"
 	"log"
 	"net/http"
+	"time"
+
+	"github.com/go-redsync/redsync/v4"
 	"kcaitech.com/kcserver/common/redis"
 	"kcaitech.com/kcserver/utils/my_map"
 	"kcaitech.com/kcserver/utils/str"
-	"time"
+
 	// "kcaitech.com/kcserver/common"
 	config "kcaitech.com/kcserver/controllers"
 )
@@ -35,6 +36,37 @@ func getDocumentLastUpdateTimeFromRedis(documentId int64) time.Time {
 
 var docVersioningServiceUrl = config.Config.DocumentVersionServer.Host
 var generateApiUrl = "http://" + docVersioningServiceUrl + "/generate"
+
+// body: { documentInfo: DocumentInfo, lastCmdId: string, documentData: ExFromJson, documentText: string, mediasSize: number, pageImageBase64List: string[] }
+
+type DocumentInfo struct {
+	DocumentId string `json:"id"`
+	Path       string `json:"path"`
+	VersionId  string `json:"version_id"`
+	LastCmdId  string `json:"last_cmd_id"`
+}
+
+type Data map[string]any
+
+type ExFromJson struct {
+	DocumentMeta Data            `json:"document_meta"`
+	Pages        json.RawMessage `json:"pages"`
+	MediaNames   []string        `json:"media_names"`
+
+	// FreeSymbols         json.RawMessage `json:"freesymbols"` // 这个在DocumentMeta里
+	// MediasSize          uint64          `json:"medias_size"`
+	// DocumentText        string          `json:"document_text"`
+	// PageImageBase64List []string        `json:"page_image_base64_list"`
+}
+
+type VersionResp struct {
+	DocumentInfo        DocumentInfo `json:"documentInfo"`
+	LastCmdId           string       `json:"lastCmdId"`
+	DocumentData        ExFromJson   `json:"documentData"`
+	DocumentText        string       `json:"documentText"`
+	MediasSize          uint64       `json:"mediasSize"`
+	PageImageBase64List []string     `json:"pageImageBase64List"`
+}
 
 func Trigger(documentId int64) {
 	info, ok := documentVersioningInfoMap.Get(documentId)
@@ -74,27 +106,20 @@ func Trigger(documentId int64) {
 	defer func() {
 		info.LastUpdateTime = time.Now()
 	}()
-	requestData := map[string]any{
-		"documentId": documentIdStr,
-	}
-	jsonData, err := json.Marshal(requestData)
-	if err != nil {
-		return
-	}
+	// requestData := map[string]any{
+	// 	"documentId": documentIdStr,
+	// }
+	// jsonData, err := json.Marshal(requestData)
+	// if err != nil {
+	// 	return
+	// }
 	// 构建请求
-	req, err := http.NewRequest("POST", generateApiUrl, bytes.NewBuffer(jsonData))
+	resp, err := http.Get(generateApiUrl + "?documentId=" + documentIdStr)
 	if err != nil {
 		log.Println(generateApiUrl, "http.NewRequest err", err)
 		return
 	}
-	req.Header.Set("Content-Type", "application/json")
-	// 发起请求
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Println(generateApiUrl, "client.Do err", err)
-		return
-	}
+
 	defer resp.Body.Close()
 	// 读取响应
 	body, err := io.ReadAll(resp.Body)
@@ -104,7 +129,18 @@ func Trigger(documentId int64) {
 	}
 	if resp.StatusCode != 200 || string(body) != "success" {
 		log.Println(generateApiUrl, "请求失败", resp.StatusCode, string(body))
+		return
 	}
+
+	version := VersionResp{}
+	err = json.Unmarshal(body, &version)
+	if err != nil {
+		log.Println(generateApiUrl, "resp", err)
+		return
+	}
+
+	// upload
+
 	// 更新redis
 	if _, err := redis.Client.Set(context.Background(), "Document Versioning LastUpdateTime[DocumentId:"+documentIdStr+"]", time.Now().UnixMilli(), time.Hour*1).Result(); err != nil {
 		log.Println("redis.Client.Set err", err)
