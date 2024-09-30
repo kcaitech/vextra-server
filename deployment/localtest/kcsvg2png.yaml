@@ -1,0 +1,22 @@
+
+services:
+  kcsvg2png:
+    # build:
+    #   context: ../../
+    #   dockerfile: ./Dockerfile
+    image: kcsvg2png:0.1.0
+    container_name: kcsvg2png
+    restart: always
+    environment:
+      TZ: Asia/Shanghai
+    networks:
+      kcserver:
+
+    # ports:
+    #   - "10003:10003"
+    volumes:
+      - ./kcsvg2png/log/:/app/log/
+
+networks:
+  kcserver:
+    external: true

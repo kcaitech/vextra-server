@@ -1,0 +1,23 @@
+{
+    "mysql": {
+        "host": "mysql",
+        "port": 3306,
+        "user": "root",
+        "password": "kKEIjksvnOOIjdZ6rtzE",
+        "database": "kcserver"
+    },
+    "mongodb": {
+        "url": "mongodb://root:jKKsinkjilKKLSW@mongo:27017"
+    },
+    "storage": {
+        "type": "s3",
+        "endPoint": "minio:9000",
+        "region": "zhuhai-1",
+        "accessKeyId": "Gathooh88mba5H3y2",
+        "secretAccessKey": "yFukp3vtIkUNck2XL3s2KOT4wyRPR71G2",
+        "bucketName": "document",
+        "filesBucketName": "files"
+    },
+    "min_cmd_count": 100,
+    "port": 10040
+}

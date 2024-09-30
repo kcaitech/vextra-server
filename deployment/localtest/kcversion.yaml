@@ -1,22 +1,22 @@
 
 services:
-  kcserver:
+  kcversion:
     # build:
     #   context: ../../
     #   dockerfile: ./Dockerfile
-    image: kcserver:latest
-    container_name: kcserver
+    image: kcversion:0.1.0
+    container_name: kcversion
     restart: always
     environment:
       TZ: Asia/Shanghai
     networks:
       kcserver:
 
-    ports:
-      - "10003:10003"
+    # ports:
+    #   - "10003:10003"
     volumes:
-      - ./config/:/app/config/
-      - ./log/:/app/log/
+      - ./kcversion/config/:/app/config/
+      - ./kcversion/log/:/app/log/
 
 networks:
   kcserver:

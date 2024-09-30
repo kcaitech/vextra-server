@@ -16,7 +16,7 @@ services:
 #      --bind-address=0.0.0.0
     environment:
       - TZ=Asia/Shanghai
-      - MYSQL_ROOT_PASSWORD=_IpFCT^*pui~Mac7~0%SIicRq@Z6rtzE
+      - MYSQL_ROOT_PASSWORD=kKEIjksvnOOIjdZ6rtzE
       - LANG=C.UTF-8
     volumes:
 #      - /etc/localtime:/etc/localtime
