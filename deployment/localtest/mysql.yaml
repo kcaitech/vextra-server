@@ -1,6 +1,6 @@
 
 services:
-  db_1:
+  mysql:
     image: mysql:8.0.32
     container_name: mysql
     networks:
