@@ -1,0 +1,77 @@
+{
+    "port": "10003",
+    "db_dsn": "root:_IpFCT^*pui~Mac7~0%SIicRq@Z6rtzE@tcp(192.168.0.18:33306)/kcserver?charset=utf8&parseTime=True&loc=Local",
+    "wx": {
+        "appid": "xxx",
+        "secret": "xxx"
+    },
+    "wxMp": {
+        "appid": "xxx",
+        "secret": "xxx"
+    },
+    "version_server": "doc-versioning-service.kc.svc.cluster.local:10040",
+    "jwt": {
+        "secret": "123456",
+        "expire_hour": 168
+    },
+    "mongodb": {
+        "uri": "mongodb://root:kcai1212@192.168.0.18:27017",
+        "db": "kcserver"
+    },
+    "redis": {
+        "addr": "192.168.0.18:6379",
+        "password": "kcserver",
+        "db": 0
+    },
+    "safe_review": {
+        "provider": "baidu",
+        "ali": {
+            "accessKeyId": "accessKeyId",
+            "accessKeySecret": "accessKeySecret",
+            "regionId": "cn-hangzhou",
+            "endpoint": "green-cip.cn-hangzhou.aliyuncs.com"
+        },
+        "baidu": {
+            "appId": "44042444",
+            "apiKey": "skYZWZolIBpo4j4olXzNRUKD",
+            "secretKey": "H5KUEgVaO08I3tDPjGp9m4LqdsKcOh40"
+        }
+    },
+    "snowflake": {
+        "workerId": 1
+    },
+    "storage": {
+        "provider": "minio",
+        "minio": {
+            "endpoint": "192.168.0.18:9000",
+            "region": "zhuhai-1",
+            "accessKeyID": "Gathooh88mba5H3y2",
+            "secretAccessKey": "yFukp3vtIkUNck2XL3s2KOT4wyRPR71G2",
+            "stsAccessKeyID": "Gathooh88mba5H3y1",
+            "stsSecretAccessKey": "yFukp3vtIkUNck2XL3s2KOT4wyRPR71G1",
+            "bucketName": "document",
+            "filesBucketName": "files"
+        },
+        "s3": {
+            "endpoint": "192.168.0.18:9000",
+            "region": "zhuhai-1",
+            "accessKeyID": "Gathooh88mba5H3y2",
+            "secretAccessKey": "yFukp3vtIkUNck2XL3s2KOT4wyRPR71G2",
+            "accountID": "",
+            "roleName": "",
+            "bucketName": "document",
+            "filesBucketName": "files"
+        },
+        "oss": {
+            "endpoint": "oss-cn-hangzhou.aliyuncs.com",
+            "stsEndpoint": "sts-vpc.cn-hangzhou.aliyuncs.com",
+            "region": "cn-hangzhou",
+            "accessKeyID": "LTAI5tSm1Y5obQCwVn7X9k2x",
+            "secretAccessKey": "0uXxQBqG8nQC7uiyipTX6F4JkEDlcB",
+            "accountId": "1382280232399206",
+            "roleName": "ramoss",
+            "bucketName": "protodesign-document",
+            "filesBucketName": "protodesign-files"
+        }
+    }
+}
