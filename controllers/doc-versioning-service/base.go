@@ -15,6 +15,7 @@ import (
 
 	// "kcaitech.com/kcserver/common"
 	config "kcaitech.com/kcserver/controllers"
+	document "kcaitech.com/kcserver/controllers/document"
 )
 
 // 最短更新时间间隔（秒）
@@ -139,7 +140,27 @@ func Trigger(documentId int64) {
 		return
 	}
 
-	// upload
+	// upload document data
+	header := document.Header{
+		DocumentId: documentIdStr,
+		LastCmdId:  version.LastCmdId,
+	}
+	response := document.Response{}
+	data := document.UploadData{
+		DocumentMeta: document.Data(version.DocumentData.DocumentMeta),
+		Pages:        version.DocumentData.Pages,
+		// FreeSymbols        : version.DocumentData.DocumentMeta.
+		MediaNames:          version.DocumentData.MediaNames,
+		MediasSize:          version.MediasSize,
+		DocumentText:        version.DocumentText,
+		PageImageBase64List: version.PageImageBase64List,
+	}
+	document.UploadDocumentData(&header, &data, &[]([]byte){}, &response)
+
+	if response.Status != document.ResponseStatusSuccess {
+		log.Println("UploadDocumentData fail")
+		return
+	}
 
 	// 更新redis
 	if _, err := redis.Client.Set(context.Background(), "Document Versioning LastUpdateTime[DocumentId:"+documentIdStr+"]", time.Now().UnixMilli(), time.Hour*1).Result(); err != nil {

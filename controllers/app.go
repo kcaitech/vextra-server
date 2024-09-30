@@ -1,13 +1,14 @@
 package controllers
 
 import (
+	"log"
+	"os"
+
 	"github.com/gin-gonic/gin"
+	"gopkg.in/yaml.v3"
 	"kcaitech.com/kcserver/common/gin/auth"
 	"kcaitech.com/kcserver/common/gin/response"
 	"kcaitech.com/kcserver/common/services"
-	"gopkg.in/yaml.v3"
-	"log"
-	"os"
 )
 
 // GetAppVersionList 获取APP版本列表
@@ -30,7 +31,7 @@ type Package struct {
 	Version string `yaml:"version"`
 }
 
-func LoadPackageVersion() {
+func LoadPackageVersion() string {
 	content, err := os.ReadFile("package.yaml")
 	if err != nil {
 		log.Fatalf("load package.yaml fail %v", err)
