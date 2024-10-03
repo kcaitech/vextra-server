@@ -1,4 +1,4 @@
-package doc_versioning_service
+package document
 
 import (
 	"context"
@@ -69,7 +69,7 @@ type VersionResp struct {
 	PageImageBase64List []string     `json:"pageImageBase64List"`
 }
 
-func Trigger(documentId int64) {
+func AutoSave(documentId int64) {
 	info, ok := documentVersioningInfoMap.Get(documentId)
 	if !ok {
 		info = DocumentVersioningInfo{

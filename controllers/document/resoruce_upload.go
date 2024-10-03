@@ -3,10 +3,10 @@ package document
 import (
 	"encoding/base64"
 	"errors"
-	"github.com/gin-gonic/gin"
-	"gorm.io/gorm"
 	"log"
-	"kcaitech.com/kcserver/common/gin/response"
+	"time"
+
+	"gorm.io/gorm"
 	"kcaitech.com/kcserver/common/models"
 	"kcaitech.com/kcserver/common/safereview"
 	safereviewBase "kcaitech.com/kcserver/common/safereview/base"
@@ -15,10 +15,9 @@ import (
 	"kcaitech.com/kcserver/utils/str"
 	myTime "kcaitech.com/kcserver/utils/time"
 	"kcaitech.com/kcserver/utils/websocket"
-	"time"
 )
 
-func UploadDocumentResource(c *gin.Context) {
+func UploadDocumentResource(ws *websocket.Ws) {
 	type Data map[string]any
 
 	type Header struct {
@@ -43,12 +42,12 @@ func UploadDocumentResource(c *gin.Context) {
 		Name string `json:"name"`
 	}
 
-	ws, err := websocket.Upgrade(c.Writer, c.Request, nil)
-	if err != nil {
-		response.Fail(c, "建立ws连接失败："+err.Error())
-		return
-	}
-	defer ws.Close()
+	// ws, err := websocket.Upgrade(c.Writer, c.Request, nil)
+	// if err != nil {
+	// 	response.Fail(c, "建立ws连接失败："+err.Error())
+	// 	return
+	// }
+	// defer ws.Close()
 
 	resp := Response{
 		Status: ResponseStatusFail,

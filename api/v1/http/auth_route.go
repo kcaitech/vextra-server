@@ -2,8 +2,6 @@ package http
 
 import (
 	"github.com/gin-gonic/gin"
-	// "kcaitech.com/kcserver/common"
-	// . "kcaitech.com/kcserver/common/gin/reverse_proxy"
 	controllers "kcaitech.com/kcserver/controllers/auth"
 )
 

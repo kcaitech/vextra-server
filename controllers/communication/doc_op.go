@@ -4,22 +4,23 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log"
+	"sync"
+	"time"
+
 	"github.com/go-redsync/redsync/v4"
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"log"
-	doc_versioning_service "kcaitech.com/kcserver/controllers/doc-versioning-service"
 	"kcaitech.com/kcserver/common/models"
 	"kcaitech.com/kcserver/common/mongo"
 	"kcaitech.com/kcserver/common/redis"
 	"kcaitech.com/kcserver/common/services"
 	"kcaitech.com/kcserver/common/snowflake"
+	autosave "kcaitech.com/kcserver/controllers/document"
 	"kcaitech.com/kcserver/utils/sliceutil"
 	"kcaitech.com/kcserver/utils/str"
 	"kcaitech.com/kcserver/utils/websocket"
-	"sync"
-	"time"
 )
 
 type docOpTunnelServer struct {
@@ -60,14 +61,14 @@ type ReceiveData struct {
 }
 
 type Cmd struct {
-	BaseVer     string   `json:"baseVer" bson:"baseVer"`
-	BatchId     string   `json:"batchId" bson:"batchId"`
-	Ops         []bson.M `json:"ops" bson:"ops"`
-	IsRecovery  bool     `json:"isRecovery" bson:"isRecovery"`
-	Description string   `json:"description" bson:"description"`
-	Time        int64    `json:"time" bson:"time"`
-	Posttime    int64    `json:"posttime" bson:"posttime"`
-	DataFmtVer  interface{}   `json:"dataFmtVer,omitempty" bson:"dataFmtVer,omitempty"` // int | string
+	BaseVer     string      `json:"baseVer" bson:"baseVer"`
+	BatchId     string      `json:"batchId" bson:"batchId"`
+	Ops         []bson.M    `json:"ops" bson:"ops"`
+	IsRecovery  bool        `json:"isRecovery" bson:"isRecovery"`
+	Description string      `json:"description" bson:"description"`
+	Time        int64       `json:"time" bson:"time"`
+	Posttime    int64       `json:"posttime" bson:"posttime"`
+	DataFmtVer  interface{} `json:"dataFmtVer,omitempty" bson:"dataFmtVer,omitempty"` // int | string
 }
 
 type ReceiveCmd struct {
@@ -380,7 +381,7 @@ func OpenDocOpTunnel(clientWs *websocket.Ws, clientCmdData CmdData, serverCmd Se
 					return errors.New("数据插入失败")
 				}
 				redis.Client.Publish(context.Background(), "Document Op[DocumentId:"+documentIdStr+"]", cmdItemListData)
-				doc_versioning_service.Trigger(documentId)
+				autosave.AutoSave(documentId)
 				return nil
 			}() != nil {
 				// 删除已插入的数据（cmdItemList）

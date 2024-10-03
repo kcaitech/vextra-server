@@ -23,7 +23,7 @@ import (
 	myTime "kcaitech.com/kcserver/utils/time"
 )
 
-type Data map[string]any
+// type Data map[string]any
 
 type Header struct {
 	UserId     string `json:"user_id"`

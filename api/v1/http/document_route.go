@@ -2,21 +2,20 @@ package http
 
 import (
 	"github.com/gin-gonic/gin"
-	// "net/http"
 	"kcaitech.com/kcserver/middlewares"
-	"kcaitech.com/kcserver/common"
-	// "kcaitech.com/kcserver/common/gin/response"
-	// . "kcaitech.com/kcserver/common/gin/reverse_proxy"
+
 	"strings"
+
 	controllers "kcaitech.com/kcserver/controllers/document"
 )
 
 func loadDocumentRoutes(api *gin.RouterGroup) {
-	_router := api.Group("/documents")
 
-	router := _router.Group("/")
+	router := api.Group("/documents")
 	// 拦截一些内部服务
-	suffix := common.ApiVersionPath + "/documents"
+	// suffix := common.ApiVersionPath + "/documents"
+	suffix := "/documents"
+
 	// router.Use(func(c *gin.Context) {
 	// 	if strings.HasPrefix(c.Request.URL.Path, suffix+"/document_upload") &&
 	// 		strings.HasPrefix(c.Request.URL.Path, suffix+"/resource_upload") {
@@ -26,13 +25,13 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 	// 登陆验证，跳过某些接口（接口内部另行校验）
 	router.Use(middlewares.AuthMiddlewareConn(func(c *gin.Context) bool {
 		// return !strings.HasPrefix(c.Request.URL.Path, suffix+"/upload") &&
-			return !strings.HasPrefix(c.Request.URL.Path, suffix+"/test/") &&
+		return !strings.HasPrefix(c.Request.URL.Path, suffix+"/test/") &&
 			!strings.HasPrefix(c.Request.URL.Path, suffix+"/shares/wx_mp_code") // 这应该放到app里
 	}))
 
 	{
-		router.GET("/document_upload", controllers.UploadDocument)
-		router.GET("/resource_upload", controllers.UploadDocumentResource)
+		// router.GET("/document_upload", controllers.UploadDocument)
+		// router.GET("/resource_upload", controllers.UploadDocumentResource)
 		router.GET("/access_records", controllers.GetUserDocumentAccessRecordsList)
 		router.DELETE("/access_record", controllers.DeleteUserDocumentAccessRecord)
 		router.GET("/favorites", controllers.GetUserDocumentFavoritesList)
