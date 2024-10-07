@@ -1,7 +1,7 @@
 package common
 
 const (
-	ApiVersionPath = "/api/v1"
+	// ApiVersionPath = "/api/v1"
 
 	// test环境
 	//StorageHost     = "https://storage.moss.design"

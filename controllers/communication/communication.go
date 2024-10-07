@@ -1,43 +1,99 @@
 package communication
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"errors"
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
+	"fmt"
 	"log"
+	"net/http"
+	"sync/atomic"
+
+	"github.com/gin-gonic/gin"
 	"kcaitech.com/kcserver/common/gin/response"
 	"kcaitech.com/kcserver/common/jwt"
-	"kcaitech.com/kcserver/utils/my_map"
 	"kcaitech.com/kcserver/utils/str"
 	"kcaitech.com/kcserver/utils/websocket"
-	"time"
 )
 
-func getTunnelDataByCmdData(tunnelCmdData TunnelCmdData, ws *websocket.Ws) (TunnelDataType, []byte) {
-	dataType := tunnelCmdData.DataType
-	if dataType < TunnelDataTypeText || dataType > TunnelDataTypeBinary {
-		log.Println("dataType错误", dataType)
-		return TunnelDataTypeNone, nil
+// func getTunnelDataByCmdData(tunnelCmdData TunnelCmdData, ws *websocket.Ws) (TunnelDataType, []byte) {
+// 	dataType := tunnelCmdData.DataType
+// 	if dataType < TunnelDataTypeText || dataType > TunnelDataTypeBinary {
+// 		log.Println("dataType错误", dataType)
+// 		return TunnelDataTypeNone, nil
+// 	}
+// 	if dataType != TunnelDataTypeBinary {
+// 		if len(tunnelCmdData.Data) == 0 {
+// 			log.Println("data错误")
+// 			return TunnelDataTypeNone, nil
+// 		}
+// 		return dataType, tunnelCmdData.Data
+// 	} else {
+// 		messageType, data, err := ws.ReadMessage()
+// 		if err != nil || messageType != websocket.MessageTypeBinary {
+// 			log.Println("binary data错误", err, messageType)
+// 			return TunnelDataTypeNone, nil
+// 		}
+// 		return dataType, data
+// 	}
+// }
+
+func decodeBinaryMessage(data []byte) (string, []byte, error) {
+	// 假设长度前缀为4字节
+	lengthPrefixSize := uint32(4)
+
+	if len(data) < int(lengthPrefixSize) {
+
+		return "", nil, fmt.Errorf("data is too short to contain the length prefix")
 	}
-	if dataType != TunnelDataTypeBinary {
-		if len(tunnelCmdData.Data) == 0 {
-			log.Println("data错误")
-			return TunnelDataTypeNone, nil
-		}
-		return dataType, tunnelCmdData.Data
-	} else {
-		messageType, data, err := ws.ReadMessage()
-		if err != nil || messageType != websocket.MessageTypeBinary {
-			log.Println("binary data错误", err, messageType)
-			return TunnelDataTypeNone, nil
-		}
-		return dataType, data
+
+	// 读取字符串长度
+	strLength := binary.LittleEndian.Uint32(data[:lengthPrefixSize])
+
+	// 检查数据是否足够长以包含整个字符串
+	if len(data) < int(lengthPrefixSize+strLength) {
+		return "", nil, fmt.Errorf("data is too short to contain the string")
 	}
+
+	// 提取字符串部分
+	strBytes := data[lengthPrefixSize : lengthPrefixSize+strLength]
+	str := string(strBytes)
+
+	// 提取 ArrayBuffer 部分
+	bufferStart := lengthPrefixSize + strLength
+	bufferData := data[bufferStart:]
+
+	return str, bufferData, nil
+}
+
+type BindData struct {
+	DocumentId string `json:"document_id"`
 }
 
 // Communication websocket连接
 func Communication(c *gin.Context) {
+
+	// get token
+	token := jwt.GetJwtFromAuthorization(c.GetHeader("Authorization"))
+	if token == "" {
+		response.Abort(c, http.StatusUnauthorized, "未登录", nil)
+		return
+	}
+
+	jwtParseData, err := jwt.ParseJwt(token)
+	if err != nil {
+		log.Println("Token错误", err)
+		response.Abort(c, http.StatusForbidden, "Token错误", nil)
+		return
+	}
+	userId := str.DefaultToInt(jwtParseData.Id, 0)
+	if userId <= 0 {
+		log.Println("UserId错误", userId)
+		response.Abort(c, http.StatusForbidden, "UserId错误", nil)
+		return
+	}
+
+	// 建立ws连接
 	ws, err := websocket.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		response.Fail(c, "建立ws连接失败："+err.Error())
@@ -45,246 +101,108 @@ func Communication(c *gin.Context) {
 	}
 	defer ws.Close()
 
-	tunnelMap := my_map.NewSyncMap[string, *Tunnel]()
-	getTunnelIdByCmdData := func(cmdData CmdData) (string, bool) {
-		v, ok := cmdData["tunnel_id"]
-		tunnelId, ok1 := v.(string)
-		if !ok || !ok1 || tunnelId == "" {
-			return "", false
-		}
-		return tunnelId, true
-	}
-	getTunnelById := func(tunnelId string) *Tunnel {
-		tunnel, ok := tunnelMap.Get(tunnelId)
-		if tunnelId == "" || !ok {
-			log.Println("tunnel不存在", tunnelId)
-			return nil
-		}
-		return tunnel
-	}
-	getTunnelByCmdData := func(cmdData CmdData) (string, *Tunnel) {
-		tunnelId, ok := getTunnelIdByCmdData(cmdData)
-		if !ok {
-			log.Println("tunnelId错误")
-			return "", nil
-		}
-		tunnel := getTunnelById(tunnelId)
-		if tunnel == nil {
-			return "", nil
-		}
-		return tunnelId, tunnel
-	}
-	getTunnelByTunnelCmdData := func(tunnelCmdData TunnelCmdData) (string, *Tunnel) {
-		tunnelId := tunnelCmdData.TunnelId
-		tunnel := getTunnelById(tunnelId)
-		if tunnel == nil {
-			return tunnelId, nil
-		}
-		return tunnelId, tunnel
+	log.Println("websocket连接成功")
+
+	var _sid atomic.Int64
+	genSId := func() string {
+		sid := _sid.Add(1)
+		return "s" + str.IntToString(sid)
 	}
 
-	ws.SetCloseHandler(func(code int, text string) {
-		log.Println("ws连接关闭", code, text)
-		tunnelMap.Range(func(_ string, tunnelSession *Tunnel) bool {
-			tunnelSession.Server.Close()
-			return true
-		})
-	})
+	type serveFace interface {
+		handle(data *TransData, binaryData *([]byte))
+		close()
+	}
 
-	header := Header{}
-	cmdId := uuid.New().String()
-	serverCmd := ServerCmd{
-		CmdType: ServerCmdTypeInitResult,
-		Status:  CmdStatusFail,
-		CmdId:   cmdId,
-	}
-	if err := ws.ReadJSON(&header); err != nil {
-		log.Println("Header结构错误", err)
-		serverCmd.Message = "Header结构错误"
-		_ = ws.WriteJSON(&serverCmd)
-		return
-	}
-	jwtParseData, err := jwt.ParseJwt(header.Token)
-	if err != nil {
-		log.Println("Token错误", err)
-		serverCmd.Message = "Token错误"
-		_ = ws.WriteJSON(&serverCmd)
-		return
-	}
-	userId := str.DefaultToInt(jwtParseData.Id, 0)
-	if userId <= 0 {
-		log.Println("UserId错误", userId)
-		serverCmd.Message = "UserId错误"
-		_ = ws.WriteJSON(&serverCmd)
-		return
-	}
-	communicationId := uuid.New().String()
-	serverCmd.Status = CmdStatusSuccess
-	serverCmd.Data = CmdData{"communication_id": communicationId}
-	_ = ws.WriteJSON(&serverCmd)
-	if ws.IsClose() {
-		return
-	}
-	log.Println("websocket连接成功，communicationId：", communicationId)
+	serveMap := map[string]serveFace{}
 
-	lastReceiveHeartbeatTime := time.Now()
-	go func() {
-		for {
-			time.Sleep(time.Second * 1)
-			if ws.IsClose() {
-				return
-			}
-			if time.Now().Sub(lastReceiveHeartbeatTime).Seconds() > 60 {
-				log.Println("心跳超时，断开连接")
-				ws.Close()
-				return
-			}
-			// 1秒发送一次心跳
-			_ = ws.WriteJSON(&ServerCmd{
-				CmdType: ServerCmdTypeHeartbeat,
-				Status:  CmdStatusSuccess,
-				CmdId:   uuid.New().String(),
-			})
+	msgErr := func(err string, serverData *TransData) {
+		serverData.Err = err
+		log.Println(err)
+		_ = ws.WriteJSON(serverData)
+	}
+
+	bindServe := func(t string, s serveFace) {
+		old := serveMap[t]
+		if old != nil {
+			(old).close()
 		}
-	}()
+		serveMap[t] = s
+	}
 
 	for {
-		clientCmd := ClientCmd{}
-		serverCmdId := uuid.New().String()
-		serverCmd := ServerCmd{
-			CmdType: ServerCmdTypeReturn,
-			Status:  CmdStatusFail,
-			CmdId:   serverCmdId,
-		}
-		if err := ws.ReadJSON(&clientCmd); err != nil {
+
+		clientData := TransData{}
+		serverData := TransData{}
+		serverData.Type = clientData.Type
+		serverData.DataId = clientData.DataId
+
+		mt, bytes, err := ws.ReadMessage()
+		// todo
+		if err != nil {
 			if errors.Is(err, websocket.ErrClosed) {
-				log.Println("ws连接关闭", err)
-				tunnelMap.Range(func(_ string, tunnelSession *Tunnel) bool {
-					tunnelSession.Server.Close()
-					return true
-				})
+				log.Println("ws is closed", err)
 				return
 			}
-			serverCmd.Message = "cmdData结构错误"
-			log.Println("cmdData结构错误", err)
-			_ = ws.WriteJSON(&serverCmd)
+
+			msgErr("read message err", &serverData)
 			continue
 		}
-		serverCmd.Data = CmdData{"cmd_id": clientCmd.CmdId}
-		clientCmdData := CmdData{}
-		clientTunnelCmdData := TunnelCmdData{}
-		var v any
-		if clientCmd.CmdType != ClientCmdTypeTunnelData {
-			v = &clientCmdData
+
+		var binaryData *([]byte) = nil
+		if mt == websocket.MessageTypeBinary {
+			// get header
+			h, binary, err := decodeBinaryMessage(bytes)
+			if err != nil {
+				msgErr("decode binary fail", &serverData)
+				continue
+			}
+
+			err1 := json.Unmarshal([]byte(h), &clientData)
+			if err1 != nil {
+				msgErr("wrong binary header", &serverData)
+				continue
+			}
+
+			binaryData = &binary
+		} else if mt == websocket.MessageTypeText {
+			err := json.Unmarshal(bytes, &clientData)
+			if err != nil {
+				msgErr("wrong data struct", &serverData)
+				continue
+			}
 		} else {
-			v = &clientTunnelCmdData
-		}
-		if len(clientCmd.Data) == 0 {
-			clientCmd.Data = []byte("{}")
-		}
-		if err := json.Unmarshal(clientCmd.Data, v); err != nil {
-			serverCmd.Message = "clientCmd.Data结构错误"
-			log.Println("clientCmd.Data结构错误", err)
-			_ = ws.WriteJSON(&serverCmd)
+			msgErr("unknow message type", &serverData)
 			continue
 		}
-		switch clientCmd.CmdType {
-		case ClientCmdTypeReturn:
-			v, ok := clientCmdData["cmd_id"]
-			cmdId, ok1 := v.(string)
-			if !ok || !ok1 || cmdId == "" {
-				log.Println("cmdId错误", ok, ok1, cmdId)
+
+		if clientData.Type == DataTypes_Bind {
+			bindData := BindData{}
+			err := json.Unmarshal([]byte(clientData.Data), &bindData)
+			if err != nil {
+				msgErr("wrong bind struct", &serverData)
 				continue
 			}
-			if clientCmd.Status == CmdStatusFail && clientCmd.Message == CmdMessageTunnelIdError {
-				tunnelId, tunnel := getTunnelByCmdData(clientCmdData)
-				if tunnel != nil {
-					tunnel.Server.Close()
-				}
-				tunnelMap.Delete(tunnelId)
-			}
-		case ClientCmdTypeOpenTunnel:
-			var tunnel *Tunnel
-			switch clientCmd.TunnelType {
-			case TunnelTypeDocOp:
-				tunnel = OpenDocOpTunnel(ws, clientCmdData, serverCmd, Data{"userId": userId})
-			// case TunnelTypeDocResourceUpload:
-			// 	tunnel = OpenDocResourceUploadTunnel(ws, clientCmdData, serverCmd, Data{"userId": userId})
-			case TunnelTypeDocCommentOp:
-				tunnel = OpenDocCommentOpTunnel(ws, clientCmdData, serverCmd, Data{"userId": userId})
-			// case TunnelTypeDocUpload:
-			// 	tunnel = OpenDocUploadTunnel(ws, clientCmdData, serverCmd, Data{"userId": userId})
-			case TunnelTypeDocSelectionOp:
-				tunnel = OpenDocSelectionOpTunnel(ws, clientCmdData, serverCmd, Data{"userId": userId})
-			default:
-				serverCmd.Message = "tunnel_type错误"
-				log.Println("clientCmd.TunnelType错误", clientCmd.TunnelType)
-			}
-			if tunnel != nil {
-				serverCmd.Status = CmdStatusSuccess
-				serverCmd.Data["tunnel_id"] = tunnel.Id
-			}
-			_ = ws.WriteJSON(&serverCmd)
-			if tunnel == nil {
+
+			documentId := str.DefaultToInt(bindData.DocumentId, 0)
+			if documentId <= 0 {
+				msgErr("wrong document id", &serverData)
 				continue
 			}
-			tunnelId := tunnel.Id
-			tunnelMap.Set(tunnelId, tunnel)
-			// todo 关闭前的处理
-			tunnel.Server.SetCloseHandler(func(code int, text string) {
-				log.Println("document ws连接关闭", tunnelId)
-				tunnelMap.Delete(tunnelId)
-				_ = ws.WriteJSON(&ServerCmd{
-					CmdType: ServerCmdTypeCloseTunnel,
-					CmdId:   uuid.New().String(),
-					Data:    CmdData{"tunnel_id": tunnelId},
-				})
-			})
-		case ClientCmdTypeCloseTunnel:
-			tunnelId, tunnel := getTunnelByCmdData(clientCmdData)
-			if tunnel == nil {
-				serverCmd.Message = CmdMessageTunnelIdError
-				_ = ws.WriteJSON(&serverCmd)
-				continue
-			}
-			tunnel.Server.Close()
-			tunnelMap.Delete(tunnelId)
-			serverCmd.Status = CmdStatusSuccess
-			_ = ws.WriteJSON(&serverCmd)
-		case ClientCmdTypeTunnelData:
-			tunnelId, tunnel := getTunnelByTunnelCmdData(clientTunnelCmdData)
-			serverCmd.Data["tunnel_id"] = tunnelId
-			if tunnel == nil {
-				serverCmd.Message = CmdMessageTunnelIdError
-				_ = ws.WriteJSON(&serverCmd)
-				continue
-			}
-			tunnelDataType, data := getTunnelDataByCmdData(clientTunnelCmdData, ws)
-			if tunnelDataType == TunnelDataTypeNone {
-				serverCmd.Message = "数据错误"
-				_ = ws.WriteJSON(&serverCmd)
-				continue
-			}
-			if err := tunnel.ReceiveFromClient(tunnelDataType, data, serverCmd); err != nil {
-				serverCmd.Message = err.Error()
-				log.Println("ReceiveFromClient error:", err)
-				_ = ws.WriteJSON(&serverCmd)
-				continue
+
+			// bind comment
+			commentServe := NewCommentServe(ws, userId, documentId, genSId)
+			bindServe(DataTypes_Comment, commentServe)
+
+			// todo send back message
+		} else {
+			serve := serveMap[clientData.Type]
+			if serve != nil {
+				serve.handle(&clientData, binaryData)
 			} else {
-				serverCmd.Status = CmdStatusSuccess
-				_ = ws.WriteJSON(&serverCmd)
+				msgErr("no bind handler", &serverData)
 			}
-		case ClientCmdTypeHeartbeat:
-			serverCmd.Status = CmdStatusSuccess
-			serverCmd.CmdType = ServerCmdTypeHeartbeatResponse
-			serverCmd.Data = CmdData{"cmd_id": clientCmd.CmdId}
-			_ = ws.WriteJSON(&serverCmd)
-		case ClientCmdTypeHeartbeatResponse:
-			lastReceiveHeartbeatTime = time.Now()
-		default:
-			serverCmd.Message = "cmd_type错误"
-			log.Println("clientCmd.CmdType错误", clientCmd.CmdType)
-			_ = ws.WriteJSON(&serverCmd)
 		}
+
 	}
 }
