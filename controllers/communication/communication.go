@@ -68,6 +68,7 @@ func decodeBinaryMessage(data []byte) (string, []byte, error) {
 
 type BindData struct {
 	DocumentId string `json:"document_id"`
+	VersionId  string `json:"version_id"`
 }
 
 // Communication websocket连接
@@ -194,6 +195,8 @@ func Communication(c *gin.Context) {
 			commentServe := NewCommentServe(ws, userId, documentId, genSId)
 			bindServe(DataTypes_Comment, commentServe)
 
+			opServe := NewOpServe(ws, userId, documentId, bindData.VersionId, genSId)
+			bindServe(DataTypes_Op, opServe)
 			// todo send back message
 		} else {
 			serve := serveMap[clientData.Type]

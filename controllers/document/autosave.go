@@ -15,7 +15,7 @@ import (
 
 	// "kcaitech.com/kcserver/common"
 	config "kcaitech.com/kcserver/controllers"
-	document "kcaitech.com/kcserver/controllers/document"
+	// document "kcaitech.com/kcserver/controllers/document"
 )
 
 // 最短更新时间间隔（秒）
@@ -46,8 +46,6 @@ type DocumentInfo struct {
 	VersionId  string `json:"version_id"`
 	LastCmdId  string `json:"last_cmd_id"`
 }
-
-type Data map[string]any
 
 type ExFromJson struct {
 	DocumentMeta Data            `json:"document_meta"`
@@ -141,13 +139,13 @@ func AutoSave(documentId int64) {
 	}
 
 	// upload document data
-	header := document.Header{
+	header := Header{
 		DocumentId: documentIdStr,
 		LastCmdId:  version.LastCmdId,
 	}
-	response := document.Response{}
-	data := document.UploadData{
-		DocumentMeta: document.Data(version.DocumentData.DocumentMeta),
+	response := Response{}
+	data := UploadData{
+		DocumentMeta: Data(version.DocumentData.DocumentMeta),
 		Pages:        version.DocumentData.Pages,
 		// FreeSymbols        : version.DocumentData.DocumentMeta.
 		MediaNames:          version.DocumentData.MediaNames,
@@ -155,9 +153,9 @@ func AutoSave(documentId int64) {
 		DocumentText:        version.DocumentText,
 		PageImageBase64List: version.PageImageBase64List,
 	}
-	document.UploadDocumentData(&header, &data, &[]([]byte){}, &response)
+	UploadDocumentData(&header, &data, &[]([]byte){}, &response)
 
-	if response.Status != document.ResponseStatusSuccess {
+	if response.Status != ResponseStatusSuccess {
 		log.Println("UploadDocumentData fail")
 		return
 	}
