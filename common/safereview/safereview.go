@@ -2,6 +2,7 @@ package safereview
 
 import (
 	"errors"
+
 	"kcaitech.com/kcserver/common/safereview/ali"
 	"kcaitech.com/kcserver/common/safereview/baidu"
 	"kcaitech.com/kcserver/common/safereview/base"
@@ -13,7 +14,7 @@ var Client base.Client
 func Init(filePath string) error {
 	conf := config.LoadConfig(filePath)
 
-	switch conf.Provider {
+	switch conf.SafeReview.Provider {
 	case base.Ali:
 		if err := ali.Init(filePath); err != nil {
 			return err

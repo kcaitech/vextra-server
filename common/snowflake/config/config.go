@@ -4,10 +4,12 @@ import (
 	"kcaitech.com/kcserver/common/config"
 )
 
+type SnowflakeConf struct {
+	WorkerId int64 `yaml:"workerId" json:"workerId"`
+}
+
 type Configuration struct {
-	Snowflake struct {
-		WorkerId int64 `yaml:"workerId"`
-	} `yaml:"snowflake"`
+	Snowflake SnowflakeConf `yaml:"snowflake" json:"snowflake"`
 }
 
 var Config Configuration

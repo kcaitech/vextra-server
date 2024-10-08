@@ -4,11 +4,13 @@ import (
 	"kcaitech.com/kcserver/common/config"
 )
 
+type JwtConf struct {
+	Secret     string `yaml:"secret" json:"secret"`
+	ExpireHour int64  `yaml:"expire_hour" json:"expire_hour"`
+}
+
 type Configuration struct {
-	Jwt struct {
-		Secret     string `yaml:"secret"`
-		ExpireHour int64  `yaml:"expire_hour"`
-	} `yaml:"jwt"`
+	Jwt JwtConf `yaml:"jwt" json:"jwt"`
 }
 
 var Config Configuration

@@ -3,15 +3,16 @@ package ali
 import (
 	"encoding/json"
 	"errors"
+	"net/http"
+	"strings"
+
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	green20220302 "github.com/alibabacloud-go/green-20220302/client"
 	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/alibabacloud-go/tea/tea"
-	"net/http"
 	"kcaitech.com/kcserver/common/safereview/base"
 	"kcaitech.com/kcserver/common/safereview/config"
 	"kcaitech.com/kcserver/utils/sliceutil"
-	"strings"
 )
 
 type client struct {
@@ -152,10 +153,10 @@ var Client base.Client
 func Init(filePath string) error {
 	conf := config.LoadConfig(filePath)
 	_client, err := green20220302.NewClient(&openapi.Config{
-		AccessKeyId:     tea.String(conf.Ali.AccessKeyId),
-		AccessKeySecret: tea.String(conf.Ali.AccessKeySecret),
-		RegionId:        tea.String(conf.Ali.RegionId),
-		Endpoint:        tea.String(conf.Ali.Endpoint),
+		AccessKeyId:     tea.String(conf.SafeReview.Ali.AccessKeyId),
+		AccessKeySecret: tea.String(conf.SafeReview.Ali.AccessKeySecret),
+		RegionId:        tea.String(conf.SafeReview.Ali.RegionId),
+		Endpoint:        tea.String(conf.SafeReview.Ali.Endpoint),
 		ConnectTimeout:  tea.Int(3000),
 		ReadTimeout:     tea.Int(6000),
 	})

@@ -4,14 +4,15 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Baidu-AIP/golang-sdk/aip/censor"
 	"math/rand"
+	"strings"
+	"time"
+
+	"github.com/Baidu-AIP/golang-sdk/aip/censor"
 	"kcaitech.com/kcserver/common/safereview/base"
 	"kcaitech.com/kcserver/common/safereview/config"
 	myMath "kcaitech.com/kcserver/utils/math"
 	"kcaitech.com/kcserver/utils/sliceutil"
-	"strings"
-	"time"
 )
 
 type client struct {
@@ -235,7 +236,7 @@ var Client base.Client
 func Init(filePath string) error {
 	conf := config.LoadConfig(filePath)
 	Client = &client{
-		censor.NewClient(conf.Baidu.ApiKey, conf.Baidu.SecretKey),
+		censor.NewClient(conf.SafeReview.Baidu.ApiKey, conf.SafeReview.Baidu.SecretKey),
 	}
 	return nil
 }

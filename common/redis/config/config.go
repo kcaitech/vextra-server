@@ -4,15 +4,17 @@ import (
 	"kcaitech.com/kcserver/common/config"
 )
 
+type RedisConf struct {
+	Addr          string   `yaml:"addr" json:"addr"`
+	Password      string   `yaml:"password" json:"password"`
+	Db            int      `yaml:"db" json:"db"`
+	Sentinel      bool     `yaml:"sentinel" json:"sentinel"`
+	SentinelAddrs []string `yaml:"sentinelAddrs" json:"sentinelAddrs"`
+	MasterName    string   `yaml:"masterName" json:"masterName"`
+}
+
 type Configuration struct {
-	Redis struct {
-		Addr          string   `yaml:"addr"`
-		Password      string   `yaml:"password"`
-		Db            int      `yaml:"db"`
-		Sentinel      bool     `yaml:"sentinel"`
-		SentinelAddrs []string `yaml:"sentinelAddrs"`
-		MasterName    string   `yaml:"masterName"`
-	} `yaml:"redis"`
+	Redis RedisConf `yaml:"redis" json:"redis"`
 }
 
 var Config Configuration

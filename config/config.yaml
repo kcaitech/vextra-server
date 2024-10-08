@@ -16,20 +16,90 @@ wxMp:
 documentVersionServer:
   host: "doc-versioning-service.kc.svc.cluster.local:10040"
 
-jwt:
-  ref: "jwt.yaml"
+# jwt:
+#   ref: "jwt.yaml"
 
-mongodb:
-  ref: "mongodb.yaml"
+# mongodb:
+#   ref: "mongodb.yaml"
+
+# redis:
+#   ref: "redis.yaml"
+
+# safereview:
+#   ref: "safereview.yaml"
+
+# snowflake:
+#   ref: "snowflake.yaml"
+
+# storage:
+#   ref: "storage.yaml"
+
+jwt:
+  secret: "123456"
+  expire_hour: 168 # 过期时间（小时）（7天）
+
+mongo:
+#  uri: "mongodb://root:kcai1212@mongo_net_1:27017"
+  uri: "mongodb://root:kcai1212@192.168.0.18:27017"
+  db: "kcserver"
 
 redis:
-  ref: "redis.yaml"
+  #  addr: "redis_net_1:6379"
+  addr: "192.168.0.18:6379"
+  password: "kcserver"
+  db: 0
 
 safereview:
-  ref: "safereview.yaml"
+  provider: "baidu"
+
+  ali:
+    accessKeyId: "accessKeyId"
+    accessKeySecret: "accessKeySecret"
+    regionId: "cn-hangzhou"
+    endpoint: "green-cip.cn-hangzhou.aliyuncs.com"
+
+  baidu:
+    appId: "44042444"
+    apiKey: "skYZWZolIBpo4j4olXzNRUKD"
+    secretKey: "H5KUEgVaO08I3tDPjGp9m4LqdsKcOh40"
 
 snowflake:
-  ref: "snowflake.yaml"
+  workerId: 1
 
 storage:
-  ref: "storage.yaml"
+  provider: "minio"
+
+  minio:
+    endpoint: "192.168.0.18:9000"
+    region: "zhuhai-1"
+    accessKeyID: "Gathooh88mba5H3y2"
+    secretAccessKey: "yFukp3vtIkUNck2XL3s2KOT4wyRPR71G2"
+    stsAccessKeyID: "Gathooh88mba5H3y1"
+    stsSecretAccessKey: "yFukp3vtIkUNck2XL3s2KOT4wyRPR71G1"
+    bucketName: "document"
+    filesBucketName: "files"
+
+  s3:
+    endpoint: "192.168.0.18:9000"
+    region: "zhuhai-1"
+    accessKeyID: "Gathooh88mba5H3y2"
+    secretAccessKey: "yFukp3vtIkUNck2XL3s2KOT4wyRPR71G2"
+    accountID: ""
+    roleName: ""
+    bucketName: "document"
+    filesBucketName: "files"
+
+  oss:
+    endpoint: "oss-cn-hangzhou.aliyuncs.com"
+    stsEndpoint: "sts-vpc.cn-hangzhou.aliyuncs.com"
+    region: "cn-hangzhou"
+    accessKeyID: "LTAI5tSm1Y5obQCwVn7X9k2x"
+    secretAccessKey: "0uXxQBqG8nQC7uiyipTX6F4JkEDlcB"
+    accountId: "1382280232399206"
+    roleName: "ramoss"
+    bucketName: "protodesign-document"
+    filesBucketName: "protodesign-files"
+
+  hosts:
+    mian: "https://storage1.moss.design"
+    files: "https://storage2.moss.design"

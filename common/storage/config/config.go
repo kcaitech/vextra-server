@@ -5,13 +5,19 @@ import (
 	"kcaitech.com/kcserver/utils/storage/base"
 )
 
+type StorageConf struct {
+	Provider base.Provider `yaml:"provider" json:"provider"`
+	Minio    base.Config   `yaml:"minio" json:"minio"`
+	S3       base.Config   `yaml:"s3" json:"s3"`
+	Oss      base.Config   `yaml:"oss" json:"oss"`
+	Hosts    struct {
+		Main  string `yaml:"main" json:"main"`
+		Files string `yaml:"files" json:"files"`
+	} `yaml:"hosts" json:"hosts"`
+}
+
 type Configuration struct {
-	Storage struct {
-		Provider base.Provider `yaml:"provider"`
-	} `yaml:"storage"`
-	Minio base.Config `yaml:"minio"`
-	S3    base.Config `yaml:"s3"`
-	Oss   base.Config `yaml:"oss"`
+	Storage StorageConf `yaml:"storage" json:"storage"`
 }
 
 var Config Configuration

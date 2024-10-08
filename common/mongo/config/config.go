@@ -4,11 +4,13 @@ import (
 	"kcaitech.com/kcserver/common/config"
 )
 
+type MongoConf struct {
+	Uri string `yaml:"uri" json:"uri"`
+	Db  string `yaml:"db" json:"db"`
+}
+
 type Configuration struct {
-	Mongo struct {
-		Uri string `yaml:"uri"`
-		Db  string `yaml:"db"`
-	} `yaml:"mongo"`
+	Mongo MongoConf `yaml:"mongo" json:"mongo"`
 }
 
 var Config Configuration

@@ -1,18 +1,19 @@
 package config
 
 import (
-	"gopkg.in/yaml.v3"
 	"log"
 	"os"
+
+	"gopkg.in/yaml.v3"
 )
 
 type BaseConfiguration struct {
 	Server struct {
-		Port string `yaml:"port"`
-	} `yaml:"server"`
+		Port string `yaml:"port" json:"port"`
+	} `yaml:"server" json:"server"`
 	DB struct {
-		DSN string `yaml:"dsn"`
-	} `yaml:"db"`
+		DSN string `yaml:"dsn" json:"dsn"`
+	} `yaml:"db" json:"db"`
 }
 
 func LoadConfig(filePath string, config any) {

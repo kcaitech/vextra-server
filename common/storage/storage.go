@@ -2,6 +2,7 @@ package storage
 
 import (
 	"errors"
+
 	"kcaitech.com/kcserver/common/storage/config"
 	"kcaitech.com/kcserver/utils/storage"
 	"kcaitech.com/kcserver/utils/storage/base"
@@ -17,11 +18,11 @@ func Init(filePath string) error {
 	var providerConf base.Config
 	switch conf.Storage.Provider {
 	case base.MINIO:
-		providerConf = conf.Minio
+		providerConf = conf.Storage.Minio
 	case base.S3:
-		providerConf = conf.S3
+		providerConf = conf.Storage.S3
 	case base.OSS:
-		providerConf = conf.Oss
+		providerConf = conf.Storage.Oss
 	default:
 		return errors.New("不支持的provider")
 	}
