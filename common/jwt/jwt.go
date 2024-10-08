@@ -3,10 +3,11 @@ package jwt
 import (
 	"encoding/json"
 	"errors"
-	"kcaitech.com/kcserver/common/jwt/config"
-	"kcaitech.com/kcserver/utils/jwt"
 	"strings"
 	"time"
+
+	"kcaitech.com/kcserver/common/jwt/config"
+	"kcaitech.com/kcserver/utils/jwt"
 )
 
 type Data struct {
@@ -14,8 +15,8 @@ type Data struct {
 	Nickname string `json:"nickname"`
 }
 
-func Init(filePath string) {
-	_ = config.LoadConfig(filePath)
+func Init(conf *config.JwtConf) {
+	// _ = config.LoadConfig(filePath)
 }
 
 func CreateJwt(jwtData *Data) (string, error) {

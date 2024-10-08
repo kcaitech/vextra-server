@@ -6,10 +6,10 @@ import (
 	"log"
 	"time"
 
-	"kcaitech.com/kcserver/common"
 	"kcaitech.com/kcserver/common/models"
 	"kcaitech.com/kcserver/common/redis"
 	"kcaitech.com/kcserver/common/services"
+	config "kcaitech.com/kcserver/controllers"
 	"kcaitech.com/kcserver/utils/str"
 	"kcaitech.com/kcserver/utils/websocket"
 )
@@ -142,7 +142,7 @@ func (serv *selectionServe) handle(data *TransData, binaryData *([]byte)) {
 
 	selectionData.UserId = userIdStr
 	selectionData.Permission = serv.permType
-	selectionData.Avatar = common.FileStorageHost + serv.user.Avatar
+	selectionData.Avatar = config.Config.StorageHost.Attatch + serv.user.Avatar
 	selectionData.Nickname = serv.user.Nickname
 	selectionData.EnterTime = serv.enterTime
 	selectionDataJson, _ := json.Marshal(selectionData)

@@ -3,19 +3,20 @@ package document
 import (
 	"encoding/base64"
 	"errors"
-	"github.com/gin-gonic/gin"
 	"log"
-	"kcaitech.com/kcserver/common"
+	"time"
+
+	"github.com/gin-gonic/gin"
 	"kcaitech.com/kcserver/common/gin/auth"
 	"kcaitech.com/kcserver/common/gin/response"
 	"kcaitech.com/kcserver/common/models"
 	"kcaitech.com/kcserver/common/safereview"
 	safereviewBase "kcaitech.com/kcserver/common/safereview/base"
 	"kcaitech.com/kcserver/common/services"
+	config "kcaitech.com/kcserver/controllers"
 	"kcaitech.com/kcserver/utils/sliceutil"
 	"kcaitech.com/kcserver/utils/str"
 	myTime "kcaitech.com/kcserver/utils/time"
-	"time"
 )
 
 // CreateTeam 创建团队
@@ -113,7 +114,7 @@ func CreateTeam(c *gin.Context) {
 		"description": team.Description,
 	}
 	if team.Avatar != "" {
-		result["avatar"] = common.FileStorageHost + team.Avatar
+		result["avatar"] = config.Config.StorageHost.Attatch + team.Avatar
 	}
 	response.Success(c, result)
 }
@@ -548,7 +549,7 @@ func SetTeamInfo(c *gin.Context) {
 			return
 		}
 		if avatarPath, err := teamService.UploadTeamAvatarById(teamId, fileBytes, contentType); err == nil {
-			result["avatar"] = common.FileStorageHost + avatarPath
+			result["avatar"] = config.Config.StorageHost.Attatch + avatarPath
 		}
 	}
 	response.Success(c, result)

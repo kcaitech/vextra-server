@@ -2,10 +2,12 @@ package jwt
 
 import (
 	"testing"
+
+	"kcaitech.com/kcserver/common/jwt/config"
 )
 
 func TestMain(m *testing.M) {
-	Init("config_test.yaml")
+	Init(&config.LoadConfig("config_test.yaml").Jwt)
 	m.Run()
 }
 

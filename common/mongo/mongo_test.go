@@ -2,13 +2,15 @@ package mongo
 
 import (
 	"fmt"
-	"go.mongodb.org/mongo-driver/bson"
 	"log"
 	"testing"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"kcaitech.com/kcserver/common/mongo/config"
 )
 
 func Test0(t *testing.T) {
-	if err := Init("config_test.yaml"); err != nil {
+	if err := Init(&config.LoadConfig("config_test.yaml").Mongo); err != nil {
 		log.Fatalln("mongo初始化失败：" + err.Error())
 	}
 	collection := DB.Collection("document")

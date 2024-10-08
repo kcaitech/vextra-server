@@ -5,6 +5,10 @@ db:
   #  dsn: "root:_IpFCT^*pui~Mac7~0%SIicRq@Z6rtzE@tcp(db_1:3306)/kcserver?charset=utf8&parseTime=True&loc=Local"
   dsn: "root:_IpFCT^*pui~Mac7~0%SIicRq@Z6rtzE@tcp(192.168.0.18:33306)/kcserver?charset=utf8&parseTime=True&loc=Local"
 
+storagehost:
+  document: "https://storage1.moss.design",
+  attatch: "https://storage2.moss.design"
+
 wx:
   appid: "xxx"
   secret: "xxx"
@@ -15,24 +19,6 @@ wxMp:
 
 documentVersionServer:
   host: "doc-versioning-service.kc.svc.cluster.local:10040"
-
-# jwt:
-#   ref: "jwt.yaml"
-
-# mongodb:
-#   ref: "mongodb.yaml"
-
-# redis:
-#   ref: "redis.yaml"
-
-# safereview:
-#   ref: "safereview.yaml"
-
-# snowflake:
-#   ref: "snowflake.yaml"
-
-# storage:
-#   ref: "storage.yaml"
 
 jwt:
   secret: "123456"
@@ -99,7 +85,4 @@ storage:
     roleName: "ramoss"
     bucketName: "protodesign-document"
     filesBucketName: "protodesign-files"
-
-  hosts:
-    mian: "https://storage1.moss.design"
-    files: "https://storage2.moss.design"
+ 

@@ -6,12 +6,12 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/common"
 	"kcaitech.com/kcserver/common/gin/auth"
 	"kcaitech.com/kcserver/common/gin/response"
 	"kcaitech.com/kcserver/common/models"
 	"kcaitech.com/kcserver/common/services"
 	"kcaitech.com/kcserver/common/storage"
+	config "kcaitech.com/kcserver/controllers"
 	"kcaitech.com/kcserver/utils/storage/base"
 	"kcaitech.com/kcserver/utils/str"
 	myTime "kcaitech.com/kcserver/utils/time"
@@ -133,6 +133,6 @@ func GetDocumentAccessKey1(userId int64, documentId int64) (*map[string]any, str
 		"provider":          storageConfig.Provider,
 		"region":            storageConfig.Region,
 		"bucket_name":       storageConfig.BucketName,
-		"endpoint":          common.StorageHost,
+		"endpoint":          config.Config.StorageHost.Document,
 	}, ""
 }

@@ -2,12 +2,13 @@ package services
 
 import (
 	"errors"
-	"kcaitech.com/kcserver/common"
+	"strings"
+
+	"kcaitech.com/kcserver/common/config"
 	"kcaitech.com/kcserver/common/models"
 	"kcaitech.com/kcserver/utils/math"
 	"kcaitech.com/kcserver/utils/sliceutil"
 	"kcaitech.com/kcserver/utils/time"
-	"strings"
 )
 
 type DocumentService struct {
@@ -40,7 +41,7 @@ type User struct {
 
 func (user User) MarshalJSON() ([]byte, error) {
 	if strings.HasPrefix(user.Avatar, "/") {
-		user.Avatar = common.FileStorageHost + user.Avatar
+		user.Avatar = config.Config.StorageHost.Attatch + user.Avatar
 	}
 	return models.MarshalJSON(user)
 }

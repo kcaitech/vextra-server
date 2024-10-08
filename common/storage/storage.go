@@ -12,22 +12,22 @@ var Client base.Client
 var Bucket base.Bucket
 var FilesBucket base.Bucket
 
-func Init(filePath string) error {
-	conf := config.LoadConfig(filePath)
+func Init(conf *config.StorageConf) error {
+	// conf := config.LoadConfig(filePath)
 
 	var providerConf base.Config
-	switch conf.Storage.Provider {
+	switch conf.Provider {
 	case base.MINIO:
-		providerConf = conf.Storage.Minio
+		providerConf = conf.Minio
 	case base.S3:
-		providerConf = conf.Storage.S3
+		providerConf = conf.S3
 	case base.OSS:
-		providerConf = conf.Storage.Oss
+		providerConf = conf.Oss
 	default:
 		return errors.New("不支持的provider")
 	}
 
-	providerConf.ClientConfig.Provider = conf.Storage.Provider
+	providerConf.ClientConfig.Provider = conf.Provider
 
 	var err error
 	if Client, err = storage.NewClient(&providerConf.ClientConfig); err != nil {

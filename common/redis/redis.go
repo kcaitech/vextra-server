@@ -10,21 +10,21 @@ import (
 var Client *redis.Client
 var RedSync *redsync.Redsync
 
-func Init(filePath string) error {
-	conf := config.LoadConfig(filePath)
-	if conf.Redis.Sentinel {
+func Init(conf *config.RedisConf) error {
+	// conf := config.LoadConfig(filePath)
+	if conf.Sentinel {
 		Client = redis.NewFailoverClient(&redis.FailoverOptions{
-			SentinelAddrs:    conf.Redis.SentinelAddrs,
-			MasterName:       conf.Redis.MasterName,
-			Password:         conf.Redis.Password,
-			SentinelPassword: conf.Redis.Password,
-			DB:               conf.Redis.Db,
+			SentinelAddrs:    conf.SentinelAddrs,
+			MasterName:       conf.MasterName,
+			Password:         conf.Password,
+			SentinelPassword: conf.Password,
+			DB:               conf.Db,
 		})
 	} else {
 		Client = redis.NewClient(&redis.Options{
-			Addr:     conf.Redis.Addr,
-			Password: conf.Redis.Password,
-			DB:       conf.Redis.Db,
+			Addr:     conf.Addr,
+			Password: conf.Password,
+			DB:       conf.Db,
 		})
 	}
 

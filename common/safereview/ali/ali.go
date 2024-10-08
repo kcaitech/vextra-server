@@ -150,13 +150,13 @@ func (c *client) ReviewPictureFromBase64(imageBase64 string) (*base.ReviewImageR
 
 var Client base.Client
 
-func Init(filePath string) error {
-	conf := config.LoadConfig(filePath)
+func Init(conf *config.SafeReviewConf) error {
+	// conf := config.LoadConfig(filePath)
 	_client, err := green20220302.NewClient(&openapi.Config{
-		AccessKeyId:     tea.String(conf.SafeReview.Ali.AccessKeyId),
-		AccessKeySecret: tea.String(conf.SafeReview.Ali.AccessKeySecret),
-		RegionId:        tea.String(conf.SafeReview.Ali.RegionId),
-		Endpoint:        tea.String(conf.SafeReview.Ali.Endpoint),
+		AccessKeyId:     tea.String(conf.Ali.AccessKeyId),
+		AccessKeySecret: tea.String(conf.Ali.AccessKeySecret),
+		RegionId:        tea.String(conf.Ali.RegionId),
+		Endpoint:        tea.String(conf.Ali.Endpoint),
 		ConnectTimeout:  tea.Int(3000),
 		ReadTimeout:     tea.Int(6000),
 	})

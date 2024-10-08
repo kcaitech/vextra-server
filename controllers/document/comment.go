@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
+	"strings"
+	"time"
+
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"log"
-	"kcaitech.com/kcserver/common"
 	"kcaitech.com/kcserver/common/gin/auth"
 	"kcaitech.com/kcserver/common/gin/response"
 	"kcaitech.com/kcserver/common/models"
@@ -19,10 +21,9 @@ import (
 	safereviewBase "kcaitech.com/kcserver/common/safereview/base"
 	"kcaitech.com/kcserver/common/services"
 	"kcaitech.com/kcserver/common/snowflake"
+	config "kcaitech.com/kcserver/controllers"
 	"kcaitech.com/kcserver/utils/str"
 	myTime "kcaitech.com/kcserver/utils/time"
-	"strings"
-	"time"
 )
 
 type UserCommentStatus uint8
@@ -41,7 +42,7 @@ type UserType struct {
 
 func (user UserType) MarshalJSON() ([]byte, error) {
 	if strings.HasPrefix(user.Avatar, "/") {
-		user.Avatar = common.FileStorageHost + user.Avatar
+		user.Avatar = config.Config.StorageHost.Attatch + user.Avatar
 	}
 	return models.MarshalJSON(user)
 }

@@ -10,6 +10,3 @@ storage:
     stsSecretAccessKey: "yFukp3vtIkUNck2XL3s2KOT4wyRPR71G1"
     bucketName: "document"
     filesBucketName: "files"
-  hosts:
-    mian: "https://storage1.moss.design"
-    files: "https://storage2.moss.design"

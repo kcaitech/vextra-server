@@ -3,22 +3,24 @@ package controllers
 import (
 	"encoding/json"
 	"errors"
-	"github.com/gin-gonic/gin"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
-	config "kcaitech.com/kcserver/controllers"
-	"kcaitech.com/kcserver/common"
+
+	"github.com/gin-gonic/gin"
 	"kcaitech.com/kcserver/common/gin/response"
 	"kcaitech.com/kcserver/common/jwt"
 	"kcaitech.com/kcserver/common/models"
 	"kcaitech.com/kcserver/common/services"
+	config "kcaitech.com/kcserver/controllers"
+
 	// "kcaitech.com/kcserver/utils/sliceutil"
-	"kcaitech.com/kcserver/utils/str"
-	. "kcaitech.com/kcserver/utils/time"
 	"strings"
 	"time"
+
+	"kcaitech.com/kcserver/utils/str"
+	. "kcaitech.com/kcserver/utils/time"
 )
 
 type wxOpenWebLoginReq struct {
@@ -43,7 +45,7 @@ type wxOpenWebLoginResp struct {
 
 func (resp *wxOpenWebLoginResp) MarshalJSON() ([]byte, error) {
 	if strings.HasPrefix(resp.Avatar, "/") {
-		resp.Avatar = common.FileStorageHost + resp.Avatar
+		resp.Avatar = config.Config.StorageHost.Attatch + resp.Avatar
 	}
 	return json.Marshal(struct {
 		wxOpenWebLoginResp

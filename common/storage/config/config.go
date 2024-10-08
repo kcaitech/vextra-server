@@ -10,10 +10,10 @@ type StorageConf struct {
 	Minio    base.Config   `yaml:"minio" json:"minio"`
 	S3       base.Config   `yaml:"s3" json:"s3"`
 	Oss      base.Config   `yaml:"oss" json:"oss"`
-	Hosts    struct {
-		Main  string `yaml:"main" json:"main"`
-		Files string `yaml:"files" json:"files"`
-	} `yaml:"hosts" json:"hosts"`
+	// Hosts    struct {
+	// 	Main  string `yaml:"main" json:"main"`
+	// 	Files string `yaml:"files" json:"files"`
+	// } `yaml:"hosts" json:"hosts"`
 }
 
 type Configuration struct {

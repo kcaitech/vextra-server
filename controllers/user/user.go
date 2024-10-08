@@ -2,16 +2,17 @@ package controllers
 
 import (
 	"encoding/base64"
-	"github.com/gin-gonic/gin"
 	"log"
-	"kcaitech.com/kcserver/common"
+	"strings"
+
+	"github.com/gin-gonic/gin"
 	"kcaitech.com/kcserver/common/gin/auth"
 	"kcaitech.com/kcserver/common/gin/response"
 	"kcaitech.com/kcserver/common/models"
 	"kcaitech.com/kcserver/common/safereview"
 	safereviewBase "kcaitech.com/kcserver/common/safereview/base"
 	"kcaitech.com/kcserver/common/services"
-	"strings"
+	config "kcaitech.com/kcserver/controllers"
 )
 
 type userInfoResp struct {
@@ -35,7 +36,7 @@ func GetUserInfo(c *gin.Context) {
 		return
 	}
 	if strings.HasPrefix(user.Avatar, "/") {
-		user.Avatar = common.FileStorageHost + user.Avatar
+		user.Avatar = config.Config.StorageHost.Attatch + user.Avatar
 	}
 	response.Success(c, user)
 }
@@ -118,6 +119,6 @@ func SetAvatar(c *gin.Context) {
 		return
 	}
 	response.Success(c, map[string]any{
-		"avatar": common.FileStorageHost + avatarPath,
+		"avatar": config.Config.StorageHost.Attatch + avatarPath,
 	})
 }

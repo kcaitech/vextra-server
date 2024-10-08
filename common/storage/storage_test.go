@@ -3,12 +3,15 @@ package storage
 import (
 	"log"
 	"os"
-	"kcaitech.com/kcserver/utils/storage/base"
 	"testing"
+
+	"kcaitech.com/kcserver/common/storage/config"
+	"kcaitech.com/kcserver/utils/storage/base"
 )
 
 func TestGenerateAccessKey(t *testing.T) {
-	if err := Init("config_test.yaml"); err != nil {
+	conf := config.LoadConfig("config_test.yaml")
+	if err := Init(&conf.Storage); err != nil {
 		log.Fatalln("storage初始化失败：" + err.Error())
 	}
 	key, err := Bucket.GenerateAccessKey("*", base.AuthOpGetObject, 3600*24*365, "testSessionName")
@@ -19,7 +22,8 @@ func TestGenerateAccessKey(t *testing.T) {
 }
 
 func TestCopyDirectory(t *testing.T) {
-	if err := Init("config_test.yaml"); err != nil {
+	conf := config.LoadConfig("config_test.yaml")
+	if err := Init(&conf.Storage); err != nil {
 		log.Fatalln("storage初始化失败：" + err.Error())
 	}
 	if _, err := Bucket.CopyDirectory("0177361a-736f-4375-bd77-4ab1a0675fd9", "1"); err != nil {
@@ -28,8 +32,9 @@ func TestCopyDirectory(t *testing.T) {
 }
 
 func TestGetObjectInfo(t *testing.T) {
+	conf := config.LoadConfig("config_test.yaml")
 	var err error
-	if err = Init("config_test.yaml"); err != nil {
+	if err = Init(&conf.Storage); err != nil {
 		log.Fatalln("storage初始化失败：" + err.Error())
 	}
 	var documentInfo *base.ObjectInfo
@@ -40,8 +45,9 @@ func TestGetObjectInfo(t *testing.T) {
 }
 
 func TestPutObject(t *testing.T) {
+	conf := config.LoadConfig("config_test.yaml")
 	var err error
-	if err = Init("config_test.yaml"); err != nil {
+	if err = Init(&conf.Storage); err != nil {
 		log.Fatalln("storage初始化失败：" + err.Error())
 	}
 	// 读取本地的test_image.jpg文件

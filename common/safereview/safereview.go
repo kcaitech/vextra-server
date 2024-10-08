@@ -11,17 +11,17 @@ import (
 
 var Client base.Client
 
-func Init(filePath string) error {
-	conf := config.LoadConfig(filePath)
+func Init(conf *config.SafeReviewConf) error {
+	// conf := config.LoadConfig(filePath)
 
-	switch conf.SafeReview.Provider {
+	switch conf.Provider {
 	case base.Ali:
-		if err := ali.Init(filePath); err != nil {
+		if err := ali.Init(conf); err != nil {
 			return err
 		}
 		Client = ali.Client
 	case base.Baidu:
-		if err := baidu.Init(filePath); err != nil {
+		if err := baidu.Init(conf); err != nil {
 			return err
 		}
 		Client = baidu.Client

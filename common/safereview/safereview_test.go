@@ -6,16 +6,21 @@ import (
 	"io"
 	"log"
 	"os"
-	"kcaitech.com/kcserver/common/storage"
 	"testing"
 	"time"
+
+	"kcaitech.com/kcserver/common/safereview/config"
+	"kcaitech.com/kcserver/common/storage"
+	storageConf "kcaitech.com/kcserver/common/storage/config"
 )
 
 func TestMain(m *testing.M) {
-	if err := storage.Init("../storage/config_test.yaml"); err != nil {
+	sconf := storageConf.LoadConfig("../storage/config_test.yaml")
+	if err := storage.Init(&sconf.Storage); err != nil {
 		log.Fatalln("storage初始化失败：" + err.Error())
 	}
-	if err := Init("config_test.yaml"); err != nil {
+	conf := config.LoadConfig("config_test.yaml")
+	if err := Init(&conf.SafeReview); err != nil {
 		log.Fatalln("safereview初始化失败：" + err.Error())
 	}
 	time.Sleep(1 * time.Second)

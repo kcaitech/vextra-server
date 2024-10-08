@@ -3,12 +3,13 @@ package services
 import (
 	"errors"
 	"fmt"
-	"kcaitech.com/kcserver/common"
+	"strings"
+
+	"kcaitech.com/kcserver/common/config"
 	"kcaitech.com/kcserver/common/models"
 	"kcaitech.com/kcserver/common/storage"
 	"kcaitech.com/kcserver/utils/str"
 	"kcaitech.com/kcserver/utils/time"
-	"strings"
 )
 
 type TeamService struct {
@@ -133,7 +134,7 @@ type Team struct {
 
 func (team Team) MarshalJSON() ([]byte, error) {
 	if strings.HasPrefix(team.Avatar, "/") {
-		team.Avatar = common.FileStorageHost + team.Avatar
+		team.Avatar = config.Config.StorageHost.Attatch + team.Avatar
 	}
 	return models.MarshalJSON(team)
 }

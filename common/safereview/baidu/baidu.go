@@ -233,10 +233,10 @@ func (c *client) ReviewPictureFromBase64(imageBase64 string) (*base.ReviewImageR
 
 var Client base.Client
 
-func Init(filePath string) error {
-	conf := config.LoadConfig(filePath)
+func Init(conf *config.SafeReviewConf) error {
+	// conf := config.LoadConfig(filePath)
 	Client = &client{
-		censor.NewClient(conf.SafeReview.Baidu.ApiKey, conf.SafeReview.Baidu.SecretKey),
+		censor.NewClient(conf.Baidu.ApiKey, conf.Baidu.SecretKey),
 	}
 	return nil
 }

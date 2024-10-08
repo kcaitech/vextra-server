@@ -31,7 +31,3 @@ storage:
     roleName: "ramoss"
     bucketName: "protodesign-document"
     filesBucketName: "protodesign-files"
-
-  hosts:
-    mian: "https://storage1.moss.design"
-    files: "https://storage2.moss.design"

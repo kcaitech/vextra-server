@@ -5,10 +5,12 @@ import (
 	"log"
 	"testing"
 	"time"
+
+	"kcaitech.com/kcserver/common/redis/config"
 )
 
 func TestMain(m *testing.M) {
-	if err := Init("config_test.yaml"); err != nil {
+	if err := Init(&config.LoadConfig("config_test.yaml").Redis); err != nil {
 		log.Fatalln("redis初始化失败：" + err.Error())
 	}
 	m.Run()
