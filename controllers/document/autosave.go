@@ -153,7 +153,7 @@ func AutoSave(documentId int64) {
 		DocumentText:        version.DocumentText,
 		PageImageBase64List: version.PageImageBase64List,
 	}
-	UploadDocumentData(&header, &data, &[]([]byte){}, &response)
+	UploadDocumentData(&header, &data, nil, &response)
 
 	if response.Status != ResponseStatusSuccess {
 		log.Println("UploadDocumentData fail")

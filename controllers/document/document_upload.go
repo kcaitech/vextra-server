@@ -46,13 +46,18 @@ type Response struct {
 }
 
 type UploadData struct {
-	DocumentMeta        Data            `json:"document_meta"`
-	Pages               json.RawMessage `json:"pages"`
-	FreeSymbols         json.RawMessage `json:"freesymbols"`
-	MediaNames          []string        `json:"media_names"`
-	MediasSize          uint64          `json:"medias_size"`
-	DocumentText        string          `json:"document_text"`
-	PageImageBase64List []string        `json:"page_image_base64_list"`
+	DocumentMeta Data            `json:"document_meta"`
+	Pages        json.RawMessage `json:"pages"`
+	// FreeSymbols         json.RawMessage `json:"freesymbols"` // 这个现在在document meta里
+	MediaNames          []string `json:"media_names"`
+	MediasSize          uint64   `json:"medias_size"`
+	DocumentText        string   `json:"document_text"`
+	PageImageBase64List []string `json:"page_image_base64_list"`
+}
+
+type Media struct {
+	Name    string
+	Content *[]byte
 }
 
 func UploadDocument(c *gin.Context) {
@@ -86,7 +91,7 @@ func UploadDocument(c *gin.Context) {
 	documentId := str.DefaultToInt(header.DocumentId, 0)
 	isFirstUpload := documentId <= 0
 
-	medias := []([]byte){}
+	medias := []Media{}
 	if isFirstUpload {
 		nextMedia := func() []byte {
 			messageType, data, err := ws.ReadMessage()
@@ -103,19 +108,22 @@ func UploadDocument(c *gin.Context) {
 			return data
 		}
 
-		for range uploadData.MediaNames {
+		for _, name := range uploadData.MediaNames {
 			m := nextMedia()
 			if nil == m {
 				return
 			}
-			medias = append(medias, m)
+			medias = append(medias, Media{
+				Name:    name,
+				Content: &m,
+			})
 		}
 	}
 
 	UploadDocumentData(&header, &uploadData, &medias, &resp)
 }
 
-func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]([]byte), resp *Response) {
+func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media, resp *Response) {
 
 	// resp := Response{
 	// 	Status: ResponseStatusFail,
@@ -277,43 +285,43 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]([]byt
 	}
 
 	// medias部分
-	if isFirstUpload {
-		mediaInfoList := make([]struct {
-			Name    string
-			Content []byte
-		}, len(uploadData.MediaNames))
-		for idx, mediaName := range uploadData.MediaNames {
-			path := docPath + "/medias/" + mediaName
-			media := (*medias)[idx]
-			if media == nil {
-				continue // return?
-			}
-			mediaInfoList = append(mediaInfoList, struct {
-				Name    string
-				Content []byte
-			}{
-				Name:    mediaName,
-				Content: media,
-			})
-			documentSize += uint64(len(media))
-			uploadWaitGroup.Add(1)
-			go func(path string, media []byte) {
-				defer uploadWaitGroup.Done()
-				if _, err := storage.Bucket.PutObjectByte(path, media); err != nil {
-					resp.Message = "对象上传错误"
-					log.Println("对象上传错误", err)
-					// _ = ws.WriteJSON(&resp)
-					// ws.Close()
-					return
-				}
-			}(path, media)
-		}
-		if len(mediaInfoList) > 0 {
+	if isFirstUpload && medias != nil {
+		// mediaInfoList := make([]struct {
+		// 	Name    string
+		// 	Content []byte
+		// }, len(uploadData.MediaNames))
+		// for idx, mediaName := range uploadData.MediaNames {
+		// 	path := docPath + "/medias/" + mediaName
+		// 	media := (*medias)[idx]
+		// 	if media == nil {
+		// 		continue // return?
+		// 	}
+		// 	mediaInfoList = append(mediaInfoList, struct {
+		// 		Name    string
+		// 		Content []byte
+		// 	}{
+		// 		Name:    mediaName,
+		// 		Content: media,
+		// 	})
+		// 	documentSize += uint64(len(media))
+		// 	uploadWaitGroup.Add(1)
+		// 	go func(path string, media []byte) {
+		// 		defer uploadWaitGroup.Done()
+		// 		if _, err := storage.Bucket.PutObjectByte(path, media); err != nil {
+		// 			resp.Message = "对象上传错误"
+		// 			log.Println("对象上传错误", err)
+		// 			// _ = ws.WriteJSON(&resp)
+		// 			// ws.Close()
+		// 			return
+		// 		}
+		// 	}(path, media)
+		// }
+		if len(*medias) > 0 {
 			go func() {
 				needUpdateDocument := false
-				for _, mediaInfo := range mediaInfoList {
-					base64Str := base64.StdEncoding.EncodeToString(mediaInfo.Content)
-					if len(mediaInfo.Content) == 0 || len(base64Str) == 0 {
+				for _, mediaInfo := range *medias {
+					base64Str := base64.StdEncoding.EncodeToString(*mediaInfo.Content)
+					if len(*mediaInfo.Content) == 0 || len(base64Str) == 0 {
 						continue
 					}
 					reviewResponse, err := safereview.Client.ReviewPictureFromBase64(base64Str)
@@ -341,19 +349,19 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]([]byt
 	// 	log.Println("ws已关闭")
 	// }
 
-	freesymbolsVersionId := ""
-	// 上传freesymbols.json
-	freeSymbolsPath := docPath + "/freesymbols.json"
-	if result, err := storage.Bucket.PutObjectByte(freeSymbolsPath, uploadData.FreeSymbols); err != nil {
-		resp.Message = "对象上传错误"
-		log.Println("freesymbols.json上传错误", err)
-		// _ = ws.WriteJSON(&resp)
-		// ws.Close()
-		return
-	} else {
-		freesymbolsVersionId = result.VersionID
-	}
-	documentSize += uint64(len(uploadData.FreeSymbols))
+	// freesymbolsVersionId := ""
+	// // 上传freesymbols.json
+	// freeSymbolsPath := docPath + "/freesymbols.json"
+	// if result, err := storage.Bucket.PutObjectByte(freeSymbolsPath, uploadData.FreeSymbols); err != nil {
+	// 	resp.Message = "对象上传错误"
+	// 	log.Println("freesymbols.json上传错误", err)
+	// 	// _ = ws.WriteJSON(&resp)
+	// 	// ws.Close()
+	// 	return
+	// } else {
+	// 	freesymbolsVersionId = result.VersionID
+	// }
+	// documentSize += uint64(len(uploadData.FreeSymbols))
 
 	// 设置versionId
 	pagesList := uploadData.DocumentMeta["pagesList"].([]any)
@@ -371,7 +379,7 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]([]byt
 		pageItem["versionId"] = versionId
 	}
 	uploadData.DocumentMeta["lastCmdId"] = lastCmdId
-	uploadData.DocumentMeta["freesymbolsVersionId"] = freesymbolsVersionId
+	// uploadData.DocumentMeta["freesymbolsVersionId"] = freesymbolsVersionId
 	// 上传document-meta.json
 	documentMetaStr, err := json.Marshal(uploadData.DocumentMeta)
 	if err != nil {

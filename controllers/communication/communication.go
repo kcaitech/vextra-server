@@ -131,6 +131,10 @@ func Communication(c *gin.Context) {
 		serveMap[t] = s
 	}
 
+	// doc upload
+	docUploadServe := NewDocUploadServe(ws, userId)
+	bindServe(DataTypes_DocUpload, docUploadServe)
+
 	for {
 
 		clientData := TransData{}
@@ -195,9 +199,18 @@ func Communication(c *gin.Context) {
 			commentServe := NewCommentServe(ws, userId, documentId, genSId)
 			bindServe(DataTypes_Comment, commentServe)
 
-			opServe := NewOpServe(ws, userId, documentId, bindData.VersionId, genSId)
+			opServe := NewOpServe(ws, userId, documentId, bindData.VersionId, genSId) // todo VersionId
 			bindServe(DataTypes_Op, opServe)
-			// todo send back message
+
+			resourceServe := NewResourceServe(ws, userId, documentId)
+			bindServe(DataTypes_Resource, resourceServe)
+
+			selectionServe := NewSelectionServe(ws, userId, documentId, genSId)
+			bindServe(DataTypes_Selection, selectionServe)
+			// send back message
+			ws.WriteJSON(serverData)
+			return
+
 		} else {
 			serve := serveMap[clientData.Type]
 			if serve != nil {
