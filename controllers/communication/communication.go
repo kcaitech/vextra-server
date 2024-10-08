@@ -15,29 +15,8 @@ import (
 	"kcaitech.com/kcserver/common/models"
 	"kcaitech.com/kcserver/utils/str"
 	"kcaitech.com/kcserver/utils/websocket"
+	document "kcaitech.com/kcserver/controllers/document"
 )
-
-// func getTunnelDataByCmdData(tunnelCmdData TunnelCmdData, ws *websocket.Ws) (TunnelDataType, []byte) {
-// 	dataType := tunnelCmdData.DataType
-// 	if dataType < TunnelDataTypeText || dataType > TunnelDataTypeBinary {
-// 		log.Println("dataType错误", dataType)
-// 		return TunnelDataTypeNone, nil
-// 	}
-// 	if dataType != TunnelDataTypeBinary {
-// 		if len(tunnelCmdData.Data) == 0 {
-// 			log.Println("data错误")
-// 			return TunnelDataTypeNone, nil
-// 		}
-// 		return dataType, tunnelCmdData.Data
-// 	} else {
-// 		messageType, data, err := ws.ReadMessage()
-// 		if err != nil || messageType != websocket.MessageTypeBinary {
-// 			log.Println("binary data错误", err, messageType)
-// 			return TunnelDataTypeNone, nil
-// 		}
-// 		return dataType, data
-// 	}
-// }
 
 func decodeBinaryMessage(data []byte) (string, []byte, error) {
 	// 假设长度前缀为4字节
@@ -131,7 +110,7 @@ func (c *ACommuncation) handleBind(clientData *TransData) {
 		return
 	}
 
-	accessKey, errmsg := GetDocumentAccessKey(c.userId, documentId)
+	accessKey, errmsg := document.GetDocumentAccessKey1(c.userId, documentId)
 	if nil == accessKey {
 		c.msgErr(errmsg, &serverData, nil)
 		return
@@ -148,15 +127,6 @@ func (c *ACommuncation) handleBind(clientData *TransData) {
 
 	c.documentId = documentId
 	c.versionId = docInfo.Document.VersionId
-	// bind comment
-	// commentServe := NewCommentServe(c.ws, c.userId, documentId, c.genSId)
-	// c.bindServe(DataTypes_Comment, commentServe)
-	// opServe := NewOpServe(c.ws, c.userId, documentId, docInfo.Document.VersionId, c.genSId) // todo VersionId
-	// c.bindServe(DataTypes_Op, opServe)
-	// resourceServe := NewResourceServe(c.ws, c.userId, documentId)
-	// c.bindServe(DataTypes_Resource, resourceServe)
-	// selectionServe := NewSelectionServe(c.ws, c.userId, documentId, c.genSId)
-	// c.bindServe(DataTypes_Selection, selectionServe)
 
 	serverData.Data = string(retstr)
 	// send back message

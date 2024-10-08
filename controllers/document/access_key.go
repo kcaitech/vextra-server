@@ -2,8 +2,10 @@ package document
 
 import (
 	"errors"
-	"github.com/gin-gonic/gin"
 	"log"
+	"time"
+
+	"github.com/gin-gonic/gin"
 	"kcaitech.com/kcserver/common"
 	"kcaitech.com/kcserver/common/gin/auth"
 	"kcaitech.com/kcserver/common/gin/response"
@@ -13,7 +15,6 @@ import (
 	"kcaitech.com/kcserver/utils/storage/base"
 	"kcaitech.com/kcserver/utils/str"
 	myTime "kcaitech.com/kcserver/utils/time"
-	"time"
 )
 
 // GetDocumentAccessKey 获取文档访问密钥
@@ -24,35 +25,57 @@ func GetDocumentAccessKey(c *gin.Context) {
 		return
 	}
 
-	documentService := services.NewDocumentService()
-
 	documentId := str.DefaultToInt(c.Query("doc_id"), 0)
 	if documentId == 0 {
 		response.BadRequest(c, "参数错误：doc_id")
 		return
 	}
 
+	key, errmsg := GetDocumentAccessKey1(userId, documentId)
+	if nil == key {
+		response.Fail(c, errmsg)
+	} else {
+		response.Success(c, key)
+	}
+}
+
+// GetDocumentAccessKey 获取文档访问密钥
+func GetDocumentAccessKey1(userId int64, documentId int64) (*map[string]any, string) {
+	// userId, err := auth.GetUserId(c)
+	// if err != nil {
+	// 	response.Unauthorized(c)
+	// 	return
+	// }
+
+	documentService := services.NewDocumentService()
+
+	// documentId := str.DefaultToInt(c.Query("doc_id"), 0)
+	// if documentId == 0 {
+	// 	response.BadRequest(c, "参数错误：doc_id")
+	// 	return
+	// }
+
 	document := models.Document{}
-	err = documentService.GetById(documentId, &document)
+	err := documentService.GetById(documentId, &document)
 	if err != nil {
-		response.BadRequest(c, "文档不存在")
-		return
+		// response.BadRequest(c, "文档不存在")
+		return nil, "文档不存在"
 	}
 
 	var permType models.PermType
 	var documentPermission *models.DocumentPermission
 	var isPublicPerm bool
 	if documentPermission, isPublicPerm, err = documentService.GetDocumentPermissionByDocumentAndUserId(&permType, documentId, userId); err != nil {
-		response.Fail(c, "")
-		return
+		// response.Fail(c, "")
+		return nil, ""
 	}
 	if permType <= models.PermTypeNone {
-		response.Forbidden(c, "")
-		return
+		// response.Forbidden(c, "")
+		return nil, ""
 	}
 	if !document.LockedAt.IsZero() && document.UserId != userId {
-		response.Forbidden(c, "审核不通过")
-		return
+		// response.Forbidden(c, "审核不通过")
+		return nil, "审核不通过"
 	}
 	if documentPermission == nil && isPublicPerm {
 		if err := documentService.DocumentPermissionService.Create(&models.DocumentPermission{
@@ -62,8 +85,8 @@ func GetDocumentAccessKey(c *gin.Context) {
 			GranteeId:    userId,
 			PermType:     permType,
 		}); err != nil {
-			response.Fail(c, "权限创建失败")
-			return
+			// response.Fail(c, "权限创建失败")
+			return nil, "权限创建失败"
 		}
 	}
 
@@ -74,9 +97,9 @@ func GetDocumentAccessKey(c *gin.Context) {
 		"U"+str.IntToString(userId)+"D"+str.IntToString(documentId),
 	)
 	if err != nil {
-		log.Println("生成密钥失败" + err.Error())
-		response.Fail(c, "生成密钥失败")
-		return
+		// log.Println("生成密钥失败" + err.Error())
+		// response.Fail(c, "生成密钥失败")
+		return nil, "生成密钥失败"
 	}
 
 	// 插入/更新访问记录
@@ -102,7 +125,7 @@ func GetDocumentAccessKey(c *gin.Context) {
 
 	storageConfig := storage.Bucket.GetConfig()
 
-	response.Success(c, map[string]any{
+	return &map[string]any{
 		"access_key":        accessKeyValue.AccessKey,
 		"secret_access_key": accessKeyValue.SecretAccessKey,
 		"session_token":     accessKeyValue.SessionToken,
@@ -111,5 +134,5 @@ func GetDocumentAccessKey(c *gin.Context) {
 		"region":            storageConfig.Region,
 		"bucket_name":       storageConfig.BucketName,
 		"endpoint":          common.StorageHost,
-	})
+	}, ""
 }
