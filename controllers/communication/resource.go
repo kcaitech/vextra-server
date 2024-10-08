@@ -59,7 +59,7 @@ func (serv *resourceServe) handle(data *TransData, binaryData *([]byte)) {
 	serverData.DataId = data.DataId
 	msgErr := func(msg string, serverData *TransData, err *error) {
 		serverData.Err = msg
-		log.Println(msg)
+		log.Println(msg, err)
 		_ = serv.ws.WriteJSON(serverData)
 	}
 

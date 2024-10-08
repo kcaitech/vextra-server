@@ -70,7 +70,7 @@ func decodeBinaryMessage(data []byte) (string, []byte, error) {
 type BindData struct {
 	DocumentId string `json:"document_id"`
 	// VersionId  string `json:"version_id"`
-	Perm string `json:"perm_type",omitempty`
+	Perm string `json:"perm_type,omitempty"`
 }
 
 type ServeFace interface {
@@ -80,11 +80,12 @@ type ServeFace interface {
 
 type ACommuncation struct {
 	// _sid       atomic.Int64
-	serveMap map[string]ServeFace
-	ws       *websocket.Ws
-	genSId   func() string
-	userId   int64
-	// documentId int64
+	serveMap   map[string]ServeFace
+	ws         *websocket.Ws
+	genSId     func() string
+	userId     int64
+	documentId int64
+	versionId  string
 }
 
 func (c *ACommuncation) msgErr(msg string, serverData *TransData, err *error) {
@@ -118,7 +119,6 @@ func (c *ACommuncation) handleBind(clientData *TransData) {
 		c.msgErr("wrong document id", &serverData, nil)
 		return
 	}
-	// c.documentId = documentId
 
 	permType := models.PermType(str.DefaultToInt(bindData.Perm, 0))
 	if permType < models.PermTypeReadOnly || permType > models.PermTypeEditable {
@@ -146,25 +146,47 @@ func (c *ACommuncation) handleBind(clientData *TransData) {
 		return
 	}
 
+	c.documentId = documentId
+	c.versionId = docInfo.Document.VersionId
 	// bind comment
-	commentServe := NewCommentServe(c.ws, c.userId, documentId, c.genSId)
-	c.bindServe(DataTypes_Comment, commentServe)
-
-	opServe := NewOpServe(c.ws, c.userId, documentId, docInfo.Document.VersionId, c.genSId) // todo VersionId
-	c.bindServe(DataTypes_Op, opServe)
-
-	resourceServe := NewResourceServe(c.ws, c.userId, documentId)
-	c.bindServe(DataTypes_Resource, resourceServe)
-
-	selectionServe := NewSelectionServe(c.ws, c.userId, documentId, c.genSId)
-	c.bindServe(DataTypes_Selection, selectionServe)
+	// commentServe := NewCommentServe(c.ws, c.userId, documentId, c.genSId)
+	// c.bindServe(DataTypes_Comment, commentServe)
+	// opServe := NewOpServe(c.ws, c.userId, documentId, docInfo.Document.VersionId, c.genSId) // todo VersionId
+	// c.bindServe(DataTypes_Op, opServe)
+	// resourceServe := NewResourceServe(c.ws, c.userId, documentId)
+	// c.bindServe(DataTypes_Resource, resourceServe)
+	// selectionServe := NewSelectionServe(c.ws, c.userId, documentId, c.genSId)
+	// c.bindServe(DataTypes_Selection, selectionServe)
 
 	serverData.Data = string(retstr)
 	// send back message
 	c.ws.WriteJSON(serverData)
 }
 
-func (c *ACommuncation) start() {
+func (c *ACommuncation) handleStart(clientData *TransData) {
+	serverData := TransData{}
+	serverData.Type = clientData.Type
+	serverData.DataId = clientData.DataId
+
+	if c.documentId == 0 {
+		c.msgErr("not bind document", &serverData, nil)
+		return
+	}
+
+	// bind comment
+	commentServe := NewCommentServe(c.ws, c.userId, c.documentId, c.genSId)
+	c.bindServe(DataTypes_Comment, commentServe)
+	opServe := NewOpServe(c.ws, c.userId, c.documentId, c.versionId, c.genSId) // todo VersionId
+	c.bindServe(DataTypes_Op, opServe)
+	resourceServe := NewResourceServe(c.ws, c.userId, c.documentId)
+	c.bindServe(DataTypes_Resource, resourceServe)
+	selectionServe := NewSelectionServe(c.ws, c.userId, c.documentId, c.genSId)
+	c.bindServe(DataTypes_Selection, selectionServe)
+
+	c.ws.WriteJSON(serverData)
+}
+
+func (c *ACommuncation) serve() {
 
 	// doc upload
 	docUploadServe := NewDocUploadServe(c.ws, c.userId)
@@ -220,7 +242,9 @@ func (c *ACommuncation) start() {
 			// permType := models.PermType(str.DefaultToInt(c.Query("perm_type"), 0))
 			c.handleBind(&clientData)
 			continue
-
+		} else if clientData.Type == DataTypes_Start {
+			c.handleStart(&clientData)
+			continue
 		} else {
 			serve := c.serveMap[clientData.Type]
 			if serve != nil {
@@ -276,6 +300,6 @@ func Communication(c *gin.Context) {
 		userId: userId,
 		ws:     ws,
 		genSId: genSId,
-	}).start()
+	}).serve()
 
 }

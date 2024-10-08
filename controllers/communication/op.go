@@ -102,14 +102,14 @@ func getPreviousId(documentId int64) (int64, error) {
 		"document_id": documentId,
 	}
 	findOptions := options.Find()
-	findOptions.SetSort(bson.D{{"_id", -1}})
+	findOptions.SetSort(bson.D{{Key: "_id", Value: -1}})
 	findOptions.SetLimit(1)
 
-	cur, err := documentCollection.Find(nil, reqParams, findOptions) // todo 要去主节点找
+	cur, err := documentCollection.Find(context.TODO(), reqParams, findOptions) // todo 要去主节点找
 	if err != nil {
 		return 0, err
 	}
-	if err := cur.All(nil, &cmdItemList); err != nil {
+	if err := cur.All(context.TODO(), &cmdItemList); err != nil {
 		return 0, err
 	}
 	if len(cmdItemList) > 0 {
@@ -191,13 +191,13 @@ func (serv *opServe) start(documentId int64, documentVersion models.DocumentVers
 			},
 		}
 		findOptions := options.Find()
-		findOptions.SetSort(bson.D{{"_id", 1}})
-		cur, err := documentCollection.Find(nil, reqParams, findOptions) // 有没有可能一个batch的cmd没拉取完整
+		findOptions.SetSort(bson.D{{Key: "_id", Value: 1}})
+		cur, err := documentCollection.Find(context.TODO(), reqParams, findOptions) // 有没有可能一个batch的cmd没拉取完整
 		if err != nil {
 			log.Println("cmdList查询失败", err)
 			return
 		}
-		if err := cur.All(nil, &cmdItemList); err != nil {
+		if err := cur.All(context.TODO(), &cmdItemList); err != nil {
 			log.Println("cmdList查询失败", err)
 			return
 		}
@@ -238,7 +238,7 @@ func (serv *opServe) start(documentId int64, documentVersion models.DocumentVers
 				// todo 需要判断下当前lastversion版本,当接不上时需要拉取cmds
 				serv.send(v.Payload)
 			case <-serv.quit:
-				break
+				return
 			}
 		}
 		// for {
@@ -296,7 +296,7 @@ func (serv *opServe) handleCommit(data *TransData, receiveData *ReceiveData) {
 
 	msgErr := func(msg string, serverData *TransData, err *error) {
 		serverData.Err = msg
-		log.Println(msg)
+		log.Println(msg, err)
 		_ = serv.ws.WriteJSON(serverData)
 	}
 
@@ -463,7 +463,7 @@ func (serv *opServe) handlePullCmds(data *TransData, receiveData *ReceiveData) {
 
 	msgErr := func(msg string, serverData *TransData, err *error) {
 		serverData.Err = msg
-		log.Println(msg)
+		log.Println(msg, err)
 		_ = serv.ws.WriteJSON(serverData)
 	}
 
@@ -474,13 +474,13 @@ func (serv *opServe) handlePullCmds(data *TransData, receiveData *ReceiveData) {
 		"$gte": fromId,
 	}
 	findOptions := options.Find()
-	findOptions.SetSort(bson.D{{"_id", 1}})
+	findOptions.SetSort(bson.D{{Key: "_id", Value: 1}})
 	if toId > 0 {
 		idFilter["$lte"] = toId
 	} else {
 		//findOptions.SetLimit(100)
 	}
-	cur, err := mongo.DB.Collection("document1").Find(nil, bson.M{
+	cur, err := mongo.DB.Collection("document1").Find(context.TODO(), bson.M{
 		"document_id": serv.documentId,
 		"_id":         idFilter,
 	}, findOptions)
@@ -488,7 +488,7 @@ func (serv *opServe) handlePullCmds(data *TransData, receiveData *ReceiveData) {
 		msgErr("数据查询失败", &serverData, &err)
 		return
 	}
-	if err := cur.All(nil, &cmdItemList); err != nil {
+	if err := cur.All(context.TODO(), &cmdItemList); err != nil {
 		msgErr("数据查询失败", &serverData, &err)
 		return
 	}

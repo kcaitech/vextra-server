@@ -54,7 +54,7 @@ func (serv *commnetServe) start(documentId int64) {
 				}
 				serv.send(v.Payload)
 			case <-serv.quit:
-				break
+				return
 			}
 		}
 	}()

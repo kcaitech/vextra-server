@@ -41,6 +41,7 @@ const (
 	DataTypes_Selection = "selection"
 	DataTypes_DocUpload = "docupload"
 	DataTypes_Bind      = "bind"
+	DataTypes_Start     = "start"
 )
 
 // 与前端一致
