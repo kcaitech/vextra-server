@@ -98,7 +98,7 @@ func _svgToPng(svgContent string) ([]byte, error) {
 		"Content-Type": writer.FormDataContentType(),
 	}
 
-	url := "http://" + config.Config.Svg2Png.Host
+	url := config.Config.Svg2Png.Host
 
 	// 创建请求
 	req, err := http.NewRequest("POST", url, formData)
