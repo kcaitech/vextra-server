@@ -12,8 +12,8 @@ services:
     networks:
       kcserver:
 
-    ports:
-      - "10003:10003"
+    # ports:
+    #   - "10003:10003"
     volumes:
       - ./kcserver/config/:/app/config/
       - ./kcserver/log/:/app/log/

@@ -11,10 +11,10 @@
 /deployment/docker_compose/mongo/data
 /id_ed25519
 
-/deployment/localtest/mysql/data/
-/deployment/localtest/minio/
-/deployment/localtest/redis/
-/deployment/localtest/mongodb/
+/deployment2/db/mysql/data/
+/deployment2/db/minio/
+/deployment2/db/redis/
+/deployment2/db/mongodb/
 
 /log
 
