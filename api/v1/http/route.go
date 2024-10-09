@@ -10,7 +10,7 @@ func LoadRoutes(router *gin.Engine) {
 	router.RedirectTrailingSlash = false
 	router.GET("/health_check", controllers.HealthCheck)
 	router.GET("/version", controllers.GetAppVersion)
-	apiGroup := router.Group("/") // router.Group(common.ApiVersionPath)
+	apiGroup := router.Group("/api") // router.Group(common.ApiVersionPath)
 	apiGroup.Use(middlewares.CORSMiddleware())
 	loadLoginRoutes(apiGroup)
 	loadUserRoutes(apiGroup)

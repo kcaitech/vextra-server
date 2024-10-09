@@ -10,6 +10,7 @@ import (
 
 var AllowedKeyList = []string{
 	"FontList",
+	"Preferences",
 }
 
 func GetUserKVStorage(c *gin.Context) {

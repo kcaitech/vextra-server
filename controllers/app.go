@@ -31,21 +31,27 @@ type Package struct {
 	Version string `yaml:"version"`
 }
 
-func LoadPackageVersion() string {
+func LoadPackageVersion() *string {
+	var def = ""
 	content, err := os.ReadFile("package.yaml")
 	if err != nil {
-		log.Fatalf("load package.yaml fail %v", err)
+		log.Printf("load package.yaml fail %v", err)
+		return &def
 	}
 	config := &Package{}
 	err = yaml.Unmarshal(content, config)
 	if err != nil {
-		log.Fatalf("unmarshal package.yaml fail %v", err)
+		log.Printf("unmarshal package.yaml fail %v", err)
+		return &def
 	}
-	return config.Version
+	return &config.Version
 }
 
-var version = LoadPackageVersion()
+var version *string
 
 func GetAppVersion(c *gin.Context) {
+	if version == nil {
+		version = LoadPackageVersion()
+	}
 	response.Success(c, version)
 }
