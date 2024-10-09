@@ -27,7 +27,7 @@
         "secret": "123456",
         "expire_hour": 168
     },
-    "mongodb": {
+    "mongo": {
         "uri": "mongodb://root:jKKsinkjilKKLSW@mongo:27017",
         "db": "kcserver"
     },
@@ -36,7 +36,7 @@
         "password": "kcserver",
         "db": 0
     },
-    "safe_review": {
+    "safereview": {
         "provider": "baidu",
         "ali": {
             "accessKeyId": "accessKeyId",

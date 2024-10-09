@@ -3,7 +3,10 @@
 ymls='-f minio.yaml -f mongodb.yaml -f mysql.yaml -f redis.yaml -f kcsvg2png.yaml -f kcversion.yaml -f kcserver.yaml'
 
 if [ "$1" = "up" ]; then
-    docker network create kcserver
+    net=$(docker network ls | grep kcserver | awk '{print $2}')
+    if [ "$net" != "kcserver" ]; then
+        docker network create kcserver
+    fi
     docker compose ${ymls} up -d
 fi
 
