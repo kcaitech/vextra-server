@@ -1,3 +1,0 @@
-独立于docker镜像的config，这样镜像可用于不同的环境
-
-yaml需要换成json，用于aliyun的sae
