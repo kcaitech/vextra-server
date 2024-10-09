@@ -19,3 +19,8 @@ services:
       - ./html:/usr/share/nginx/html
       - ./certs:/etc/ssl/certs
       - ./private:/etc/ssl/private
+    networks:
+      kcserver:
+networks:
+  kcserver:
+    external: true
