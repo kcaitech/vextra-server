@@ -5,7 +5,7 @@
     "db": {
         "dsn": "root:_IpFCT^*pui~Mac7~0%SIicRq@Z6rtzE@tcp(192.168.0.18:33306)/kcserver?charset=utf8&parseTime=True&loc=Local"
     },
-    "storagehost": {
+    "storage_host": {
         "document": "https://storage1.moss.design",
         "attatch": "https://storage2.moss.design"
     },
@@ -17,8 +17,11 @@
         "appid": "xxx",
         "secret": "xxx"
     },
-    "documentVersionServer": {
+    "version_server": {
         "host": "doc-versioning-service.kc.svc.cluster.local:10040"
+    },
+    "svg2png": {
+        "host":"svg-to-png.kc.svc.cluster.local:10050/svg_to_png"
     },
     "jwt": {
         "secret": "123456",

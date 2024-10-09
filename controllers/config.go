@@ -20,9 +20,12 @@ type Configuration struct {
 		Appid  string `yaml:"appid" json:"appid"`
 		Secret string `yaml:"secret" json:"secret"`
 	} `yaml:"wxMp" json:"wxMp"`
-	DocumentVersionServer struct {
+	VersionServer struct {
 		Host string `yaml:"host" json:"host"`
-	} `yaml:"documentVersionServer" json:"documentVersionServer"`
+	} `yaml:"version_server" json:"version_server"`
+	Svg2Png struct {
+		Host string `yaml:"host" json:"host"`
+	} `yaml:"svg2png" json:"svg2png"`
 
 	Jwt       jwt.JwtConf               `yaml:"jwt" json:"jwt"`
 	Mongo     mongo.MongoConf           `yaml:"mongo" json:"mongo"`

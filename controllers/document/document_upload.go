@@ -49,10 +49,10 @@ type UploadData struct {
 	DocumentMeta Data            `json:"document_meta"`
 	Pages        json.RawMessage `json:"pages"`
 	// FreeSymbols         json.RawMessage `json:"freesymbols"` // 这个现在在document meta里
-	MediaNames          []string `json:"media_names"`
-	MediasSize          uint64   `json:"medias_size"`
-	DocumentText        string   `json:"document_text"`
-	PageImageBase64List []string `json:"page_image_base64_list"`
+	MediaNames    []string  `json:"media_names"`
+	MediasSize    uint64    `json:"medias_size"`
+	DocumentText  string    `json:"document_text"`
+	PageImageList *[][]byte `json:"page_image_list"`
 }
 
 type Media struct {
@@ -206,20 +206,22 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 			}
 		}()
 	}
-	if len(uploadData.PageImageBase64List) > 0 {
+	if len(*uploadData.PageImageList) > 0 {
 		go func() {
 			needUpdateDocument := false
-			for i, base64Str := range uploadData.PageImageBase64List {
+			for i, image := range *uploadData.PageImageList {
 				path := docPath + "/page_image/" + str.IntToString(int64(i)) + ".png"
-				image, err := base64.StdEncoding.DecodeString(base64Str)
-				if err != nil {
-					log.Println("图片base64解码错误", err)
-				} else if _, err := storage.Bucket.PutObjectByte(path, image); err != nil {
+				// image, err := base64.StdEncoding.DecodeString(base64Str)
+				// if err != nil {
+				// 	log.Println("图片base64解码错误", err)
+				// } else
+				if _, err := storage.Bucket.PutObjectByte(path, image); err != nil {
 					log.Println("图片上传错误", err)
 				}
-				if len(base64Str) == 0 {
+				if len(image) == 0 {
 					continue
 				}
+				base64Str := base64.StdEncoding.EncodeToString(image)
 				reviewResponse, err := safereview.Client.ReviewPictureFromBase64(base64Str)
 				if err != nil {
 					log.Println("图片审核失败", err)

@@ -14,7 +14,7 @@ import (
 	"kcaitech.com/kcserver/common/redis"
 	"kcaitech.com/kcserver/common/services"
 	"kcaitech.com/kcserver/common/snowflake"
-	autosave "kcaitech.com/kcserver/controllers/document"
+	autoupdate "kcaitech.com/kcserver/controllers/document"
 	"kcaitech.com/kcserver/utils/sliceutil"
 	"kcaitech.com/kcserver/utils/str"
 	"kcaitech.com/kcserver/utils/websocket"
@@ -449,7 +449,7 @@ func (serv *opServe) handleCommit(data *TransData, receiveData *ReceiveData) {
 			// return errors.New("数据插入失败")
 		}
 		redis.Client.Publish(context.Background(), "Document Op[DocumentId:"+documentIdStr+"]", cmdItemListData) // 通知客户端是通过redis订阅来触发的
-		autosave.AutoSave(serv.documentId)
+		autoupdate.AutoUpdate(serv.documentId)
 		// return nil
 
 		_ = serv.ws.WriteJSON(serverData) // sucess

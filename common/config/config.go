@@ -17,10 +17,10 @@ type BaseConfiguration struct {
 	StorageHost struct {
 		Document string `yaml:"document" json:"document"`
 		Attatch  string `yaml:"attatch" json:"attatch"`
-	} `yaml:"storagehost" json:"storagehost"`
+	} `yaml:"storagehost" json:"storage_host"`
 }
 
-var Config *BaseConfiguration
+var Config *BaseConfiguration = &BaseConfiguration{}
 
 func Init(conf *BaseConfiguration) {
 	Config = conf
