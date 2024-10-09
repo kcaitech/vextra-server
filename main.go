@@ -20,7 +20,10 @@ import (
 func Init() *config.Configuration {
 
 	configDir := "config/"
-	conf := config.LoadConfig(configDir + "config.json")
+	conf, err := config.LoadConfig(configDir + "config.json")
+	if err != nil {
+		conf, _ = config.LoadConfigEnv("kcconfig")
+	}
 
 	// jwtConfig := configDir + conf.Jwt.Ref
 	// snowflakeConfig := configDir + conf.Snowflake.Ref

@@ -1,6 +1,9 @@
 package controllers
 
 import (
+	"errors"
+	"os"
+
 	"kcaitech.com/kcserver/common/config"
 	jwt "kcaitech.com/kcserver/common/jwt/config"
 	mongo "kcaitech.com/kcserver/common/mongo/config"
@@ -37,7 +40,16 @@ type Configuration struct {
 
 var Config Configuration
 
-func LoadConfig(filePath string) *Configuration {
-	config.LoadConfig(filePath, &Config)
-	return &Config
+func LoadConfig(filePath string) (*Configuration, error) {
+	err := config.LoadConfig(filePath, &Config)
+	return &Config, err
+}
+
+func LoadConfigEnv(env string) (*Configuration, error) {
+	content := os.Getenv(env)
+	if content == "" {
+		return &Config, errors.New("no " + env)
+	}
+	config.LoadConfigContent(content, &Config)
+	return &Config, nil
 }
