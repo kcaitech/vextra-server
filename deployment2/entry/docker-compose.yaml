@@ -9,7 +9,7 @@ services:
     environment:
       TZ: Asia/Shanghai
     ports:
-      - "8008:80"
+      - "8008:80" # 测试用
       # - "443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf

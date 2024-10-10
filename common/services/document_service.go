@@ -59,7 +59,7 @@ type Document struct {
 	VersionId string           `json:"version_id"`
 	TeamId    string           `json:"team_id"`
 	ProjectId string           `json:"project_id"`
-	PurgeBy   int64            `json:"purge_by"`
+	DeleteBy  int64            `json:"delete_by"`
 	LockedAt  time.Time        `json:"locked_at"`
 }
 

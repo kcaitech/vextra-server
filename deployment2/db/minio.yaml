@@ -22,7 +22,7 @@ services:
     volumes:
       - ./minio:/data
     ports:
-      # - "9000:9000"
+      - "9000:9000" # 测试用
       - "9001:9001"
 
 networks:

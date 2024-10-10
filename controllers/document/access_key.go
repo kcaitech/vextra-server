@@ -97,7 +97,7 @@ func GetDocumentAccessKey1(userId int64, documentId int64) (*map[string]any, str
 		"U"+str.IntToString(userId)+"D"+str.IntToString(documentId),
 	)
 	if err != nil {
-		// log.Println("生成密钥失败" + err.Error())
+		log.Println("生成密钥失败", err)
 		// response.Fail(c, "生成密钥失败")
 		return nil, "生成密钥失败"
 	}

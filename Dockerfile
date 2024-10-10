@@ -23,6 +23,7 @@ COPY --from=builder /app/kcserver /app/
 COPY package.yaml /app/
 # COPY --from=builder /app/kcserver/src/config /app/config/
 # COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo/
+COPY --from=builder /usr/share/zoneinfo/Asia/Shanghai /usr/share/zoneinfo/Asia/Shanghai
 # COPY --from=builder /usr/share/zoneinfo/Asia/Shanghai /etc/localtime/
 # COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
