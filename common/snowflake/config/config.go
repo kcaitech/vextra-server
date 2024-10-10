@@ -12,9 +12,8 @@ type Configuration struct {
 	Snowflake SnowflakeConf `yaml:"snowflake" json:"snowflake"`
 }
 
-var Config Configuration
-
 func LoadConfig(filePath string) *Configuration {
+	var Config Configuration
 	if filePath == "" {
 		filePath = "common/snowflake/config/config.yaml"
 	}

@@ -1,8 +1,6 @@
 package config
 
-import (
-	"kcaitech.com/kcserver/common/config"
-)
+import "kcaitech.com/kcserver/common/config"
 
 type JwtConf struct {
 	Secret     string `yaml:"secret" json:"secret"`
@@ -13,9 +11,10 @@ type Configuration struct {
 	Jwt JwtConf `yaml:"jwt" json:"jwt"`
 }
 
-var Config Configuration
+// var Config Configuration
 
 func LoadConfig(filePath string) *Configuration {
+	var Config Configuration
 	if filePath == "" {
 		filePath = "common/jwt/config/config.yaml"
 	}

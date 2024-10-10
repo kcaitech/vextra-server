@@ -10,6 +10,8 @@ import (
 	"kcaitech.com/kcserver/utils/jwt"
 )
 
+var jwtConf *config.JwtConf = &config.JwtConf{}
+
 type Data struct {
 	Id       string `json:"id"`
 	Nickname string `json:"nickname"`
@@ -17,17 +19,18 @@ type Data struct {
 
 func Init(conf *config.JwtConf) {
 	// _ = config.LoadConfig(filePath)
+	jwtConf = conf
 }
 
 func CreateJwt(jwtData *Data) (string, error) {
-	t, err := jwt.NewJwt(jwt.NewHS256Signer(config.Config.Jwt.Secret))
+	t, err := jwt.NewJwt(jwt.NewHS256Signer(jwtConf.Secret))
 	if err != nil {
 		return "", err
 	}
 	t.AddData("data", *jwtData)
 	now := time.Now()
 	t.SetRegisteredClaims(jwt.Payload{
-		Exp: now.Add(time.Hour * time.Duration(config.Config.Jwt.ExpireHour)).Unix(), // 过期时间
+		Exp: now.Add(time.Hour * time.Duration(jwtConf.ExpireHour)).Unix(), // 过期时间
 		//Nbf: now.Add((-60) * time.Minute).Unix(),                                     // 生效时间
 	})
 	token, err := t.General()
@@ -38,7 +41,7 @@ func CreateJwt(jwtData *Data) (string, error) {
 }
 
 func ParseJwt(token string) (*Data, error) {
-	t, _ := jwt.NewJwt(jwt.NewHS256Signer(config.Config.Jwt.Secret))
+	t, _ := jwt.NewJwt(jwt.NewHS256Signer(jwtConf.Secret))
 	payload, err := t.Parse(token)
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
@@ -62,7 +65,7 @@ func ParseJwt(token string) (*Data, error) {
 }
 
 func ParseJwtExp(token string) (int64, error) {
-	t, _ := jwt.NewJwt(jwt.NewHS256Signer(config.Config.Jwt.Secret))
+	t, _ := jwt.NewJwt(jwt.NewHS256Signer(jwtConf.Secret))
 	exp, err := t.ParseExp(token)
 	if err != nil && !errors.Is(err, jwt.ErrTokenExpired) {
 		return 0, errors.New("无效token")
@@ -71,7 +74,7 @@ func ParseJwtExp(token string) (int64, error) {
 }
 
 func ParseJwtNbf(token string) (int64, error) {
-	t, _ := jwt.NewJwt(jwt.NewHS256Signer(config.Config.Jwt.Secret))
+	t, _ := jwt.NewJwt(jwt.NewHS256Signer(jwtConf.Secret))
 	nbf, err := t.ParseNbf(token)
 	if err != nil && !errors.Is(err, jwt.ErrTokenExpired) {
 		return 0, errors.New("无效token")

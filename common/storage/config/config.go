@@ -20,9 +20,8 @@ type Configuration struct {
 	Storage StorageConf `yaml:"storage" json:"storage"`
 }
 
-var Config Configuration
-
 func LoadConfig(filePath string) *Configuration {
+	var Config Configuration
 	if filePath == "" {
 		filePath = "common/storage/config/config.yaml"
 	}

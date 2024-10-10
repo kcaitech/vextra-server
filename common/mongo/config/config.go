@@ -1,8 +1,6 @@
 package config
 
-import (
-	"kcaitech.com/kcserver/common/config"
-)
+import "kcaitech.com/kcserver/common/config"
 
 type MongoConf struct {
 	Uri string `yaml:"uri" json:"uri"`
@@ -13,9 +11,8 @@ type Configuration struct {
 	Mongo MongoConf `yaml:"mongo" json:"mongo"`
 }
 
-var Config Configuration
-
 func LoadConfig(filePath string) *Configuration {
+	var Config Configuration
 	if filePath == "" {
 		filePath = "common/mongo/config/config.yaml"
 	}

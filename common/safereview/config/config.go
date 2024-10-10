@@ -24,9 +24,8 @@ type Configuration struct {
 	SafeReview SafeReviewConf `yaml:"safereview" json:"safereview"`
 }
 
-var Config Configuration
-
 func LoadConfig(filePath string) *Configuration {
+	var Config Configuration
 	if filePath == "" {
 		filePath = "common/safereview/config/config.yaml"
 	}

@@ -17,9 +17,8 @@ type Configuration struct {
 	Redis RedisConf `yaml:"redis" json:"redis"`
 }
 
-var Config Configuration
-
 func LoadConfig(filePath string) *Configuration {
+	var Config Configuration
 	if filePath == "" {
 		filePath = "common/redis/config/config.yaml"
 	}
