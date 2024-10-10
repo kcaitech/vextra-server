@@ -195,7 +195,7 @@ func (s *DocumentService) FindDocumentByProjectId(projectId int64, userId int64)
 
 // FindAccessRecordsByUserId 查询用户的访问记录
 func (s *DocumentService) FindAccessRecordsByUserId(userId int64) *[]AccessRecordAndFavoritesQueryResItem {
-	var result []AccessRecordAndFavoritesQueryResItem
+	var result = []AccessRecordAndFavoritesQueryResItem{}
 	_ = s.DocumentAccessRecordService.Find(
 		&result,
 		&ParamArgs{"?user_id": userId},

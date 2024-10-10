@@ -156,7 +156,7 @@ type TeamQueryResItem struct {
 
 // FindTeamByUserId 查询某个用户所在的所有团队列表
 func (s *TeamService) FindTeamByUserId(userId int64) []TeamQueryResItem {
-	var result []TeamQueryResItem
+	var result = []TeamQueryResItem{}
 	whereArgsList := []WhereArgs{
 		{"tm.deleted_at is null and u.deleted_at is null", nil},
 		{"tm.user_id = ?", []any{userId}},
