@@ -141,7 +141,7 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 	documentId := str.DefaultToInt(header.DocumentId, 0)
 	projectId := str.DefaultToInt(header.ProjectId, 0)
 	lastCmdId := header.LastCmdId
-	if (userId <= 0 && documentId <= 0) || (userId > 0 && documentId > 0) || (documentId > 0 && lastCmdId == "") { // userId和documentId必须只传一个
+	if (userId <= 0 && documentId <= 0) || (userId > 0 && documentId > 0) || (documentId > 0 && lastCmdId == "") { // userId和documentId必须只传一个 // todo这不对吧，要鉴权
 		resp.Message = "参数错误"
 		// _ = ws.WriteJSON(&resp)
 		log.Println("参数错误", userId, documentId)
@@ -479,8 +479,8 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 
 	resp.Status = ResponseStatusSuccess
 	resp.Data = Data{
-		"doc_id":     str.IntToString(documentId),
-		"version_id": documentVersionId,
+		"document_id": str.IntToString(documentId),
+		"version_id":  documentVersionId,
 	}
 	// _ = ws.WriteJSON(&resp)
 }

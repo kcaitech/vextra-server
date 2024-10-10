@@ -69,7 +69,7 @@ func (serv *docUploadServe) handle(data *TransData, binaryData *([]byte)) {
 	type UploadHeader struct {
 		DocumentId string  `json:"document_id"`
 		Export     *Export `json:"export,omitempty"`
-		Finally    bool    `json:"finally,omitempty"`
+		Commit     bool    `json:"commit,omitempty"`
 		Media      string  `json:"media,omitempty"`
 	}
 
@@ -102,8 +102,8 @@ func (serv *docUploadServe) handle(data *TransData, binaryData *([]byte)) {
 		_ = serv.ws.WriteJSON(serverData)
 		return
 	}
-	if uploadHeader.Finally && serv.data != nil && serv.data.Export != nil {
-		log.Println("uploading finally", uploadHeader.DocumentId)
+	if uploadHeader.Commit && serv.data != nil && serv.data.Export != nil {
+		log.Println("uploading commit", uploadHeader.DocumentId)
 		header := document.Header{
 			UserId: str.IntToString(serv.userId),
 		}
