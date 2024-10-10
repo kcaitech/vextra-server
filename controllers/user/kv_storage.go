@@ -35,11 +35,14 @@ func GetUserKVStorage(c *gin.Context) {
 
 	result := map[string]any{}
 	userKVStorageService := services.NewUserKVStorageService()
-	if userKVStorage, err := userKVStorageService.GetOne(userId, key); err == nil {
-		result[key] = userKVStorage
-	}
+	userKVStorage, err := userKVStorageService.GetOne(userId, key)
 
-	response.Success(c, result)
+	if err == nil {
+		result[key] = userKVStorage
+		response.Success(c, result)
+	} else {
+		response.Fail(c, "Not Find")
+	}
 }
 
 func SetUserKVStorage(c *gin.Context) {
