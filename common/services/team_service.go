@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 
 	"kcaitech.com/kcserver/common/config"
@@ -156,18 +157,22 @@ type TeamQueryResItem struct {
 
 // FindTeamByUserId 查询某个用户所在的所有团队列表
 func (s *TeamService) FindTeamByUserId(userId int64) []TeamQueryResItem {
-	var result = []TeamQueryResItem{}
+	var result []TeamQueryResItem
 	whereArgsList := []WhereArgs{
 		{"tm.deleted_at is null and u.deleted_at is null", nil},
 		{"tm.user_id = ?", []any{userId}},
 	}
-	_ = s.Find(
+	err := s.Find(
 		&result,
 		&As{BaseService: s, Alias: "t"},
 		&ParamArgs{"?creator_perm_type": models.TeamPermTypeCreator},
 		&whereArgsList,
 		&OrderLimitArgs{"tm.id desc", 0},
 	)
+	if nil != err {
+		log.Panicln("find team err", err)
+		return nil
+	}
 	for i := range result {
 		result[i].SelfPermType = result[i].SelfTeamMember.PermType
 	}

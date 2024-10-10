@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"log"
 	"strings"
 
 	"kcaitech.com/kcserver/common/config"
@@ -195,13 +196,17 @@ func (s *DocumentService) FindDocumentByProjectId(projectId int64, userId int64)
 
 // FindAccessRecordsByUserId 查询用户的访问记录
 func (s *DocumentService) FindAccessRecordsByUserId(userId int64) *[]AccessRecordAndFavoritesQueryResItem {
-	var result = []AccessRecordAndFavoritesQueryResItem{}
-	_ = s.DocumentAccessRecordService.Find(
+	var result []AccessRecordAndFavoritesQueryResItem // 当指针的容器用
+	err := s.DocumentAccessRecordService.Find(
 		&result,
 		&ParamArgs{"?user_id": userId},
 		&WhereArgs{Query: "document_access_record.user_id = ? and document.deleted_at is null", Args: []any{userId}},
 		&OrderLimitArgs{"document_access_record.last_access_time desc", 0},
 	)
+	if nil != err {
+		log.Panicln("find access record err", err)
+		return nil
+	}
 	return &result
 }
 
