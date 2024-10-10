@@ -27,5 +27,5 @@ COPY package.yaml /app/
 # COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 
 RUN mkdir -p /app/log && touch /app/log/all.log
-CMD /app/kcserver | tee /app/log/all.log 2>&1
+CMD /app/kcserver 2>&1 | tee /app/log/all.log
 # CMD ["sh", "-c", "/app/kcserver | tee /app/log/all.log 2>&1"]

@@ -2,12 +2,14 @@ package websocket
 
 import (
 	"errors"
-	gws "github.com/gorilla/websocket"
 	"io"
+	"log"
 	"net/http"
-	"kcaitech.com/kcserver/utils/str"
 	"strings"
 	"sync"
+
+	gws "github.com/gorilla/websocket"
+	"kcaitech.com/kcserver/utils/str"
 )
 
 var ErrClosed = errors.New("连接已关闭")
@@ -115,6 +117,7 @@ func (ws *Ws) WriteMessageLock(needLock bool, messageType MessageType, data []by
 	}
 	err := ws.ws.WriteMessage(int(messageType), data)
 	if err != nil && isClosedError(err) {
+		log.Println("ws-wr-msg", err)
 		return ErrClosed
 	}
 	return err
@@ -130,6 +133,7 @@ func (ws *Ws) WriteJSONLock(needLock bool, v any) error {
 	}
 	err := ws.ws.WriteJSON(v)
 	if err != nil && isClosedError(err) {
+		log.Println("ws-wr-json", err)
 		return ErrClosed
 	}
 	return err
@@ -145,6 +149,7 @@ func (ws *Ws) ReadMessageLock(needLock bool) (MessageType, []byte, error) {
 	}
 	messageType, data, err := ws.ws.ReadMessage()
 	if err != nil {
+		log.Println("ws-rd-msg", err)
 		if isClosedError(err) {
 			return MessageTypeNone, data, ErrClosed
 		}
@@ -169,6 +174,7 @@ func (ws *Ws) ReadJSONLock(needLock bool, v any) error {
 	}
 	err := ws.ws.ReadJSON(v)
 	if err != nil && isClosedError(err) {
+		log.Println("ws-rd-json", err)
 		return ErrClosed
 	}
 	return err
@@ -191,6 +197,7 @@ func (ws *Ws) ReadJSON(v any) error {
 }
 
 func (ws *Ws) Close() {
+	log.Println("close ws")
 	if ws.isClose || ws.ws == nil {
 		return
 	}

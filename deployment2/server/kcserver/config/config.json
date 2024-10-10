@@ -10,12 +10,12 @@
         "attatch": "https://storage2.moss.design"
     },
     "wx": {
-        "appid": "xxx",
-        "secret": "xxx"
+        "appid": "wx42bb87f7f2e86a6e",
+        "secret": "fb1fe5995f6f297219f871703630b513"
     },
     "wxMp": {
-        "appid": "xxx",
-        "secret": "xxx"
+        "appid": "wx4006b3fc2a0a4c57",
+        "secret": "f0dbaf70575a184a14ed7f6b233c9c40"
     },
     "version_server": {
         "host": "kcversion:10040"
@@ -58,10 +58,10 @@
         "minio": {
             "endpoint": "minio:9000",
             "region": "zhuhai-1",
-            "accessKeyID": "Gathooh88mba5H3y",
-            "secretAccessKey": "yFukp3vtIkUNck2XL3s2KOT4wyRPR71G",
-            "stsAccessKeyID": "Gathooh88mba5H3y1",
-            "stsSecretAccessKey": "yFukp3vtIkUNck2XL3s2KOT4wyRPR71G1",
+            "accessKeyID": "59L3pDWuk9oLQWIgytCI",
+            "secretAccessKey": "GmwAzetY1L0jU4pUAqpO7RJGIsG7k3gozVH6whoJ",
+            "stsAccessKeyID": "",
+            "stsSecretAccessKey": "",
             "bucketName": "document",
             "filesBucketName": "files"
         },

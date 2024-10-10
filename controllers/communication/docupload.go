@@ -81,8 +81,10 @@ func (serv *docUploadServe) handle(data *TransData, binaryData *([]byte)) {
 	}
 
 	if serv.data == nil || serv.data.Id != uploadHeader.DocumentId {
+		log.Println("uploading", uploadHeader.DocumentId)
 		serv.data = &DocData{
-			Id: uploadHeader.DocumentId,
+			Id:     uploadHeader.DocumentId,
+			Medias: []document.Media{},
 		}
 	}
 
@@ -101,7 +103,7 @@ func (serv *docUploadServe) handle(data *TransData, binaryData *([]byte)) {
 		return
 	}
 	if uploadHeader.Finally && serv.data != nil && serv.data.Export != nil {
-
+		log.Println("uploading finally", uploadHeader.DocumentId)
 		header := document.Header{
 			UserId: str.IntToString(serv.userId),
 		}
@@ -122,11 +124,10 @@ func (serv *docUploadServe) handle(data *TransData, binaryData *([]byte)) {
 			}
 			serverData.Data = string(retData)
 			_ = serv.ws.WriteJSON(serverData)
-			return
 		} else {
 			msgErr(resp.Message, &serverData, &err)
-			return
 		}
+		return
 	}
 	msgErr("数据错误", &serverData, nil)
 }

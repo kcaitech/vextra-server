@@ -13,9 +13,9 @@ import (
 	"kcaitech.com/kcserver/common/gin/response"
 	"kcaitech.com/kcserver/common/jwt"
 	"kcaitech.com/kcserver/common/models"
+	document "kcaitech.com/kcserver/controllers/document"
 	"kcaitech.com/kcserver/utils/str"
 	"kcaitech.com/kcserver/utils/websocket"
-	document "kcaitech.com/kcserver/controllers/document"
 )
 
 func decodeBinaryMessage(data []byte) (string, []byte, error) {
@@ -208,6 +208,8 @@ func (c *ACommuncation) serve() {
 			continue
 		}
 
+		log.Println("ws receive msg:", clientData.Type, mt)
+
 		if clientData.Type == DataTypes_Bind {
 			// permType := models.PermType(str.DefaultToInt(c.Query("perm_type"), 0))
 			c.handleBind(&clientData)
@@ -229,23 +231,23 @@ func (c *ACommuncation) serve() {
 
 // Communication websocket连接
 func Communication(c *gin.Context) {
-
 	// get token
-	token := jwt.GetJwtFromAuthorization(c.GetHeader("Authorization"))
+	token := c.Query("token")
 	if token == "" {
+		log.Println("communication-未登录")
 		response.Abort(c, http.StatusUnauthorized, "未登录", nil)
 		return
 	}
 
 	jwtParseData, err := jwt.ParseJwt(token)
 	if err != nil {
-		log.Println("Token错误", err)
+		log.Println("communication-Token错误", err)
 		response.Abort(c, http.StatusForbidden, "Token错误", nil)
 		return
 	}
 	userId := str.DefaultToInt(jwtParseData.Id, 0)
 	if userId <= 0 {
-		log.Println("UserId错误", userId)
+		log.Println("communication-UserId错误", userId)
 		response.Abort(c, http.StatusForbidden, "UserId错误", nil)
 		return
 	}
@@ -253,6 +255,7 @@ func Communication(c *gin.Context) {
 	// 建立ws连接
 	ws, err := websocket.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
+		log.Println("communication-建立ws连接失败：", userId)
 		response.Fail(c, "建立ws连接失败："+err.Error())
 		return
 	}
@@ -267,9 +270,10 @@ func Communication(c *gin.Context) {
 	}
 
 	(&ACommuncation{
-		userId: userId,
-		ws:     ws,
-		genSId: genSId,
+		userId:   userId,
+		ws:       ws,
+		genSId:   genSId,
+		serveMap: map[string]ServeFace{},
 	}).serve()
 
 }

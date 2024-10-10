@@ -4,8 +4,9 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"kcaitech.com/kcserver/utils/my_map"
 	"sync"
+
+	"kcaitech.com/kcserver/utils/my_map"
 )
 
 type Client interface {
@@ -13,20 +14,20 @@ type Client interface {
 }
 
 type ClientConfig struct {
-	Provider        Provider `yaml:"provider"`
-	Endpoint        string   `yaml:"endpoint"`
-	Region          string   `yaml:"region"`
-	AccessKeyID     string   `yaml:"accessKeyID"`
-	SecretAccessKey string   `yaml:"secretAccessKey"`
+	Provider        Provider `yaml:"provider" json:"provider"`
+	Endpoint        string   `yaml:"endpoint" json:"endpoint"`
+	Region          string   `yaml:"region" json:"region"`
+	AccessKeyID     string   `yaml:"accessKeyID" json:"accessKeyID"`
+	SecretAccessKey string   `yaml:"secretAccessKey" json:"secretAccessKey"`
 
 	// minio sts
-	StsAccessKeyID     string `yaml:"stsAccessKeyID"`
-	StsSecretAccessKey string `yaml:"stsSecretAccessKey"`
+	StsAccessKeyID     string `yaml:"stsAccessKeyID" json:"stsAccessKeyID"`
+	StsSecretAccessKey string `yaml:"stsSecretAccessKey" json:"stsSecretAccessKey"`
 
 	// s3/oss sts
-	StsEndpoint string `yaml:"stsEndpoint"`
-	AccountId   string `yaml:"accountId"`
-	RoleName    string `yaml:"roleName"`
+	StsEndpoint string `yaml:"stsEndpoint" json:"stsEndpoint"`
+	AccountId   string `yaml:"accountId" json:"accountId"`
+	RoleName    string `yaml:"roleName" json:"roleName"`
 }
 
 type PutObjectInput struct {
@@ -49,13 +50,13 @@ type Bucket interface {
 }
 
 type BucketConfig struct {
-	BucketName      string `yaml:"bucketName"`
-	FilesBucketName string `yaml:"filesBucketName"`
+	BucketName      string `yaml:"bucketName" json:"bucketName"`
+	FilesBucketName string `yaml:"filesBucketName" json:"filesBucketName"`
 }
 
 type Config struct {
-	ClientConfig `yaml:",inline"`
-	BucketConfig `yaml:",inline"`
+	ClientConfig `yaml:",inline" json:",inline"`
+	BucketConfig `yaml:",inline" json:",inline"`
 }
 
 type UploadInfo struct {

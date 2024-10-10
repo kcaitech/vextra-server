@@ -14,8 +14,8 @@
         "type": "s3",
         "endPoint": "minio:9000",
         "region": "zhuhai-1",
-        "accessKeyId": "Gathooh88mba5H3y",
-        "secretAccessKey": "yFukp3vtIkUNck2XL3s2KOT4wyRPR71G",
+        "accessKeyID": "59L3pDWuk9oLQWIgytCI",
+        "secretAccessKey": "GmwAzetY1L0jU4pUAqpO7RJGIsG7k3gozVH6whoJ",
         "bucketName": "document",
         "filesBucketName": "files"
     },
