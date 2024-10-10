@@ -1,6 +1,6 @@
 #!/bin/bash
 
-docker pull nginx:1.26.2-alpine
+# docker pull nginx:1.26.2-alpine
 
 
 ymls='-f docker-compose.yaml'

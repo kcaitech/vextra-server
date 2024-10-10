@@ -1,11 +1,12 @@
 package mysql
 
 import (
+	"log"
+
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
-	"log"
-	"mysql/config"
+	"kcaitech.com/kcserver/maintenance/migration/mysql/config"
 )
 
 var DB *gorm.DB

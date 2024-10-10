@@ -21,8 +21,8 @@ services:
     volumes:
 #      - /etc/localtime:/etc/localtime
       - ./mysql/data:/var/lib/mysql
-      - ./mysql/conf/my.cnf:/etc/my.cnf
-      - ./mysql/conf/conf.d:/etc/my.cnf.d
+      # - ./mysql/conf/my.cnf:/etc/my.cnf
+      # - ./mysql/conf/conf.d:/etc/my.cnf.d
       - ./mysql/init:/docker-entrypoint-initdb.d
 
 networks:

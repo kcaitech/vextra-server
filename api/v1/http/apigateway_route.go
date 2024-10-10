@@ -2,7 +2,6 @@ package http
 
 import (
 	"github.com/gin-gonic/gin"
-	app "kcaitech.com/kcserver/controllers"
 	"kcaitech.com/kcserver/controllers/communication"
 )
 
@@ -11,6 +10,6 @@ func loadApiGatewayRoutes(api *gin.RouterGroup) {
 	router := api
 	router.GET("/communication", communication.Communication)
 	// todo 这两个要废弃掉
-	router.Any("/app_versions", app.GetAppVersionList)
-	router.Any("/app_version", app.GetLatestAppVersion)
+	// router.Any("/app_versions", app.GetAppVersionList)
+	// router.Any("/app_version", app.GetLatestAppVersion)
 }

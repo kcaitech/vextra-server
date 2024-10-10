@@ -27,36 +27,36 @@ func (s *AppVersionService) FindAll() *[]models.AppVersion {
 }
 
 // GetLatest 查询最新的版本信息
-func (s *AppVersionService) GetLatest(userId int64) *models.AppVersion {
-	userService := NewUserService()
-	var user models.User
-	userExists := userService.Get(&user, "id = ?", userId) == nil
+// func (s *AppVersionService) GetLatest(userId int64) *models.AppVersion {
+// 	userService := NewUserService()
+// 	var user models.User
+// 	userExists := userService.Get(&user, "id = ?", userId) == nil
 
-	optionsService := NewOptionsService()
-	defaultWebAppChannel, _ := optionsService.GetOne("DEFAULT_WEB_APP_CHANNEL")
+// 	optionsService := NewOptionsService()
+// 	defaultWebAppChannel, _ := optionsService.GetOne("DEFAULT_WEB_APP_CHANNEL")
 
-	var result models.AppVersion
-	if !userExists || user.WebAppChannel == "" { // 用户不存在或用户存在但WebAppChannel不为空
-		_ = s.Get(
-			&result,
-			"web_app_channel is null or web_app_channel = ?",
-			defaultWebAppChannel,
-			&OrderLimitArgs{"code desc", 1},
-		)
-	} else { // 用户存在且WebAppChannel不为空
-		if s.Get(
-			&result,
-			"web_app_channel = ?",
-			user.WebAppChannel,
-			&OrderLimitArgs{"code desc", 1},
-		) != nil {
-			_ = s.Get(
-				&result,
-				"web_app_channel is null or web_app_channel = ?",
-				defaultWebAppChannel,
-				&OrderLimitArgs{"code desc", 1},
-			)
-		}
-	}
-	return &result
-}
+// 	var result models.AppVersion
+// 	if !userExists { // 用户不存在或用户存在但WebAppChannel不为空
+// 		_ = s.Get(
+// 			&result,
+// 			"web_app_channel is null or web_app_channel = ?",
+// 			defaultWebAppChannel,
+// 			&OrderLimitArgs{"code desc", 1},
+// 		)
+// 	} else { // 用户存在且WebAppChannel不为空
+// 		if s.Get(
+// 			&result,
+// 			"web_app_channel = ?",
+// 			user.WebAppChannel,
+// 			&OrderLimitArgs{"code desc", 1},
+// 		) != nil {
+// 			_ = s.Get(
+// 				&result,
+// 				"web_app_channel is null or web_app_channel = ?",
+// 				defaultWebAppChannel,
+// 				&OrderLimitArgs{"code desc", 1},
+// 			)
+// 		}
+// 	}
+// 	return &result
+// }

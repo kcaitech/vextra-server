@@ -2,8 +2,9 @@ package main
 
 import (
 	"log"
-	"mysql"
-	"mysql/config"
+
+	"kcaitech.com/kcserver/maintenance/migration/mysql"
+	"kcaitech.com/kcserver/maintenance/migration/mysql/config"
 )
 
 func main() {
