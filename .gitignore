@@ -12,8 +12,8 @@
 /id_ed25519
 
 /deployment2/db/mysql/data/
-/deployment2/db/minio/
-/deployment2/db/redis/
+/deployment2/db/minio/data/
+/deployment2/db/redis/data/
 /deployment2/db/mongodb/data/
 
 /log
