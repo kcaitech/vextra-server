@@ -170,6 +170,7 @@ func NewOpServe(ws *websocket.Ws, userId int64, documentId int64, versionId stri
 		permType:   permType,
 		documentId: documentId,
 		userId:     userId,
+		quit:       make(chan struct{}),
 	}
 
 	serv.start(documentId, documentVersion)

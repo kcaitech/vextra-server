@@ -114,7 +114,7 @@ func CreateTeam(c *gin.Context) {
 		"description": team.Description,
 	}
 	if team.Avatar != "" {
-		result["avatar"] = config.Config.StorageHost.Attatch + team.Avatar
+		result["avatar"] = config.Config.StorageUrl.Attatch + team.Avatar
 	}
 	response.Success(c, result)
 }
@@ -549,7 +549,7 @@ func SetTeamInfo(c *gin.Context) {
 			return
 		}
 		if avatarPath, err := teamService.UploadTeamAvatarById(teamId, fileBytes, contentType); err == nil {
-			result["avatar"] = config.Config.StorageHost.Attatch + avatarPath
+			result["avatar"] = config.Config.StorageUrl.Attatch + avatarPath
 		}
 	}
 	response.Success(c, result)

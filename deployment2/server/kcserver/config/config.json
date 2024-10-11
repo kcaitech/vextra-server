@@ -5,7 +5,7 @@
     "db": {
         "dsn": "root:kKEIjksvnOOIjdZ6rtzE@tcp(mysql:3306)/kcserver?charset=utf8&parseTime=True&loc=Local"
     },
-    "storage_host": {
+    "storage_url": {
         "document": "http://localhost:9000",
         "attatch": "http://localhost:9000/files"
     },
@@ -18,10 +18,10 @@
         "secret": "f0dbaf70575a184a14ed7f6b233c9c40"
     },
     "version_server": {
-        "host": "kcversion:10040"
+        "url": "http://kcversion:10040/generate"
     },
     "svg2png": {
-        "host":"kcsvg2png:10050/svg_to_png"
+        "url":"http://kcsvg2png:10050/svg_to_png"
     },
     "jwt": {
         "secret": "123456",

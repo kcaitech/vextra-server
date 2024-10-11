@@ -31,6 +31,7 @@ func NewCommentServe(ws *websocket.Ws, userId int64, documentId int64, genSId fu
 		ws: ws,
 		// isready: false,
 		genSId: genSId,
+		quit:   make(chan struct{}),
 	}
 	serv.start(documentId)
 	// serv.isready = true

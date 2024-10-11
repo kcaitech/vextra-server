@@ -133,6 +133,6 @@ func GetDocumentAccessKey1(userId int64, documentId int64) (*map[string]any, str
 		"provider":          storageConfig.Provider,
 		"region":            storageConfig.Region,
 		"bucket_name":       storageConfig.BucketName,
-		"endpoint":          config.Config.StorageHost.Document,
+		"endpoint":          config.Config.StorageUrl.Document,
 	}, ""
 }

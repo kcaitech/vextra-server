@@ -30,6 +30,7 @@ type DocumentVersioningInfo struct {
 	LastUpdateTime time.Time `json:"lastUpdateTime"`
 }
 
+// 并不是同一个文档的都在一个服务实例里，也就个人编辑有点用
 var documentVersioningInfoMap = my_map.NewSyncMap[int64, DocumentVersioningInfo]()
 
 func getDocumentLastUpdateTimeFromRedis(documentId int64) time.Time {
@@ -38,9 +39,6 @@ func getDocumentLastUpdateTimeFromRedis(documentId int64) time.Time {
 	}
 	return time.UnixMilli(0)
 }
-
-var docVersioningServiceUrl = config.Config.VersionServer.Host
-var generateApiUrl = "http://" + docVersioningServiceUrl + "/generate"
 
 // body: { documentInfo: DocumentInfo, lastCmdId: string, documentData: ExFromJson, documentText: string, mediasSize: number, pageImageBase64List: string[] }
 
@@ -98,7 +96,7 @@ func _svgToPng(svgContent string) ([]byte, error) {
 		"Content-Type": writer.FormDataContentType(),
 	}
 
-	url := config.Config.Svg2Png.Host
+	url := config.Config.Svg2Png.Url
 
 	// 创建请求
 	req, err := http.NewRequest("POST", url, formData)
@@ -178,16 +176,16 @@ func svg2png(svgs []string) *[][]byte {
 }
 
 // 发送 POST 请求的函数
-func sendPostRequest(url string, payload []byte) (*http.Response, error) {
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", "application/json")
+// func sendPostRequest(url string, payload []byte) (*http.Response, error) {
+// 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{}
-	return client.Do(req)
-}
+// 	client := &http.Client{}
+// 	return client.Do(req)
+// }
 
 func AutoUpdate(documentId int64) {
 	info, ok := documentVersioningInfoMap.Get(documentId)
@@ -227,6 +225,10 @@ func AutoUpdate(documentId int64) {
 	defer func() {
 		info.LastUpdateTime = time.Now()
 	}()
+
+	log.Panicln("auto update document:", documentId)
+	// var docVersioningServiceUrl = config.Config.VersionServer.Host
+	var generateApiUrl = config.Config.VersionServer.Url // "http://" + docVersioningServiceUrl + "/generate"
 	// requestData := map[string]any{
 	// 	"documentId": documentIdStr,
 	// }
@@ -248,7 +250,7 @@ func AutoUpdate(documentId int64) {
 		log.Println(generateApiUrl, "io.ReadAll err", err)
 		return
 	}
-	if resp.StatusCode != 200 || string(body) != "success" {
+	if resp.StatusCode != 200 {
 		log.Println(generateApiUrl, "请求失败", resp.StatusCode, string(body))
 		return
 	}
@@ -288,5 +290,7 @@ func AutoUpdate(documentId int64) {
 	// 更新redis
 	if _, err := redis.Client.Set(context.Background(), "Document Versioning LastUpdateTime[DocumentId:"+documentIdStr+"]", time.Now().UnixMilli(), time.Hour*1).Result(); err != nil {
 		log.Println("redis.Client.Set err", err)
+	} else {
+		log.Panicln("auto update successed")
 	}
 }

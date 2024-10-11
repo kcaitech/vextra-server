@@ -135,7 +135,7 @@ type Team struct {
 
 func (team Team) MarshalJSON() ([]byte, error) {
 	if strings.HasPrefix(team.Avatar, "/") {
-		team.Avatar = config.Config.StorageHost.Attatch + team.Avatar
+		team.Avatar = config.Config.StorageUrl.Attatch + team.Avatar
 	}
 	return models.MarshalJSON(team)
 }

@@ -36,7 +36,7 @@ func GetUserInfo(c *gin.Context) {
 		return
 	}
 	if strings.HasPrefix(user.Avatar, "/") {
-		user.Avatar = config.Config.StorageHost.Attatch + user.Avatar
+		user.Avatar = config.Config.StorageUrl.Attatch + user.Avatar
 	}
 	response.Success(c, user)
 }
@@ -119,6 +119,6 @@ func SetAvatar(c *gin.Context) {
 		return
 	}
 	response.Success(c, map[string]any{
-		"avatar": config.Config.StorageHost.Attatch + avatarPath,
+		"avatar": config.Config.StorageUrl.Attatch + avatarPath,
 	})
 }

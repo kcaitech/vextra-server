@@ -42,7 +42,7 @@ type UserType struct {
 
 func (user UserType) MarshalJSON() ([]byte, error) {
 	if strings.HasPrefix(user.Avatar, "/") {
-		user.Avatar = config.Config.StorageHost.Attatch + user.Avatar
+		user.Avatar = config.Config.StorageUrl.Attatch + user.Avatar
 	}
 	return models.MarshalJSON(user)
 }

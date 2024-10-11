@@ -45,7 +45,7 @@ type wxOpenWebLoginResp struct {
 
 func (resp *wxOpenWebLoginResp) MarshalJSON() ([]byte, error) {
 	if strings.HasPrefix(resp.Avatar, "/") {
-		resp.Avatar = config.Config.StorageHost.Attatch + resp.Avatar
+		resp.Avatar = config.Config.StorageUrl.Attatch + resp.Avatar
 	}
 	return json.Marshal(struct {
 		wxOpenWebLoginResp

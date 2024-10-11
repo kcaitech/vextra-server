@@ -79,6 +79,7 @@ func NewSelectionServe(ws *websocket.Ws, userId int64, documentId int64, genSId 
 		user:       &user,
 		enterTime:  time.Now().UnixNano() / 1000000,
 		permType:   permType,
+		quit:       make(chan struct{}),
 	}
 	serv.start(documentId)
 	// serv.isready = true
@@ -102,7 +103,7 @@ func (serv *selectionServe) start(documentId int64) {
 				}
 				serv.send(v.Payload)
 			case <-serv.quit:
-				break
+				return
 			}
 		}
 	}()
@@ -131,7 +132,7 @@ func (serv *selectionServe) handle(data *TransData, binaryData *([]byte)) {
 	documentIdStr := str.IntToString(serv.documentId)
 	msgErr := func(msg string, serverData *TransData, err *error) {
 		serverData.Err = msg
-		log.Println(msg)
+		log.Println(msg, err)
 		_ = serv.ws.WriteJSON(serverData)
 	}
 	selectionData := &DocSelectionData{}
@@ -142,7 +143,7 @@ func (serv *selectionServe) handle(data *TransData, binaryData *([]byte)) {
 
 	selectionData.UserId = userIdStr
 	selectionData.Permission = serv.permType
-	selectionData.Avatar = config.Config.StorageHost.Attatch + serv.user.Avatar
+	selectionData.Avatar = config.Config.StorageUrl.Attatch + serv.user.Avatar
 	selectionData.Nickname = serv.user.Nickname
 	selectionData.EnterTime = serv.enterTime
 	selectionDataJson, _ := json.Marshal(selectionData)
@@ -176,6 +177,5 @@ func (serv *selectionServe) send(data string) {
 	}
 	if err := serv.ws.WriteJSONLock(true, &serverData); err != nil {
 		log.Println("selection, send data fail", err)
-		return
 	}
 }

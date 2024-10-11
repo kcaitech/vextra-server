@@ -24,10 +24,10 @@ type Configuration struct {
 		Secret string `yaml:"secret" json:"secret"`
 	} `yaml:"wxMp" json:"wxMp"`
 	VersionServer struct {
-		Host string `yaml:"host" json:"host"`
+		Url string `yaml:"url" json:"url"`
 	} `yaml:"version_server" json:"version_server"`
 	Svg2Png struct {
-		Host string `yaml:"host" json:"host"`
+		Url string `yaml:"url" json:"url"`
 	} `yaml:"svg2png" json:"svg2png"`
 
 	Jwt       jwt.JwtConf               `yaml:"jwt" json:"jwt"`

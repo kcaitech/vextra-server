@@ -15,10 +15,10 @@ type BaseConfiguration struct {
 	DB struct {
 		DSN string `yaml:"dsn" json:"dsn"`
 	} `yaml:"db" json:"db"`
-	StorageHost struct {
+	StorageUrl struct {
 		Document string `yaml:"document" json:"document"`
 		Attatch  string `yaml:"attatch" json:"attatch"`
-	} `yaml:"storage_host" json:"storage_host"`
+	} `yaml:"storage_url" json:"storage_url"`
 }
 
 var Config *BaseConfiguration = &BaseConfiguration{}
