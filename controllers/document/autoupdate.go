@@ -226,7 +226,7 @@ func AutoUpdate(documentId int64) {
 		info.LastUpdateTime = time.Now()
 	}()
 
-	log.Panicln("auto update document:", documentId)
+	log.Println("auto update document:", documentId)
 	// var docVersioningServiceUrl = config.Config.VersionServer.Host
 	var generateApiUrl = config.Config.VersionServer.Url // "http://" + docVersioningServiceUrl + "/generate"
 	// requestData := map[string]any{
@@ -291,6 +291,6 @@ func AutoUpdate(documentId int64) {
 	if _, err := redis.Client.Set(context.Background(), "Document Versioning LastUpdateTime[DocumentId:"+documentIdStr+"]", time.Now().UnixMilli(), time.Hour*1).Result(); err != nil {
 		log.Println("redis.Client.Set err", err)
 	} else {
-		log.Panicln("auto update successed")
+		log.Println("auto update successed")
 	}
 }
