@@ -105,11 +105,11 @@ func getPreviousId(documentId int64) (int64, error) {
 	findOptions.SetSort(bson.D{{Key: "_id", Value: -1}})
 	findOptions.SetLimit(1)
 
-	cur, err := documentCollection.Find(context.TODO(), reqParams, findOptions) // todo 要去主节点找
+	cur, err := documentCollection.Find(context.Background(), reqParams, findOptions) // todo 要去主节点找
 	if err != nil {
 		return 0, err
 	}
-	if err := cur.All(context.TODO(), &cmdItemList); err != nil {
+	if err := cur.All(context.Background(), &cmdItemList); err != nil {
 		return 0, err
 	}
 	if len(cmdItemList) > 0 {
@@ -192,13 +192,13 @@ func (serv *opServe) start(documentId int64, documentVersion models.DocumentVers
 		}
 		findOptions := options.Find()
 		findOptions.SetSort(bson.D{{Key: "_id", Value: 1}})
-		cur, err := documentCollection.Find(context.TODO(), reqParams, findOptions) // 有没有可能一个batch的cmd没拉取完整
+		cur, err := documentCollection.Find(context.Background(), reqParams, findOptions) // 有没有可能一个batch的cmd没拉取完整
 		if err != nil {
 			log.Println("cmdList查询失败", err)
 			return
 		}
-		if err := cur.All(context.TODO(), &cmdItemList); err != nil {
-			log.Println("cmdList查询失败", err)
+		if err := cur.All(context.Background(), &cmdItemList); err != nil {
+			log.Println("cmdList查询失败2", err)
 			return
 		}
 		cmdItemListData, err := json.Marshal(cmdItemList)
@@ -267,7 +267,7 @@ func (serv *opServe) send(data string) {
 	// }
 
 	sendData := SendData{
-		Type:     "updata",
+		Type:     "update",
 		CmdsData: data,
 	}
 
@@ -480,7 +480,7 @@ func (serv *opServe) handlePullCmds(data *TransData, receiveData *ReceiveData) {
 	} else {
 		//findOptions.SetLimit(100)
 	}
-	cur, err := mongo.DB.Collection("document1").Find(context.TODO(), bson.M{
+	cur, err := mongo.DB.Collection("document1").Find(context.Background(), bson.M{
 		"document_id": serv.documentId,
 		"_id":         idFilter,
 	}, findOptions)
@@ -488,8 +488,8 @@ func (serv *opServe) handlePullCmds(data *TransData, receiveData *ReceiveData) {
 		msgErr("数据查询失败", &serverData, &err)
 		return
 	}
-	if err := cur.All(context.TODO(), &cmdItemList); err != nil {
-		msgErr("数据查询失败", &serverData, &err)
+	if err := cur.All(context.Background(), &cmdItemList); err != nil {
+		msgErr("数据查询失败2", &serverData, &err)
 		return
 	}
 	cmdItemListData, err := json.Marshal(cmdItemList)

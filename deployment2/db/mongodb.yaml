@@ -6,8 +6,8 @@ services:
     networks:
       kcserver:
     restart: always
-    # ports:
-      # - "27017:27017"
+    ports:
+      - "27017:27017" # 测试用
     environment:
       TZ: Asia/Shanghai
       MONGO_INITDB_ROOT_USERNAME: root
