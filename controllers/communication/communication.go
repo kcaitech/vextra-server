@@ -162,6 +162,15 @@ func (c *ACommuncation) serve() {
 	docUploadServe := NewDocUploadServe(c.ws, c.userId)
 	c.bindServe(DataTypes_DocUpload, docUploadServe)
 
+	// close handlers
+	defer (func() {
+		for _, h := range c.serveMap {
+			if nil != h {
+				h.close()
+			}
+		}
+	})()
+
 	for {
 
 		clientData := TransData{}
