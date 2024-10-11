@@ -452,7 +452,8 @@ func (serv *opServe) handleCommit(data *TransData, receiveData *ReceiveData) {
 		redis.Client.Publish(context.Background(), "Document Op[DocumentId:"+documentIdStr+"]", cmdItemListData) // 通知客户端是通过redis订阅来触发的
 		autoupdate.AutoUpdate(serv.documentId)
 		// return nil
-
+		// debug
+		// log.Panic()
 		_ = serv.ws.WriteJSON(serverData) // sucess
 	}
 }

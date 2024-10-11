@@ -14,7 +14,7 @@
 /deployment2/db/mysql/data/
 /deployment2/db/minio/
 /deployment2/db/redis/
-/deployment2/db/mongodb/
+/deployment2/db/mongodb/data/
 
 /log
 

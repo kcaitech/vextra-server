@@ -10,10 +10,13 @@ services:
       - "27017:27017" # 测试用
     environment:
       TZ: Asia/Shanghai
+      MONGO_INITDB_DATABASE: kcserver
+      MONGO_INITDB_COLLECTION: document1
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: jKKsinkjilKKLSW
     volumes:
-      - ./mongodb:/data/db
+      - ./mongodb/data:/data/db
+      - ./mongodb/init/99-index-cmd-id.sh:/docker-entrypoint-initdb.d/99-index-cmd-id.sh
 
 networks:
   kcserver:
