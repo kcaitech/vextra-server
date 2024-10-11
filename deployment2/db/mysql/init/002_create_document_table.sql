@@ -10,6 +10,7 @@ CREATE TABLE `kcserver`.`document` (
   `name` VARCHAR(64) NOT NULL,
   `size` BIGINT UNSIGNED NOT NULL,
   `purged_at` DATETIME(6),
+  `purge_by` BIGINT,
   `delete_by` BIGINT,
   `version_id` VARCHAR(64) NOT NULL,
   `team_id` BIGINT NOT NULL,
