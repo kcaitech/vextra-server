@@ -1,6 +1,7 @@
 package config
 
 import (
+	"encoding/json"
 	"log"
 	"os"
 
@@ -17,7 +18,7 @@ type BaseConfiguration struct {
 	StorageHost struct {
 		Document string `yaml:"document" json:"document"`
 		Attatch  string `yaml:"attatch" json:"attatch"`
-	} `yaml:"storagehost" json:"storage_host"`
+	} `yaml:"storage_host" json:"storage_host"`
 }
 
 var Config *BaseConfiguration = &BaseConfiguration{}
@@ -41,14 +42,29 @@ func LoadConfig(filePath string, config any) error {
 	}
 	return nil
 }
-func LoadConfigContent(content string, config any) error {
+func LoadJsonConfig(filePath string, config any) error {
+
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		log.Fatalf("读取配置文件失败: %v", err)
+		return err
+	}
+
+	err = json.Unmarshal(content, config)
+	if err != nil {
+		log.Fatalf("配置文件解析失败: %v", err)
+		return err
+	}
+	return nil
+}
+func LoadJsonContent(content string, config any) error {
 
 	// content, err := os.ReadFile(filePath)
 	// if err != nil {
 	// 	log.Fatalf("读取配置文件失败: %v", err)
 	// }
 
-	err := yaml.Unmarshal([]byte(content), config)
+	err := json.Unmarshal([]byte(content), config)
 	if err != nil {
 		log.Fatalf("配置文件解析失败: %v", err)
 		return err

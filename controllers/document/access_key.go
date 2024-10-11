@@ -71,7 +71,7 @@ func GetDocumentAccessKey1(userId int64, documentId int64) (*map[string]any, str
 	}
 	if permType <= models.PermTypeNone {
 		// response.Forbidden(c, "")
-		return nil, ""
+		return nil, "无访问权限"
 	}
 	if !document.LockedAt.IsZero() && document.UserId != userId {
 		// response.Forbidden(c, "审核不通过")

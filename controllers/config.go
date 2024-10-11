@@ -41,7 +41,7 @@ type Configuration struct {
 var Config Configuration
 
 func LoadConfig(filePath string) (*Configuration, error) {
-	err := config.LoadConfig(filePath, &Config)
+	err := config.LoadJsonConfig(filePath, &Config)
 	return &Config, err
 }
 
@@ -50,6 +50,6 @@ func LoadConfigEnv(env string) (*Configuration, error) {
 	if content == "" {
 		return &Config, errors.New("no " + env)
 	}
-	config.LoadConfigContent(content, &Config)
+	config.LoadJsonContent(content, &Config)
 	return &Config, nil
 }
