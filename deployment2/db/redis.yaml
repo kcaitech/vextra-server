@@ -5,7 +5,7 @@ services:
     image: "redis:alpine"
     restart: always
     volumes:
-      - "./redis:/data"
+      - "./redis/data:/data"
     networks:
       - kcserver
     command: redis-server --appendonly yes

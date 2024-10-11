@@ -2,7 +2,7 @@
 
 ymls='-f kcsvg2png.yaml -f kcversion.yaml -f kcserver.yaml'
 
-if [ "$1" = "up" ]; then
+if [ "$1" = "up" ] || [ "$1" = "reset" ]; then
     net=$(docker network ls | grep kcserver | awk '{print $2}')
     if [ "$net" != "kcserver" ]; then
         docker network create kcserver
