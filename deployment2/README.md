@@ -1,7 +1,9 @@
 1. 需要先去构建svg2png,kcversion的docker镜像
 2. ./run.sh up
-3. http://localhost:9001/buckets 创建document,files bucket, 创建accesskey, 添加user
-4. 设置minio中files bucket为所有人可读：
+
+## minio直接使用缓存配置
+3. http://localhost:9001/buckets 
+4. 创建document,files bucket, files设置policy为custom:
 {
     "Version": "2012-10-17",
     "Statement": [
@@ -22,3 +24,8 @@
         }
     ]
 }
+5. 创建accesskey, 添加user
+"accessKeyID": "59L3pDWuk9oLQWIgytCI",
+"secretAccessKey": "GmwAzetY1L0jU4pUAqpO7RJGIsG7k3gozVH6whoJ",
+"stsAccessKeyID": "user",
+"stsSecretAccessKey": "GmwAzetY1L0jU4pUAqpO7RJGIsG7k3gozVH6whoJ",
