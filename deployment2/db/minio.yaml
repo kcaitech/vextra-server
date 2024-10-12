@@ -2,15 +2,15 @@
 services:
   minio:
     image: quay.io/minio/minio
-    command: server /data --console-address ":9001"
+    entrypoint:
+    command: minio server /data --console-address ":9001"
+      # - /etc/mongodb/init.sh
     container_name: minio
     networks:
       kcserver:
     restart: always
     environment:
       TZ: Asia/Shanghai
-      MINIO_ACCESS_KEY: Gathooh88mba5H3y
-      MINIO_SECRET_KEY: yFukp3vtIkUNck2XL3s2KOT4wyRPR71G
       MINIO_ROOT_USER: kcserver
       MINIO_ROOT_PASSWORD: kcai1212
       MINIO_REGION: zhuhai-1

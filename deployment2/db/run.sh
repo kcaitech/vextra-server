@@ -8,11 +8,13 @@ if [ "$cmd" = "down" ] || [ "$cmd" = "reset" ]; then
 fi
 
 if [ "$cmd" = "reset" ]; then
-    rm -rf minio/data
+    rm -rf minio/data/document
+    rm -rf minio/data/files
     rm -rf mongodb/data
     rm -rf mysql/data
     rm -rf redis/data
-    mkdir minio/data
+    mkdir minio/data/document
+    mkdir minio/data/files
     mkdir mongodb/data
     mkdir mysql/data
     mkdir redis/data

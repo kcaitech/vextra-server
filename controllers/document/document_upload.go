@@ -379,8 +379,8 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 		pageId, ok1 := pageItem["id"].(string)
 		versionId, ok2 := idToVersionId.Get(pageId)
 		if !ok || !ok1 || !ok2 {
-			resp.Message = "pagesList格式错误"
-			log.Println("pagesList格式错误")
+			resp.Message = "对象上传错误"
+			log.Println("对象上传错误1")
 			// _ = ws.WriteJSON(&resp)
 			// ws.Close()
 			return
@@ -421,7 +421,7 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 		newDocument.VersionId = documentVersionId
 		if err := documentService.Create(&newDocument); err != nil {
 			resp.Message = "对象上传错误."
-			log.Println("对象上传错误", err)
+			log.Println("对象上传错误2", err)
 			// _ = ws.WriteJSON(&resp)
 			// ws.Close()
 			return
@@ -436,8 +436,8 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 		document.Size = documentSize
 		document.VersionId = documentVersionId
 		if _, err := documentService.UpdatesById(documentId, &document); err != nil {
-			resp.Message = "对象上传错误.."
-			log.Println("对象上传错误..", err)
+			resp.Message = "对象上传错误"
+			log.Println("对象上传错误3", err)
 			// _ = ws.WriteJSON(&resp)
 			// ws.Close()
 			return
@@ -445,8 +445,8 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 		var documentAccessRecord = models.DocumentAccessRecord{}
 		err := documentAccessRecordService.Get(&documentAccessRecord, "user_id = ? and document_id = ?", userId, documentId)
 		if err != nil && !errors.Is(err, services.ErrRecordNotFound) {
-			resp.Message = "对象上传错误..."
-			log.Println("对象上传错误...", err)
+			resp.Message = "对象上传错误"
+			log.Println("对象上传错误4", err)
 			// _ = ws.WriteJSON(&resp)
 			// ws.Close()
 			return
@@ -470,8 +470,8 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 		VersionId:  documentVersionId,
 		LastCmdId:  str.DefaultToInt(lastCmdId, 0),
 	}); err != nil {
-		resp.Message = "对象上传错误...."
-		log.Println("对象上传错误....", err)
+		resp.Message = "对象上传错误"
+		log.Println("对象上传错误5", err)
 		// _ = ws.WriteJSON(&resp)
 		// ws.Close()
 		return
