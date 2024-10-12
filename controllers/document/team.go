@@ -319,7 +319,7 @@ func GetTeamJoinRequestList(c *gin.Context) {
 		return
 	}
 	var messageShowList []models.TeamJoinRequestMessageShow
-	if teamJoinRequestMessageShowService.Find(&messageShowList, "user_id = ? and team_id = ?", userId, teamId) != nil {
+	if err := teamJoinRequestMessageShowService.Find(&messageShowList, "user_id = ? and team_id = ?", userId, teamId); err != nil {
 		log.Println("TeamJoinRequestMessageShow查询错误", err)
 		response.Fail(c, "")
 		return

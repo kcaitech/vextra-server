@@ -2,8 +2,10 @@ package document
 
 import (
 	"errors"
-	"github.com/gin-gonic/gin"
 	"log"
+	"time"
+
+	"github.com/gin-gonic/gin"
 	"kcaitech.com/kcserver/common/gin/auth"
 	"kcaitech.com/kcserver/common/gin/response"
 	"kcaitech.com/kcserver/common/models"
@@ -13,7 +15,6 @@ import (
 	"kcaitech.com/kcserver/utils/sliceutil"
 	"kcaitech.com/kcserver/utils/str"
 	myTime "kcaitech.com/kcserver/utils/time"
-	"time"
 )
 
 // CreateProject 创建项目
@@ -310,7 +311,7 @@ func GetProjectJoinRequestList(c *gin.Context) {
 		return
 	}
 	var messageShowList []models.ProjectJoinRequestMessageShow
-	if projectJoinRequestMessageShowService.Find(&messageShowList, "user_id = ? and project_id = ?", userId, projectId) != nil {
+	if err := projectJoinRequestMessageShowService.Find(&messageShowList, "user_id = ? and project_id = ?", userId, projectId); err != nil {
 		log.Println("ProjectJoinRequestMessageShow查询错误", err)
 		response.Fail(c, "")
 		return

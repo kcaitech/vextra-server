@@ -124,7 +124,6 @@ func UploadDocument(c *gin.Context) {
 }
 
 func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media, resp *Response) {
-	log.Println("UploadDocumentData")
 	// resp := Response{
 	// 	Status: ResponseStatusFail,
 	// }
@@ -171,7 +170,6 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 		}
 	}
 
-	log.Println("UploadDocumentData 获取文档信息")
 	// 获取文档信息
 	documentService := services.NewDocumentService()
 	docPath := uuid.New().String()
@@ -195,7 +193,6 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 
 	documentSize := uint64(0)
 
-	log.Println("UploadDocumentData 文本审核")
 	if uploadData.DocumentText != "" {
 		go func() {
 			reviewResponse, err := safereview.Client.ReviewText(uploadData.DocumentText)
@@ -209,7 +206,6 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 		}()
 	}
 
-	log.Println("UploadDocumentData Page图片上传")
 	if uploadData.PageImageList != nil && len(*uploadData.PageImageList) > 0 {
 		go func() {
 			needUpdateDocument := false
@@ -247,7 +243,6 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 		})
 	}
 
-	log.Println("UploadDocumentData Page上传")
 	uploadWaitGroup := sync.WaitGroup{}
 
 	// pages部分
@@ -291,7 +286,6 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 		}(pagePath, pageContent)
 	}
 
-	log.Println("UploadDocumentData medias")
 	// medias部分
 	if isFirstUpload && medias != nil {
 		// mediaInfoList := make([]struct {
@@ -371,7 +365,6 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 	// }
 	// documentSize += uint64(len(uploadData.FreeSymbols))
 
-	log.Println("UploadDocumentData 设置versionId")
 	// 设置versionId
 	pagesList := uploadData.DocumentMeta["pagesList"].([]any)
 	for _, page := range pagesList {
@@ -463,7 +456,6 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 		}
 	}
 
-	log.Println("UploadDocumentData 创建文档版本记录")
 	// 创建文档版本记录
 	if err := documentService.DocumentVersionService.Create(&models.DocumentVersion{
 		DocumentId: documentId,
