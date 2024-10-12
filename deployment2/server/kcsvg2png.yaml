@@ -15,7 +15,7 @@ services:
     # ports:
     #   - "10003:10003"
     volumes:
-      - ./kcversion/config/:/app/config/
+      - ./kcsvg2png/config/:/app/config/
       - ./kcsvg2png/log/:/app/log/
 
 networks:
