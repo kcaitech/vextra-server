@@ -23,7 +23,7 @@ import (
 )
 
 // 最短更新时间间隔（秒）
-const minUpdateTimeInterval time.Duration = time.Second * 60 * 10
+// const minUpdateTimeInterval time.Duration = time.Second * 60 * 10
 
 type DocumentVersioningInfo struct {
 	DocId          int64     `json:"docId"`
@@ -196,6 +196,7 @@ func AutoUpdate(documentId int64) {
 		}
 		documentVersioningInfoMap.Set(documentId, info)
 	}
+	minUpdateTimeInterval := time.Second * time.Duration(config.Config.VersionServer.MinUpdateInterval)
 	// 时间未到
 	if time.Since(info.LastUpdateTime) < minUpdateTimeInterval {
 		return
@@ -207,6 +208,11 @@ func AutoUpdate(documentId int64) {
 		info.LastUpdateTime = time.Now()
 		return
 	}
+	defer func() {
+		if _, err := documentVersioningMutex.Unlock(); err != nil {
+			log.Println(documentId, "释放锁失败 documentVersioningMutex.Unlock", err)
+		}
+	}()
 	// 从redis获取LastUpdateTime，更新到本地缓存
 	lastUpdateTimeFromRedis := getDocumentLastUpdateTimeFromRedis(documentId)
 	if !lastUpdateTimeFromRedis.IsZero() {
@@ -216,11 +222,6 @@ func AutoUpdate(documentId int64) {
 	if time.Since(info.LastUpdateTime) < minUpdateTimeInterval {
 		return
 	}
-	defer func() {
-		if _, err := documentVersioningMutex.Unlock(); err != nil {
-			log.Println(documentId, "释放锁失败 documentVersioningMutex.Unlock", err)
-		}
-	}()
 	// 开始更新版本
 	defer func() {
 		info.LastUpdateTime = time.Now()
@@ -262,9 +263,11 @@ func AutoUpdate(documentId int64) {
 		return
 	}
 
+	log.Println("auto update document, start svg2png")
 	// svg2png
 	pagePngs := svg2png(version.PageSvgs)
 
+	log.Println("auto update document, start upload data", documentId)
 	// upload document data
 	header := Header{
 		DocumentId: documentIdStr,

@@ -19,6 +19,6 @@
         "bucketName": "document",
         "filesBucketName": "files"
     },
-    "min_cmd_count": 100,
+    "min_cmd_count": 1,
     "port": 10040
 }

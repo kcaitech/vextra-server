@@ -18,7 +18,8 @@
         "secret": "xxx"
     },
     "version_server": {
-        "url": "http://doc-versioning-service.kc.svc.cluster.local:10040/generate"
+        "url": "http://doc-versioning-service.kc.svc.cluster.local:10040/generate",
+        "min_update_interval": 600
     },
     "svg2png": {
         "url":"http://svg-to-png.kc.svc.cluster.local:10050/svg_to_png"

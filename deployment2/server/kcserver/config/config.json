@@ -18,7 +18,8 @@
         "secret": "f0dbaf70575a184a14ed7f6b233c9c40"
     },
     "version_server": {
-        "url": "http://kcversion:10040/generate"
+        "url": "http://kcversion:10040/generate",
+        "min_update_interval": 0
     },
     "svg2png": {
         "url":"http://kcsvg2png:10050/svg_to_png"
