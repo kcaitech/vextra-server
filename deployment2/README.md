@@ -1,7 +1,9 @@
 1. 需要先去构建svg2png,kcversion的docker镜像
 2. ./run.sh up
 
-## minio直接使用缓存配置
+
+
+## minio直接使用缓存配置（需要手动操作）
 3. http://localhost:9001/buckets 
 4. 创建document,files bucket, files设置policy为custom:
 {
@@ -29,3 +31,10 @@
 "secretAccessKey": "GmwAzetY1L0jU4pUAqpO7RJGIsG7k3gozVH6whoJ",
 "stsAccessKeyID": "user",
 "stsSecretAccessKey": "GmwAzetY1L0jU4pUAqpO7RJGIsG7k3gozVH6whoJ",
+
+
+## mongodb需要设置{document_id, cmd_id}为unique（已配置）
+1. 见db/mongodb/init
+
+## mysql初始化（已配置）
+1. 见db/mysql/init

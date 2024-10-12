@@ -7,6 +7,12 @@ if [ "$1" = "up" ] || [ "$1" = "reset" ]; then
     if [ "$net" != "kcserver" ]; then
         docker network create kcserver
     fi
+
+    # 清除掉log
+    rm -rf kcserver/log
+    rm -rf kcversion/log
+    rm -rf kcsvg2png/log
+
     docker compose ${ymls} up -d
 fi
 
