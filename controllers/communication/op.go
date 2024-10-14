@@ -121,7 +121,7 @@ func getPreviousId(documentId int64) (int64, error) {
 	return previousId, nil
 }
 
-func NewOpServe(ws *websocket.Ws, userId int64, documentId int64, versionId string, genSId func() string) *opServe {
+func NewOpServe(ws *websocket.Ws, userId int64, documentId int64, versionId string, lastCmdId int64, genSId func() string) *opServe {
 
 	documentService := services.NewDocumentService()
 	var document models.Document
@@ -173,12 +173,16 @@ func NewOpServe(ws *websocket.Ws, userId int64, documentId int64, versionId stri
 		quit:       make(chan struct{}),
 	}
 
-	serv.start(documentId, documentVersion)
+	if lastCmdId == 0 {
+		lastCmdId = documentVersion.LastCmdId
+	}
+
+	serv.start(documentId, lastCmdId)
 	// serv.isready = true
 	return &serv
 }
 
-func (serv *opServe) start(documentId int64, documentVersion models.DocumentVersion) {
+func (serv *opServe) start(documentId int64, lastCmdId int64) {
 	go func() {
 		// defer tunnelServer.Close()
 
@@ -188,7 +192,7 @@ func (serv *opServe) start(documentId int64, documentVersion models.DocumentVers
 		reqParams := bson.M{
 			"document_id": documentId,
 			"_id": bson.M{
-				"$gt": documentVersion.LastCmdId,
+				"$gt": lastCmdId,
 			},
 		}
 		findOptions := options.Find()

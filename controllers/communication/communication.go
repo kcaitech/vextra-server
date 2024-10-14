@@ -52,6 +52,10 @@ type BindData struct {
 	Perm string `json:"perm_type,omitempty"`
 }
 
+type StartData struct {
+	LastCmdId string `json:"last_cmd_id,omitempty"`
+}
+
 type ServeFace interface {
 	handle(data *TransData, binaryData *([]byte))
 	close()
@@ -143,10 +147,21 @@ func (c *ACommuncation) handleStart(clientData *TransData) {
 		return
 	}
 
+	startdata := StartData{}
+	err := json.Unmarshal([]byte(clientData.Data), &startdata)
+	if err != nil {
+		c.msgErr("start args error", &serverData, &err)
+		return
+	}
+
+	lastCmdId := int64(0)
+	if startdata.LastCmdId != "" {
+		lastCmdId = str.DefaultToInt(startdata.LastCmdId, 0)
+	}
 	// bind comment
 	commentServe := NewCommentServe(c.ws, c.userId, c.documentId, c.genSId)
 	c.bindServe(DataTypes_Comment, commentServe)
-	opServe := NewOpServe(c.ws, c.userId, c.documentId, c.versionId, c.genSId) // todo VersionId
+	opServe := NewOpServe(c.ws, c.userId, c.documentId, c.versionId, lastCmdId, c.genSId) // todo VersionId
 	c.bindServe(DataTypes_Op, opServe)
 	resourceServe := NewResourceServe(c.ws, c.userId, c.documentId)
 	c.bindServe(DataTypes_Resource, resourceServe)
