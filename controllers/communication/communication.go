@@ -219,22 +219,25 @@ func (c *ACommuncation) serve() {
 
 		log.Println("ws receive msg:", clientData.Type, mt)
 
+		if clientData.Type == DataTypes_Heartbeat {
+			_ = c.ws.WriteJSON(&serverData)
+			continue
+		}
 		if clientData.Type == DataTypes_Bind {
 			// permType := models.PermType(str.DefaultToInt(c.Query("perm_type"), 0))
 			c.handleBind(&clientData)
 			continue
-		} else if clientData.Type == DataTypes_Start {
+		}
+		if clientData.Type == DataTypes_Start {
 			c.handleStart(&clientData)
 			continue
-		} else {
-			serve := c.serveMap[clientData.Type]
-			if serve != nil {
-				serve.handle(&clientData, binaryData)
-			} else {
-				c.msgErr("no bind handler", &serverData, nil)
-			}
 		}
-
+		serve := c.serveMap[clientData.Type]
+		if serve != nil {
+			serve.handle(&clientData, binaryData)
+		} else {
+			c.msgErr("no bind handler", &serverData, nil)
+		}
 	}
 }
 

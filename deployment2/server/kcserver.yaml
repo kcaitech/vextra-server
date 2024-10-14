@@ -4,7 +4,7 @@ services:
     # build:
     #   context: ../../
     #   dockerfile: ./Dockerfile
-    image: kcserver:1.0.1
+    image: kcserver:1.0.2
     container_name: kcserver
     restart: always
     environment:

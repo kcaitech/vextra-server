@@ -42,6 +42,7 @@ const (
 	DataTypes_DocUpload = "docupload"
 	DataTypes_Bind      = "bind"
 	DataTypes_Start     = "start"
+	DataTypes_Heartbeat = "heartbeat"
 )
 
 // 与前端一致
