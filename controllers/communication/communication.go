@@ -14,6 +14,7 @@ import (
 	"kcaitech.com/kcserver/common/jwt"
 	"kcaitech.com/kcserver/common/models"
 	document "kcaitech.com/kcserver/controllers/document"
+	"kcaitech.com/kcserver/utils/radix_convert"
 	"kcaitech.com/kcserver/utils/str"
 	"kcaitech.com/kcserver/utils/websocket"
 )
@@ -53,7 +54,7 @@ type BindData struct {
 }
 
 type StartData struct {
-	LastCmdId string `json:"last_cmd_id,omitempty"`
+	LastCmdVersion string `json:"last_cmd_version,omitempty"`
 }
 
 type ServeFace interface {
@@ -155,9 +156,11 @@ func (c *ACommuncation) handleStart(clientData *TransData) {
 	}
 
 	lastCmdId := int64(0)
-	if startdata.LastCmdId != "" {
-		lastCmdId = str.DefaultToInt(startdata.LastCmdId, 0)
+	if startdata.LastCmdVersion != "" {
+		var radixConvert, _ = radix_convert.NewRadixConvert(62, radix_convert.Default62RadixChars)
+		lastCmdId = radixConvert.To(startdata.LastCmdVersion)
 	}
+	log.Println("LastCmdVersion", startdata.LastCmdVersion, lastCmdId)
 	// bind comment
 	commentServe := NewCommentServe(c.ws, c.userId, c.documentId, c.genSId)
 	c.bindServe(DataTypes_Comment, commentServe)
