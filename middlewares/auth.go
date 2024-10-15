@@ -12,14 +12,14 @@ import (
 func handler(c *gin.Context) {
 	token := jwt.GetJwtFromAuthorization(c.GetHeader("Authorization"))
 	if token == "" {
-		log.Printf("auth-middle", "unauth")
+		log.Println("auth-middle", "unauth")
 		response.Abort(c, http.StatusUnauthorized, "未登录", nil)
 		return
 	}
 
 	jwtData, err := jwt.ParseJwt(token)
 	if err != nil {
-		log.Printf("auth-middle", "wrong jwt")
+		log.Println("auth-middle", "wrong jwt")
 		response.Abort(c, http.StatusUnauthorized, err.Error(), nil)
 		return
 	}
