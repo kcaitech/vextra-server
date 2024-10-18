@@ -9,11 +9,8 @@ import (
 )
 
 type BaseConfiguration struct {
-	Server struct {
-		Port string `yaml:"port" json:"port"`
-	} `yaml:"server" json:"server"`
 	DB struct {
-		DSN string `yaml:"dsn" json:"dsn"`
+		DSN string `yaml:"url" json:"url"`
 	} `yaml:"db" json:"db"`
 	StorageUrl struct {
 		Document string `yaml:"document" json:"document"`

@@ -3,7 +3,7 @@ package config
 import "kcaitech.com/kcserver/common/config"
 
 type MongoConf struct {
-	Uri string `yaml:"uri" json:"uri"`
+	Url string `yaml:"url" json:"url"`
 	Db  string `yaml:"db" json:"db"`
 }
 

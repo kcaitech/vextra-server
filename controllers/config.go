@@ -34,7 +34,7 @@ type Configuration struct {
 	Jwt       jwt.JwtConf               `yaml:"jwt" json:"jwt"`
 	Mongo     mongo.MongoConf           `yaml:"mongo" json:"mongo"`
 	Redis     redis.RedisConf           `yaml:"redis" json:"redis"`
-	SafeReiew safereview.SafeReviewConf `yaml:"safereview" json:"safereview"`
+	SafeReiew safereview.SafeReviewConf `yaml:"safereview" json:"safe_review"`
 	Snowflake snowflake.SnowflakeConf   `yaml:"snowflake" json:"snowflake"`
 	Storage   storage.StorageConf       `yaml:"storage" json:"storage"`
 }

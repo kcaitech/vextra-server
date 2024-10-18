@@ -54,9 +54,11 @@ func Init() *config.Configuration {
 	return conf
 }
 
+const port = 80
+
 func main() {
 	conf := Init()
 	start.Run(&conf.BaseConfiguration, func(router *gin.Engine) {
 		httpApi.LoadRoutes(router)
-	})
+	}, port)
 }

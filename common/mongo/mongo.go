@@ -20,7 +20,7 @@ func Init(conf *config.MongoConf) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	var err error
-	option := options.Client().ApplyURI(conf.Uri)
+	option := options.Client().ApplyURI(conf.Url)
 	//option.SetReadConcern(readconcern.Majority())
 	//option.SetReadConcern(readconcern.Snapshot())
 	option.SetReadPreference(readpref.PrimaryPreferred())

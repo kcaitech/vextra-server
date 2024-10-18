@@ -19,7 +19,7 @@ type userInfoResp struct {
 func init() {
 	conf := &config.BaseConfiguration{
 		DB: struct {
-			DSN string `yaml:"dsn" json:"dsn"`
+			DSN string `yaml:"url" json:"url"`
 		}{
 			DSN: "admin:kcai1212@tcp(127.0.0.1:33306)/kcserver?charset=utf8&parseTime=True&loc=Local",
 		},

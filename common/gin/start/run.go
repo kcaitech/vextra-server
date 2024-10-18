@@ -1,13 +1,15 @@
 package start
 
 import (
-	"github.com/gin-gonic/gin"
+	"fmt"
 	"log"
+
+	"github.com/gin-gonic/gin"
 	. "kcaitech.com/kcserver/common/config"
 	"kcaitech.com/kcserver/common/gin/middlewares"
 )
 
-func Run(config *BaseConfiguration, afterInit func(router *gin.Engine)) {
+func Run(config *BaseConfiguration, afterInit func(router *gin.Engine), port int32) {
 	log.Println("开始运行")
 
 	//gin.SetMode(gin.DebugMode)
@@ -19,10 +21,8 @@ func Run(config *BaseConfiguration, afterInit func(router *gin.Engine)) {
 
 	afterInit(router)
 
-	err := router.Run(":" + config.Server.Port)
+	err := router.Run(":" + fmt.Sprint(port))
 	if err != nil {
-		if err != nil {
-			log.Fatalf("启动服务器失败: %v", err)
-		}
+		log.Fatalf("启动服务器失败: %v", err)
 	}
 }
