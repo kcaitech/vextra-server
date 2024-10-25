@@ -20,9 +20,9 @@ import (
 func Init() *config.Configuration {
 
 	configDir := "config/"
-	conf, err := config.LoadConfig(configDir + "config.json")
+	conf, err := config.LoadYamlFile(configDir + "config.json")
 	if err != nil {
-		conf, _ = config.LoadConfigEnv("kcconfig")
+		conf, _ = config.LoadJsonEnv("kcconfig")
 	}
 
 	// jwtConfig := configDir + conf.Jwt.Ref

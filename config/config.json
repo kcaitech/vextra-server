@@ -7,12 +7,12 @@
         "attatch": "http://localhost:9000/files"
     },
     "wx": {
-        "appid": "wx42bb87f7f2e86a6e",
-        "secret": "fb1fe5995f6f297219f871703630b513"
+        "appid": "xxx",
+        "secret": "xxxx"
     },
     "wxMp": {
-        "appid": "wx4006b3fc2a0a4c57",
-        "secret": "f0dbaf70575a184a14ed7f6b233c9c40"
+        "appid": "xxx",
+        "secret": "xxxx"
     },
     "version_server": {
         "url": "http://kcversion:10040/generate",

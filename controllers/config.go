@@ -41,12 +41,12 @@ type Configuration struct {
 
 var Config Configuration
 
-func LoadConfig(filePath string) (*Configuration, error) {
-	err := config.LoadJsonConfig(filePath, &Config)
+func LoadYamlFile(filePath string) (*Configuration, error) {
+	err := config.LoadConfig(filePath, &Config)
 	return &Config, err
 }
 
-func LoadConfigEnv(env string) (*Configuration, error) {
+func LoadJsonEnv(env string) (*Configuration, error) {
 	content := os.Getenv(env)
 	if content == "" {
 		return &Config, errors.New("no " + env)

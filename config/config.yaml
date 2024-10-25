@@ -1,0 +1,86 @@
+db:
+  url: root:kKEIjksvnOOIjdZ6rtzE@tcp(mysql:3306)/kcserver?charset=utf8&parseTime=True&loc=Local
+
+storage_url:
+  document: http://localhost:9000
+  attatch: http://localhost:9000/files
+
+wx:
+  appid: xxx
+  secret: xxx
+
+wxMp:
+  appid: xxx
+  secret: xxx
+
+version_server:
+  url: http://kcversion:10040/generate
+  min_update_interval: 600
+  min_cmd_count: 100
+
+svg2png:
+  url: http://kcsvg2png:10050/svg_to_png
+
+jwt:
+  secret: 123456
+  expire_hour: 168
+
+mongo:
+  url: mongodb://root:jKKsinkjilKKLSW@mongo:27017
+  db: kcserver
+
+redis:
+  url: redis:6379
+  password: kcserver
+  db: 0
+  sentinel: true
+  sentinelAddrs:
+  masterName:
+
+safe_review:
+  provider: baidu
+  ali:
+    accessKeyId: accessKeyId
+    accessKeySecret: accessKeySecret
+    regionId: cn-hangzhou
+    endpoint: green-cip.cn-hangzhou.aliyuncs.com
+  baidu:
+    appId: 44042444
+    apiKey: skYZWZolIBpo4j4olXzNRUKD
+    secretKey: H5KUEgVaO08I3tDPjGp9m4LqdsKcOh40
+
+snowflake:
+  workerId: 1
+
+storage:
+  provider: minio
+  minio:
+    endpoint: "minio:9000"
+    region: "zhuhai-1"
+    accessKeyID: "59L3pDWuk9oLQWIgytCI"
+    secretAccessKey: "GmwAzetY1L0jU4pUAqpO7RJGIsG7k3gozVH6whoJ"
+    stsAccessKeyID: "user"
+    stsSecretAccessKey: "GmwAzetY1L0jU4pUAqpO7RJGIsG7k3gozVH6whoJ"
+    bucketName: "document"
+    filesBucketName: "files"
+
+  s3:
+    endpoint: "192.168.0.18:9000"
+    region: "zhuhai-1"
+    accessKeyID: "Gathooh88mba5H3y2"
+    secretAccessKey: "yFukp3vtIkUNck2XL3s2KOT4wyRPR71G2"
+    accountID: ""
+    roleName: ""
+    bucketName: "document"
+    filesBucketName: "files"
+
+  oss:
+    endpoint: "oss-cn-hangzhou.aliyuncs.com"
+    stsEndpoint: "sts-vpc.cn-hangzhou.aliyuncs.com"
+    region: "cn-hangzhou"
+    accessKeyID: "LTAI5tSm1Y5obQCwVn7X9k2x"
+    secretAccessKey: "0uXxQBqG8nQC7uiyipTX6F4JkEDlcB"
+    accountId: "1382280232399206"
+    roleName: "ramoss"
+    bucketName: "protodesign-document"
+    filesBucketName: "protodesign-files"
