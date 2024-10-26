@@ -10,7 +10,7 @@ import (
 )
 
 func Run(config *BaseConfiguration, afterInit func(router *gin.Engine), port int32) {
-	log.Println("开始运行")
+	log.Printf("kcserver服务已启动 %d", port)
 
 	//gin.SetMode(gin.DebugMode)
 	gin.SetMode(gin.ReleaseMode)
@@ -23,6 +23,6 @@ func Run(config *BaseConfiguration, afterInit func(router *gin.Engine), port int
 
 	err := router.Run(":" + fmt.Sprint(port))
 	if err != nil {
-		log.Fatalf("启动服务器失败: %v", err)
+		log.Fatalf("kcserver服务启动失败: %v", err)
 	}
 }
