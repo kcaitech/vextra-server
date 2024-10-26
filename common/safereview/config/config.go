@@ -21,7 +21,7 @@ type SafeReviewConf struct {
 }
 
 type Configuration struct {
-	SafeReview SafeReviewConf `yaml:"safereview" json:"safereview"`
+	SafeReview SafeReviewConf `yaml:"safe_review" json:"safe_review"`
 }
 
 func LoadConfig(filePath string) *Configuration {
