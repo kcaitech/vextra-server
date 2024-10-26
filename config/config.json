@@ -1,6 +1,10 @@
 {
     "db": {
-        "url": "root:kKEIjksvnOOIjdZ6rtzE@tcp(mysql:3306)/kcserver?charset=utf8&parseTime=True&loc=Local"
+        "user": "root",
+        "password": "kKEIjksvnOOIjdZ6rtzE",
+        "host": "mysql",
+        "port": 3306,
+        "database": "kcserver"
     },
     "storage_url": {
         "document": "http://localhost:9000",

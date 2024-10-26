@@ -2,16 +2,29 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 
 	"gopkg.in/yaml.v3"
 )
 
+type DBConfig struct {
+	// DSN string `yaml:"url" json:"url"`
+	User     string `yaml:"user" json:"user"`
+	Password string `yaml:"password" json:"password"`
+	Host     string `yaml:"host" json:"host"`
+	Port     int64  `yaml:"port" json:"port"`
+	Database string `yaml:"database" json:"database"`
+}
+
+func (db *DBConfig) DSN() string {
+	// root:kKEIjksvnOOIjdZ6rtzE@tcp(mysql:3306)/kcserver?charset=utf8&parseTime=True&loc=Local
+	return db.User + ":" + db.Password + "@tcp(" + db.Host + ":" + fmt.Sprint(db.Host) + ")/" + db.Database + "?charset=utf8&parseTime=True&loc=Local"
+}
+
 type BaseConfiguration struct {
-	DB struct {
-		DSN string `yaml:"url" json:"url"`
-	} `yaml:"db" json:"db"`
+	DB         DBConfig `yaml:"db" json:"db"`
 	StorageUrl struct {
 		Document string `yaml:"document" json:"document"`
 		Attatch  string `yaml:"attatch" json:"attatch"`

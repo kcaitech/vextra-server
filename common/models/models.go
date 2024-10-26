@@ -4,25 +4,26 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"log"
+	"reflect"
+	"strings"
+
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
-	"log"
 	"kcaitech.com/kcserver/common/config"
 	myReflect "kcaitech.com/kcserver/utils/reflect"
 	"kcaitech.com/kcserver/utils/str"
 	myTime "kcaitech.com/kcserver/utils/time"
-	"reflect"
-	"strings"
 )
 
 var DB *gorm.DB
 
 func Init(config *config.BaseConfiguration) {
 	var err error
-	DB, err = gorm.Open(mysql.Open(config.DB.DSN), &gorm.Config{
+	DB, err = gorm.Open(mysql.Open(config.DB.DSN()), &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{
 			SingularTable: true, // 使用单数形式的表名
 		},
