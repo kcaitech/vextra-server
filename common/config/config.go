@@ -20,7 +20,7 @@ type DBConfig struct {
 
 func (db *DBConfig) DSN() string {
 	// root:kKEIjksvnOOIjdZ6rtzE@tcp(mysql:3306)/kcserver?charset=utf8&parseTime=True&loc=Local
-	return db.User + ":" + db.Password + "@tcp(" + db.Host + ":" + fmt.Sprint(db.Host) + ")/" + db.Database + "?charset=utf8&parseTime=True&loc=Local"
+	return db.User + ":" + db.Password + "@tcp(" + db.Host + ":" + fmt.Sprint(db.Port) + ")/" + db.Database + "?charset=utf8&parseTime=True&loc=Local"
 }
 
 type BaseConfiguration struct {
