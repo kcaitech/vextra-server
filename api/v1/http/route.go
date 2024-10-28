@@ -10,6 +10,10 @@ import (
 func LoadRoutes(router *gin.Engine) {
 	router.RedirectTrailingSlash = false
 	router.Use(static.Serve("/", static.LocalFile("/app/html", false))) // 前端工程
+	// 如果希望所有未匹配的路由都重定向到 index.html
+	router.NoRoute(func(c *gin.Context) {
+		c.File("/app/html/index.html")
+	})
 
 	router.GET("/health_check", controllers.HealthCheck)
 	router.GET("/version", controllers.GetAppVersion)
