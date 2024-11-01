@@ -17,7 +17,6 @@ func LoadRoutes(router *gin.Engine) {
 
 	router.GET("/health_check", controllers.HealthCheck)
 	router.GET("/version", controllers.GetAppVersion)
-	router.GET("/index_hash", controllers.GetIndexHash)
 	router.Use(middlewares.AccessLogMiddleware())
 	apiGroup := router.Group("/api") // router.Group(common.ApiVersionPath)
 	// apiGroup.Use(middlewares.CORSMiddleware())

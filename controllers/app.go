@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"log"
-	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -53,19 +52,4 @@ func GetAppVersion(c *gin.Context) {
 		version = LoadPackageVersion()
 	}
 	response.Success(c, version)
-}
-
-var index_hash *[]byte
-
-func GetIndexHash(c *gin.Context) {
-	if index_hash == nil {
-		content, err := os.ReadFile("/app/html/index.hash")
-		if err != nil {
-			log.Printf("load index.hash fail %v", err)
-			c.AbortWithStatus(http.StatusInternalServerError)
-			return
-		}
-		index_hash = &content
-	}
-	c.String(http.StatusOK, string(*index_hash))
 }
