@@ -285,8 +285,8 @@ func Communication(c *gin.Context) {
 	// 建立ws连接
 	ws, err := websocket.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		log.Println("communication-建立ws连接失败：", userId)
-		response.Fail(c, "建立ws连接失败："+err.Error())
+		log.Println("communication-建立ws连接失败：", userId, err)
+		response.Fail(c, "建立ws连接失败")
 		return
 	}
 	defer ws.Close()
