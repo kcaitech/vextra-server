@@ -62,7 +62,11 @@ func (serv *docUploadServe) handle(data *TransData, binaryData *([]byte)) {
 	serverData.DataId = data.DataId
 	msgErr := func(msg string, serverData *TransData, err *error) {
 		serverData.Err = msg
-		log.Println(msg, err)
+		if err != nil {
+			log.Println(msg, *err)
+		} else {
+			log.Println(msg)
+		}
 		_ = serv.ws.WriteJSON(serverData)
 	}
 
