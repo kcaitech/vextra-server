@@ -43,7 +43,7 @@ func getDocumentLastUpdateTimeFromRedis(documentId int64) time.Time {
 // body: { documentInfo: DocumentInfo, lastCmdId: string, documentData: ExFromJson, documentText: string, mediasSize: number, pageImageBase64List: string[] }
 
 type DocumentInfo struct {
-	DocumentId string `json:"id"`
+	DocumentId string `json:"id"` // 可能是int
 	Path       string `json:"path"`
 	VersionId  string `json:"version_id"`
 	LastCmdId  string `json:"last_cmd_id"`
@@ -61,12 +61,12 @@ type ExFromJson struct {
 }
 
 type VersionResp struct {
-	DocumentInfo DocumentInfo `json:"documentInfo"`
-	LastCmdId    string       `json:"lastCmdId"`
-	DocumentData ExFromJson   `json:"documentData"`
-	DocumentText string       `json:"documentText"`
-	MediasSize   uint64       `json:"mediasSize"`
-	PageSvgs     []string     `json:"pageSvgs"`
+	// DocumentInfo DocumentInfo `json:"documentInfo"`
+	LastCmdId    string     `json:"lastCmdId"`
+	DocumentData ExFromJson `json:"documentData"`
+	DocumentText string     `json:"documentText"`
+	MediasSize   uint64     `json:"mediasSize"`
+	PageSvgs     []string   `json:"pageSvgs"`
 }
 
 func _svgToPng(svgContent string) ([]byte, error) {
@@ -175,18 +175,6 @@ func svg2png(svgs []string) *[][]byte {
 	return &pngs
 }
 
-// 发送 POST 请求的函数
-// func sendPostRequest(url string, payload []byte) (*http.Response, error) {
-// 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(payload))
-// 	if err != nil {
-// 		return nil, err
-// 	}
-// 	req.Header.Set("Content-Type", "application/json")
-
-// 	client := &http.Client{}
-// 	return client.Do(req)
-// }
-
 func AutoUpdate(documentId int64) {
 	info, ok := documentVersioningInfoMap.Get(documentId)
 	if !ok {
@@ -228,15 +216,8 @@ func AutoUpdate(documentId int64) {
 	}()
 
 	log.Println("auto update document:", documentId)
-	// var docVersioningServiceUrl = config.Config.VersionServer.Host
-	var generateApiUrl = config.Config.VersionServer.Url // "http://" + docVersioningServiceUrl + "/generate"
-	// requestData := map[string]any{
-	// 	"documentId": documentIdStr,
-	// }
-	// jsonData, err := json.Marshal(requestData)
-	// if err != nil {
-	// 	return
-	// }
+	var generateApiUrl = config.Config.VersionServer.Url
+
 	// 构建请求
 	resp, err := http.Get(generateApiUrl + "?documentId=" + documentIdStr)
 	if err != nil {
