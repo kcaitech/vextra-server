@@ -17,9 +17,10 @@ type Export struct {
 }
 
 type DocData struct {
-	Id     string
-	Export *Export
-	Medias []document.Media
+	Id        string
+	ProjectId string
+	Export    *Export
+	Medias    []document.Media
 }
 
 type docUploadServe struct {
@@ -68,6 +69,7 @@ func (serv *docUploadServe) handle(data *TransData, binaryData *([]byte)) {
 
 	type UploadHeader struct {
 		DocumentId string  `json:"document_id"`
+		ProjectId  string  `json:"project_id,omitempty"`
 		Export     *Export `json:"export,omitempty"`
 		Commit     bool    `json:"commit,omitempty"`
 		Media      string  `json:"media,omitempty"`
@@ -83,8 +85,9 @@ func (serv *docUploadServe) handle(data *TransData, binaryData *([]byte)) {
 	if serv.data == nil || serv.data.Id != uploadHeader.DocumentId {
 		log.Println("uploading", uploadHeader.DocumentId)
 		serv.data = &DocData{
-			Id:     uploadHeader.DocumentId,
-			Medias: []document.Media{},
+			Id:        uploadHeader.DocumentId,
+			ProjectId: uploadHeader.ProjectId,
+			Medias:    []document.Media{},
 		}
 	}
 
@@ -105,7 +108,8 @@ func (serv *docUploadServe) handle(data *TransData, binaryData *([]byte)) {
 	if uploadHeader.Commit && serv.data != nil && serv.data.Export != nil {
 		log.Println("uploading commit", uploadHeader.DocumentId)
 		header := document.Header{
-			UserId: str.IntToString(serv.userId),
+			UserId:    str.IntToString(serv.userId),
+			ProjectId: serv.data.ProjectId,
 		}
 
 		uploadData := document.UploadData{
