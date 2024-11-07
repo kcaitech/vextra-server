@@ -11,7 +11,7 @@ import (
 func LoadRoutes(router *gin.Engine) {
 	router.RedirectTrailingSlash = false
 	router.GET("/health_check", controllers.HealthCheck)
-	router.GET("/version", controllers.GetAppVersion)
+	// router.GET("/version", controllers.GetAppVersion) // 由前端文件提供
 
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	router.Use(static.Serve("/", static.LocalFile("/app/html", false))) // 前端工程
