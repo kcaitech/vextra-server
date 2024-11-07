@@ -15,10 +15,13 @@ func LoadRoutes(router *gin.Engine) {
 
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	router.Use(static.Serve("/", static.LocalFile("/app/html", false))) // 前端工程
+	// 如果不是直接使用，不使用noroute，不然代理不好处理错误路径
 	// 未知的路由交由前端vue router处理
-	router.NoRoute(func(c *gin.Context) {
-		c.File("/app/html/index.html")
-	})
+	if controllers.Config.DefaultRoute {
+		router.NoRoute(func(c *gin.Context) {
+			c.File("/app/html/index.html")
+		})
+	}
 
 	router.Use(middlewares.AccessLogMiddleware())
 	apiGroup := router.Group("/api") // router.Group(common.ApiVersionPath)
