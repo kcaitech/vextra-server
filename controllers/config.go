@@ -37,6 +37,8 @@ type Configuration struct {
 	SafeReiew safereview.SafeReviewConf `yaml:"safe_review" json:"safe_review"`
 	Snowflake snowflake.SnowflakeConf   `yaml:"snowflake" json:"snowflake"`
 	Storage   storage.StorageConf       `yaml:"storage" json:"storage"`
+
+	DefaultRoute bool `yaml:"default_route,omitempty" json:"default_route,omitempty"`
 }
 
 var Config Configuration

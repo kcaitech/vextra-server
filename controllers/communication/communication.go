@@ -74,7 +74,11 @@ type ACommuncation struct {
 
 func (c *ACommuncation) msgErr(msg string, serverData *TransData, err *error) {
 	serverData.Err = msg
-	log.Println(msg, err)
+	if err != nil {
+		log.Println(msg, *err)
+	} else {
+		log.Println(msg)
+	}
 	_ = c.ws.WriteJSON(serverData)
 }
 
