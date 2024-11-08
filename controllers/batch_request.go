@@ -20,20 +20,18 @@ type BatchRequestData struct {
 }
 
 // 自定义 UnmarshalJSON 方法
-func (bri *BatchRequestData) UnmarshalJSON(data []byte) error {
-	type Alias BatchRequestData
-	aux := &struct {
-		*Alias
-	}{
-		Alias: (*Alias)(bri),
-	}
-
-	if err := json.Unmarshal(data, &aux); err != nil {
-		return err
-	}
-
-	return nil
-}
+// func (bri *BatchRequestData) UnmarshalJSON(data []byte) error {
+// 	type Alias BatchRequestData
+// 	aux := &struct {
+// 		*Alias
+// 	}{
+// 		Alias: (*Alias)(bri),
+// 	}
+// 	if err := json.Unmarshal(data, &aux); err != nil {
+// 		return err
+// 	}
+// 	return nil
+// }
 
 type BatchRequestItem struct {
 	Reqid string           `json:"reqid"`
