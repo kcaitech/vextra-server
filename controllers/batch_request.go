@@ -1,25 +1,27 @@
 package controllers
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
 
-type ops = map[string]interface{}
-
-type BatchRequestItem struct {
-	ops
-	Method string `json:"method"`
-	Url    string `json:"url"`
-	Params string `json:"params"`
+type BatchRequestData struct {
+	Method string                 `json:"method"`
+	Url    string                 `json:"url"`
+	Params map[string]interface{} `json:"params,omitempty"` // Get
+	Data   map[string]interface{} `json:"data,omitempty"`   // Post
 }
 
 // 自定义 UnmarshalJSON 方法
-func (bri *BatchRequestItem) UnmarshalJSON(data []byte) error {
-	type Alias BatchRequestItem
+func (bri *BatchRequestData) UnmarshalJSON(data []byte) error {
+	type Alias BatchRequestData
 	aux := &struct {
 		*Alias
 	}{
@@ -33,6 +35,30 @@ func (bri *BatchRequestItem) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+type BatchRequestItem struct {
+	Reqid string           `json:"reqid"`
+	Data  BatchRequestData `json:"data"`
+}
+
+type ResponseWriter struct {
+	http.ResponseWriter
+	Body       *bytes.Buffer
+	StatusCode int
+	header     http.Header
+}
+
+func (w *ResponseWriter) Header() http.Header {
+	return w.header
+}
+
+func (w *ResponseWriter) Write(b []byte) (int, error) {
+	return w.Body.Write(b)
+}
+
+func (w *ResponseWriter) WriteHeader(statusCode int) {
+	w.StatusCode = statusCode
+}
+
 func batch_request(c *gin.Context, router *gin.Engine) {
 	var batchRequests []BatchRequestItem
 	if err := c.ShouldBindJSON(&batchRequests); err != nil {
@@ -43,29 +69,47 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 	results := make([]map[string]interface{}, len(batchRequests))
 	for i, req := range batchRequests {
 		// 创建一个新的 Gin 上下文
-		newCtx, _ := gin.CreateTestContext(nil)
+		respWriter := ResponseWriter{Body: &bytes.Buffer{}, StatusCode: http.StatusOK, header: http.Header{}}
+		newCtx, _ := gin.CreateTestContext(&respWriter)
+
+		path := req.Data.Url
+		var method = strings.ToLower(req.Data.Method)
+		if method == "get" && req.Data.Params != nil {
+			queryParams := url.Values{}
+			for key, value := range req.Data.Params {
+				queryParams.Add(key, fmt.Sprintf("%v", value))
+			}
+			if len(queryParams) > 0 {
+				path += "?" + queryParams.Encode()
+			}
+		} else if method == "post" && req.Data.Data != nil {
+			var data, _ = json.Marshal(req.Data.Data)
+			if data != nil {
+				body := bytes.NewReader(data)
+				newCtx.Request.Body = io.NopCloser(body)
+				newCtx.Request.Header.Set("Content-Type", "application/json")
+			}
+		}
 
 		// 设置请求方法和路径
 		newCtx.Request = &http.Request{
-			Method: req.Method,
-			URL:    &url.URL{Path: req.Url},
+			Method: req.Data.Method,
+			URL:    &url.URL{Path: path},
 		}
-
-		// 设置请求体
-		// if req.ops.Body != "" {
-		// 	body := strings.NewReader(req.Body)
-		// 	newCtx.Request.Body = ioutil.NopCloser(body)
-		// }
 
 		// 执行路由处理函数
 		router.ServeHTTP(newCtx.Writer, newCtx.Request)
 
 		// 解析响应
 		var result map[string]interface{}
-		// if err := json.Unmarshal(newCtx.Writer.Body.Bytes(), &result); err != nil {
-		// 	result = map[string]interface{}{"error": err.Error()}
-		// }
-		results[i] = result
+		var isOk = respWriter.StatusCode == http.StatusOK
+		if err := json.Unmarshal(respWriter.Body.Bytes(), &result); err != nil {
+			results[i] = map[string]interface{}{"reqid": req.Reqid, "error": err.Error()}
+		} else if !isOk {
+			results[i] = map[string]interface{}{"reqid": req.Reqid, "error": result}
+		} else {
+			results[i] = map[string]interface{}{"reqid": req.Reqid, "data": result}
+		}
 	}
 
 	c.JSON(http.StatusOK, results)
