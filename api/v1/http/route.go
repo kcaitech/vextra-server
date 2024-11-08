@@ -30,5 +30,5 @@ func LoadRoutes(router *gin.Engine) {
 	loadUserRoutes(apiGroup)
 	loadDocumentRoutes(apiGroup)
 	loadApiGatewayRoutes(apiGroup)
-	apiGroup.GET("/batch_request", controllers.BatchRequest)
+	apiGroup.GET("/batch_request", controllers.BatchRequestHandler(router))
 }
