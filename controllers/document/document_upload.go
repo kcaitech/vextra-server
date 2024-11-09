@@ -18,7 +18,7 @@ import (
 	"kcaitech.com/kcserver/common/models"
 	"kcaitech.com/kcserver/common/services"
 	"kcaitech.com/kcserver/common/storage"
-	storagebase "kcaitech.com/kcserver/common/storage/base"
+	storagebase "kcaitech.com/kcserver/utils/storage/base"
 	"kcaitech.com/kcserver/utils/str"
 	myTime "kcaitech.com/kcserver/utils/time"
 )
