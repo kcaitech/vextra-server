@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"bytes"
+	"crypto/sha1"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -35,6 +37,7 @@ type BatchRequestData struct {
 
 type BatchRequestItem struct {
 	Reqid string           `json:"reqid"`
+	Sha1  string           `json:"sha1,omitempty"`
 	Data  BatchRequestData `json:"data"`
 }
 
@@ -55,6 +58,13 @@ func (w *ResponseWriter) Write(b []byte) (int, error) {
 
 func (w *ResponseWriter) WriteHeader(statusCode int) {
 	w.StatusCode = statusCode
+}
+
+func sha1base64(data []byte) string {
+	// 计算 SHA-1 哈希值
+	hash := sha1.Sum(data)
+	// 将哈希值转换为 Base64 URL 安全的字符串
+	return base64.URLEncoding.EncodeToString(hash[:])
 }
 
 func batch_request(c *gin.Context, router *gin.Engine) {
@@ -101,10 +111,23 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 		// 解析响应
 		var result map[string]interface{}
 		var isOk = respWriter.StatusCode == http.StatusOK
-		if err := json.Unmarshal(respWriter.Body.Bytes(), &result); err != nil {
+		data := respWriter.Body.Bytes()
+		var sha1 string
+		if len(data) > 128 {
+			sha1 = sha1base64(data)
+		}
+		if req.Sha1 != "" && sha1 != "" && sha1 == req.Sha1 {
+			// 没变化，不需要返回data
+			results[i] = map[string]interface{}{"reqid": req.Reqid, "sha1": sha1}
+			continue
+		}
+
+		if err := json.Unmarshal(data, &result); err != nil {
 			results[i] = map[string]interface{}{"reqid": req.Reqid, "error": err.Error()}
 		} else if !isOk {
 			results[i] = map[string]interface{}{"reqid": req.Reqid, "error": result}
+		} else if sha1 != "" {
+			results[i] = map[string]interface{}{"reqid": req.Reqid, "data": result, "sha1": sha1}
 		} else {
 			results[i] = map[string]interface{}{"reqid": req.Reqid, "data": result}
 		}
