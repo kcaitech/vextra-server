@@ -17,10 +17,11 @@ type Export struct {
 }
 
 type DocData struct {
-	Id        string
-	ProjectId string
-	Export    *Export
-	Medias    []document.Media
+	Id         string
+	ProjectId  string
+	Export     *Export
+	Medias     []document.Media
+	MediasSize uint64
 }
 
 type docUploadServe struct {
@@ -106,6 +107,7 @@ func (serv *docUploadServe) handle(data *TransData, binaryData *([]byte)) {
 			Content: binaryData,
 		}
 		serv.data.Medias = append(serv.data.Medias, media)
+		serv.data.MediasSize += uint64(len(*binaryData))
 		_ = serv.ws.WriteJSON(serverData)
 		return
 	}
@@ -120,6 +122,7 @@ func (serv *docUploadServe) handle(data *TransData, binaryData *([]byte)) {
 			DocumentMeta: document.Data(serv.data.Export.DocumentMeta),
 			Pages:        serv.data.Export.Pages,
 			MediaNames:   serv.data.Export.MediaNames,
+			MediasSize:   serv.data.MediasSize,
 		}
 
 		resp := document.Response{}

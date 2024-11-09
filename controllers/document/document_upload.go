@@ -1,6 +1,8 @@
 package document
 
 import (
+	"bytes"
+	"compress/gzip"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -11,14 +13,12 @@ import (
 	"kcaitech.com/kcserver/common/safereview"
 	safereviewBase "kcaitech.com/kcserver/common/safereview/base"
 	"kcaitech.com/kcserver/utils/my_map"
-	"kcaitech.com/kcserver/utils/websocket"
 
-	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"kcaitech.com/kcserver/common/gin/response"
 	"kcaitech.com/kcserver/common/models"
 	"kcaitech.com/kcserver/common/services"
 	"kcaitech.com/kcserver/common/storage"
+	storagebase "kcaitech.com/kcserver/common/storage/base"
 	"kcaitech.com/kcserver/utils/str"
 	myTime "kcaitech.com/kcserver/utils/time"
 )
@@ -60,81 +60,171 @@ type Media struct {
 	Content *[]byte
 }
 
-func UploadDocument(c *gin.Context) {
-	ws, err := websocket.Upgrade(c.Writer, c.Request, nil)
-	if err != nil {
-		response.Fail(c, "建立ws连接失败："+err.Error())
+// @deplecated
+// func UploadDocument(c *gin.Context) {
+// 	ws, err := websocket.Upgrade(c.Writer, c.Request, nil)
+// 	if err != nil {
+// 		response.Fail(c, "建立ws连接失败："+err.Error())
+// 		return
+// 	}
+// 	resp := Response{
+// 		Status: ResponseStatusFail,
+// 	}
+// 	defer func() {
+// 		ws.WriteJSON(&resp)
+// 		ws.Close()
+// 	}()
+
+// 	header := Header{}
+// 	if err := ws.ReadJSON(&header); err != nil {
+// 		resp.Message = "Header结构错误"
+// 		log.Println("Header结构错误", err)
+// 		return
+// 	}
+
+// 	uploadData := UploadData{}
+// 	if err := ws.ReadJSON(&uploadData); err != nil {
+// 		resp.Message = "UploadData结构错误"
+// 		log.Println("UploadData结构错误", err)
+// 		return
+// 	}
+
+// 	documentId := str.DefaultToInt(header.DocumentId, 0)
+// 	isFirstUpload := documentId <= 0
+
+// 	medias := []Media{}
+// 	if isFirstUpload {
+// 		uploadData.MediasSize = 0
+// 		nextMedia := func() []byte {
+// 			messageType, data, err := ws.ReadMessage()
+// 			if err != nil {
+// 				resp.Message = "ws连接异常"
+// 				log.Println("ws连接异常", err)
+// 				return nil
+// 			}
+// 			if messageType != websocket.MessageTypeBinary {
+// 				resp.Message = "media格式错误"
+// 				log.Println("media格式错误")
+// 				return nil
+// 			}
+// 			return data
+// 		}
+
+// 		for _, name := range uploadData.MediaNames {
+// 			m := nextMedia()
+// 			if nil == m {
+// 				return
+// 			}
+// 			medias = append(medias, Media{
+// 				Name:    name,
+// 				Content: &m,
+// 			})
+// 			uploadData.MediasSize += uint64(len(m))
+// 		}
+// 	}
+
+// 	UploadDocumentData(&header, &uploadData, &medias, &resp)
+// }
+
+func reviewText(text string, newDocument *models.Document) {
+	if text == "" {
 		return
 	}
-	resp := Response{
-		Status: ResponseStatusFail,
-	}
-	defer func() {
-		ws.WriteJSON(&resp)
-		ws.Close()
+	go func() {
+		reviewResponse, err := safereview.Client.ReviewText(text)
+		if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
+			newDocument.LockedAt = myTime.Time(time.Now())
+			newDocument.LockedReason = "文本审核不通过：" + reviewResponse.Reason
+			if wordsBytes, err := json.Marshal(reviewResponse.Words); err == nil {
+				newDocument.LockedWords += string(wordsBytes)
+			}
+		}
 	}()
+}
 
-	header := Header{}
-	if err := ws.ReadJSON(&header); err != nil {
-		resp.Message = "Header结构错误"
-		log.Println("Header结构错误", err)
+func reviewPages(PageImageList *[][]byte, newDocument *models.Document, docPath string, documentService *services.DocumentService) {
+	if PageImageList == nil || len(*PageImageList) == 0 {
 		return
 	}
-
-	uploadData := UploadData{}
-	if err := ws.ReadJSON(&uploadData); err != nil {
-		resp.Message = "UploadData结构错误"
-		log.Println("UploadData结构错误", err)
-		return
-	}
-
-	documentId := str.DefaultToInt(header.DocumentId, 0)
-	isFirstUpload := documentId <= 0
-
-	medias := []Media{}
-	if isFirstUpload {
-		nextMedia := func() []byte {
-			messageType, data, err := ws.ReadMessage()
+	go func() {
+		needUpdateDocument := false
+		for i, image := range *PageImageList {
+			path := docPath + "/page_image/" + str.IntToString(int64(i)) + ".png"
+			if _, err := storage.Bucket.PutObjectByte(path, image); err != nil {
+				log.Println("图片上传错误", err)
+			}
+			if len(image) == 0 {
+				continue
+			}
+			base64Str := base64.StdEncoding.EncodeToString(image)
+			reviewResponse, err := safereview.Client.ReviewPictureFromBase64(base64Str)
 			if err != nil {
-				resp.Message = "ws连接异常"
-				log.Println("ws连接异常", err)
-				return nil
+				log.Println("图片审核失败", err)
+				continue
+			} else if reviewResponse.Status != safereviewBase.ReviewImageResultPass {
+				newDocument.LockedAt = myTime.Time(time.Now())
+				newDocument.LockedReason += "{图片审核不通过[page:" + str.IntToString(int64(i)) + "]：" + reviewResponse.Reason + "}"
+				needUpdateDocument = true
 			}
-			if messageType != websocket.MessageTypeBinary {
-				resp.Message = "media格式错误"
-				log.Println("media格式错误")
-				return nil
-			}
-			return data
 		}
+		if needUpdateDocument {
+			_, _ = documentService.UpdatesById(newDocument.Id, newDocument)
+		}
+	}()
+}
 
-		for _, name := range uploadData.MediaNames {
-			m := nextMedia()
-			if nil == m {
-				return
+func reviewMedias(medias *[]Media, newDocument *models.Document, documentService *services.DocumentService) {
+	if medias == nil || len(*medias) == 0 {
+		return
+	}
+	go func() {
+		needUpdateDocument := false
+		for _, mediaInfo := range *medias {
+			base64Str := base64.StdEncoding.EncodeToString(*mediaInfo.Content)
+			if len(*mediaInfo.Content) == 0 || len(base64Str) == 0 {
+				continue
 			}
-			medias = append(medias, Media{
-				Name:    name,
-				Content: &m,
-			})
+			reviewResponse, err := safereview.Client.ReviewPictureFromBase64(base64Str)
+			if err != nil {
+				log.Println("图片审核失败", err)
+				continue
+			} else if reviewResponse.Status != safereviewBase.ReviewImageResultPass {
+				log.Println("图片审核不通过", err, reviewResponse)
+				newDocument.LockedAt = myTime.Time(time.Now())
+				newDocument.LockedReason += "{图片审核不通过[media:" + mediaInfo.Name + "]：" + reviewResponse.Reason + "}"
+				needUpdateDocument = true
+			}
+		}
+		if needUpdateDocument {
+			_, _ = documentService.UpdatesById(newDocument.Id, newDocument)
+		}
+	}()
+}
+
+func compress(data []byte) ([]byte, error) {
+	var b bytes.Buffer
+	gw := gzip.NewWriter(&b)
+	_, err := gw.Write(data)
+	if err != nil {
+		return nil, err
+	}
+	if err := gw.Close(); err != nil {
+		return nil, err
+	}
+	return b.Bytes(), nil
+}
+
+func compressPutObjectByte(path string, content []byte) (*storagebase.UploadInfo, error) {
+	if len(content) > 128 {
+		presed, _ := compress(content)
+		if presed != nil {
+			content = presed
 		}
 	}
-
-	UploadDocumentData(&header, &uploadData, &medias, &resp)
+	return storage.Bucket.PutObjectByte(path, content)
 }
 
 func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media, resp *Response) {
-	// resp := Response{
-	// 	Status: ResponseStatusFail,
-	// }
-
-	// header := Header{}
-	// if err := ws.ReadJSON(&header); err != nil {
-	// 	resp.Message = "Header结构错误"
-	// 	_ = ws.WriteJSON(&resp)
-	// 	log.Println("Header结构错误", err)
-	// 	return
-	// }
 
 	userId := str.DefaultToInt(header.UserId, 0)
 	documentId := str.DefaultToInt(header.DocumentId, 0)
@@ -142,7 +232,6 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 	lastCmdId := header.LastCmdId
 	if (userId <= 0 && documentId <= 0) || (userId > 0 && documentId > 0) || (documentId > 0 && lastCmdId == "") { // userId和documentId必须只传一个 // todo这不对吧，要鉴权
 		resp.Message = "参数错误"
-		// _ = ws.WriteJSON(&resp)
 		log.Println("参数错误", userId, documentId)
 		return
 	}
@@ -155,7 +244,6 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 		project := models.Project{}
 		if err := projectService.GetById(projectId, &project); err != nil {
 			resp.Message = "项目不存在"
-			// _ = ws.WriteJSON(&resp)
 			return
 		}
 		teamId = project.TeamId
@@ -165,7 +253,6 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 		}
 		if err != nil || permType == nil || *permType < models.ProjectPermTypeEditable {
 			resp.Message = "无权限"
-			// _ = ws.WriteJSON(&resp)
 			return
 		}
 	}
@@ -177,7 +264,6 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 	if !isFirstUpload {
 		if documentService.GetById(documentId, &document) != nil {
 			resp.Message = "文档不存在"
-			// _ = ws.WriteJSON(&resp)
 			return
 		}
 		docPath = document.Path
@@ -193,50 +279,9 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 
 	documentSize := uint64(0)
 
-	if uploadData.DocumentText != "" {
-		go func() {
-			reviewResponse, err := safereview.Client.ReviewText(uploadData.DocumentText)
-			if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
-				newDocument.LockedAt = myTime.Time(time.Now())
-				newDocument.LockedReason = "文本审核不通过：" + reviewResponse.Reason
-				if wordsBytes, err := json.Marshal(reviewResponse.Words); err == nil {
-					newDocument.LockedWords += string(wordsBytes)
-				}
-			}
-		}()
-	}
+	reviewText(uploadData.DocumentText, &newDocument)
+	reviewPages(uploadData.PageImageList, &newDocument, docPath, documentService)
 
-	if uploadData.PageImageList != nil && len(*uploadData.PageImageList) > 0 {
-		go func() {
-			needUpdateDocument := false
-			for i, image := range *uploadData.PageImageList {
-				path := docPath + "/page_image/" + str.IntToString(int64(i)) + ".png"
-				// image, err := base64.StdEncoding.DecodeString(base64Str)
-				// if err != nil {
-				// 	log.Println("图片base64解码错误", err)
-				// } else
-				if _, err := storage.Bucket.PutObjectByte(path, image); err != nil {
-					log.Println("图片上传错误", err)
-				}
-				if len(image) == 0 {
-					continue
-				}
-				base64Str := base64.StdEncoding.EncodeToString(image)
-				reviewResponse, err := safereview.Client.ReviewPictureFromBase64(base64Str)
-				if err != nil {
-					log.Println("图片审核失败", err)
-					continue
-				} else if reviewResponse.Status != safereviewBase.ReviewImageResultPass {
-					newDocument.LockedAt = myTime.Time(time.Now())
-					newDocument.LockedReason += "{图片审核不通过[page:" + str.IntToString(int64(i)) + "]：" + reviewResponse.Reason + "}"
-					needUpdateDocument = true
-				}
-			}
-			if needUpdateDocument {
-				_, _ = documentService.UpdatesById(newDocument.Id, &newDocument)
-			}
-		}()
-	}
 	if !newDocument.LockedAt.IsZero() && !isFirstUpload {
 		_, _ = documentService.UpdateColumnsById(documentId, map[string]any{
 			"locked_at": nil,
@@ -252,16 +297,12 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 	if err := json.Unmarshal(uploadData.Pages, &pages); err != nil {
 		resp.Message = "Pages内有元素缺少Id " + err.Error()
 		log.Println("Pages内有元素缺少Id", err)
-		// _ = ws.WriteJSON(&resp)
-		// ws.Close()
 		return
 	}
 	var pagesRaw = []json.RawMessage{}
 	if err := json.Unmarshal(uploadData.Pages, &pagesRaw); err != nil {
 		resp.Message = "Pages格式错误 " + err.Error()
 		log.Println("Pages格式错误", err)
-		// _ = ws.WriteJSON(&resp)
-		// ws.Close()
 		return
 	}
 	idToVersionId := my_map.NewSyncMap[string, string]()
@@ -274,11 +315,9 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 		uploadWaitGroup.Add(1)
 		go func(pagePath string, pageContent json.RawMessage) {
 			defer uploadWaitGroup.Done()
-			if result, err := storage.Bucket.PutObjectByte(pagePath, pageContent); err != nil {
+			if result, err := compressPutObjectByte(pagePath, pageContent); err != nil {
 				resp.Message = "对象上传错误"
 				log.Println("对象上传错误", err)
-				// _ = ws.WriteJSON(&resp)
-				// ws.Close()
 				return
 			} else {
 				idToVersionId.Set(pageId, result.VersionID)
@@ -287,83 +326,29 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 	}
 
 	// medias部分
-	if isFirstUpload && medias != nil {
-		// mediaInfoList := make([]struct {
-		// 	Name    string
-		// 	Content []byte
-		// }, len(uploadData.MediaNames))
-		// for idx, mediaName := range uploadData.MediaNames {
-		// 	path := docPath + "/medias/" + mediaName
-		// 	media := (*medias)[idx]
-		// 	if media == nil {
-		// 		continue // return?
-		// 	}
-		// 	mediaInfoList = append(mediaInfoList, struct {
-		// 		Name    string
-		// 		Content []byte
-		// 	}{
-		// 		Name:    mediaName,
-		// 		Content: media,
-		// 	})
-		// 	documentSize += uint64(len(media))
-		// 	uploadWaitGroup.Add(1)
-		// 	go func(path string, media []byte) {
-		// 		defer uploadWaitGroup.Done()
-		// 		if _, err := storage.Bucket.PutObjectByte(path, media); err != nil {
-		// 			resp.Message = "对象上传错误"
-		// 			log.Println("对象上传错误", err)
-		// 			// _ = ws.WriteJSON(&resp)
-		// 			// ws.Close()
-		// 			return
-		// 		}
-		// 	}(path, media)
-		// }
-		if len(*medias) > 0 {
-			go func() {
-				needUpdateDocument := false
-				for _, mediaInfo := range *medias {
-					base64Str := base64.StdEncoding.EncodeToString(*mediaInfo.Content)
-					if len(*mediaInfo.Content) == 0 || len(base64Str) == 0 {
-						continue
-					}
-					reviewResponse, err := safereview.Client.ReviewPictureFromBase64(base64Str)
-					if err != nil {
-						log.Println("图片审核失败", err)
-						continue
-					} else if reviewResponse.Status != safereviewBase.ReviewImageResultPass {
-						log.Println("图片审核不通过", err, reviewResponse)
-						newDocument.LockedAt = myTime.Time(time.Now())
-						newDocument.LockedReason += "{图片审核不通过[media:" + mediaInfo.Name + "]：" + reviewResponse.Reason + "}"
-						needUpdateDocument = true
-					}
+	if medias != nil { // 非首次上传即版本更新，不会有medias
+		reviewMedias(medias, &newDocument, documentService)
+
+		// upload medias
+		for _, media := range *medias {
+			path := docPath + "/medias/" + media.Name
+			if media.Content == nil {
+				continue
+			}
+			uploadWaitGroup.Add(1)
+			go func(path string, media []byte) {
+				defer uploadWaitGroup.Done()
+				if _, err := storage.Bucket.PutObjectByte(path, media); err != nil {
+					resp.Message = "对象上传错误"
+					log.Println("对象上传错误", err)
+					return
 				}
-				if needUpdateDocument {
-					_, _ = documentService.UpdatesById(newDocument.Id, &newDocument)
-				}
-			}()
+			}(path, *media.Content)
 		}
-	} else {
-		documentSize += uploadData.MediasSize
 	}
+	documentSize += uploadData.MediasSize
 
 	uploadWaitGroup.Wait()
-	// if ws.IsClose() {
-	// 	log.Println("ws已关闭")
-	// }
-
-	// freesymbolsVersionId := ""
-	// // 上传freesymbols.json
-	// freeSymbolsPath := docPath + "/freesymbols.json"
-	// if result, err := storage.Bucket.PutObjectByte(freeSymbolsPath, uploadData.FreeSymbols); err != nil {
-	// 	resp.Message = "对象上传错误"
-	// 	log.Println("freesymbols.json上传错误", err)
-	// 	// _ = ws.WriteJSON(&resp)
-	// 	// ws.Close()
-	// 	return
-	// } else {
-	// 	freesymbolsVersionId = result.VersionID
-	// }
-	// documentSize += uint64(len(uploadData.FreeSymbols))
 
 	// 设置versionId
 	pagesList := uploadData.DocumentMeta["pagesList"].([]any)
@@ -374,30 +359,23 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 		if !ok || !ok1 || !ok2 {
 			resp.Message = "对象上传错误"
 			log.Println("对象上传错误1")
-			// _ = ws.WriteJSON(&resp)
-			// ws.Close()
 			return
 		}
 		pageItem["versionId"] = versionId
 	}
 	uploadData.DocumentMeta["lastCmdId"] = lastCmdId
-	// uploadData.DocumentMeta["freesymbolsVersionId"] = freesymbolsVersionId
-	// 上传document-meta.json
+
 	documentMetaStr, err := json.Marshal(uploadData.DocumentMeta)
 	if err != nil {
 		resp.Message = "document-meta.json格式错误"
 		log.Println("document-meta.json格式错误", err)
-		// _ = ws.WriteJSON(&resp)
-		// ws.Close()
 		return
 	}
 	path := docPath + "/document-meta.json"
-	putObjectResult, err := storage.Bucket.PutObjectByte(path, documentMetaStr)
+	putObjectResult, err := compressPutObjectByte(path, documentMetaStr)
 	if err != nil {
 		resp.Message = "对象上传错误"
 		log.Println("document-meta.json上传错误", err)
-		// _ = ws.WriteJSON(&resp)
-		// ws.Close()
 		return
 	}
 	documentVersionId := putObjectResult.VersionID
@@ -415,8 +393,6 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 		if err := documentService.Create(&newDocument); err != nil {
 			resp.Message = "对象上传错误."
 			log.Println("对象上传错误2", err)
-			// _ = ws.WriteJSON(&resp)
-			// ws.Close()
 			return
 		}
 		documentId = newDocument.Id
@@ -431,8 +407,6 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 		if _, err := documentService.UpdatesById(documentId, &document); err != nil {
 			resp.Message = "对象上传错误"
 			log.Println("对象上传错误3", err)
-			// _ = ws.WriteJSON(&resp)
-			// ws.Close()
 			return
 		}
 		var documentAccessRecord = models.DocumentAccessRecord{}
@@ -440,8 +414,6 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 		if err != nil && !errors.Is(err, services.ErrRecordNotFound) {
 			resp.Message = "对象上传错误"
 			log.Println("对象上传错误4", err)
-			// _ = ws.WriteJSON(&resp)
-			// ws.Close()
 			return
 		}
 		if errors.Is(err, services.ErrRecordNotFound) {
@@ -464,8 +436,6 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 	}); err != nil {
 		resp.Message = "对象上传错误"
 		log.Println("对象上传错误5", err)
-		// _ = ws.WriteJSON(&resp)
-		// ws.Close()
 		return
 	}
 
@@ -474,5 +444,4 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 		"document_id": str.IntToString(documentId),
 		"version_id":  documentVersionId,
 	}
-	// _ = ws.WriteJSON(&resp)
 }
