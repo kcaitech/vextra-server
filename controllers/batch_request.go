@@ -96,9 +96,15 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 		subpath := path.Join("/api", req.Data.Url)
 
 		if req.Data.Params != nil {
+			// for key, value := range req.Data.Params {
+			// 	newCtx.Params = append(newCtx.Params, gin.Param{Key: key, Value: fmt.Sprintf("%v", value)})
+			// }
+			// 设置查询参数
+			query := url.Values{}
 			for key, value := range req.Data.Params {
-				newCtx.Params = append(newCtx.Params, gin.Param{Key: key, Value: fmt.Sprintf("%v", value)})
+				query.Add(key, fmt.Sprintf("%v", value))
 			}
+			newCtx.Request.URL.RawQuery = query.Encode()
 		}
 
 		// 设置请求方法和路径
