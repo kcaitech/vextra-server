@@ -81,13 +81,6 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 		respWriter := ResponseWriter{Body: &bytes.Buffer{}, StatusCode: http.StatusOK, header: http.Header{}}
 		newCtx, _ := gin.CreateTestContext(&respWriter)
 
-		// copy header
-		// for key, val := range c.Request.Header {
-		// 	for _, v := range val {
-		// 		newCtx.Request.Header.Set(key, v)
-		// 	}
-		// }
-
 		path := req.Data.Url
 		// var method = strings.ToLower(req.Data.Method)
 		if req.Data.Params != nil {
@@ -99,6 +92,18 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 				path += "?" + queryParams.Encode()
 			}
 		}
+
+		// 设置请求方法和路径
+		newCtx.Request = &http.Request{
+			Method: req.Data.Method,
+			URL:    &url.URL{Path: path},
+		}
+		// copy header
+		for key, val := range c.Request.Header {
+			for _, v := range val {
+				newCtx.Request.Header.Set(key, v)
+			}
+		}
 		if req.Data.Data != nil {
 			var data, _ = json.Marshal(req.Data.Data)
 			if data != nil {
@@ -106,12 +111,6 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 				newCtx.Request.Body = io.NopCloser(body)
 				newCtx.Request.Header.Set("Content-Type", "application/json")
 			}
-		}
-
-		// 设置请求方法和路径
-		newCtx.Request = &http.Request{
-			Method: req.Data.Method,
-			URL:    &url.URL{Path: path},
 		}
 
 		// 执行路由处理函数
@@ -135,7 +134,7 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 			log.Println("not ok, data:", data, ", status: ", respWriter.StatusCode)
 			results[i] = map[string]interface{}{"reqid": req.Reqid, "error": data}
 		} else if err := json.Unmarshal(data, &result); err != nil {
-			log.Println("unmarshal", err)
+			log.Println("unmarshal", err, ", data:", data)
 			results[i] = map[string]interface{}{"reqid": req.Reqid, "error": err.Error()}
 		} else if sha1 != "" {
 			results[i] = map[string]interface{}{"reqid": req.Reqid, "data": result, "sha1": sha1}
