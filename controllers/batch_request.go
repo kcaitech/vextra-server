@@ -146,7 +146,7 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 		}
 
 		if !isOk {
-			log.Println("not ok, data:", data, ", status: ", respWriter.StatusCode)
+			log.Println("not ok, data:", string(data), ", status: ", respWriter.StatusCode)
 			results[i] = BatchResponseItem{Reqid: req.Reqid, Error: string(data)}
 		} else if err := json.Unmarshal(data, &result); err != nil {
 			log.Println("unmarshal", err, ", data:", data)
