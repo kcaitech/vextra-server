@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -95,7 +96,7 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 
 		// 设置请求方法和路径
 		newCtx.Request = &http.Request{
-			Method: req.Data.Method,
+			Method: strings.ToUpper(req.Data.Method),
 			URL:    &url.URL{Path: path},
 		}
 		// copy header
