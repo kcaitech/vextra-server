@@ -76,6 +76,8 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 		return
 	}
 
+	// 复制原始请求的头部信息
+	originalHeaders := c.Request.Header
 	results := make([]map[string]interface{}, len(batchRequests))
 	for i, req := range batchRequests {
 		// 创建一个新的 Gin 上下文
@@ -99,22 +101,21 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 			Method: strings.ToUpper(req.Data.Method),
 			URL:    &url.URL{Path: path},
 		}
-		// copy header
-		for key, val := range c.Request.Header {
-			for _, v := range val {
-				newCtx.Request.Header.Set(key, v)
-			}
+		// 复制原始请求的头部信息到子请求
+		for k, v := range originalHeaders {
+			newCtx.Request.Header[k] = v
 		}
+
 		if req.Data.Data != nil {
 			var data, _ = json.Marshal(req.Data.Data)
 			if data != nil {
 				body := bytes.NewReader(data)
 				newCtx.Request.Body = io.NopCloser(body)
-				newCtx.Request.Header.Set("Content-Type", "application/json")
+				newCtx.Request.Header["Content-Type"] = []string{"application/json"}
 			}
 		}
 
-		newCtx.Request.Header.Set("Accept-Encoding", "") // 不要gzip压缩
+		newCtx.Request.Header["Accept-Encoding"] = []string{""} // 不要gzip压缩
 		// 执行路由处理函数
 		router.ServeHTTP(newCtx.Writer, newCtx.Request)
 
