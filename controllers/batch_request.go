@@ -96,12 +96,8 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 		subpath := path.Join("/api", req.Data.Url)
 
 		if req.Data.Params != nil {
-			queryParams := url.Values{}
 			for key, value := range req.Data.Params {
-				queryParams.Add(key, fmt.Sprintf("%v", value))
-			}
-			if len(queryParams) > 0 {
-				subpath += "?" + queryParams.Encode()
+				newCtx.Params = append(newCtx.Params, gin.Param{Key: key, Value: fmt.Sprintf("%v", value)})
 			}
 		}
 
@@ -148,7 +144,7 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 			log.Println("not ok, data:", string(data), ", status: ", respWriter.StatusCode)
 			results[i] = BatchResponseItem{Reqid: req.Reqid, Error: string(data)}
 		} else if err := json.Unmarshal(data, &result); err != nil {
-			log.Println("unmarshal", err, ", data:", data)
+			log.Println("unmarshal", err, ", data:", string(data))
 			results[i] = BatchResponseItem{Reqid: req.Reqid, Error: err.Error()}
 		} else if sha1 != "" {
 			results[i] = BatchResponseItem{Reqid: req.Reqid, Data: result, Sha1: sha1}
