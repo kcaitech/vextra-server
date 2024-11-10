@@ -84,7 +84,7 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 		respWriter := ResponseWriter{Body: &bytes.Buffer{}, StatusCode: http.StatusOK, header: http.Header{}}
 		newCtx, _ := gin.CreateTestContext(&respWriter)
 
-		path := req.Data.Url
+		path := "/api" + req.Data.Url
 		// var method = strings.ToLower(req.Data.Method)
 		if req.Data.Params != nil {
 			queryParams := url.Values{}
