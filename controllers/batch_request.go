@@ -37,7 +37,7 @@ type BatchRequestData struct {
 // }
 
 type BatchRequestItem struct {
-	Reqid uint64           `json:"reqid"`
+	Reqid int64            `json:"reqid"`
 	Sha1  string           `json:"sha1,omitempty"`
 	Data  BatchRequestData `json:"data"`
 }
@@ -68,6 +68,13 @@ func sha1base64(data []byte) string {
 	return base64.URLEncoding.EncodeToString(hash[:])
 }
 
+type BatchResponseItem struct {
+	Reqid int64       `json:"reqid"`
+	Error string      `json:"error,omitempty"`
+	Sha1  string      `json:"sha1,omitempty"`
+	Data  interface{} `json:"data"`
+}
+
 func batch_request(c *gin.Context, router *gin.Engine) {
 	var batchRequests []BatchRequestItem
 	if err := c.ShouldBindJSON(&batchRequests); err != nil {
@@ -78,13 +85,16 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 
 	// 复制原始请求的头部信息
 	originalHeaders := c.Request.Header
-	results := make([]map[string]interface{}, len(batchRequests))
+	results := make([]BatchResponseItem, len(batchRequests))
 	for i, req := range batchRequests {
 		// 创建一个新的 Gin 上下文
 		respWriter := ResponseWriter{Body: &bytes.Buffer{}, StatusCode: http.StatusOK, header: http.Header{}}
 		newCtx, _ := gin.CreateTestContext(&respWriter)
 
 		path := "/api" + req.Data.Url
+		if !strings.HasPrefix("/", req.Data.Url) {
+			path = "/api/" + req.Data.Url
+		}
 		// var method = strings.ToLower(req.Data.Method)
 		if req.Data.Params != nil {
 			queryParams := url.Values{}
@@ -131,20 +141,20 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 		}
 		if req.Sha1 != "" && sha1 != "" && sha1 == req.Sha1 {
 			// 没变化，不需要返回data
-			results[i] = map[string]interface{}{"reqid": req.Reqid, "sha1": sha1}
+			results[i] = BatchResponseItem{Reqid: req.Reqid, Sha1: sha1}
 			continue
 		}
 
 		if !isOk {
 			log.Println("not ok, data:", data, ", status: ", respWriter.StatusCode)
-			results[i] = map[string]interface{}{"reqid": req.Reqid, "error": data}
+			results[i] = BatchResponseItem{Reqid: req.Reqid, Error: string(data)}
 		} else if err := json.Unmarshal(data, &result); err != nil {
 			log.Println("unmarshal", err, ", data:", data)
-			results[i] = map[string]interface{}{"reqid": req.Reqid, "error": err.Error()}
+			results[i] = BatchResponseItem{Reqid: req.Reqid, Error: err.Error()}
 		} else if sha1 != "" {
-			results[i] = map[string]interface{}{"reqid": req.Reqid, "data": result, "sha1": sha1}
+			results[i] = BatchResponseItem{Reqid: req.Reqid, Data: result, Sha1: sha1}
 		} else {
-			results[i] = map[string]interface{}{"reqid": req.Reqid, "data": result}
+			results[i] = BatchResponseItem{Reqid: req.Reqid, Data: result}
 		}
 	}
 
