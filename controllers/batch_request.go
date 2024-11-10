@@ -114,6 +114,7 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 			}
 		}
 
+		newCtx.Request.Header.Set("Accept-Encoding", "") // 不要gzip压缩
 		// 执行路由处理函数
 		router.ServeHTTP(newCtx.Writer, newCtx.Request)
 
