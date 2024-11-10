@@ -25,7 +25,7 @@ func LoadRoutes(router *gin.Engine) {
 
 	router.Use(middlewares.AccessLogMiddleware())
 	apiGroup := router.Group("/api") // router.Group(common.ApiVersionPath)
-	// apiGroup.Use(middlewares.CORSMiddleware())
+	apiGroup.Use(middlewares.CORSMiddleware())
 	loadLoginRoutes(apiGroup)
 	loadUserRoutes(apiGroup)
 	loadDocumentRoutes(apiGroup)
