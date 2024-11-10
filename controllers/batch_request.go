@@ -132,7 +132,11 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 		}
 
 		if !isOk {
-			log.Println("not ok ", data, ", status: ", respWriter.StatusCode)
+			if data != nil {
+				log.Println("not ok, data:", data, ", status: ", respWriter.StatusCode)
+			} else {
+				log.Println("not ok, status: ", respWriter.StatusCode)
+			}
 			results[i] = map[string]interface{}{"reqid": req.Reqid, "error": data}
 		} else if err := json.Unmarshal(data, &result); err != nil {
 			log.Println("unmarshal", err)
