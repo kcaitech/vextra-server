@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"kcaitech.com/kcserver/common/gin/response"
 )
 
 type BatchRequestData struct {
@@ -156,7 +157,7 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 		}
 	}
 
-	c.JSON(http.StatusOK, results)
+	response.Success(c, &results)
 }
 
 func BatchRequestHandler(router *gin.Engine) func(c *gin.Context) {
