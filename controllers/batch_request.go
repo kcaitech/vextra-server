@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"strings"
@@ -70,7 +71,8 @@ func sha1base64(data []byte) string {
 func batch_request(c *gin.Context, router *gin.Engine) {
 	var batchRequests []BatchRequestItem
 	if err := c.ShouldBindJSON(&batchRequests); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request format"})
+		log.Println(err)
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid request format"})
 		return
 	}
 
