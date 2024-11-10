@@ -71,7 +71,7 @@ func sha1base64(data []byte) string {
 func batch_request(c *gin.Context, router *gin.Engine) {
 	var batchRequests []BatchRequestItem
 	if err := c.ShouldBindJSON(&batchRequests); err != nil {
-		log.Println(err)
+		log.Println("args", err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request format"})
 		return
 	}
@@ -124,10 +124,12 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 			continue
 		}
 
-		if err := json.Unmarshal(data, &result); err != nil {
+		if !isOk {
+			log.Println("not ok ", data)
+			results[i] = map[string]interface{}{"reqid": req.Reqid, "error": data}
+		} else if err := json.Unmarshal(data, &result); err != nil {
+			log.Println("unmarshal", err)
 			results[i] = map[string]interface{}{"reqid": req.Reqid, "error": err.Error()}
-		} else if !isOk {
-			results[i] = map[string]interface{}{"reqid": req.Reqid, "error": result}
 		} else if sha1 != "" {
 			results[i] = map[string]interface{}{"reqid": req.Reqid, "data": result, "sha1": sha1}
 		} else {
