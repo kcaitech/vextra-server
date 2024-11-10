@@ -93,7 +93,17 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 		respWriter := ResponseWriter{Body: &bytes.Buffer{}, StatusCode: http.StatusOK, header: http.Header{}}
 		newCtx, _ := gin.CreateTestContext(&respWriter)
 
-		subpath := path.Join("/api", req.Data.Url)
+		// 设置请求方法和路径
+		newCtx.Request = &http.Request{
+			Method: strings.ToUpper(req.Data.Method),
+			URL:    &url.URL{Path: path.Join("/api", req.Data.Url)},
+		}
+
+		newCtx.Request.Header = make(http.Header)
+		// 复制原始请求的头部信息到子请求
+		for k, v := range originalHeaders {
+			newCtx.Request.Header[k] = v
+		}
 
 		if req.Data.Params != nil {
 			// for key, value := range req.Data.Params {
@@ -105,18 +115,6 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 				query.Add(key, fmt.Sprintf("%v", value))
 			}
 			newCtx.Request.URL.RawQuery = query.Encode()
-		}
-
-		// 设置请求方法和路径
-		newCtx.Request = &http.Request{
-			Method: strings.ToUpper(req.Data.Method),
-			URL:    &url.URL{Path: subpath},
-		}
-
-		newCtx.Request.Header = make(http.Header)
-		// 复制原始请求的头部信息到子请求
-		for k, v := range originalHeaders {
-			newCtx.Request.Header[k] = v
 		}
 
 		if req.Data.Data != nil {
