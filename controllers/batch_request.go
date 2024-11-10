@@ -119,7 +119,7 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 
 		newCtx.Request.Header["Accept-Encoding"] = []string{""} // 不要gzip压缩
 		// 执行路由处理函数
-		router.ServeHTTP(newCtx.Writer, newCtx.Request)
+		router.HandleContext(newCtx)
 
 		// 解析响应
 		var result map[string]interface{}
