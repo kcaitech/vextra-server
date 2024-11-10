@@ -37,7 +37,7 @@ type BatchRequestData struct {
 // }
 
 type BatchRequestItem struct {
-	Reqid string           `json:"reqid"`
+	Reqid uint64           `json:"reqid"`
 	Sha1  string           `json:"sha1,omitempty"`
 	Data  BatchRequestData `json:"data"`
 }
@@ -72,7 +72,7 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 	var batchRequests []BatchRequestItem
 	if err := c.ShouldBindJSON(&batchRequests); err != nil {
 		log.Println(err)
-		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid request format"})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request format"})
 		return
 	}
 

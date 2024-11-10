@@ -89,3 +89,5 @@ storage:
     roleName: "ramoss"
     bucketName: "protodesign-document"
     filesBucketName: "protodesign-files"
+
+default_route: false
