@@ -82,6 +82,13 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 		respWriter := ResponseWriter{Body: &bytes.Buffer{}, StatusCode: http.StatusOK, header: http.Header{}}
 		newCtx, _ := gin.CreateTestContext(&respWriter)
 
+		// copy header
+		for key, val := range c.Request.Header {
+			for _, v := range val {
+				newCtx.Request.Header.Set(key, v)
+			}
+		}
+
 		path := req.Data.Url
 		var method = strings.ToLower(req.Data.Method)
 		if method == "get" && req.Data.Params != nil {
@@ -125,7 +132,7 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 		}
 
 		if !isOk {
-			log.Println("not ok ", data)
+			log.Println("not ok ", data, ", status: ", respWriter.StatusCode)
 			results[i] = map[string]interface{}{"reqid": req.Reqid, "error": data}
 		} else if err := json.Unmarshal(data, &result); err != nil {
 			log.Println("unmarshal", err)
