@@ -10,7 +10,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -83,15 +82,15 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 		newCtx, _ := gin.CreateTestContext(&respWriter)
 
 		// copy header
-		for key, val := range c.Request.Header {
-			for _, v := range val {
-				newCtx.Request.Header.Set(key, v)
-			}
-		}
+		// for key, val := range c.Request.Header {
+		// 	for _, v := range val {
+		// 		newCtx.Request.Header.Set(key, v)
+		// 	}
+		// }
 
 		path := req.Data.Url
-		var method = strings.ToLower(req.Data.Method)
-		if method == "get" && req.Data.Params != nil {
+		// var method = strings.ToLower(req.Data.Method)
+		if req.Data.Params != nil {
 			queryParams := url.Values{}
 			for key, value := range req.Data.Params {
 				queryParams.Add(key, fmt.Sprintf("%v", value))
@@ -99,7 +98,8 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 			if len(queryParams) > 0 {
 				path += "?" + queryParams.Encode()
 			}
-		} else if method == "post" && req.Data.Data != nil {
+		}
+		if req.Data.Data != nil {
 			var data, _ = json.Marshal(req.Data.Data)
 			if data != nil {
 				body := bytes.NewReader(data)
@@ -132,11 +132,7 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 		}
 
 		if !isOk {
-			if data != nil {
-				log.Println("not ok, data:", data, ", status: ", respWriter.StatusCode)
-			} else {
-				log.Println("not ok, status: ", respWriter.StatusCode)
-			}
+			log.Println("not ok, data:", data, ", status: ", respWriter.StatusCode)
 			results[i] = map[string]interface{}{"reqid": req.Reqid, "error": data}
 		} else if err := json.Unmarshal(data, &result); err != nil {
 			log.Println("unmarshal", err)
