@@ -101,6 +101,8 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 			Method: strings.ToUpper(req.Data.Method),
 			URL:    &url.URL{Path: path},
 		}
+
+		newCtx.Request.Header = make(http.Header)
 		// 复制原始请求的头部信息到子请求
 		for k, v := range originalHeaders {
 			newCtx.Request.Header[k] = v
