@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"path"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -91,25 +92,22 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 		respWriter := ResponseWriter{Body: &bytes.Buffer{}, StatusCode: http.StatusOK, header: http.Header{}}
 		newCtx, _ := gin.CreateTestContext(&respWriter)
 
-		path := "/api" + req.Data.Url
-		if !strings.HasPrefix("/", req.Data.Url) {
-			path = "/api/" + req.Data.Url
-		}
-		// var method = strings.ToLower(req.Data.Method)
+		subpath := path.Join("/api", req.Data.Url)
+
 		if req.Data.Params != nil {
 			queryParams := url.Values{}
 			for key, value := range req.Data.Params {
 				queryParams.Add(key, fmt.Sprintf("%v", value))
 			}
 			if len(queryParams) > 0 {
-				path += "?" + queryParams.Encode()
+				subpath += "?" + queryParams.Encode()
 			}
 		}
 
 		// 设置请求方法和路径
 		newCtx.Request = &http.Request{
 			Method: strings.ToUpper(req.Data.Method),
-			URL:    &url.URL{Path: path},
+			URL:    &url.URL{Path: subpath},
 		}
 
 		newCtx.Request.Header = make(http.Header)
