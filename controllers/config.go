@@ -39,6 +39,8 @@ type Configuration struct {
 	Storage   storage.StorageConf       `yaml:"storage" json:"storage"`
 
 	DefaultRoute bool `yaml:"default_route,omitempty" json:"default_route,omitempty"`
+	DetailedLog  bool `yaml:"detailed_log,omitempty" json:"detailed_log,omitempty"`
+	AllowCors    bool `yaml:"allow_cors,omitempty" json:"allow_cors,omitempty"`
 }
 
 var Config Configuration

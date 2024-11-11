@@ -90,5 +90,7 @@
             "filesBucketName": "protodesign-files"
         }
     },
-    "default_route": false
+    "default_route": false,
+    "detailed_log": false,
+    "allow_cors": false
 }

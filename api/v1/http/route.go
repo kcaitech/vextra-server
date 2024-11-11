@@ -23,8 +23,15 @@ func LoadRoutes(router *gin.Engine) {
 		})
 	}
 
-	router.Use(middlewares.AccessLogMiddleware())
-	router.Use(middlewares.CORSMiddleware()) // 测试时需要
+	if controllers.Config.DetailedLog {
+		router.Use(middlewares.AccessDetailedLogMiddleware())
+	} else {
+		router.Use(middlewares.AccessLogMiddleware())
+	}
+	if controllers.Config.AllowCors {
+		router.Use(middlewares.CORSMiddleware()) // 测试时需要
+	}
+
 	apiGroup := router.Group("/api")
 	loadLoginRoutes(apiGroup)
 	loadUserRoutes(apiGroup)
