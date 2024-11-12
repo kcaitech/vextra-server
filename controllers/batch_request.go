@@ -92,10 +92,14 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 		respWriter := ResponseWriter{Body: &bytes.Buffer{}, StatusCode: http.StatusOK, header: http.Header{}}
 		newCtx, _ := gin.CreateTestContext(&respWriter)
 
+		joinUrl := path.Join("/api", req.Data.Url)
+		if strings.HasSuffix(req.Data.Url, "/") && !strings.HasSuffix(joinUrl, "/") { // 需要保留最后的"/"
+			joinUrl += "/"
+		}
 		// 设置请求方法和路径
 		newCtx.Request = &http.Request{
 			Method: strings.ToUpper(req.Data.Method),
-			URL:    &url.URL{Path: path.Join("/api", req.Data.Url)},
+			URL:    &url.URL{Path: joinUrl},
 		}
 
 		newCtx.Request.Header = make(http.Header)
