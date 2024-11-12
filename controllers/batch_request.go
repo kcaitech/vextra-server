@@ -5,7 +5,6 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -112,7 +111,14 @@ func batch_request(c *gin.Context, router *gin.Engine) {
 			// 设置查询参数
 			query := url.Values{}
 			for key, value := range req.Data.Params {
-				query.Add(key, fmt.Sprintf("%v", value))
+				var str string
+				if _str, ok := value.(string); ok {
+					str = _str
+				} else {
+					v, _ := json.Marshal(value)
+					str = string(v)
+				}
+				query.Add(key, str)
 			}
 			newCtx.Request.URL.RawQuery = query.Encode()
 		}
