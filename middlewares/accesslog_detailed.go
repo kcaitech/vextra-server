@@ -1,10 +1,7 @@
 package middlewares
 
 import (
-	"bytes"
 	"fmt"
-	"io"
-	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -19,22 +16,28 @@ func AccessDetailedLogMiddleware() gin.HandlerFunc {
 		query := c.Request.URL.RawQuery
 
 		// 读取请求体
-		body, err := io.ReadAll(c.Request.Body)
-		if err != nil {
-			fmt.Println("Error reading request body:", err)
-			c.AbortWithStatus(http.StatusBadRequest)
-			return
-		}
+		// body, err := io.ReadAll(c.Request.Body)
+		// if err != nil {
+		// 	fmt.Println("Error reading request body:", err)
+		// 	c.AbortWithStatus(http.StatusBadRequest)
+		// 	return
+		// }
+		// // 将请求体还原为原始状态
+		// c.Request.Body = io.NopCloser(bytes.NewBuffer(body))
 
-		// 将请求体还原为原始状态
-		c.Request.Body = io.NopCloser(bytes.NewBuffer(body))
+		// logEntry := fmt.Sprintf("<-- %s - %s %s?%s - Body: %s",
+		// 	startTime.Format("2006/01/02 15:04:05"),
+		// 	method,
+		// 	path,
+		// 	query,
+		// 	string(body),
+		// )
 
-		logEntry := fmt.Sprintf("<-- %s - %s %s?%s - Body: %s",
+		logEntry := fmt.Sprintf("<-- %s - %s %s?%s",
 			startTime.Format("2006/01/02 15:04:05"),
 			method,
 			path,
 			query,
-			string(body),
 		)
 		fmt.Println(logEntry)
 
