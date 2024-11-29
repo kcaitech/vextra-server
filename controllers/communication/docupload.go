@@ -135,6 +135,7 @@ func (serv *docUploadServe) handle(data *TransData, binaryData *([]byte)) {
 			}
 			serverData.Data = string(retData)
 			_ = serv.ws.WriteJSON(serverData)
+			serv.data = nil // 已上传成功
 		} else {
 			msgErr(resp.Message, &serverData, &err)
 		}
