@@ -1,7 +1,0 @@
-使用cStor需要在节点上挂载硬盘
-
-安装完后可进行测试
-cd test
-./test-cstor.sh
-./test-local-hostpath.sh
-根据脚本输出进行测试

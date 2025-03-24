@@ -1,5 +1,0 @@
-server:
-  port: "10000"
-
-db:
-  dsn: "root:$mysql_passwd@tcp(rm-bp1549s1k5v76cog0.mysql.rds.aliyuncs.com:3306l)/kcserver?charset=utf8&parseTime=True&loc=Local"

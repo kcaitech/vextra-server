@@ -1,2 +1,0 @@
-# 可注入环境变量，使用方法：
-./run-netshoot.sh "--env=ingressNginxIp=192.168.0.1"

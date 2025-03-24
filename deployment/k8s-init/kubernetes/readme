@@ -1,5 +1,0 @@
-master节点之间先互相添加信任密钥
-ssh-keygen -t rsa -b 4096
-ssh-copy-id root@kc-master1
-ssh-copy-id root@kc-master2
-ssh-copy-id root@kc-master3

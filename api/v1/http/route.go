@@ -1,9 +1,12 @@
 package http
 
 import (
+	"context"
+
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/contrib/gzip"
 	"github.com/gin-gonic/gin"
+	"kcaitech.com/kcserver/common/redis"
 	"kcaitech.com/kcserver/controllers"
 	"kcaitech.com/kcserver/middlewares"
 )
@@ -32,8 +35,13 @@ func LoadRoutes(router *gin.Engine) {
 		router.Use(middlewares.CORSMiddleware()) // 测试时需要
 	}
 
+	router.Use(middlewares.NewRateLimiter(&middlewares.RedisStore{
+		Client: redis.Client,
+		Ctx:    context.Background(),
+	}, middlewares.DefaultRateLimiterConfig()).RateLimitMiddleware())
+
 	apiGroup := router.Group("/api")
-	// loadLoginRoutes(apiGroup)
+	loadLoginRoutes(apiGroup)
 	loadUserRoutes(apiGroup)
 	loadDocumentRoutes(apiGroup)
 	loadApiGatewayRoutes(apiGroup)
