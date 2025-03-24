@@ -18,7 +18,7 @@ const (
 // Document 文档
 type Document struct {
 	BaseModel
-	UserId       int64     `gorm:"index" json:"user_id"`
+	UserId       string    `gorm:"index" json:"user_id"`
 	Path         string    `gorm:"size:64" json:"path"`
 	DocType      DocType   `gorm:"default:0" json:"doc_type"`
 	Name         string    `gorm:"size:64" json:"name"`

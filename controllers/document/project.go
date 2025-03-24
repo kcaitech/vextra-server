@@ -6,12 +6,12 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/common/gin/auth"
 	"kcaitech.com/kcserver/common/gin/response"
 	"kcaitech.com/kcserver/common/models"
 	"kcaitech.com/kcserver/common/safereview"
 	safereviewBase "kcaitech.com/kcserver/common/safereview/base"
 	"kcaitech.com/kcserver/common/services"
+	"kcaitech.com/kcserver/utils"
 	"kcaitech.com/kcserver/utils/sliceutil"
 	"kcaitech.com/kcserver/utils/str"
 	myTime "kcaitech.com/kcserver/utils/time"
@@ -19,7 +19,7 @@ import (
 
 // CreateProject 创建项目
 func CreateProject(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -107,7 +107,7 @@ func CreateProject(c *gin.Context) {
 
 // GetProjectList 获取项目列表
 func GetProjectList(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -120,7 +120,7 @@ func GetProjectList(c *gin.Context) {
 
 // GetProjectMemberList 获取项目成员列表
 func GetProjectMemberList(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -144,7 +144,7 @@ func GetProjectMemberList(c *gin.Context) {
 
 // DeleteProject 删除项目
 func DeleteProject(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -201,7 +201,7 @@ func DeleteProject(c *gin.Context) {
 
 // ApplyJoinProject 申请加入项目
 func ApplyJoinProject(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -288,7 +288,7 @@ func ApplyJoinProject(c *gin.Context) {
 
 // GetProjectJoinRequestList 获取申请列表
 func GetProjectJoinRequestList(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -341,7 +341,7 @@ func GetProjectJoinRequestList(c *gin.Context) {
 
 // GetSelfProjectJoinRequestList 获取自身的申请列表
 func GetSelfProjectJoinRequestList(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -362,7 +362,7 @@ func GetSelfProjectJoinRequestList(c *gin.Context) {
 
 // ReviewProjectJoinRequest 权限申请审核
 func ReviewProjectJoinRequest(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -455,7 +455,7 @@ func ReviewProjectJoinRequest(c *gin.Context) {
 
 // SetProjectInfo 设置项目信息
 func SetProjectInfo(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -516,7 +516,7 @@ func SetProjectInfo(c *gin.Context) {
 
 // SetProjectInvited 修改项目邀请设置
 func SetProjectInvited(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -575,7 +575,7 @@ func SetProjectInvited(c *gin.Context) {
 
 // GetProjectInvitedInfo 获取项目邀请信息
 func GetProjectInvitedInfo(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -612,7 +612,7 @@ func GetProjectInvitedInfo(c *gin.Context) {
 
 // ExitProject 退出项目
 func ExitProject(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -648,7 +648,7 @@ func ExitProject(c *gin.Context) {
 
 // SetProjectMemberPermission 设置项目成员权限
 func SetProjectMemberPermission(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -667,8 +667,8 @@ func SetProjectMemberPermission(c *gin.Context) {
 		response.BadRequest(c, "参数错误：project_id")
 		return
 	}
-	reqUserId := str.DefaultToInt(req.UserId, 0)
-	if reqUserId <= 0 {
+	reqUserId := req.UserId
+	if reqUserId == "" {
 		response.BadRequest(c, "参数错误：user_id")
 		return
 	}
@@ -706,7 +706,7 @@ func SetProjectMemberPermission(c *gin.Context) {
 
 // ChangeProjectCreator 更改项目创建者
 func ChangeProjectCreator(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -724,8 +724,8 @@ func ChangeProjectCreator(c *gin.Context) {
 		response.BadRequest(c, "参数错误：project_id")
 		return
 	}
-	reqUserId := str.DefaultToInt(req.UserId, 0)
-	if reqUserId <= 0 {
+	reqUserId := req.UserId
+	if reqUserId == "" {
 		response.BadRequest(c, "参数错误：user_id")
 		return
 	}
@@ -776,7 +776,7 @@ func ChangeProjectCreator(c *gin.Context) {
 
 // RemoveProjectMember 移除项目成员
 func RemoveProjectMember(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -786,8 +786,8 @@ func RemoveProjectMember(c *gin.Context) {
 		response.BadRequest(c, "参数错误：project_id")
 		return
 	}
-	reqUserId := str.DefaultToInt(c.Query("user_id"), 0)
-	if reqUserId <= 0 {
+	reqUserId := c.Query("user_id")
+	if reqUserId == "" {
 		response.BadRequest(c, "参数错误：user_id")
 		return
 	}
@@ -823,7 +823,7 @@ func RemoveProjectMember(c *gin.Context) {
 
 // SetProjectFavorite 收藏/取消收藏项目
 func SetProjectFavorite(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -852,7 +852,7 @@ func SetProjectFavorite(c *gin.Context) {
 
 // GetFavorProjectList 获取收藏项目列表
 func GetFavorProjectList(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -865,7 +865,7 @@ func GetFavorProjectList(c *gin.Context) {
 
 // MoveDocument 移动文档
 func MoveDocument(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return

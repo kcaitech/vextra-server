@@ -2,7 +2,7 @@ package http
 
 import (
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/middlewares"
+	"kcaitech.com/kcserver/common/services"
 
 	controllers "kcaitech.com/kcserver/controllers/document"
 )
@@ -15,7 +15,7 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 	router.GET("/shares/wx_mp_code", controllers.GetWxMpCode)
 
 	// 登陆验证
-	router.Use(middlewares.AuthMiddleware())
+	router.Use(services.GetJWTClient().AuthRequired())
 
 	router.GET("/access_records", controllers.GetUserDocumentAccessRecordsList)
 	router.DELETE("/access_record", controllers.DeleteUserDocumentAccessRecord)
@@ -81,6 +81,6 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 	router.GET("/team/project/favorite/list", controllers.GetFavorProjectList)
 	router.POST("/team/project/document/move", controllers.MoveDocument)
 	router.POST("/feedback", controllers.PostFeedback)
-	router.POST("/test/001", controllers.CreateTest)
+	// router.POST("/test/001", controllers.CreateTest)
 	router.GET("/storage_auth", controllers.CheckStorageAuth)
 }

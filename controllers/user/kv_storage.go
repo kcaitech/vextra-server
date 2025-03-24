@@ -2,9 +2,9 @@ package controllers
 
 import (
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/common/gin/auth"
 	"kcaitech.com/kcserver/common/gin/response"
 	"kcaitech.com/kcserver/common/services"
+	"kcaitech.com/kcserver/utils"
 	"kcaitech.com/kcserver/utils/sliceutil"
 )
 
@@ -14,7 +14,8 @@ var AllowedKeyList = []string{
 }
 
 func GetUserKVStorage(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -46,7 +47,7 @@ func GetUserKVStorage(c *gin.Context) {
 }
 
 func SetUserKVStorage(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return

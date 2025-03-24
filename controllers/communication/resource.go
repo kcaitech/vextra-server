@@ -18,11 +18,11 @@ import (
 
 type resourceServe struct {
 	ws         *websocket.Ws
-	userId     int64
+	userId     string
 	documentId int64
 }
 
-func NewResourceServe(ws *websocket.Ws, userId int64, documentId int64) *resourceServe {
+func NewResourceServe(ws *websocket.Ws, userId string, documentId int64) *resourceServe {
 
 	// 权限校验
 	// var permType models.PermType

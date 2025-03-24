@@ -2,19 +2,20 @@ package document
 
 import (
 	"errors"
+	"time"
+
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/common/gin/auth"
 	"kcaitech.com/kcserver/common/gin/response"
 	"kcaitech.com/kcserver/common/models"
 	"kcaitech.com/kcserver/common/services"
+	"kcaitech.com/kcserver/utils"
 	"kcaitech.com/kcserver/utils/str"
 	myTime "kcaitech.com/kcserver/utils/time"
-	"time"
 )
 
 // GetUserRecycleBinDocumentList 获取用户回收站文档列表
 func GetUserRecycleBinDocumentList(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -29,7 +30,7 @@ type RestoreUserRecycleBinDocumentReq struct {
 
 // RestoreUserRecycleBinDocument 恢复用户回收站内的某份文档
 func RestoreUserRecycleBinDocument(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -77,7 +78,7 @@ func RestoreUserRecycleBinDocument(c *gin.Context) {
 
 // DeleteUserRecycleBinDocument 彻底删除用户回收站内的某份文档
 func DeleteUserRecycleBinDocument(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return

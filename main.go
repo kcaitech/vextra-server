@@ -7,11 +7,11 @@ import (
 	httpApi "kcaitech.com/kcserver/api/v1/http"
 	commonConf "kcaitech.com/kcserver/common/config"
 	"kcaitech.com/kcserver/common/gin/start"
-	"kcaitech.com/kcserver/common/jwt"
 	"kcaitech.com/kcserver/common/models"
 	"kcaitech.com/kcserver/common/mongo"
 	"kcaitech.com/kcserver/common/redis"
 	"kcaitech.com/kcserver/common/safereview"
+	"kcaitech.com/kcserver/common/services"
 	"kcaitech.com/kcserver/common/snowflake"
 	"kcaitech.com/kcserver/common/storage"
 	config "kcaitech.com/kcserver/controllers"
@@ -34,7 +34,7 @@ func Init() *config.Configuration {
 
 	commonConf.Init(&conf.BaseConfiguration)
 
-	jwt.Init(&conf.Jwt)
+	// jwt.Init(&conf.Jwt)
 	snowflake.Init(&conf.Snowflake)
 	models.Init(&conf.BaseConfiguration)
 
@@ -50,6 +50,9 @@ func Init() *config.Configuration {
 	if err := safereview.Init(&conf.SafeReiew); err != nil {
 		log.Fatalln("safereview init fail:" + err.Error())
 	}
+
+	// 初始化auth服务
+	services.Init(conf.AuthServerURL)
 
 	return conf
 }

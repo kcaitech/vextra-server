@@ -2,17 +2,18 @@ package document
 
 import (
 	"errors"
+
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/common/gin/auth"
 	"kcaitech.com/kcserver/common/gin/response"
 	"kcaitech.com/kcserver/common/models"
 	"kcaitech.com/kcserver/common/services"
+	"kcaitech.com/kcserver/utils"
 	"kcaitech.com/kcserver/utils/str"
 )
 
 // GetUserDocumentFavoritesList 获取用户收藏的文档列表
 func GetUserDocumentFavoritesList(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -28,7 +29,7 @@ type SetUserDocumentFavoriteStatusReq struct {
 
 // SetUserDocumentFavoriteStatus 设置用户对某份文档的收藏状态
 func SetUserDocumentFavoriteStatus(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return

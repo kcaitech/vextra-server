@@ -5,26 +5,27 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
-	"github.com/gin-gonic/gin"
 	"io"
 	"log"
 	"net/http"
 	"net/url"
-	"kcaitech.com/kcserver/common/gin/auth"
+	"strings"
+	"time"
+
+	"github.com/gin-gonic/gin"
 	"kcaitech.com/kcserver/common/gin/response"
 	"kcaitech.com/kcserver/common/models"
 	"kcaitech.com/kcserver/common/services"
 	config "kcaitech.com/kcserver/controllers"
+	"kcaitech.com/kcserver/utils"
 	"kcaitech.com/kcserver/utils/sliceutil"
 	"kcaitech.com/kcserver/utils/str"
 	myTime "kcaitech.com/kcserver/utils/time"
-	"strings"
-	"time"
 )
 
 // GetUserDocumentSharesList 获取用户的共享文档列表
 func GetUserDocumentSharesList(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -34,7 +35,7 @@ func GetUserDocumentSharesList(c *gin.Context) {
 
 // DeleteUserShare 退出共享
 func DeleteUserShare(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -60,7 +61,7 @@ type SetDocumentShareTypeReq struct {
 
 // SetDocumentShareType 设置文档分享类型
 func SetDocumentShareType(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -133,7 +134,7 @@ func SetDocumentShareType(c *gin.Context) {
 
 // GetDocumentSharesList 获取分享列表
 func GetDocumentSharesList(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -180,7 +181,7 @@ type SetDocumentSharePermissionReq struct {
 
 // SetDocumentSharePermission 修改分享权限
 func SetDocumentSharePermission(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -240,7 +241,7 @@ func SetDocumentSharePermission(c *gin.Context) {
 
 // DeleteDocumentSharePermission 移除分享权限
 func DeleteDocumentSharePermission(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -276,7 +277,7 @@ type ApplyDocumentPermissionReq struct {
 
 // ApplyDocumentPermission 申请文档权限
 func ApplyDocumentPermission(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -341,7 +342,7 @@ func ApplyDocumentPermission(c *gin.Context) {
 
 // GetDocumentPermissionRequestsList 获取申请列表
 func GetDocumentPermissionRequestsList(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -378,7 +379,7 @@ type ReviewDocumentPermissionRequestReq struct {
 
 // ReviewDocumentPermissionRequest 权限申请审核
 func ReviewDocumentPermissionRequest(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -480,7 +481,7 @@ type wxMpAccessTokenResp struct {
 
 // GetUserDocumentPerm 获取文档权限
 func GetUserDocumentPerm(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return

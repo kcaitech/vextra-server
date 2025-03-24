@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+
 	"kcaitech.com/kcserver/common/models"
 )
 
@@ -17,7 +18,7 @@ func NewUserKVStorageService() *UserKVStorageService {
 	return that
 }
 
-func (s *UserKVStorageService) GetOne(userId int64, key string) (string, error) {
+func (s *UserKVStorageService) GetOne(userId string, key string) (string, error) {
 	var result models.UserKVStorage
 	if s.Get(
 		&result,
@@ -30,7 +31,7 @@ func (s *UserKVStorageService) GetOne(userId int64, key string) (string, error) 
 	return "", errors.New("not found")
 }
 
-func (s *UserKVStorageService) SetOne(userId int64, key string, value string) bool {
+func (s *UserKVStorageService) SetOne(userId string, key string, value string) bool {
 	var result models.UserKVStorage
 	if s.Get(
 		&result,

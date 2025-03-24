@@ -33,7 +33,7 @@ func LoadRoutes(router *gin.Engine) {
 	}
 
 	apiGroup := router.Group("/api")
-	loadLoginRoutes(apiGroup)
+	// loadLoginRoutes(apiGroup)
 	loadUserRoutes(apiGroup)
 	loadDocumentRoutes(apiGroup)
 	loadApiGatewayRoutes(apiGroup)

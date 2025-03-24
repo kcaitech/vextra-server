@@ -46,13 +46,13 @@ type selectionServe struct {
 	quit       chan struct{}
 	genSId     func() string
 	documentId int64
-	userId     int64
-	user       *models.User
+	userId     string
+	user       *models.UserProfile
 	enterTime  int64
 	permType   models.PermType
 }
 
-func NewSelectionServe(ws *websocket.Ws, userId int64, documentId int64, genSId func() string) *selectionServe {
+func NewSelectionServe(ws *websocket.Ws, token, userId string, documentId int64, genSId func() string) *selectionServe {
 
 	// 权限校验
 	var permType models.PermType
@@ -61,22 +61,34 @@ func NewSelectionServe(ws *websocket.Ws, userId int64, documentId int64, genSId 
 		return nil
 	}
 
-	// userIdStr := str.IntToString(userId)
-	userService := services.NewUserService()
-	user := models.User{}
-	if err := userService.GetById(userId, &user); err != nil {
-		// serverCmd.Message = "通道建立失败，用户信息错误"
-		// _ = clientWs.WriteJSON(&serverCmd)
+	jwtClient := services.GetJWTClient()
+	userInfo, err := jwtClient.GetUserInfo(token)
+	if err != nil {
 		log.Println("document comment ws建立失败，用户不存在", err, userId)
 		return nil
+	}
+	// userId := userInfo.UserID
+	// userIdStr := str.IntToString(userId)
+	// userService := services.NewUserService()
+	// user := models.User{}
+	// if err := userService.GetById(userId, &user); err != nil {
+	// 	// serverCmd.Message = "通道建立失败，用户信息错误"
+	// 	// _ = clientWs.WriteJSON(&serverCmd)
+	// 	log.Println("document comment ws建立失败，用户不存在", err, userId)
+	// 	return nil
+	// }
+	userProfile := models.UserProfile{
+		UserId:   userInfo.UserID,
+		Nickname: userInfo.Profile.Nickname,
+		Avatar:   userInfo.Profile.Avatar,
 	}
 
 	serv := selectionServe{
 		ws:         ws,
 		genSId:     genSId,
 		documentId: documentId,
-		userId:     userId,
-		user:       &user,
+		userId:     userInfo.UserID,
+		user:       &userProfile,
 		enterTime:  time.Now().UnixNano() / 1000000,
 		permType:   permType,
 		quit:       make(chan struct{}),
@@ -110,7 +122,7 @@ func (serv *selectionServe) start(documentId int64) {
 }
 
 func (serv *selectionServe) close() {
-	userIdStr := str.IntToString(serv.userId)
+	userIdStr := (serv.userId)
 	documentIdStr := str.IntToString(serv.documentId)
 	docSelectionOpData := &DocSelectionOpData{
 		Type:   DocSelectionOpTypeExit,
@@ -128,7 +140,7 @@ func (serv *selectionServe) handle(data *TransData, binaryData *([]byte)) {
 	serverData.Type = data.Type
 	serverData.DataId = data.DataId
 
-	userIdStr := str.IntToString(serv.userId)
+	userIdStr := (serv.userId)
 	documentIdStr := str.IntToString(serv.documentId)
 	msgErr := func(msg string, serverData *TransData, err *error) {
 		serverData.Err = msg

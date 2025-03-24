@@ -60,9 +60,9 @@ func UploadDocumentResource(ws *websocket.Ws) {
 		log.Println("Header结构错误", err)
 		return
 	}
-	userId := str.DefaultToInt(header.UserId, 0)
+	userId := header.UserId
 	documentId := str.DefaultToInt(header.DocumentId, 0)
-	if userId <= 0 || documentId <= 0 {
+	if userId == "" || documentId <= 0 {
 		resp.Message = "参数错误"
 		_ = ws.WriteJSON(&resp)
 		log.Println("参数错误", userId, documentId)

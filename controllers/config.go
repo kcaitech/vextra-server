@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"kcaitech.com/kcserver/common/config"
-	jwt "kcaitech.com/kcserver/common/jwt/config"
 	mongo "kcaitech.com/kcserver/common/mongo/config"
 	redis "kcaitech.com/kcserver/common/redis/config"
 	safereview "kcaitech.com/kcserver/common/safereview/config"
@@ -31,7 +30,7 @@ type Configuration struct {
 		Url string `yaml:"url" json:"url"`
 	} `yaml:"svg2png" json:"svg2png"`
 
-	Jwt       jwt.JwtConf               `yaml:"jwt" json:"jwt"`
+	// Jwt       jwt.JwtConf               `yaml:"jwt" json:"jwt"`
 	Mongo     mongo.MongoConf           `yaml:"mongo" json:"mongo"`
 	Redis     redis.RedisConf           `yaml:"redis" json:"redis"`
 	SafeReiew safereview.SafeReviewConf `yaml:"safe_review" json:"safe_review"`
@@ -41,6 +40,8 @@ type Configuration struct {
 	DefaultRoute bool `yaml:"default_route,omitempty" json:"default_route,omitempty"`
 	DetailedLog  bool `yaml:"detailed_log,omitempty" json:"detailed_log,omitempty"`
 	AllowCors    bool `yaml:"allow_cors,omitempty" json:"allow_cors,omitempty"`
+
+	AuthServerURL string `yaml:"auth_server_url,omitempty" json:"auth_server_url,omitempty"`
 }
 
 var Config Configuration

@@ -2,10 +2,11 @@ package services
 
 import (
 	"errors"
+	"sort"
+
 	"kcaitech.com/kcserver/common/models"
 	"kcaitech.com/kcserver/utils/sliceutil"
 	"kcaitech.com/kcserver/utils/time"
-	"sort"
 )
 
 type ProjectService struct {
@@ -105,7 +106,7 @@ func (model ProjectJoinRequest) MarshalJSON() ([]byte, error) {
 }
 
 // GetProjectPermTypeByForUser 获取用户在项目中的权限
-func (s *ProjectService) GetProjectPermTypeByForUser(projectId int64, userId int64) (*models.ProjectPermType, error) {
+func (s *ProjectService) GetProjectPermTypeByForUser(projectId int64, userId string) (*models.ProjectPermType, error) {
 	var projectMember models.ProjectMember
 	err := s.ProjectMemberService.Get(&projectMember, WhereArgs{Query: "project_id = ? and user_id = ?", Args: []any{projectId, userId}})
 	if err == nil {
@@ -164,7 +165,7 @@ type PublishProjectQuery struct { // 通过项目的团队公开权限进入的�
 }
 
 // 查询用户的项目列表
-func (s *ProjectService) findProject(teamId int64, userId int64, projectIdList *[]int64) []*ProjectQuery {
+func (s *ProjectService) findProject(teamId int64, userId string, projectIdList *[]int64) []*ProjectQuery {
 	var whereArgsList []WhereArgs
 	if teamId > 0 {
 		whereArgsList = append(whereArgsList, WhereArgs{"p.team_id = ?", []any{teamId}})
@@ -228,12 +229,12 @@ func (s *ProjectService) findProject(teamId int64, userId int64, projectIdList *
 }
 
 // FindProject 查询用户的项目列表
-func (s *ProjectService) FindProject(teamId int64, userId int64) []*ProjectQuery {
+func (s *ProjectService) FindProject(teamId int64, userId string) []*ProjectQuery {
 	return s.findProject(teamId, userId, nil)
 }
 
 // FindFavorProject 查询用户收藏的项目列表
-func (s *ProjectService) FindFavorProject(teamId int64, userId int64) []*ProjectQuery {
+func (s *ProjectService) FindFavorProject(teamId int64, userId string) []*ProjectQuery {
 	var projectFavoriteList []models.ProjectFavorite
 	_ = s.ProjectFavoriteService.Find(
 		&projectFavoriteList,
@@ -296,7 +297,7 @@ type ProjectJoinRequestQuery struct {
 }
 
 // FindProjectJoinRequest 获取用户所创建或担任管理员的项目的加入申请列表
-func (s *ProjectService) FindProjectJoinRequest(userId int64, projectId int64, startTime string) []ProjectJoinRequestQuery {
+func (s *ProjectService) FindProjectJoinRequest(userId string, projectId int64, startTime string) []ProjectJoinRequestQuery {
 	var result []ProjectJoinRequestQuery
 	whereArgsList := []WhereArgs{
 		{
@@ -326,7 +327,7 @@ func (s *ProjectService) FindProjectJoinRequest(userId int64, projectId int64, s
 }
 
 // FindSelfProjectJoinRequest 获取用户自身的项目加入申请列表
-func (s *ProjectService) FindSelfProjectJoinRequest(userId int64, projectId int64, startTime string) []SelfProjectJoinRequestQuery {
+func (s *ProjectService) FindSelfProjectJoinRequest(userId string, projectId int64, startTime string) []SelfProjectJoinRequestQuery {
 	var result []SelfProjectJoinRequestQuery
 	whereArgsList := []WhereArgs{
 		{
@@ -355,7 +356,7 @@ func (s *ProjectService) FindSelfProjectJoinRequest(userId int64, projectId int6
 }
 
 // ToggleProjectFavorite 收藏/取消收藏项目
-func (s *ProjectService) ToggleProjectFavorite(userId int64, projectId int64, isFavor bool) error {
+func (s *ProjectService) ToggleProjectFavorite(userId string, projectId int64, isFavor bool) error {
 	if _, err := s.ProjectFavoriteService.HardDelete("user_id = ? and project_id = ?", userId, projectId); err != nil && !errors.Is(err, ErrRecordNotFound) {
 		return err
 	}

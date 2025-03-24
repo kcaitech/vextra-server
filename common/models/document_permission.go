@@ -41,7 +41,7 @@ type DocumentPermission struct {
 	ResourceType   ResourceType   `gorm:"default:0; uniqueIndex:unique_index" json:"resource_type"` // 资源类型
 	ResourceId     int64          `gorm:"uniqueIndex:unique_index" json:"resource_id"`              // 资源ID
 	GranteeType    GranteeType    `gorm:"default:0; uniqueIndex:unique_index" json:"grantee_type"`  // 受让人类型
-	GranteeId      int64          `gorm:"uniqueIndex:unique_index" json:"grantee_id"`               // 受让人ID
+	GranteeId      string         `gorm:"uniqueIndex:unique_index" json:"grantee_id"`               // 受让人ID
 	PermType       PermType       `gorm:"default:1" json:"perm_type"`                               // 权限类型
 	PermSourceType PermSourceType `gorm:"default:0" json:"perm_source_type"`                        // 权限来源类型
 }

@@ -50,7 +50,7 @@ type CmdItem0 struct {
 	BatchEndId   int64  `json:"batch_end_id" bson:"batch_end_id"`
 	BatchLength  int    `json:"batch_length" bson:"batch_length"`
 	DocumentId   int64  `json:"document_id" bson:"document_id"`
-	UserId       int64  `json:"user_id" bson:"user_id"`
+	UserId       string `json:"user_id" bson:"user_id"`
 	CmdId        string `json:"cmd_id" bson:"cmd_id"`
 }
 
@@ -81,7 +81,7 @@ type opServe struct {
 	mutex      *redsync.Mutex
 	permType   models.PermType
 	documentId int64
-	userId     int64
+	userId     string
 }
 
 // 从redis中获取最后一条cmd的id，若redis中没有则从mongodb中获取
@@ -121,7 +121,7 @@ func getPreviousId(documentId int64) (int64, error) {
 	return previousId, nil
 }
 
-func NewOpServe(ws *websocket.Ws, userId int64, documentId int64, versionId string, lastCmdId int64, genSId func() string) *opServe {
+func NewOpServe(ws *websocket.Ws, userId string, documentId int64, versionId string, lastCmdId int64, genSId func() string) *opServe {
 
 	documentService := services.NewDocumentService()
 	var document models.Document

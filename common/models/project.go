@@ -53,7 +53,7 @@ const (
 type ProjectMember struct {
 	BaseModel
 	ProjectId      int64                 `gorm:"not null" json:"project_id"`                 // 项目ID
-	UserId         int64                 `gorm:"not null" json:"user_id"`                    // 用户ID
+	UserId         string                `gorm:"not null" json:"user_id"`                    // 用户ID
 	PermType       ProjectPermType       `gorm:"default:1;not null" json:"perm_type"`        // 权限类型
 	PermSourceType ProjectPermSourceType `gorm:"default:0;not null" json:"perm_source_type"` // 权限来源类型
 }
@@ -73,13 +73,13 @@ const (
 
 type ProjectJoinRequest struct {
 	BaseModel
-	UserId           int64                    `gorm:"index;not null" json:"user_id"`
+	UserId           string                   `gorm:"index;not null" json:"user_id"`
 	ProjectId        int64                    `gorm:"index;not null" json:"project_id"`
 	PermType         ProjectPermType          `gorm:"not null" json:"perm_type"`
 	Status           ProjectJoinRequestStatus `gorm:"not null;default:0" json:"status"`
 	FirstDisplayedAt time.Time                `gorm:"" json:"first_displayed_at"`
 	ProcessedAt      time.Time                `gorm:"" json:"processed_at"`
-	ProcessedBy      int64                    `gorm:"" json:"processed_by"`
+	ProcessedBy      string                   `gorm:"" json:"processed_by"`
 	ApplicantNotes   string                   `gorm:"size:256" json:"applicant_notes"`
 	ProcessorNotes   string                   `gorm:"size:256" json:"processor_notes"`
 }
@@ -91,7 +91,7 @@ func (model ProjectJoinRequest) MarshalJSON() ([]byte, error) {
 type ProjectJoinRequestMessageShow struct {
 	BaseModel
 	ProjectJoinRequestId int64     `json:"project_join_request_id"`
-	UserId               int64     `json:"user_id"`
+	UserId               string    `json:"user_id"`
 	ProjectId            int64     `json:"project_id"`
 	FirstDisplayedAt     time.Time `json:"first_displayed_at"`
 }
@@ -103,9 +103,9 @@ func (model ProjectJoinRequestMessageShow) MarshalJSON() ([]byte, error) {
 // ProjectFavorite 项目收藏（固定）
 type ProjectFavorite struct {
 	BaseModel
-	UserId    int64 `gorm:"uniqueIndex:idx_user_project;not null" json:"user_id"`
-	ProjectId int64 `gorm:"uniqueIndex:idx_user_project;not null" json:"project_id"`
-	IsFavor   bool  `gorm:"not null;default:true" json:"is_favor"`
+	UserId    string `gorm:"uniqueIndex:idx_user_project;not null" json:"user_id"`
+	ProjectId int64  `gorm:"uniqueIndex:idx_user_project;not null" json:"project_id"`
+	IsFavor   bool   `gorm:"not null;default:true" json:"is_favor"`
 }
 
 func (model ProjectFavorite) MarshalJSON() ([]byte, error) {

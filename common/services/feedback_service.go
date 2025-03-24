@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+
 	"kcaitech.com/kcserver/common/models"
 	"kcaitech.com/kcserver/common/storage"
 	"kcaitech.com/kcserver/utils/str"
@@ -20,7 +21,7 @@ func NewFeedbackService() *FeedbackService {
 	return that
 }
 
-func (s *FeedbackService) UploadImage(userId int64, fileBytes []byte, contentType string) (string, error) {
+func (s *FeedbackService) UploadImage(userId string, fileBytes []byte, contentType string) (string, error) {
 	var suffix string
 	switch contentType {
 	case "image/jpeg":
@@ -36,10 +37,10 @@ func (s *FeedbackService) UploadImage(userId int64, fileBytes []byte, contentTyp
 	case "image/webp":
 		suffix = "webp"
 	default:
-		return "", errors.New(fmt.Sprintf("不支持的文件类型：%s", contentType))
+		return "", (fmt.Errorf("不支持的文件类型：%s", contentType))
 	}
 	fileName := fmt.Sprintf("%s.%s", str.GetUid(), suffix)
-	imagePath := fmt.Sprintf("/feedback/%s/%s", str.IntToString(userId), fileName)
+	imagePath := fmt.Sprintf("/feedback/%s/%s", (userId), fileName)
 	if _, err := storage.FilesBucket.PutObjectByte(imagePath, fileBytes); err != nil {
 		return "", errors.New("上传文件失败")
 	}

@@ -31,7 +31,7 @@ func (model Team) MarshalJSON() ([]byte, error) {
 type TeamMember struct {
 	BaseModel
 	TeamId   int64        `gorm:"not null" json:"team_id"`          // 团队ID
-	UserId   int64        `gorm:"not null" json:"user_id"`          // 用户ID
+	UserId   string       `gorm:"not null" json:"user_id"`          // 用户ID
 	PermType TeamPermType `gorm:"not null" json:"perm_type"`        // 权限类型
 	Nickname string       `gorm:"size:64;not null" json:"nickname"` // 团队成员昵称
 }
@@ -51,13 +51,13 @@ const (
 
 type TeamJoinRequest struct {
 	BaseModel
-	UserId           int64                 `gorm:"index;not null" json:"user_id"`
+	UserId           string                `gorm:"index;not null" json:"user_id"`
 	TeamId           int64                 `gorm:"index;not null" json:"team_id"`
 	PermType         TeamPermType          `gorm:"not null" json:"perm_type"` // 取值：只读、可编辑
 	Status           TeamJoinRequestStatus `gorm:"not null;default:0" json:"status"`
 	FirstDisplayedAt time.Time             `gorm:"" json:"first_displayed_at"`
 	ProcessedAt      time.Time             `gorm:"" json:"processed_at"`
-	ProcessedBy      int64                 `gorm:"" json:"processed_by"`
+	ProcessedBy      string                `gorm:"" json:"processed_by"`
 	ApplicantNotes   string                `gorm:"size:256" json:"applicant_notes"`
 	ProcessorNotes   string                `gorm:"size:256" json:"processor_notes"`
 }
@@ -69,7 +69,7 @@ func (model TeamJoinRequest) MarshalJSON() ([]byte, error) {
 type TeamJoinRequestMessageShow struct {
 	BaseModel
 	TeamJoinRequestId int64     `json:"team_join_request_id"`
-	UserId            int64     `json:"user_id"`
+	UserId            string    `json:"user_id"`
 	TeamId            int64     `json:"team_id"`
 	FirstDisplayedAt  time.Time `json:"first_displayed_at"`
 }

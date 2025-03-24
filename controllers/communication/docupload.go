@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log"
 
-	"kcaitech.com/kcserver/utils/str"
 	"kcaitech.com/kcserver/utils/websocket"
 
 	document "kcaitech.com/kcserver/controllers/document"
@@ -26,13 +25,13 @@ type DocData struct {
 
 type docUploadServe struct {
 	ws     *websocket.Ws
-	userId int64
+	userId string
 
 	// cache // todo cache in redis
 	data *DocData
 }
 
-func NewDocUploadServe(ws *websocket.Ws, userId int64) *docUploadServe {
+func NewDocUploadServe(ws *websocket.Ws, userId string) *docUploadServe {
 
 	// 权限校验
 	// var permType models.PermType
@@ -114,7 +113,7 @@ func (serv *docUploadServe) handle(data *TransData, binaryData *([]byte)) {
 	if uploadHeader.Commit && serv.data != nil && serv.data.Export != nil {
 		log.Println("uploading commit", uploadHeader.DocumentId)
 		header := document.Header{
-			UserId:    str.IntToString(serv.userId),
+			UserId:    (serv.userId),
 			ProjectId: serv.data.ProjectId,
 		}
 

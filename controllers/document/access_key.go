@@ -6,12 +6,12 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/common/gin/auth"
 	"kcaitech.com/kcserver/common/gin/response"
 	"kcaitech.com/kcserver/common/models"
 	"kcaitech.com/kcserver/common/services"
 	"kcaitech.com/kcserver/common/storage"
 	config "kcaitech.com/kcserver/controllers"
+	"kcaitech.com/kcserver/utils"
 	"kcaitech.com/kcserver/utils/storage/base"
 	"kcaitech.com/kcserver/utils/str"
 	myTime "kcaitech.com/kcserver/utils/time"
@@ -19,7 +19,7 @@ import (
 
 // GetDocumentAccessKey 获取文档访问密钥
 func GetDocumentAccessKey(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -40,7 +40,7 @@ func GetDocumentAccessKey(c *gin.Context) {
 }
 
 // GetDocumentAccessKey 获取文档访问密钥
-func GetDocumentAccessKey1(userId int64, documentId int64) (*map[string]any, string) {
+func GetDocumentAccessKey1(userId string, documentId int64) (*map[string]any, string) {
 	// userId, err := auth.GetUserId(c)
 	// if err != nil {
 	// 	response.Unauthorized(c)
@@ -94,7 +94,7 @@ func GetDocumentAccessKey1(userId int64, documentId int64) (*map[string]any, str
 		document.Path+"/*",
 		base.AuthOpGetObject|base.AuthOpListObject,
 		3600,
-		"U"+str.IntToString(userId)+"D"+str.IntToString(documentId),
+		"U"+(userId)+"D"+str.IntToString(documentId),
 	)
 	if err != nil {
 		log.Println("生成密钥失败", err)

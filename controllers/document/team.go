@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/common/gin/auth"
 	"kcaitech.com/kcserver/common/gin/response"
 	"kcaitech.com/kcserver/common/models"
 	"kcaitech.com/kcserver/common/safereview"
 	safereviewBase "kcaitech.com/kcserver/common/safereview/base"
 	"kcaitech.com/kcserver/common/services"
 	config "kcaitech.com/kcserver/controllers"
+	"kcaitech.com/kcserver/utils"
 	"kcaitech.com/kcserver/utils/sliceutil"
 	"kcaitech.com/kcserver/utils/str"
 	myTime "kcaitech.com/kcserver/utils/time"
@@ -21,7 +21,7 @@ import (
 
 // CreateTeam 创建团队
 func CreateTeam(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -121,7 +121,7 @@ func CreateTeam(c *gin.Context) {
 
 // GetTeamList 获取团队列表
 func GetTeamList(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -133,7 +133,7 @@ func GetTeamList(c *gin.Context) {
 
 // GetTeamMemberList 获取团队成员列表
 func GetTeamMemberList(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -157,7 +157,7 @@ func GetTeamMemberList(c *gin.Context) {
 
 // DeleteTeam 解散团队
 func DeleteTeam(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -230,7 +230,7 @@ func ApplyJoinTeam(c *gin.Context) {
 	)
 	failResponseData := map[string]any{}
 
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -296,7 +296,7 @@ func ApplyJoinTeam(c *gin.Context) {
 
 // GetTeamJoinRequestList 获取申请列表
 func GetTeamJoinRequestList(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -349,7 +349,7 @@ func GetTeamJoinRequestList(c *gin.Context) {
 
 // GetSelfTeamJoinRequestList 获取自身的申请列表
 func GetSelfTeamJoinRequestList(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -370,7 +370,7 @@ func GetSelfTeamJoinRequestList(c *gin.Context) {
 
 // ReviewTeamJoinRequest 权限申请审核
 func ReviewTeamJoinRequest(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -461,7 +461,7 @@ func ReviewTeamJoinRequest(c *gin.Context) {
 
 // SetTeamInfo 设置团队信息
 func SetTeamInfo(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -557,7 +557,7 @@ func SetTeamInfo(c *gin.Context) {
 
 // SetTeamInvited 修改团队邀请设置
 func SetTeamInvited(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -608,7 +608,7 @@ func SetTeamInvited(c *gin.Context) {
 
 // GetTeamInvitedInfo 获取团队信息
 func GetTeamInvitedInfo(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -641,7 +641,7 @@ func GetTeamInvitedInfo(c *gin.Context) {
 
 // ExitTeam 退出团队
 func ExitTeam(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -679,7 +679,7 @@ func ExitTeam(c *gin.Context) {
 
 // SetTeamMemberPermission 设置团队成员权限
 func SetTeamMemberPermission(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -698,8 +698,8 @@ func SetTeamMemberPermission(c *gin.Context) {
 		response.BadRequest(c, "参数错误：team_id")
 		return
 	}
-	reqUserId := str.DefaultToInt(req.UserId, 0)
-	if reqUserId <= 0 {
+	reqUserId := req.UserId
+	if reqUserId == "" {
 		response.BadRequest(c, "参数错误：user_id")
 		return
 	}
@@ -737,7 +737,7 @@ func SetTeamMemberPermission(c *gin.Context) {
 
 // ChangeTeamCreator 更改团队创建者
 func ChangeTeamCreator(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -755,8 +755,8 @@ func ChangeTeamCreator(c *gin.Context) {
 		response.BadRequest(c, "参数错误：team_id")
 		return
 	}
-	reqUserId := str.DefaultToInt(req.UserId, 0)
-	if reqUserId <= 0 {
+	reqUserId := req.UserId
+	if reqUserId == "" {
 		response.BadRequest(c, "参数错误：user_id")
 		return
 	}
@@ -807,7 +807,7 @@ func ChangeTeamCreator(c *gin.Context) {
 
 // RemoveTeamMember 移除团队成员
 func RemoveTeamMember(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -817,8 +817,8 @@ func RemoveTeamMember(c *gin.Context) {
 		response.BadRequest(c, "参数错误：team_id")
 		return
 	}
-	reqUserId := str.DefaultToInt(c.Query("user_id"), 0)
-	if reqUserId <= 0 {
+	reqUserId := c.Query("user_id")
+	if reqUserId == "" {
 		response.BadRequest(c, "参数错误：user_id")
 		return
 	}
@@ -856,7 +856,7 @@ func RemoveTeamMember(c *gin.Context) {
 
 // SetTeamMemberNickname 设置团队成员昵称
 func SetTeamMemberNickname(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -875,8 +875,8 @@ func SetTeamMemberNickname(c *gin.Context) {
 		response.BadRequest(c, "参数错误：team_id")
 		return
 	}
-	reqUserId := str.DefaultToInt(req.UserId, 0)
-	if reqUserId <= 0 {
+	reqUserId := req.UserId
+	if reqUserId == "" {
 		response.BadRequest(c, "参数错误：user_id")
 		return
 	}

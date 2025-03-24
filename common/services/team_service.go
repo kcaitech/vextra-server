@@ -111,7 +111,7 @@ func (s *TeamService) UploadTeamAvatarById(teamId int64, fileBytes []byte, conte
 }
 
 // GetTeamPermTypeByForUser 获取用户在团队中的权限
-func (s *TeamService) GetTeamPermTypeByForUser(teamId int64, userId int64) (*models.TeamPermType, error) {
+func (s *TeamService) GetTeamPermTypeByForUser(teamId int64, userId string) (*models.TeamPermType, error) {
 	var teamMember TeamMember
 	if err := s.TeamMemberService.Get(&teamMember, WhereArgs{Query: "team_id = ? and user_id = ?", Args: []any{teamId, userId}}); err != nil {
 		if errors.Is(err, ErrRecordNotFound) {
@@ -156,7 +156,7 @@ type TeamQueryResItem struct {
 }
 
 // FindTeamByUserId 查询某个用户所在的所有团队列表
-func (s *TeamService) FindTeamByUserId(userId int64) []TeamQueryResItem {
+func (s *TeamService) FindTeamByUserId(userId string) []TeamQueryResItem {
 	var result []TeamQueryResItem
 	whereArgsList := []WhereArgs{
 		{"tm.deleted_at is null and u.deleted_at is null", nil},
@@ -227,7 +227,7 @@ type TeamJoinRequestQuery struct {
 }
 
 // FindTeamJoinRequest 获取用户所创建或担任管理员的团队的加入申请列表
-func (s *TeamService) FindTeamJoinRequest(userId int64, teamId int64, startTime string) []TeamJoinRequestQuery {
+func (s *TeamService) FindTeamJoinRequest(userId string, teamId int64, startTime string) []TeamJoinRequestQuery {
 	var result []TeamJoinRequestQuery
 	whereArgsList := []WhereArgs{
 		{
@@ -257,7 +257,7 @@ func (s *TeamService) FindTeamJoinRequest(userId int64, teamId int64, startTime 
 }
 
 // FindSelfTeamJoinRequest 获取用户自身的团队加入申请列表
-func (s *TeamService) FindSelfTeamJoinRequest(userId int64, teamId int64, startTime string) []SelfTeamJoinRequestsQueryResItem {
+func (s *TeamService) FindSelfTeamJoinRequest(userId string, teamId int64, startTime string) []SelfTeamJoinRequestsQueryResItem {
 	var result []SelfTeamJoinRequestsQueryResItem
 	whereArgsList := []WhereArgs{
 		{

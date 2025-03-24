@@ -51,7 +51,7 @@ type Document struct {
 	Id        int64            `json:"id"`
 	CreatedAt time.Time        `json:"created_at"`
 	DeletedAt models.DeletedAt `json:"deleted_at"`
-	UserId    int64            `json:"user_id"`
+	UserId    string           `json:"user_id"`
 	Path      string           `json:"path"`
 	DocType   models.DocType   `json:"doc_type"`
 	Name      string           `json:"name"`
@@ -140,7 +140,7 @@ type RecycleBinQueryResItem struct {
 }
 
 // FindRecycleBinByUserId 查询用户的回收站列表
-func (s *DocumentService) FindRecycleBinByUserId(userId int64, projectId int64) *[]RecycleBinQueryResItem {
+func (s *DocumentService) FindRecycleBinByUserId(userId string, projectId int64) *[]RecycleBinQueryResItem {
 	var result []RecycleBinQueryResItem
 	whereArgsList := []WhereArgs{
 		{"document.deleted_at is not null and document.purged_at is null", nil},
@@ -166,7 +166,7 @@ func (s *DocumentService) FindRecycleBinByUserId(userId int64, projectId int64) 
 }
 
 // FindDocumentByUserId 查询用户的文档列表
-func (s *DocumentService) FindDocumentByUserId(userId int64) *[]AccessRecordAndFavoritesQueryResItem {
+func (s *DocumentService) FindDocumentByUserId(userId string) *[]AccessRecordAndFavoritesQueryResItem {
 	var result []AccessRecordAndFavoritesQueryResItem
 	_ = s.Find(
 		&result,
@@ -178,7 +178,7 @@ func (s *DocumentService) FindDocumentByUserId(userId int64) *[]AccessRecordAndF
 }
 
 // FindDocumentByProjectId 查询项目的文档列表
-func (s *DocumentService) FindDocumentByProjectId(projectId int64, userId int64) *[]AccessRecordAndFavoritesQueryResItem {
+func (s *DocumentService) FindDocumentByProjectId(projectId int64, userId string) *[]AccessRecordAndFavoritesQueryResItem {
 	var result []AccessRecordAndFavoritesQueryResItem
 	_ = s.Find(
 		&result,
@@ -195,7 +195,7 @@ func (s *DocumentService) FindDocumentByProjectId(projectId int64, userId int64)
 }
 
 // FindAccessRecordsByUserId 查询用户的访问记录
-func (s *DocumentService) FindAccessRecordsByUserId(userId int64) *[]AccessRecordAndFavoritesQueryResItem {
+func (s *DocumentService) FindAccessRecordsByUserId(userId string) *[]AccessRecordAndFavoritesQueryResItem {
 	var result []AccessRecordAndFavoritesQueryResItem // 当指针的容器用
 	err := s.DocumentAccessRecordService.Find(
 		&result,
@@ -211,7 +211,7 @@ func (s *DocumentService) FindAccessRecordsByUserId(userId int64) *[]AccessRecor
 }
 
 // FindFavoritesByUserId 查询用户的收藏列表
-func (s *DocumentService) FindFavoritesByUserId(userId int64, projectId int64) *[]AccessRecordAndFavoritesQueryResItem {
+func (s *DocumentService) FindFavoritesByUserId(userId string, projectId int64) *[]AccessRecordAndFavoritesQueryResItem {
 	var result []AccessRecordAndFavoritesQueryResItem
 	whereArgsList := []WhereArgs{
 		{"document_favorites.user_id = ? and document_favorites.is_favorite = 1 and document.deleted_at is null", []any{userId}},
@@ -234,7 +234,7 @@ type DocumentSharesAndFavoritesQueryRes struct {
 }
 
 // FindSharesByUserId 查询用户加入的文档分享列表
-func (s *DocumentService) FindSharesByUserId(userId int64) *[]DocumentSharesAndFavoritesQueryRes {
+func (s *DocumentService) FindSharesByUserId(userId string) *[]DocumentSharesAndFavoritesQueryRes {
 	var result []DocumentSharesAndFavoritesQueryRes
 	_ = s.DocumentPermissionService.Find(
 		&result,
@@ -285,7 +285,7 @@ type DocumentInfoQueryRes struct {
 
 // GetDocumentInfoByDocumentAndUserId 查询某个文档对某个用户的信息
 // 若传入permTypeForQueryApplicationCount不为models.PermTypeNone，则会返回该用户对该文档此权限的历史申请数量
-func (s *DocumentService) GetDocumentInfoByDocumentAndUserId(documentId int64, userId int64, permTypeForQueryApplicationCount models.PermType) *DocumentInfoQueryRes {
+func (s *DocumentService) GetDocumentInfoByDocumentAndUserId(documentId int64, userId string, permTypeForQueryApplicationCount models.PermType) *DocumentInfoQueryRes {
 	var result DocumentInfoQueryRes
 	if err := s.Get(
 		&result,
@@ -324,7 +324,7 @@ func (s *DocumentService) GetDocumentInfoByDocumentAndUserId(documentId int64, u
 
 // GetDocumentPermissionByDocumentAndUserId 获取用户的文档权限记录和用户的文档权限（包含文档本身的公共权限）
 // 返回值第2个参数：是否为公共权限
-func (s *DocumentService) GetDocumentPermissionByDocumentAndUserId(permType *models.PermType, documentId int64, userId int64) (*models.DocumentPermission, bool, error) {
+func (s *DocumentService) GetDocumentPermissionByDocumentAndUserId(permType *models.PermType, documentId int64, userId string) (*models.DocumentPermission, bool, error) {
 	isPublicPerm := false
 
 	var document models.Document
@@ -407,7 +407,7 @@ func (s *DocumentService) GetDocumentPermissionByDocumentAndUserId(permType *mod
 }
 
 // GetPermTypeByDocumentAndUserId 获取用户对文档的权限（包含文档本身的公共权限）
-func (s *DocumentService) GetPermTypeByDocumentAndUserId(permType *models.PermType, documentId int64, userId int64) error {
+func (s *DocumentService) GetPermTypeByDocumentAndUserId(permType *models.PermType, documentId int64, userId string) error {
 	if _, _, err := s.GetDocumentPermissionByDocumentAndUserId(permType, documentId, userId); err != nil {
 		return err
 	}
@@ -420,7 +420,7 @@ type PermissionRequestsQueryResItem struct {
 }
 
 // FindPermissionRequests 获取用户所创建文档的权限申请列表
-func (s *DocumentService) FindPermissionRequests(userId int64, documentId int64, startTime string) *[]PermissionRequestsQueryResItem {
+func (s *DocumentService) FindPermissionRequests(userId string, documentId int64, startTime string) *[]PermissionRequestsQueryResItem {
 	var result []PermissionRequestsQueryResItem
 	whereArgsList := []WhereArgs{{Query: "document.user_id = ?", Args: []any{userId}}}
 	if documentId != 0 {

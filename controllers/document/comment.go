@@ -6,13 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"kcaitech.com/kcserver/common/gin/auth"
 	"kcaitech.com/kcserver/common/gin/response"
 	"kcaitech.com/kcserver/common/models"
 	"kcaitech.com/kcserver/common/mongo"
@@ -21,7 +19,7 @@ import (
 	safereviewBase "kcaitech.com/kcserver/common/safereview/base"
 	"kcaitech.com/kcserver/common/services"
 	"kcaitech.com/kcserver/common/snowflake"
-	config "kcaitech.com/kcserver/controllers"
+	"kcaitech.com/kcserver/utils"
 	"kcaitech.com/kcserver/utils/str"
 	myTime "kcaitech.com/kcserver/utils/time"
 )
@@ -33,34 +31,34 @@ const (
 	UserCommentStatusResolved
 )
 
-type UserType struct {
-	models.DefaultModelData
-	Id       string `json:"id" bson:"id,omitempty"`
-	Nickname string `json:"nickname" bson:"nickname,omitempty"`
-	Avatar   string `json:"avatar" bson:"avatar,omitempty"`
-}
+// type UserType struct {
+// 	models.DefaultModelData
+// 	Id       string `json:"id" bson:"id,omitempty"`
+// 	Nickname string `json:"nickname" bson:"nickname,omitempty"`
+// 	Avatar   string `json:"avatar" bson:"avatar,omitempty"`
+// }
 
-func (user UserType) MarshalJSON() ([]byte, error) {
-	if strings.HasPrefix(user.Avatar, "/") {
-		user.Avatar = config.Config.StorageUrl.Attatch + user.Avatar
-	}
-	return models.MarshalJSON(user)
-}
+// func (user UserType) MarshalJSON() ([]byte, error) {
+// 	if strings.HasPrefix(user.Avatar, "/") {
+// 		user.Avatar = config.Config.StorageUrl.Attatch + user.Avatar
+// 	}
+// 	return models.MarshalJSON(user)
+// }
 
 type UserComment struct {
-	Id              string            `json:"id" bson:"_id"`
-	ParentId        string            `json:"parent_id" bson:"parent_id"`
-	RootId          string            `json:"root_id" bson:"root_id"`
-	DocumentId      string            `json:"doc_id" bson:"document_id" binding:"required"`
-	PageId          string            `json:"page_id" bson:"page_id" binding:"required"`
-	ShapeId         string            `json:"shape_id" bson:"shape_id" binding:"required"`
-	TargetShapeId   string            `json:"target_shape_id" bson:"target_shape_id" binding:"required"`
-	ShapeFrame      map[string]any    `json:"shape_frame" bson:"shape_frame"`
-	User            UserType          `json:"user" bson:"user"`
-	CreatedAt       string            `json:"created_at" bson:"created_at"`
-	RecordCreatedAt string            `json:"record_created_at" bson:"record_created_at"`
-	Content         string            `json:"content" bson:"content" binding:"required"`
-	Status          UserCommentStatus `json:"status" bson:"status"`
+	Id              string             `json:"id" bson:"_id"`
+	ParentId        string             `json:"parent_id" bson:"parent_id"`
+	RootId          string             `json:"root_id" bson:"root_id"`
+	DocumentId      string             `json:"doc_id" bson:"document_id" binding:"required"`
+	PageId          string             `json:"page_id" bson:"page_id" binding:"required"`
+	ShapeId         string             `json:"shape_id" bson:"shape_id" binding:"required"`
+	TargetShapeId   string             `json:"target_shape_id" bson:"target_shape_id" binding:"required"`
+	ShapeFrame      map[string]any     `json:"shape_frame" bson:"shape_frame"`
+	User            models.UserProfile `json:"user" bson:"user"`
+	CreatedAt       string             `json:"created_at" bson:"created_at"`
+	RecordCreatedAt string             `json:"record_created_at" bson:"record_created_at"`
+	Content         string             `json:"content" bson:"content" binding:"required"`
+	Status          UserCommentStatus  `json:"status" bson:"status"`
 }
 
 type UserCommentPublishType uint8
@@ -77,7 +75,7 @@ type UserCommentPublishData struct {
 }
 
 func GetDocumentComment(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -125,7 +123,7 @@ func GetDocumentComment(c *gin.Context) {
 }
 
 func PostUserComment(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -146,7 +144,23 @@ func PostUserComment(c *gin.Context) {
 		return
 	}
 	userComment.Id = str.IntToString(snowflake.NextId())
-	_ = services.NewUserService().GetById(userId, &userComment.User)
+
+	accessToken, _ := c.Get("access_token")
+	if accessToken == nil {
+		response.Unauthorized(c)
+		return
+	}
+	jwtClient := services.GetJWTClient()
+	userInfo, err := jwtClient.GetUserInfo(accessToken.(string))
+	if err != nil {
+		response.Unauthorized(c)
+		return
+	}
+	userComment.User = models.UserProfile{
+		UserId:   userInfo.UserID,
+		Nickname: userInfo.Profile.Nickname,
+		Avatar:   userInfo.Profile.Avatar,
+	}
 	userComment.CreatedAt = myTime.Time(time.Now()).String()
 	if _, err := myTime.Parse(userComment.CreatedAt); err != nil {
 		userComment.RecordCreatedAt = userComment.CreatedAt
@@ -187,7 +201,7 @@ func PostUserComment(c *gin.Context) {
 
 var errNoPermission = errors.New("无权限")
 
-func checkUserPermission(userId int64, commentId string, expectPermType models.PermType) (*UserComment, error) {
+func checkUserPermission(userId string, commentId string, expectPermType models.PermType) (*UserComment, error) {
 	commentCollection := mongo.DB.Collection("comment")
 	commentRes := commentCollection.FindOne(nil, bson.M{"_id": commentId})
 	if commentRes.Err() != nil {
@@ -217,7 +231,7 @@ type UserCommentUpdate struct {
 }
 
 func PutUserComment(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -247,7 +261,7 @@ func PutUserComment(c *gin.Context) {
 		response.BadRequest(c, "文档不存在")
 		return
 	}
-	if comment.User.Id != str.IntToString(userId) && document.UserId != userId {
+	if comment.User.UserId != (userId) && document.UserId != userId {
 		response.Forbidden(c, "")
 		return
 	}
@@ -276,7 +290,7 @@ func PutUserComment(c *gin.Context) {
 }
 
 func DeleteUserComment(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -302,7 +316,7 @@ func DeleteUserComment(c *gin.Context) {
 		return
 	}
 	commentCollection := mongo.DB.Collection("comment")
-	if document.UserId != userId && comment.User.Id != str.IntToString(userId) {
+	if document.UserId != userId && comment.User.UserId != (userId) {
 		if str.DefaultToInt(comment.ParentId, 0) <= 0 {
 			response.Forbidden(c, "")
 			return
@@ -318,7 +332,7 @@ func DeleteUserComment(c *gin.Context) {
 			response.Fail(c, "文档数据错误")
 			return
 		}
-		if comment.User.Id != str.IntToString(userId) {
+		if comment.User.UserId != (userId) {
 			response.Forbidden(c, "")
 			return
 		}
@@ -346,7 +360,7 @@ type UserCommentSetStatus struct {
 }
 
 func SetUserCommentStatus(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -374,7 +388,7 @@ func SetUserCommentStatus(c *gin.Context) {
 			return
 		}
 	}
-	if comment.User.Id != str.IntToString(userId) {
+	if comment.User.UserId != (userId) {
 		var count int64
 		if services.NewDocumentService().Count(&count, "id = ? and user_id = ?", comment.DocumentId, userId) != nil || count <= 0 {
 			response.Forbidden(c, "")

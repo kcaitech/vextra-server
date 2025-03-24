@@ -13,7 +13,7 @@ const (
 // Feedback 反馈
 type Feedback struct {
 	BaseModel
-	UserId        int64        `gorm:"not null" json:"user_id"` // 用户ID
+	UserId        string       `gorm:"not null" json:"user_id"` // 用户ID
 	Type          FeedbackType `gorm:"not null" json:"type"`    // 类型
 	Content       string       `json:"content"`                 // 内容
 	ImagePathList string       `json:"image_path_list"`         // 图片路径列表，字符串数组json格式

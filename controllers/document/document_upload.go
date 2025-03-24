@@ -226,11 +226,11 @@ func compressPutObjectByte(path string, content []byte) (*storagebase.UploadInfo
 
 func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media, resp *Response) {
 
-	userId := str.DefaultToInt(header.UserId, 0)
+	userId := header.UserId
 	documentId := str.DefaultToInt(header.DocumentId, 0)
 	projectId := str.DefaultToInt(header.ProjectId, 0)
 	lastCmdId := header.LastCmdId
-	if (userId <= 0 && documentId <= 0) || (userId > 0 && documentId > 0) || (documentId > 0 && lastCmdId == "") { // userId和documentId必须只传一个 // todo这不对吧，要鉴权
+	if (userId == "" && documentId <= 0) || (userId != "" && documentId > 0) || (documentId > 0 && lastCmdId == "") { // userId和documentId必须只传一个 // todo这不对吧，要鉴权
 		resp.Message = "参数错误"
 		log.Println("参数错误", userId, documentId)
 		return

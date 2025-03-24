@@ -11,8 +11,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"kcaitech.com/kcserver/common/gin/response"
-	"kcaitech.com/kcserver/common/jwt"
 	"kcaitech.com/kcserver/common/models"
+	"kcaitech.com/kcserver/common/services"
 	document "kcaitech.com/kcserver/controllers/document"
 	"kcaitech.com/kcserver/utils/radix_convert"
 	"kcaitech.com/kcserver/utils/str"
@@ -66,8 +66,9 @@ type ACommuncation struct {
 	// _sid       atomic.Int64
 	serveMap   map[string]ServeFace
 	ws         *websocket.Ws
+	token      string
 	genSId     func() string
-	userId     int64
+	userId     string
 	documentId int64
 	versionId  string
 }
@@ -172,7 +173,7 @@ func (c *ACommuncation) handleStart(clientData *TransData) {
 	c.bindServe(DataTypes_Op, opServe)
 	resourceServe := NewResourceServe(c.ws, c.userId, c.documentId)
 	c.bindServe(DataTypes_Resource, resourceServe)
-	selectionServe := NewSelectionServe(c.ws, c.userId, c.documentId, c.genSId)
+	selectionServe := NewSelectionServe(c.ws, c.token, c.userId, c.documentId, c.genSId)
 	c.bindServe(DataTypes_Selection, selectionServe)
 
 	c.ws.WriteJSON(serverData)
@@ -273,14 +274,16 @@ func Communication(c *gin.Context) {
 		return
 	}
 
-	jwtParseData, err := jwt.ParseJwt(token)
+	jwtClient := services.GetJWTClient()
+	claims, err := jwtClient.ValidateToken(token)
 	if err != nil {
 		log.Println("communication-Token错误", err)
 		response.Abort(c, http.StatusForbidden, "Token错误", nil)
 		return
 	}
-	userId := str.DefaultToInt(jwtParseData.Id, 0)
-	if userId <= 0 {
+
+	userId := claims.UserID
+	if userId == "" {
 		log.Println("communication-UserId错误", userId)
 		response.Abort(c, http.StatusForbidden, "UserId错误", nil)
 		return
@@ -308,6 +311,7 @@ func Communication(c *gin.Context) {
 		ws:       ws,
 		genSId:   genSId,
 		serveMap: map[string]ServeFace{},
+		token:    token,
 	}).serve()
 
 }

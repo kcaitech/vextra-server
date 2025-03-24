@@ -18,7 +18,7 @@ type commnetServe struct {
 	genSId func() string
 }
 
-func NewCommentServe(ws *websocket.Ws, userId int64, documentId int64, genSId func() string) *commnetServe {
+func NewCommentServe(ws *websocket.Ws, userId string, documentId int64, genSId func() string) *commnetServe {
 
 	// 权限校验
 	var permType models.PermType

@@ -2,16 +2,17 @@ package document
 
 import (
 	"encoding/json"
+
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/common/gin/auth"
 	"kcaitech.com/kcserver/common/gin/response"
 	"kcaitech.com/kcserver/common/models"
 	"kcaitech.com/kcserver/common/services"
+	"kcaitech.com/kcserver/utils"
 )
 
 // PostFeedback 提交反馈
 func PostFeedback(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return

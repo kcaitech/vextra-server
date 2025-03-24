@@ -2,16 +2,17 @@ package document
 
 import (
 	"errors"
+
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/common/gin/auth"
 	"kcaitech.com/kcserver/common/gin/response"
 	"kcaitech.com/kcserver/common/services"
+	"kcaitech.com/kcserver/utils"
 	"kcaitech.com/kcserver/utils/str"
 )
 
 // GetUserDocumentAccessRecordsList 获取用户的文档访问记录列表
 func GetUserDocumentAccessRecordsList(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -21,7 +22,7 @@ func GetUserDocumentAccessRecordsList(c *gin.Context) {
 
 // DeleteUserDocumentAccessRecord 删除用户的某条文档访问记录
 func DeleteUserDocumentAccessRecord(c *gin.Context) {
-	userId, err := auth.GetUserId(c)
+	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return

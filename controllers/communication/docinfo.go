@@ -5,7 +5,7 @@ import (
 	"kcaitech.com/kcserver/common/services"
 )
 
-func GetUserDocumentInfo(userId int64, documentId int64, permType models.PermType) (*services.DocumentInfoQueryRes, string) {
+func GetUserDocumentInfo(userId string, documentId int64, permType models.PermType) (*services.DocumentInfoQueryRes, string) {
 
 	// permType := models.PermType(str.DefaultToInt(c.Query("perm_type"), 0))
 	// if permType < models.PermTypeReadOnly || permType > models.PermTypeEditable {
