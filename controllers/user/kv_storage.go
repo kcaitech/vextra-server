@@ -2,8 +2,8 @@ package controllers
 
 import (
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/common/gin/response"
-	"kcaitech.com/kcserver/common/services"
+	"kcaitech.com/kcserver/common/response"
+	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils"
 	"kcaitech.com/kcserver/utils/sliceutil"
 )

@@ -2,7 +2,7 @@ package http
 
 import (
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/common/services"
+	"kcaitech.com/kcserver/services"
 
 	controllers "kcaitech.com/kcserver/controllers/document"
 )
@@ -82,5 +82,5 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 	router.POST("/team/project/document/move", controllers.MoveDocument)
 	router.POST("/feedback", controllers.PostFeedback)
 	// router.POST("/test/001", controllers.CreateTest)
-	router.GET("/storage_auth", controllers.CheckStorageAuth)
+	// router.GET("/storage_auth", controllers.CheckStorageAuth)
 }

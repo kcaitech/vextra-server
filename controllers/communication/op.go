@@ -9,12 +9,11 @@ import (
 	"github.com/go-redsync/redsync/v4"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"kcaitech.com/kcserver/common/models"
-	"kcaitech.com/kcserver/common/mongo"
-	"kcaitech.com/kcserver/common/redis"
-	"kcaitech.com/kcserver/common/services"
-	"kcaitech.com/kcserver/common/snowflake"
 	autoupdate "kcaitech.com/kcserver/controllers/document"
+	"kcaitech.com/kcserver/models"
+	"kcaitech.com/kcserver/providers/mongo"
+	"kcaitech.com/kcserver/providers/redis"
+	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils/sliceutil"
 	"kcaitech.com/kcserver/utils/str"
 	"kcaitech.com/kcserver/utils/websocket"
@@ -26,41 +25,12 @@ type ReceiveData struct {
 	From string `json:"from"` // pullCmds
 	To   string `json:"to"`   // pullCmds
 }
-
-type Cmd struct {
-	BaseVer     string      `json:"baseVer" bson:"baseVer"`
-	BatchId     string      `json:"batchId" bson:"batchId"`
-	Ops         []bson.M    `json:"ops" bson:"ops"`
-	IsRecovery  bool        `json:"isRecovery" bson:"isRecovery"`
-	Description string      `json:"description" bson:"description"`
-	Time        int64       `json:"time" bson:"time"`
-	Posttime    int64       `json:"posttime" bson:"posttime"`
-	DataFmtVer  interface{} `json:"dataFmtVer,omitempty" bson:"dataFmtVer,omitempty"` // int | string
-}
+type Cmd = models.Cmd
+type CmdItem = models.CmdItem
 
 type ReceiveCmd struct {
 	Cmd `json:",inline" bson:",inline"`
 	Id  string `json:"id" bson:"id"`
-}
-
-type CmdItem0 struct {
-	Id           int64  `json:"id" bson:"_id"`
-	PreviousId   int64  `json:"previous_id" bson:"previous_id"`
-	BatchStartId int64  `json:"batch_start_id" bson:"batch_start_id"`
-	BatchEndId   int64  `json:"batch_end_id" bson:"batch_end_id"`
-	BatchLength  int    `json:"batch_length" bson:"batch_length"`
-	DocumentId   int64  `json:"document_id" bson:"document_id"`
-	UserId       string `json:"user_id" bson:"user_id"`
-	CmdId        string `json:"cmd_id" bson:"cmd_id"`
-}
-
-type CmdItem struct {
-	CmdItem0 `json:",inline" bson:",inline"`
-	Cmd      Cmd `json:"cmd" bson:"cmd"`
-}
-
-func (cmdItem CmdItem) MarshalJSON() ([]byte, error) {
-	return models.MarshalJSON(cmdItem)
 }
 
 type SendData struct {
@@ -82,46 +52,36 @@ type opServe struct {
 	permType   models.PermType
 	documentId int64
 	userId     string
+	dbModule   *models.DBModule
+	redis      *redis.RedisDB
+	mongo      *mongo.MongoDB
 }
 
 // 从redis中获取最后一条cmd的id，若redis中没有则从mongodb中获取
-func getPreviousId(documentId int64) (int64, error) {
+func (serv *opServe) getPreviousId(documentId int64) (uint, error) {
 	documentIdStr := str.IntToString(documentId)
-	previousId, err := redis.Client.Get(context.Background(), "Document LastCmdId[DocumentId:"+documentIdStr+"]").Int64() // redis也是最终一致性
+	previousId, err := serv.redis.Client.Get(context.Background(), "Document lastCmdVerId[DocumentId:"+documentIdStr+"]").Int() // redis也是最终一致性
 	if err == nil {
-		return previousId, nil
+		return uint(previousId), nil
 	}
 
 	if err != redis.Nil { // todo redis获取不到时，应该去mongodb获取，并更新到redis？
-		log.Println("Document LastCmdId[DocumentId:"+documentIdStr+"]"+"获取失败", err)
+		log.Println("Document lastCmdVerId[DocumentId:"+documentIdStr+"]"+"获取失败", err)
 		return 0, err
 	}
-	cmdItemList := make([]CmdItem, 0)
-	documentCollection := mongo.DB.Collection("document1")
-	reqParams := bson.M{
-		"document_id": documentId,
-	}
-	findOptions := options.Find()
-	findOptions.SetSort(bson.D{{Key: "_id", Value: -1}})
-	findOptions.SetLimit(1)
 
-	cur, err := documentCollection.Find(context.Background(), reqParams, findOptions) // todo 要去主节点找
+	cmdService := services.GetCmdService()
+	cmdItem, err := cmdService.GetLastCmdItem(documentId)
 	if err != nil {
 		return 0, err
 	}
-	if err := cur.All(context.Background(), &cmdItemList); err != nil {
-		return 0, err
+	if cmdItem != nil {
+		return cmdItem.VerId, nil
 	}
-	if len(cmdItemList) > 0 {
-		previousId = cmdItemList[0].Id
-	} else {
-		previousId = 0
-	}
-
-	return previousId, nil
+	return 0, nil
 }
 
-func NewOpServe(ws *websocket.Ws, userId string, documentId int64, versionId string, lastCmdId int64, genSId func() string) *opServe {
+func NewOpServe(ws *websocket.Ws, userId string, documentId int64, versionId string, lastCmdVerId uint, genSId func() string) *opServe {
 
 	documentService := services.NewDocumentService()
 	var document models.Document
@@ -133,7 +93,7 @@ func NewOpServe(ws *websocket.Ws, userId string, documentId int64, versionId str
 	}
 	// 权限校验
 	var permType models.PermType
-	if err := services.NewDocumentService().GetPermTypeByDocumentAndUserId(&permType, documentId, userId); err != nil || permType < models.PermTypeReadOnly {
+	if err := documentService.GetPermTypeByDocumentAndUserId(&permType, documentId, userId); err != nil || permType < models.PermTypeReadOnly {
 		// serverCmd.Message = "通道建立失败"
 		// if err != nil {
 		// 	serverCmd.Message += "，无权限"
@@ -152,7 +112,12 @@ func NewOpServe(ws *websocket.Ws, userId string, documentId int64, versionId str
 			return nil
 		}
 	}
-	if !document.LockedAt.IsZero() && document.UserId != userId {
+	lockedInfo, err := documentService.GetLocked(documentId)
+	if err != nil {
+		log.Println("document ws建立失败，获取审核信息失败", documentId)
+		return nil
+	}
+	if lockedInfo != nil && !lockedInfo.LockedAt.IsZero() && document.UserId != userId {
 		// serverCmd.Message = "通道建立失败，审核不通过"
 		// _ = clientWs.WriteJSON(&serverCmd)
 		log.Println("document ws建立失败，审核不通过", documentId)
@@ -160,6 +125,7 @@ func NewOpServe(ws *websocket.Ws, userId string, documentId int64, versionId str
 	}
 
 	documentIdStr := str.IntToString(documentId)
+	redis := services.GetRedisDB()
 	mutex := redis.RedSync.NewMutex("Document Op Mutex[DocumentId:"+documentIdStr+"]", redsync.WithExpiry(time.Second*10))
 
 	serv := opServe{
@@ -171,41 +137,31 @@ func NewOpServe(ws *websocket.Ws, userId string, documentId int64, versionId str
 		documentId: documentId,
 		userId:     userId,
 		quit:       make(chan struct{}),
+		// dbModule:   dbModule,
+		redis: redis,
+		// mongo:      mongo,
 	}
 
-	if lastCmdId == 0 {
-		lastCmdId = documentVersion.LastCmdId
+	if lastCmdVerId == 0 {
+		lastCmdVerId = (documentVersion.LastCmdVerId)
 	}
 
-	serv.start(documentId, lastCmdId)
+	serv.start(documentId, lastCmdVerId)
 	// serv.isready = true
 	return &serv
 }
 
-func (serv *opServe) start(documentId int64, lastCmdId int64) {
+func (serv *opServe) start(documentId int64, lastCmdVersion uint) {
 	go func() {
 		// defer tunnelServer.Close()
 
-		// 根据版本号发送初始cmdList数据
-		cmdItemList := make([]CmdItem, 0)
-		documentCollection := mongo.DB.Collection("document1")
-		reqParams := bson.M{
-			"document_id": documentId,
-			"_id": bson.M{
-				"$gt": lastCmdId,
-			},
-		}
-		findOptions := options.Find()
-		findOptions.SetSort(bson.D{{Key: "_id", Value: 1}})
-		cur, err := documentCollection.Find(context.Background(), reqParams, findOptions) // 有没有可能一个batch的cmd没拉取完整
+		cmdService := services.GetCmdService()
+		cmdItemList, err := cmdService.GetCmdItemsFromStart(documentId, lastCmdVersion)
 		if err != nil {
 			log.Println("cmdList查询失败", err)
 			return
 		}
-		if err := cur.All(context.Background(), &cmdItemList); err != nil {
-			log.Println("cmdList查询失败2", err)
-			return
-		}
+
 		cmdItemListData, err := json.Marshal(cmdItemList)
 		if err != nil {
 			log.Println("json编码错误 cmdItemsData", err)
@@ -231,7 +187,7 @@ func (serv *opServe) start(documentId int64, lastCmdId int64) {
 		// }
 
 		documentIdStr := str.IntToString(documentId)
-		pubsub := redis.Client.Subscribe(context.Background(), "Document Op[DocumentId:"+documentIdStr+"]")
+		pubsub := serv.redis.Client.Subscribe(context.Background(), "Document Op[DocumentId:"+documentIdStr+"]")
 		defer pubsub.Close()
 		channel := pubsub.Channel()
 		for {
@@ -345,7 +301,7 @@ func (serv *opServe) handleCommit(data *TransData, receiveData *ReceiveData) {
 	}()
 
 	// 从redis中获取最后一条cmd的id，若redis中没有则从mongodb中获取
-	previousId, err := getPreviousId(serv.documentId)
+	previousId, err := serv.getPreviousId(serv.documentId)
 	if err != nil {
 		msgErr("get previous id failed", &serverData, &err)
 		return
@@ -353,19 +309,21 @@ func (serv *opServe) handleCommit(data *TransData, receiveData *ReceiveData) {
 
 	cmdItemList := sliceutil.MapT(func(cmd ReceiveCmd) CmdItem {
 		cmdItem := CmdItem{
-			CmdItem0: CmdItem0{
-				Id:           snowflake.NextId(),
-				PreviousId:   previousId,
-				BatchStartId: 0,
-				BatchEndId:   0,
-				BatchLength:  0,
-				DocumentId:   serv.documentId,
-				UserId:       serv.userId,
-				CmdId:        cmd.Id,
-			},
+			// CmdItemExtra: models.CmdItemExtra{
+			VerId: previousId + 1, // 有redis锁 todo 不对，不能保证唯一
+			// PreviousId:   previousId,
+			BatchStartId: previousId + 1,
+			// BatchEndId:   0,
+			BatchLength: 1,
+			DocumentId:  serv.documentId,
+			UserId:      serv.userId,
+			// Cmd: models.Cmd{
+			// 	Id:         cmd.Id,
+			// }
+			// },
 			Cmd: cmd.Cmd,
 		}
-		previousId = cmdItem.Id
+		previousId = cmdItem.VerId
 		return cmdItem
 	}, cmds...)
 
@@ -377,13 +335,13 @@ func (serv *opServe) handleCommit(data *TransData, receiveData *ReceiveData) {
 	// 	cmdItem0ListString = string(cmdItem0ListStringByte)
 	// }
 
-	batchStartId := cmdItemList[0].Id
-	batchEndId := cmdItemList[len(cmdItemList)-1].Id
+	batchStartId := cmdItemList[0].VerId
+	// batchEndId := cmdItemList[len(cmdItemList)-1].VerId
 	batchLength := len(cmdItemList)
 	for i := range cmdItemList { // todo batchid?
 		cmdItemList[i].BatchStartId = batchStartId
-		cmdItemList[i].BatchEndId = batchEndId
-		cmdItemList[i].BatchLength = batchLength
+		// cmdItemList[i].BatchEndId = batchEndId
+		cmdItemList[i].BatchLength = uint(batchLength)
 	}
 
 	cmdItemListData, err := json.Marshal(cmdItemList)
@@ -392,18 +350,21 @@ func (serv *opServe) handleCommit(data *TransData, receiveData *ReceiveData) {
 		return
 	}
 	documentIdStr := str.IntToString(serv.documentId)
-	documentCollection := mongo.DB.Collection("document1")
+	documentCollection := serv.mongo.DB.Collection("document")
 
-	// 先删除，防止插入失败时无法正确更新lastcmdid
-	if _, err = redis.Client.Del(context.Background(), "Document LastCmdId[DocumentId:"+documentIdStr+"]").Result(); err != nil {
+	// 先删除，防止插入失败时无法正确更新lastCmdVerId
+	if _, err = serv.redis.Client.Del(context.Background(), "Document lastCmdVerId[DocumentId:"+documentIdStr+"]").Result(); err != nil {
 		msgErr("redis del fail", &serverData, &err)
 		return
 	}
 
-	insertRes, err := documentCollection.InsertMany(context.Background(), sliceutil.ConvertToAnySlice(cmdItemList)) // 这是个原子性操作
+	cmdServices := services.GetCmdService()
+	insertRes, err := cmdServices.SaveCmdItems(cmdItemList)
+
+	// insertRes, err := documentCollection.InsertMany(context.Background(), sliceutil.ConvertToAnySlice(cmdItemList)) // 这是个原子性操作
 	if err != nil && mongo.IsDuplicateKeyError(err) {
 		index := len(insertRes.InsertedIDs) + 1
-		duplicateCmdCmdId := cmdItemList[index].CmdId
+		duplicateCmdCmdId := cmdItemList[index].Cmd.Id
 		duplicateCmdDocumentId := cmdItemList[index].DocumentId
 		duplicateCmd := &CmdItem{}
 		if err := documentCollection.FindOne(context.Background(), bson.M{"document_id": duplicateCmdDocumentId, "cmd_id": duplicateCmdCmdId}).Decode(duplicateCmd); err != nil {
@@ -428,41 +389,19 @@ func (serv *opServe) handleCommit(data *TransData, receiveData *ReceiveData) {
 		return
 
 	} else if err != nil {
-		// 插入失败
-		// 删除已插入的数据（cmdItemList）
-		// if res, err := documentCollection.DeleteMany(context.Background(), bson.M{
-		// 	"document_id": serv.documentId,
-		// 	"_id": bson.M{
-		// 		"$in": sliceutil.MapT(func(cmdItem CmdItem) int64 {
-		// 			return cmdItem.Id
-		// 		}, cmdItemList...),
-		// 	},
-		// }); err != nil {
-		// 	log.Println("数据删除失败", err, res)
-		// 	// todo 删除失败的处理
-		// }
-		// redis.Client.Del(context.Background(), "Document LastCmdId[DocumentId:"+documentIdStr+"]")
-		// insertFailedData := map[string]any{}
-		// if duplicateCmd != nil {
-		// 	insertFailedData["type"] = "duplicate"
-		// 	insertFailedData["duplicateCmd"] = duplicateCmd
-		// }
-		// _ = sendErrorInsertFailed(cmdIdList, insertFailedData)
-		// return errors.New("数据插入失败")
-
 		msgErr("数据插入失败", &serverData, &err)
 		return
 	} else {
-		if _, err = redis.Client.Set(context.Background(), "Document LastCmdId[DocumentId:"+documentIdStr+"]", previousId, time.Second*1).Result(); err != nil {
-			log.Println("Document LastCmdId[DocumentId:"+documentIdStr+"]"+"设置失败", err)
+		if _, err = serv.redis.Client.Set(context.Background(), "Document lastCmdVerId[DocumentId:"+documentIdStr+"]", previousId, time.Hour*1).Result(); err != nil {
+			log.Println("Document lastCmdVerId[DocumentId:"+documentIdStr+"]"+"设置失败", err)
 			// return errors.New("数据插入失败")
 		}
-		redis.Client.Publish(context.Background(), "Document Op[DocumentId:"+documentIdStr+"]", cmdItemListData) // 通知客户端是通过redis订阅来触发的
+		serv.redis.Client.Publish(context.Background(), "Document Op[DocumentId:"+documentIdStr+"]", cmdItemListData) // 通知客户端是通过redis订阅来触发的
 		// return nil
 		// debug
 		// log.Panic()
 		_ = serv.ws.WriteJSON(serverData) // sucess
-		go autoupdate.AutoUpdate(serv.documentId)
+		go autoupdate.AutoUpdate(serv.documentId, services.GetConfig())
 	}
 }
 
@@ -490,7 +429,7 @@ func (serv *opServe) handlePullCmds(data *TransData, receiveData *ReceiveData) {
 	} else {
 		//findOptions.SetLimit(100)
 	}
-	cur, err := mongo.DB.Collection("document1").Find(context.Background(), bson.M{
+	cur, err := serv.mongo.DB.Collection("document").Find(context.Background(), bson.M{
 		"document_id": serv.documentId,
 		"_id":         idFilter,
 	}, findOptions)
@@ -509,7 +448,7 @@ func (serv *opServe) handlePullCmds(data *TransData, receiveData *ReceiveData) {
 	}
 	// previousId, err := getPreviousId(serv.documentId)
 	// if err != nil {
-	// 	log.Println(documentId, "lastCmdId查询失败", err)
+	// 	log.Println(documentId, "lastCmdVerId查询失败", err)
 	// 	_ = sendErrorPullCmdsFailed(receiveData.From, receiveData.To)
 	// 	return errors.New("数据查询失败")
 	// }

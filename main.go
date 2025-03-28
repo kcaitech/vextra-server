@@ -1,21 +1,33 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/gin-gonic/gin"
 	httpApi "kcaitech.com/kcserver/api/v1/http"
-	commonConf "kcaitech.com/kcserver/common/config"
-	"kcaitech.com/kcserver/common/gin/start"
-	"kcaitech.com/kcserver/common/models"
-	"kcaitech.com/kcserver/common/mongo"
-	"kcaitech.com/kcserver/common/redis"
-	"kcaitech.com/kcserver/common/safereview"
-	"kcaitech.com/kcserver/common/services"
-	"kcaitech.com/kcserver/common/snowflake"
-	"kcaitech.com/kcserver/common/storage"
-	config "kcaitech.com/kcserver/controllers"
+	config "kcaitech.com/kcserver/config"
+	"kcaitech.com/kcserver/middlewares"
+	"kcaitech.com/kcserver/services"
 )
+
+func start(afterInit func(router *gin.Engine), port int32) {
+	log.Printf("kcserver服务已启动 %d", port)
+
+	//gin.SetMode(gin.DebugMode)
+	gin.SetMode(gin.ReleaseMode)
+	router := gin.New()
+	//router.MaxMultipartMemory = 10 << 20 // 10 MiB
+	router.Use(gin.Recovery())
+	router.Use(middlewares.ErrorHandler())
+
+	afterInit(router)
+
+	err := router.Run(":" + fmt.Sprint(port))
+	if err != nil {
+		log.Fatalf("kcserver服务启动失败: %v", err)
+	}
+}
 
 func Init() *config.Configuration {
 
@@ -25,34 +37,8 @@ func Init() *config.Configuration {
 		conf, _ = config.LoadJsonEnv("kcconfig")
 	}
 
-	// jwtConfig := configDir + conf.Jwt.Ref
-	// snowflakeConfig := configDir + conf.Snowflake.Ref
-	// storageConfig := configDir + conf.Storage.Ref
-	// mongoConfig := configDir + conf.MongoDb.Ref
-	// redisConfig := configDir + conf.Redis.Ref
-	// safereviewConfig := configDir + conf.SafeReiew.Ref
-
-	commonConf.Init(&conf.BaseConfiguration)
-
-	// jwt.Init(&conf.Jwt)
-	snowflake.Init(&conf.Snowflake)
-	models.Init(&conf.BaseConfiguration)
-
-	if err := storage.Init(&conf.Storage); err != nil {
-		log.Fatalln("storage init fail:" + err.Error())
-	}
-	if err := mongo.Init(&conf.Mongo); err != nil {
-		log.Fatalln("mongo init fail:" + err.Error())
-	}
-	if err := redis.Init(&conf.Redis); err != nil {
-		log.Fatalln("redis init fail:" + err.Error())
-	}
-	if err := safereview.Init(&conf.SafeReiew); err != nil {
-		log.Fatalln("safereview init fail:" + err.Error())
-	}
-
-	// 初始化auth服务
-	services.Init(conf.AuthServerURL)
+	// 初始化services
+	services.InitAllBaseServices(conf)
 
 	return conf
 }
@@ -60,8 +46,8 @@ func Init() *config.Configuration {
 const port = 80
 
 func main() {
-	conf := Init()
-	start.Run(&conf.BaseConfiguration, func(router *gin.Engine) {
+	Init()
+	start(func(router *gin.Engine) {
 		httpApi.LoadRoutes(router)
 	}, port)
 }

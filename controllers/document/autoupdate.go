@@ -13,12 +13,13 @@ import (
 	"time"
 
 	"github.com/go-redsync/redsync/v4"
-	"kcaitech.com/kcserver/common/redis"
+	"kcaitech.com/kcserver/providers/redis"
 	"kcaitech.com/kcserver/utils/my_map"
 	"kcaitech.com/kcserver/utils/str"
 
 	// "kcaitech.com/kcserver/common"
-	config "kcaitech.com/kcserver/controllers"
+	config "kcaitech.com/kcserver/config"
+	"kcaitech.com/kcserver/services"
 	// document "kcaitech.com/kcserver/controllers/document"
 )
 
@@ -33,20 +34,18 @@ type DocumentVersioningInfo struct {
 // 并不是同一个文档的都在一个服务实例里，也就个人编辑有点用
 var documentVersioningInfoMap = my_map.NewSyncMap[int64, DocumentVersioningInfo]()
 
-func getDocumentLastUpdateTimeFromRedis(documentId int64) time.Time {
+func getDocumentLastUpdateTimeFromRedis(documentId int64, redis *redis.RedisDB) time.Time {
 	if lastUpdateTime, err := redis.Client.Get(context.Background(), "Document Versioning LastUpdateTime[DocumentId:"+str.IntToString(documentId)+"]").Int64(); err == nil && lastUpdateTime > 0 {
 		return time.UnixMilli(lastUpdateTime)
 	}
 	return time.UnixMilli(0)
 }
 
-// body: { documentInfo: DocumentInfo, lastCmdId: string, documentData: ExFromJson, documentText: string, mediasSize: number, pageImageBase64List: string[] }
-
 type DocumentInfo struct {
-	DocumentId string `json:"id"` // 可能是int
-	Path       string `json:"path"`
-	VersionId  string `json:"version_id"`
-	LastCmdId  string `json:"last_cmd_id"`
+	DocumentId   string `json:"id"` // 可能是int
+	Path         string `json:"path"`
+	VersionId    string `json:"version_id"`
+	lastCmdVerId string `json:"last_cmd_id"`
 }
 
 type ExFromJson struct {
@@ -62,14 +61,14 @@ type ExFromJson struct {
 
 type VersionResp struct {
 	// DocumentInfo DocumentInfo `json:"documentInfo"`
-	LastCmdId    string     `json:"lastCmdId"`
+	lastCmdVerId string     `json:"lastCmdVerId"`
 	DocumentData ExFromJson `json:"documentData"`
 	DocumentText string     `json:"documentText"`
 	MediasSize   uint64     `json:"mediasSize"`
 	PageSvgs     []string   `json:"pageSvgs"`
 }
 
-func _svgToPng(svgContent string) ([]byte, error) {
+func _svgToPng(svgContent string, svg2pngUrl string) ([]byte, error) {
 	// 将SVG内容转换为字节切片
 	svgBuffer := []byte(svgContent)
 
@@ -96,10 +95,8 @@ func _svgToPng(svgContent string) ([]byte, error) {
 		"Content-Type": writer.FormDataContentType(),
 	}
 
-	url := config.Config.Svg2Png.Url
-
 	// 创建请求
-	req, err := http.NewRequest("POST", url, formData)
+	req, err := http.NewRequest("POST", svg2pngUrl, formData)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +130,7 @@ func _svgToPng(svgContent string) ([]byte, error) {
 	return body, nil
 }
 
-func svg2png(svgs []string) *[][]byte {
+func svg2png(svgs []string, svg2pngUrl string) *[][]byte {
 
 	// 创建一个 WaitGroup 并设置初始计数器值
 	var wg sync.WaitGroup
@@ -160,7 +157,7 @@ func svg2png(svgs []string) *[][]byte {
 				<-requestCh
 			}()
 
-			png, err := _svgToPng(svg)
+			png, err := _svgToPng(svg, svg2pngUrl)
 			if err != nil {
 				log.Println("svg2png fail", err)
 			} else {
@@ -175,7 +172,7 @@ func svg2png(svgs []string) *[][]byte {
 	return &pngs
 }
 
-func AutoUpdate(documentId int64) {
+func AutoUpdate(documentId int64, config *config.Configuration) {
 	info, ok := documentVersioningInfoMap.Get(documentId)
 	if !ok {
 		info = DocumentVersioningInfo{
@@ -184,13 +181,14 @@ func AutoUpdate(documentId int64) {
 		}
 		documentVersioningInfoMap.Set(documentId, info)
 	}
-	minUpdateTimeInterval := time.Second * time.Duration(config.Config.VersionServer.MinUpdateInterval)
+	minUpdateTimeInterval := time.Second * time.Duration(config.VersionServer.MinUpdateInterval)
 	// 时间未到
 	if time.Since(info.LastUpdateTime) < minUpdateTimeInterval {
 		return
 	}
 	// 上锁
 	documentIdStr := str.IntToString(documentId)
+	redis := services.GetRedisDB()
 	documentVersioningMutex := redis.RedSync.NewMutex("Document Versioning Mutex[DocumentId:"+documentIdStr+"]", redsync.WithExpiry(time.Second*10))
 	if err := documentVersioningMutex.TryLock(); err != nil {
 		info.LastUpdateTime = time.Now()
@@ -202,7 +200,7 @@ func AutoUpdate(documentId int64) {
 		}
 	}()
 	// 从redis获取LastUpdateTime，更新到本地缓存
-	lastUpdateTimeFromRedis := getDocumentLastUpdateTimeFromRedis(documentId)
+	lastUpdateTimeFromRedis := getDocumentLastUpdateTimeFromRedis(documentId, redis)
 	if !lastUpdateTimeFromRedis.IsZero() {
 		info.LastUpdateTime = lastUpdateTimeFromRedis
 	}
@@ -216,7 +214,7 @@ func AutoUpdate(documentId int64) {
 	}()
 
 	log.Println("auto update document:", documentId)
-	var generateApiUrl = config.Config.VersionServer.Url
+	var generateApiUrl = config.VersionServer.Url
 
 	// 构建请求
 	resp, err := http.Get(generateApiUrl + "?documentId=" + documentIdStr)
@@ -246,13 +244,13 @@ func AutoUpdate(documentId int64) {
 
 	log.Println("auto update document, start svg2png")
 	// svg2png
-	pagePngs := svg2png(version.PageSvgs)
+	pagePngs := svg2png(version.PageSvgs, config.Svg2Png.Url)
 
 	log.Println("auto update document, start upload data", documentId)
 	// upload document data
 	header := Header{
-		DocumentId: documentIdStr,
-		LastCmdId:  version.LastCmdId,
+		DocumentId:   documentIdStr,
+		lastCmdVerId: version.lastCmdVerId,
 	}
 	response := Response{}
 	data := UploadData{

@@ -6,13 +6,11 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/common/gin/response"
-	"kcaitech.com/kcserver/common/models"
-	"kcaitech.com/kcserver/common/services"
-	"kcaitech.com/kcserver/common/storage"
-	config "kcaitech.com/kcserver/controllers"
+	"kcaitech.com/kcserver/common/response"
+	"kcaitech.com/kcserver/models"
+	"kcaitech.com/kcserver/providers/storage"
+	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils"
-	"kcaitech.com/kcserver/utils/storage/base"
 	"kcaitech.com/kcserver/utils/str"
 	myTime "kcaitech.com/kcserver/utils/time"
 )
@@ -73,7 +71,8 @@ func GetDocumentAccessKey1(userId string, documentId int64) (*map[string]any, st
 		// response.Forbidden(c, "")
 		return nil, "无访问权限"
 	}
-	if !document.LockedAt.IsZero() && document.UserId != userId {
+	locked, err := documentService.GetLocked(documentId)
+	if locked != nil && !locked.LockedAt.IsZero() && document.UserId != userId {
 		// response.Forbidden(c, "审核不通过")
 		return nil, "审核不通过"
 	}
@@ -81,7 +80,6 @@ func GetDocumentAccessKey1(userId string, documentId int64) (*map[string]any, st
 		if err := documentService.DocumentPermissionService.Create(&models.DocumentPermission{
 			ResourceType: models.ResourceTypeDoc,
 			ResourceId:   documentId,
-			GranteeType:  models.GranteeTypeExternal,
 			GranteeId:    userId,
 			PermType:     permType,
 		}); err != nil {
@@ -90,9 +88,10 @@ func GetDocumentAccessKey1(userId string, documentId int64) (*map[string]any, st
 		}
 	}
 
-	accessKeyValue, err := storage.Bucket.GenerateAccessKey(
+	_storage := services.GetStorageClient()
+	accessKeyValue, err := _storage.Bucket.GenerateAccessKey(
 		document.Path+"/*",
-		base.AuthOpGetObject|base.AuthOpListObject,
+		storage.AuthOpGetObject|storage.AuthOpListObject,
 		3600,
 		"U"+(userId)+"D"+str.IntToString(documentId),
 	)
@@ -123,8 +122,8 @@ func GetDocumentAccessKey1(userId string, documentId int64) (*map[string]any, st
 		}, "id = ?", documentAccessRecord.Id, &services.Unscoped{})
 	}
 
-	storageConfig := storage.Bucket.GetConfig()
-
+	storageConfig := _storage.Bucket.GetConfig()
+	documentStorageUrl := services.GetConfig().StorageUrl.Document
 	return &map[string]any{
 		"access_key":        accessKeyValue.AccessKey,
 		"secret_access_key": accessKeyValue.SecretAccessKey,
@@ -133,6 +132,6 @@ func GetDocumentAccessKey1(userId string, documentId int64) (*map[string]any, st
 		"provider":          storageConfig.Provider,
 		"region":            storageConfig.Region,
 		"bucket_name":       storageConfig.BucketName,
-		"endpoint":          config.Config.StorageUrl.Document,
+		"endpoint":          documentStorageUrl,
 	}, ""
 }

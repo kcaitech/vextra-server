@@ -6,11 +6,10 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/common/gin/response"
-	"kcaitech.com/kcserver/common/models"
-	"kcaitech.com/kcserver/common/safereview"
-	safereviewBase "kcaitech.com/kcserver/common/safereview/base"
-	"kcaitech.com/kcserver/common/services"
+	"kcaitech.com/kcserver/common/response"
+	"kcaitech.com/kcserver/models"
+	"kcaitech.com/kcserver/providers/safereview"
+	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils"
 	"kcaitech.com/kcserver/utils/sliceutil"
 	"kcaitech.com/kcserver/utils/str"
@@ -64,16 +63,18 @@ func CreateProject(c *gin.Context) {
 		response.Forbidden(c, "")
 		return
 	}
-
-	reviewResponse, err := safereview.Client.ReviewText(req.Name)
-	if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
-		log.Println("名称审核不通过", req.Name, err, reviewResponse)
-		response.Fail(c, "审核不通过")
-		return
+	reviewClient := services.GetSafereviewClient()
+	if req.Name != "" && reviewClient != nil {
+		reviewResponse, err := (reviewClient).ReviewText(req.Name)
+		if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
+			log.Println("名称审核不通过", req.Name, err, reviewResponse)
+			response.Fail(c, "审核不通过")
+			return
+		}
 	}
-	if req.Description != "" {
-		reviewResponse, err = safereview.Client.ReviewText(req.Description)
-		if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
+	if req.Description != "" && reviewClient != nil {
+		reviewResponse, err := (reviewClient).ReviewText(req.Description)
+		if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
 			log.Println("描述审核不通过", req.Description, err, reviewResponse)
 			response.Fail(c, "审核不通过")
 			return
@@ -229,7 +230,7 @@ func ApplyJoinProject(c *gin.Context) {
 		}
 		return
 	}
-	if !project.InvitedSwitch {
+	if !project.OpenInvite {
 		response.BadRequest(c, "项目未开启邀请")
 		return
 	}
@@ -321,7 +322,7 @@ func GetProjectJoinRequestList(c *gin.Context) {
 			return messageShowItem.ProjectJoinRequestId == item.ProjectJoinRequest.Id
 		}, messageShowList...) == nil
 	}, result...)
-	newMessageShowList := sliceutil.MapT(func(item services.ProjectJoinRequestQuery) models.ModelData {
+	newMessageShowList := sliceutil.MapT(func(item services.ProjectJoinRequestQuery) models.BaseModel {
 		return &models.ProjectJoinRequestMessageShow{
 			ProjectJoinRequestId: item.ProjectJoinRequest.Id,
 			UserId:               userId,
@@ -486,18 +487,19 @@ func SetProjectInfo(c *gin.Context) {
 		response.BadRequest(c, "")
 		return
 	}
+	reviewClient := services.GetSafereviewClient()
 	if req.Name != "" || req.Description != "" {
-		if req.Name != "" {
-			reviewResponse, err := safereview.Client.ReviewText(req.Name)
-			if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
+		if req.Name != "" && reviewClient != nil {
+			reviewResponse, err := (reviewClient).ReviewText(req.Name)
+			if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
 				log.Println("名称审核不通过", req.Name, err, reviewResponse)
 				response.Fail(c, "审核不通过")
 				return
 			}
 		}
-		if req.Description != "" {
-			reviewResponse, err := safereview.Client.ReviewText(req.Description)
-			if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
+		if req.Description != "" && reviewClient != nil {
+			reviewResponse, err := (reviewClient).ReviewText(req.Description)
+			if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
 				log.Println("描述审核不通过", req.Description, err, reviewResponse)
 				response.Fail(c, "审核不通过")
 				return
@@ -591,7 +593,7 @@ func GetProjectInvitedInfo(c *gin.Context) {
 		response.Fail(c, "查询错误")
 		return
 	}
-	if !project.InvitedSwitch {
+	if !project.OpenInvite {
 		response.Fail(c, "项目邀请已关闭")
 		return
 	}
@@ -605,7 +607,7 @@ func GetProjectInvitedInfo(c *gin.Context) {
 		"name":              project.Name,
 		"self_perm_type":    selfPermType,
 		"invited_perm_type": project.PermType,
-		"invited_switch":    project.InvitedSwitch,
+		"invited_switch":    project.OpenInvite,
 	}
 	response.Success(c, result)
 }
@@ -743,16 +745,16 @@ func ChangeProjectCreator(c *gin.Context) {
 		return
 	}
 	projectMemberService := services.NewProjectMemberService()
-	projectMemberService.DB = projectMemberService.DB.Begin() // 开启事务
+	transactDB := projectMemberService.DBModule.DB.Begin() // 开启事务
 	needRollback := false
 	defer func() {
 		if needRollback {
-			projectMemberService.DB.Rollback()
+			transactDB.Rollback()
 		} else {
-			projectMemberService.DB.Commit()
+			transactDB.Commit()
 		}
 	}()
-	if err := projectMemberService.DB.Error; err != nil {
+	if err := transactDB.Error; err != nil {
 		response.Fail(c, "更新错误")
 		needRollback = true
 		return

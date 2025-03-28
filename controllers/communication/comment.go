@@ -4,9 +4,9 @@ import (
 	"context"
 	"log"
 
-	"kcaitech.com/kcserver/common/models"
-	"kcaitech.com/kcserver/common/redis"
-	"kcaitech.com/kcserver/common/services"
+	"kcaitech.com/kcserver/models"
+	"kcaitech.com/kcserver/providers/redis"
+	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils/str"
 	"kcaitech.com/kcserver/utils/websocket"
 )
@@ -16,6 +16,7 @@ type commnetServe struct {
 	quit chan struct{}
 	// isready bool
 	genSId func() string
+	redis  *redis.RedisDB
 }
 
 func NewCommentServe(ws *websocket.Ws, userId string, documentId int64, genSId func() string) *commnetServe {
@@ -32,6 +33,7 @@ func NewCommentServe(ws *websocket.Ws, userId string, documentId int64, genSId f
 		// isready: false,
 		genSId: genSId,
 		quit:   make(chan struct{}),
+		redis:  services.GetRedisDB(),
 	}
 	serv.start(documentId)
 	// serv.isready = true
@@ -44,7 +46,7 @@ func (serv *commnetServe) start(documentId int64) {
 	// 监控评论变化
 	go func() {
 		// defer tunnelServer.Close()
-		pubsub := redis.Client.Subscribe(context.Background(), "Document Comment[DocumentId:"+documentIdStr+"]")
+		pubsub := serv.redis.Client.Subscribe(context.Background(), "Document Comment[DocumentId:"+documentIdStr+"]")
 		defer pubsub.Close()
 		channel := pubsub.Channel()
 		for {

@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/common/gin/response"
-	"kcaitech.com/kcserver/common/models"
-	"kcaitech.com/kcserver/common/services"
+	"kcaitech.com/kcserver/common/response"
+	"kcaitech.com/kcserver/models"
+	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils"
 	"kcaitech.com/kcserver/utils/str"
 	myTime "kcaitech.com/kcserver/utils/time"
@@ -65,7 +65,7 @@ func RestoreUserRecycleBinDocument(c *gin.Context) {
 			return
 		}
 	}
-	if _, err := services.NewDocumentService().UpdateColumns(
+	if _, err := documentService.UpdateColumns(
 		map[string]any{"deleted_at": nil},
 		"id = ? and deleted_at is not null and purged_at is null", documentId,
 		&services.Unscoped{},
@@ -108,7 +108,7 @@ func DeleteUserRecycleBinDocument(c *gin.Context) {
 			return
 		}
 	}
-	if _, err := services.NewDocumentService().UpdateColumns(
+	if _, err := documentService.UpdateColumns(
 		map[string]any{"purged_at": myTime.Time(time.Now())},
 		"id = ? and deleted_at is not null", documentId,
 		&services.Unscoped{},

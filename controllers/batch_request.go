@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/common/gin/response"
+	"kcaitech.com/kcserver/common/response"
 )
 
 type BatchRequestData struct {

@@ -1,4 +1,0 @@
-mongo:
-  #  uri: "mongodb://root:kcai1212@mongo_net_1:27017"
-  uri: "mongodb://root:kcai1212@192.168.0.18:27017"
-  db: "kcserver"

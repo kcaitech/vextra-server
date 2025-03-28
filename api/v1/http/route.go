@@ -6,9 +6,9 @@ import (
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/contrib/gzip"
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/common/redis"
 	"kcaitech.com/kcserver/controllers"
 	"kcaitech.com/kcserver/middlewares"
+	"kcaitech.com/kcserver/services"
 )
 
 func LoadRoutes(router *gin.Engine) {
@@ -20,23 +20,24 @@ func LoadRoutes(router *gin.Engine) {
 	router.Use(static.Serve("/", static.LocalFile("/app/html", false))) // 前端工程
 	// 如果不是直接使用，不使用noroute，不然代理不好处理错误路径
 	// 未知的路由交由前端vue router处理
-	if controllers.Config.DefaultRoute {
+	config := services.GetConfig()
+	if config.DefaultRoute {
 		router.NoRoute(func(c *gin.Context) {
 			c.File("/app/html/index.html")
 		})
 	}
 
-	if controllers.Config.DetailedLog {
+	if config.DetailedLog {
 		router.Use(middlewares.AccessDetailedLogMiddleware())
 	} else {
 		router.Use(middlewares.AccessLogMiddleware())
 	}
-	if controllers.Config.AllowCors {
+	if config.AllowCors {
 		router.Use(middlewares.CORSMiddleware()) // 测试时需要
 	}
 
 	router.Use(middlewares.NewRateLimiter(&middlewares.RedisStore{
-		Client: redis.Client,
+		Client: services.GetRedisDB().Client,
 		Ctx:    context.Background(),
 	}, middlewares.DefaultRateLimiterConfig()).RateLimitMiddleware())
 

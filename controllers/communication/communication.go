@@ -10,11 +10,10 @@ import (
 	"sync/atomic"
 
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/common/gin/response"
-	"kcaitech.com/kcserver/common/models"
-	"kcaitech.com/kcserver/common/services"
+	"kcaitech.com/kcserver/common/response"
 	document "kcaitech.com/kcserver/controllers/document"
-	"kcaitech.com/kcserver/utils/radix_convert"
+	"kcaitech.com/kcserver/models"
+	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils/str"
 	"kcaitech.com/kcserver/utils/websocket"
 )
@@ -54,7 +53,7 @@ type BindData struct {
 }
 
 type StartData struct {
-	LastCmdVersion string `json:"last_cmd_version,omitempty"`
+	LastCmdVersion uint `json:"last_cmd_version,omitempty"`
 }
 
 type ServeFace interface {
@@ -71,6 +70,12 @@ type ACommuncation struct {
 	userId     string
 	documentId int64
 	versionId  string
+	// dbModule         *models.DBModule
+	// redis            *redis.RedisDB
+	// mongo            *mongo.MongoDB
+	// storageClient    *storage.StorageClient
+	// safereviewClient *safereview.Client
+	// config           *config.Configuration
 }
 
 func (c *ACommuncation) msgErr(msg string, serverData *TransData, err *error) {
@@ -114,7 +119,7 @@ func (c *ACommuncation) handleBind(clientData *TransData) {
 		permType = models.PermTypeNone
 	}
 
-	docInfo, errmsg := GetUserDocumentInfo(c.userId, documentId, permType)
+	docInfo, errmsg := document.GetUserDocumentInfo1(c.userId, documentId, permType)
 	if nil == docInfo {
 		c.msgErr(errmsg, &serverData, nil)
 		return
@@ -160,16 +165,13 @@ func (c *ACommuncation) handleStart(clientData *TransData) {
 		return
 	}
 
-	lastCmdId := int64(0)
-	if startdata.LastCmdVersion != "" {
-		var radixConvert, _ = radix_convert.NewRadixConvert(62, radix_convert.Default62RadixChars)
-		lastCmdId = radixConvert.To(startdata.LastCmdVersion)
-	}
-	log.Println("LastCmdVersion", startdata.LastCmdVersion, lastCmdId)
+	lastCmdVersion := startdata.LastCmdVersion
+
+	log.Println("LastCmdVersion", startdata.LastCmdVersion, lastCmdVersion)
 	// bind comment
 	commentServe := NewCommentServe(c.ws, c.userId, c.documentId, c.genSId)
 	c.bindServe(DataTypes_Comment, commentServe)
-	opServe := NewOpServe(c.ws, c.userId, c.documentId, c.versionId, lastCmdId, c.genSId) // todo VersionId
+	opServe := NewOpServe(c.ws, c.userId, c.documentId, c.versionId, lastCmdVersion, c.genSId) // todo VersionId
 	c.bindServe(DataTypes_Op, opServe)
 	resourceServe := NewResourceServe(c.ws, c.userId, c.documentId)
 	c.bindServe(DataTypes_Resource, resourceServe)
@@ -312,6 +314,12 @@ func Communication(c *gin.Context) {
 		genSId:   genSId,
 		serveMap: map[string]ServeFace{},
 		token:    token,
+		// dbModule:         dbModule,
+		// redis:            redis,
+		// mongo:            mongo,
+		// storageClient:    storageClient,
+		// safereviewClient: safereviewClient,
+		// config:           config,
 	}).serve()
 
 }

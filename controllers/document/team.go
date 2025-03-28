@@ -7,12 +7,10 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/common/gin/response"
-	"kcaitech.com/kcserver/common/models"
-	"kcaitech.com/kcserver/common/safereview"
-	safereviewBase "kcaitech.com/kcserver/common/safereview/base"
-	"kcaitech.com/kcserver/common/services"
-	config "kcaitech.com/kcserver/controllers"
+	"kcaitech.com/kcserver/common/response"
+	"kcaitech.com/kcserver/models"
+	"kcaitech.com/kcserver/providers/safereview"
+	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils"
 	"kcaitech.com/kcserver/utils/sliceutil"
 	"kcaitech.com/kcserver/utils/str"
@@ -40,25 +38,28 @@ func CreateTeam(c *gin.Context) {
 		return
 	}
 
-	reviewResponse, err := safereview.Client.ReviewText(req.Name)
-	if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
-		log.Println("名称审核不通过", req.Name, err, reviewResponse)
-		response.Fail(c, "审核不通过")
-		return
-	}
-	if req.Description != "" {
-		reviewResponse, err = safereview.Client.ReviewText(req.Description)
-		if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
-			log.Println("描述审核不通过", req.Description, err, reviewResponse)
+	reviewClient := services.GetSafereviewClient()
+	if reviewClient != nil {
+		reviewResponse, err := (reviewClient).ReviewText(req.Name)
+		if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
+			log.Println("名称审核不通过", req.Name, err, reviewResponse)
 			response.Fail(c, "审核不通过")
 			return
+		}
+		if req.Description != "" {
+			reviewResponse, err = (reviewClient).ReviewText(req.Description)
+			if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
+				log.Println("描述审核不通过", req.Description, err, reviewResponse)
+				response.Fail(c, "审核不通过")
+				return
+			}
 		}
 	}
 
 	team := models.Team{
 		Name:        req.Name,
 		Description: req.Description,
-		Uid:         str.GetUid(),
+		// Uid:         str.GetUid(),
 	}
 	if teamService.Create(&team) != nil {
 		response.Fail(c, "团队创建失败")
@@ -84,15 +85,17 @@ func CreateTeam(c *gin.Context) {
 		}
 		contentType := fileHeader.Header.Get("Content-Type")
 		base64Str := base64.StdEncoding.EncodeToString(fileBytes)
-		reviewResponse, err := safereview.Client.ReviewPictureFromBase64(base64Str)
-		if err != nil {
-			log.Println("头像审核错误", err)
-			response.Fail(c, "头像审核错误")
-			return
-		} else if reviewResponse.Status != safereviewBase.ReviewImageResultPass {
-			log.Println("头像审核不通过", err, reviewResponse)
-			response.Fail(c, "头像审核不通过")
-			return
+		if reviewClient != nil {
+			reviewResponse, err := (reviewClient).ReviewPictureFromBase64(base64Str)
+			if err != nil {
+				log.Println("头像审核错误", err)
+				response.Fail(c, "头像审核错误")
+				return
+			} else if reviewResponse.Status != safereview.ReviewImageResultPass {
+				log.Println("头像审核不通过", err, reviewResponse)
+				response.Fail(c, "头像审核不通过")
+				return
+			}
 		}
 		_, _ = services.NewTeamService().UploadTeamAvatar(&team, fileBytes, contentType)
 	}
@@ -113,9 +116,10 @@ func CreateTeam(c *gin.Context) {
 		"name":        team.Name,
 		"description": team.Description,
 	}
-	if team.Avatar != "" {
-		result["avatar"] = config.Config.StorageUrl.Attatch + team.Avatar
-	}
+	// todo
+	// if team.Avatar != "" {
+	// 	result["avatar"] = config.Config.StorageUrl.Attatch + team.Avatar
+	// }
 	response.Success(c, result)
 }
 
@@ -259,7 +263,7 @@ func ApplyJoinTeam(c *gin.Context) {
 		}
 		return
 	}
-	if !team.InvitedSwitch {
+	if !team.OpenInvite {
 		failResponseData["code"] = FailCodeInvitedNotOpen
 		response.BadRequestData(c, "团队未开启邀请", failResponseData)
 		return
@@ -329,7 +333,7 @@ func GetTeamJoinRequestList(c *gin.Context) {
 			return messageShowItem.TeamJoinRequestId == item.TeamJoinRequest.Id
 		}, messageShowList...) == nil
 	}, result...)
-	newMessageShowList := sliceutil.MapT(func(item services.TeamJoinRequestQuery) models.ModelData {
+	newMessageShowList := sliceutil.MapT(func(item services.TeamJoinRequestQuery) models.BaseModel {
 		return &models.TeamJoinRequestMessageShow{
 			TeamJoinRequestId: item.TeamJoinRequest.Id,
 			UserId:            userId,
@@ -498,18 +502,19 @@ func SetTeamInfo(c *gin.Context) {
 		response.BadRequest(c, "")
 		return
 	}
+	reviewClient := services.GetSafereviewClient()
 	if req.Name != "" || req.Description != "" {
-		if req.Name != "" {
-			reviewResponse, err := safereview.Client.ReviewText(req.Name)
-			if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
+		if req.Name != "" && reviewClient != nil {
+			reviewResponse, err := (reviewClient).ReviewText(req.Name)
+			if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
 				log.Println("名称审核不通过", req.Name, err, reviewResponse)
 				response.Fail(c, "审核不通过")
 				return
 			}
 		}
-		if req.Description != "" {
-			reviewResponse, err := safereview.Client.ReviewText(req.Description)
-			if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
+		if req.Description != "" && reviewClient != nil {
+			reviewResponse, err := (reviewClient).ReviewText(req.Description)
+			if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
 				log.Println("描述审核不通过", req.Description, err, reviewResponse)
 				response.Fail(c, "审核不通过")
 				return
@@ -537,19 +542,22 @@ func SetTeamInfo(c *gin.Context) {
 			return
 		}
 		contentType := fileHeader.Header.Get("Content-Type")
-		base64Str := base64.StdEncoding.EncodeToString(fileBytes)
-		reviewResponse, err := safereview.Client.ReviewPictureFromBase64(base64Str)
-		if err != nil {
-			log.Println("头像审核错误", err)
-			response.Fail(c, "头像审核错误")
-			return
-		} else if reviewResponse.Status != safereviewBase.ReviewImageResultPass {
-			log.Println("头像审核不通过", err, reviewResponse)
-			response.Fail(c, "头像审核不通过")
-			return
+		if reviewClient != nil {
+			base64Str := base64.StdEncoding.EncodeToString(fileBytes)
+			reviewResponse, err := (reviewClient).ReviewPictureFromBase64(base64Str)
+			if err != nil {
+				log.Println("头像审核错误", err)
+				response.Fail(c, "头像审核错误")
+				return
+			} else if reviewResponse.Status != safereview.ReviewImageResultPass {
+				log.Println("头像审核不通过", err, reviewResponse)
+				response.Fail(c, "头像审核不通过")
+				return
+			}
 		}
 		if avatarPath, err := teamService.UploadTeamAvatarById(teamId, fileBytes, contentType); err == nil {
-			result["avatar"] = config.Config.StorageUrl.Attatch + avatarPath
+			// result["avatar"] = config.Config.StorageUrl.Attatch + avatarPath
+			result["avatar"] = avatarPath
 		}
 	}
 	response.Success(c, result)
@@ -634,7 +642,7 @@ func GetTeamInvitedInfo(c *gin.Context) {
 		"name":              team.Name,
 		"self_perm_type":    selfPermType,
 		"invited_perm_type": team.InvitedPermType,
-		"invited_switch":    team.InvitedSwitch,
+		"invited_switch":    team.OpenInvite,
 	}
 	response.Success(c, result)
 }
@@ -774,16 +782,16 @@ func ChangeTeamCreator(c *gin.Context) {
 		return
 	}
 	teamMemberService := services.NewTeamMemberService()
-	teamMemberService.DB = teamMemberService.DB.Begin() // 开启事务
+	transactDB := teamMemberService.DBModule.DB.Begin() // 开启事务
 	needRollback := false
 	defer func() {
 		if needRollback {
-			teamMemberService.DB.Rollback()
+			transactDB.Rollback()
 		} else {
-			teamMemberService.DB.Commit()
+			transactDB.Commit()
 		}
 	}()
-	if err := teamMemberService.DB.Error; err != nil {
+	if err := transactDB.Error; err != nil {
 		response.Fail(c, "更新错误")
 		needRollback = true
 		return
@@ -899,12 +907,14 @@ func SetTeamMemberNickname(c *gin.Context) {
 			return
 		}
 	}
-
-	reviewResponse, err := safereview.Client.ReviewText(req.Nickname)
-	if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
-		log.Println("昵称审核不通过", req.Nickname, err, reviewResponse)
-		response.Fail(c, "审核不通过")
-		return
+	reviewClient := services.GetSafereviewClient()
+	if reviewClient != nil {
+		reviewResponse, err := (reviewClient).ReviewText(req.Nickname)
+		if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
+			log.Println("昵称审核不通过", req.Nickname, err, reviewResponse)
+			response.Fail(c, "审核不通过")
+			return
+		}
 	}
 
 	if _, err := teamMemberService.UpdateColumns(map[string]any{

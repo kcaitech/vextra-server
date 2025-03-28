@@ -2,7 +2,7 @@ package http
 
 import (
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/common/services"
+	"kcaitech.com/kcserver/services"
 
 	// "kcaitech.com/kcserver/common"
 	// . "kcaitech.com/kcserver/common/gin/reverse_proxy"

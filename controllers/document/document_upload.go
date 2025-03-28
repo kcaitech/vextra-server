@@ -10,15 +10,13 @@ import (
 	"sync"
 	"time"
 
-	"kcaitech.com/kcserver/common/safereview"
-	safereviewBase "kcaitech.com/kcserver/common/safereview/base"
+	"kcaitech.com/kcserver/providers/safereview"
 	"kcaitech.com/kcserver/utils/my_map"
 
 	"github.com/google/uuid"
-	"kcaitech.com/kcserver/common/models"
-	"kcaitech.com/kcserver/common/services"
-	"kcaitech.com/kcserver/common/storage"
-	storagebase "kcaitech.com/kcserver/utils/storage/base"
+	"kcaitech.com/kcserver/models"
+	"kcaitech.com/kcserver/providers/storage"
+	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils/str"
 	myTime "kcaitech.com/kcserver/utils/time"
 )
@@ -26,10 +24,10 @@ import (
 // type Data map[string]any
 
 type Header struct {
-	UserId     string `json:"user_id"`
-	DocumentId string `json:"document_id"`
-	ProjectId  string `json:"project_id"`
-	LastCmdId  string `json:"last_cmd_id"`
+	UserId       string `json:"user_id"`
+	DocumentId   string `json:"document_id"`
+	ProjectId    string `json:"project_id"`
+	lastCmdVerId string `json:"last_cmd_id"`
 }
 
 type ResponseStatusType string
@@ -126,79 +124,91 @@ type Media struct {
 // 	UploadDocumentData(&header, &uploadData, &medias, &resp)
 // }
 
-func reviewText(text string, newDocument *models.Document) {
-	if text == "" {
+func reviewgo(newDocument *models.Document, text string, PageImageList *[][]byte, docPath string, medias *[]Media) {
+	reviewClient := services.GetSafereviewClient()
+	if reviewClient == nil {
 		return
 	}
-	go func() {
-		reviewResponse, err := safereview.Client.ReviewText(text)
-		if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
-			newDocument.LockedAt = myTime.Time(time.Now())
-			newDocument.LockedReason = "文本审核不通过：" + reviewResponse.Reason
+	_storage := services.GetStorageClient()
+	// needUpdateDocument := false
+	// var LockedAt time.Time = time.Now()
+	var LockedReason string
+	var LockedWords string
+	// review text
+	if text != "" {
+		reviewResponse, err := reviewClient.ReviewText(text)
+		if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
+			// LockedAt = (time.Now())
+			LockedReason = "文本审核不通过：" + reviewResponse.Reason
+			// var LockedWords string
 			if wordsBytes, err := json.Marshal(reviewResponse.Words); err == nil {
-				newDocument.LockedWords += string(wordsBytes)
+				LockedWords = string(wordsBytes)
 			}
+			// documentService.UpdateLocked(newDocument.Id, LockedAt, LockedReason, LockedWords)
 		}
-	}()
-}
-
-func reviewPages(PageImageList *[][]byte, newDocument *models.Document, docPath string, documentService *services.DocumentService) {
-	if PageImageList == nil || len(*PageImageList) == 0 {
-		return
 	}
-	go func() {
-		needUpdateDocument := false
+	// review pages
+	if PageImageList != nil && len(*PageImageList) > 0 {
 		for i, image := range *PageImageList {
 			path := docPath + "/page_image/" + str.IntToString(int64(i)) + ".png"
-			if _, err := storage.Bucket.PutObjectByte(path, image); err != nil {
+			if _, err := _storage.Bucket.PutObjectByte(path, image); err != nil {
 				log.Println("图片上传错误", err)
 			}
 			if len(image) == 0 {
 				continue
 			}
 			base64Str := base64.StdEncoding.EncodeToString(image)
-			reviewResponse, err := safereview.Client.ReviewPictureFromBase64(base64Str)
+			reviewResponse, err := (reviewClient).ReviewPictureFromBase64(base64Str)
 			if err != nil {
 				log.Println("图片审核失败", err)
 				continue
-			} else if reviewResponse.Status != safereviewBase.ReviewImageResultPass {
-				newDocument.LockedAt = myTime.Time(time.Now())
-				newDocument.LockedReason += "{图片审核不通过[page:" + str.IntToString(int64(i)) + "]：" + reviewResponse.Reason + "}"
-				needUpdateDocument = true
+			} else if reviewResponse.Status != safereview.ReviewImageResultPass {
+				// LockedAt = (time.Now())
+				LockedReason += "{图片审核不通过[page:" + str.IntToString(int64(i)) + "]：" + reviewResponse.Reason + "}"
+				// needUpdateDocument = true
 			}
 		}
-		if needUpdateDocument {
-			_, _ = documentService.UpdatesById(newDocument.Id, newDocument)
-		}
-	}()
-}
-
-func reviewMedias(medias *[]Media, newDocument *models.Document, documentService *services.DocumentService) {
-	if medias == nil || len(*medias) == 0 {
-		return
+		// if needUpdateDocument {
+		// 	documentService.UpdateLocked(newDocument.Id, LockedAt, LockedReason, LockedWords)
+		// }
 	}
-	go func() {
-		needUpdateDocument := false
+
+	// medias
+	if medias != nil && len(*medias) > 0 {
 		for _, mediaInfo := range *medias {
 			base64Str := base64.StdEncoding.EncodeToString(*mediaInfo.Content)
 			if len(*mediaInfo.Content) == 0 || len(base64Str) == 0 {
 				continue
 			}
-			reviewResponse, err := safereview.Client.ReviewPictureFromBase64(base64Str)
+			reviewResponse, err := (reviewClient).ReviewPictureFromBase64(base64Str)
 			if err != nil {
 				log.Println("图片审核失败", err)
 				continue
-			} else if reviewResponse.Status != safereviewBase.ReviewImageResultPass {
-				log.Println("图片审核不通过", err, reviewResponse)
-				newDocument.LockedAt = myTime.Time(time.Now())
-				newDocument.LockedReason += "{图片审核不通过[media:" + mediaInfo.Name + "]：" + reviewResponse.Reason + "}"
-				needUpdateDocument = true
+			} else if reviewResponse.Status != safereview.ReviewImageResultPass {
+				// LockedAt = (time.Now())
+				LockedReason += "{图片审核不通过[media:" + mediaInfo.Name + "]：" + reviewResponse.Reason + "}"
+				// needUpdateDocument = true
 			}
 		}
-		if needUpdateDocument {
-			_, _ = documentService.UpdatesById(newDocument.Id, newDocument)
-		}
-	}()
+	}
+
+	documentService := services.NewDocumentService()
+	if LockedReason != "" {
+		documentService.UpdateLocked(newDocument.Id, time.Now(), LockedReason, LockedWords)
+	} else {
+		documentService.DeleteLocked(newDocument.Id)
+	}
+}
+
+func review(newDocument *models.Document, text string, PageImageList *[][]byte, docPath string, medias *[]Media) {
+	reviewClient := services.GetSafereviewClient()
+	if reviewClient == nil {
+		return
+	}
+	if (PageImageList == nil || len(*PageImageList) == 0 || reviewClient == nil) && text == "" && (medias == nil || len(*medias) == 0) {
+		return
+	}
+	go reviewgo(newDocument, text, PageImageList, docPath, medias)
 }
 
 func compress(data []byte) ([]byte, error) {
@@ -214,14 +224,14 @@ func compress(data []byte) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func compressPutObjectByte(path string, content []byte) (*storagebase.UploadInfo, error) {
+func compressPutObjectByte(path string, content []byte, _storage *storage.StorageClient) (*storage.UploadInfo, error) {
 	if len(content) > 128 {
 		presed, _ := compress(content)
 		if presed != nil {
 			content = presed
 		}
 	}
-	return storage.Bucket.PutObjectByte(path, content)
+	return _storage.Bucket.PutObjectByte(path, content)
 }
 
 func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media, resp *Response) {
@@ -229,8 +239,8 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 	userId := header.UserId
 	documentId := str.DefaultToInt(header.DocumentId, 0)
 	projectId := str.DefaultToInt(header.ProjectId, 0)
-	lastCmdId := header.LastCmdId
-	if (userId == "" && documentId <= 0) || (userId != "" && documentId > 0) || (documentId > 0 && lastCmdId == "") { // userId和documentId必须只传一个 // todo这不对吧，要鉴权
+	lastCmdVerId := header.lastCmdVerId
+	if (userId == "" && documentId <= 0) || (userId != "" && documentId > 0) || (documentId > 0 && lastCmdVerId == "") { // userId和documentId必须只传一个 // todo这不对吧，要鉴权
 		resp.Message = "参数错误"
 		log.Println("参数错误", userId, documentId)
 		return
@@ -279,14 +289,14 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 
 	documentSize := uint64(0)
 
-	reviewText(uploadData.DocumentText, &newDocument)
-	reviewPages(uploadData.PageImageList, &newDocument, docPath, documentService)
+	// reviewText(uploadData.DocumentText, &newDocument)
+	// reviewPages(uploadData.PageImageList, &newDocument, docPath, documentService)
 
-	if !newDocument.LockedAt.IsZero() && !isFirstUpload {
-		_, _ = documentService.UpdateColumnsById(documentId, map[string]any{
-			"locked_at": nil,
-		})
-	}
+	// if !newDocument.LockedAt.IsZero() && !isFirstUpload {
+	// 	_, _ = documentService.UpdateColumnsById(documentId, map[string]any{
+	// 		"locked_at": nil,
+	// 	})
+	// }
 
 	uploadWaitGroup := sync.WaitGroup{}
 
@@ -315,7 +325,7 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 		uploadWaitGroup.Add(1)
 		go func(pagePath string, pageContent json.RawMessage) {
 			defer uploadWaitGroup.Done()
-			if result, err := compressPutObjectByte(pagePath, pageContent); err != nil {
+			if result, err := compressPutObjectByte(pagePath, pageContent, services.GetStorageClient()); err != nil {
 				resp.Message = "对象上传错误"
 				log.Println("对象上传错误", err)
 				return
@@ -327,7 +337,7 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 
 	// medias部分
 	if medias != nil { // 非首次上传即版本更新，不会有medias
-		reviewMedias(medias, &newDocument, documentService)
+		// reviewMedias(medias, &newDocument, documentService, services.GetSafereviewClient())
 
 		// upload medias
 		for _, media := range *medias {
@@ -338,7 +348,8 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 			uploadWaitGroup.Add(1)
 			go func(path string, media []byte) {
 				defer uploadWaitGroup.Done()
-				if _, err := storage.Bucket.PutObjectByte(path, media); err != nil {
+				_storage := services.GetStorageClient()
+				if _, err := _storage.Bucket.PutObjectByte(path, media); err != nil {
 					resp.Message = "对象上传错误"
 					log.Println("对象上传错误", err)
 					return
@@ -347,6 +358,9 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 		}
 	}
 	documentSize += uploadData.MediasSize
+
+	// 审核
+	review(&newDocument, uploadData.DocumentText, uploadData.PageImageList, docPath, medias)
 
 	uploadWaitGroup.Wait()
 
@@ -363,7 +377,7 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 		}
 		pageItem["versionId"] = versionId
 	}
-	uploadData.DocumentMeta["lastCmdId"] = lastCmdId
+	uploadData.DocumentMeta["lastCmdVerId"] = lastCmdVerId
 
 	documentMetaStr, err := json.Marshal(uploadData.DocumentMeta)
 	if err != nil {
@@ -372,7 +386,8 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 		return
 	}
 	path := docPath + "/document-meta.json"
-	putObjectResult, err := compressPutObjectByte(path, documentMetaStr)
+	_storage := services.GetStorageClient()
+	putObjectResult, err := compressPutObjectByte(path, documentMetaStr, _storage)
 	if err != nil {
 		resp.Message = "对象上传错误"
 		log.Println("document-meta.json上传错误", err)
@@ -432,7 +447,8 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 	if err := documentService.DocumentVersionService.Create(&models.DocumentVersion{
 		DocumentId: documentId,
 		VersionId:  documentVersionId,
-		LastCmdId:  str.DefaultToInt(lastCmdId, 0),
+
+		LastCmdVerId: 0,
 	}); err != nil {
 		resp.Message = "对象上传错误"
 		log.Println("对象上传错误5", err)

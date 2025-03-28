@@ -6,10 +6,9 @@ import (
 	"log"
 	"time"
 
-	"kcaitech.com/kcserver/common/models"
-	"kcaitech.com/kcserver/common/redis"
-	"kcaitech.com/kcserver/common/services"
-	config "kcaitech.com/kcserver/controllers"
+	"kcaitech.com/kcserver/models"
+	"kcaitech.com/kcserver/providers/redis"
+	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils/str"
 	"kcaitech.com/kcserver/utils/websocket"
 )
@@ -50,6 +49,7 @@ type selectionServe struct {
 	user       *models.UserProfile
 	enterTime  int64
 	permType   models.PermType
+	redis      *redis.RedisDB
 }
 
 func NewSelectionServe(ws *websocket.Ws, token, userId string, documentId int64, genSId func() string) *selectionServe {
@@ -92,6 +92,7 @@ func NewSelectionServe(ws *websocket.Ws, token, userId string, documentId int64,
 		enterTime:  time.Now().UnixNano() / 1000000,
 		permType:   permType,
 		quit:       make(chan struct{}),
+		redis:      services.GetRedisDB(),
 	}
 	serv.start(documentId)
 	// serv.isready = true
@@ -104,7 +105,7 @@ func (serv *selectionServe) start(documentId int64) {
 	// 监控选区变化
 	go func() {
 		// defer tunnelServer.Close()
-		subscribe := redis.Client.Subscribe(context.Background(), "Document Selection[DocumentId:"+documentIdStr+"]")
+		subscribe := serv.redis.Client.Subscribe(context.Background(), "Document Selection[DocumentId:"+documentIdStr+"]")
 		defer subscribe.Close()
 		channel := subscribe.Channel()
 		for {
@@ -129,8 +130,8 @@ func (serv *selectionServe) close() {
 		UserId: userIdStr,
 	}
 	if data, err := json.Marshal(docSelectionOpData); err == nil {
-		redis.Client.HDel(context.Background(), "Document Selection Data[DocumentId:"+documentIdStr+"]", userIdStr)
-		redis.Client.Publish(context.Background(), "Document Selection[DocumentId:"+documentIdStr+"]", string(data))
+		serv.redis.Client.HDel(context.Background(), "Document Selection Data[DocumentId:"+documentIdStr+"]", userIdStr)
+		serv.redis.Client.Publish(context.Background(), "Document Selection[DocumentId:"+documentIdStr+"]", string(data))
 	}
 	close(serv.quit)
 }
@@ -159,7 +160,9 @@ func (serv *selectionServe) handle(data *TransData, binaryData *([]byte)) {
 
 	selectionData.UserId = userIdStr
 	selectionData.Permission = serv.permType
-	selectionData.Avatar = config.Config.StorageUrl.Attatch + serv.user.Avatar
+	// todo
+	// selectionData.Avatar = config.Config.StorageUrl.Attatch + serv.user.Avatar
+	selectionData.Avatar = serv.user.Avatar
 	selectionData.Nickname = serv.user.Nickname
 	selectionData.EnterTime = serv.enterTime
 	selectionDataJson, _ := json.Marshal(selectionData)
@@ -172,9 +175,9 @@ func (serv *selectionServe) handle(data *TransData, binaryData *([]byte)) {
 		msgErr("document selection数据解码错误", &serverData, &err)
 		return
 	} else {
-		redis.Client.HSet(context.Background(), "Document Selection Data[DocumentId:"+documentIdStr+"]", userIdStr, string(selectionDataJson))
-		redis.Client.Expire(context.Background(), "Document Selection Data[DocumentId:"+documentIdStr+"]", time.Hour*1)
-		redis.Client.Publish(context.Background(), "Document Selection[DocumentId:"+documentIdStr+"]", string(docSelectionOpDataJson))
+		serv.redis.Client.HSet(context.Background(), "Document Selection Data[DocumentId:"+documentIdStr+"]", userIdStr, string(selectionDataJson))
+		serv.redis.Client.Expire(context.Background(), "Document Selection Data[DocumentId:"+documentIdStr+"]", time.Hour*1)
+		serv.redis.Client.Publish(context.Background(), "Document Selection[DocumentId:"+documentIdStr+"]", string(docSelectionOpDataJson))
 		serv.ws.WriteJSON(serverData)
 	}
 }

@@ -13,10 +13,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/common/gin/response"
-	"kcaitech.com/kcserver/common/models"
-	"kcaitech.com/kcserver/common/services"
-	config "kcaitech.com/kcserver/controllers"
+	"kcaitech.com/kcserver/common/response"
+	"kcaitech.com/kcserver/models"
+	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils"
 	"kcaitech.com/kcserver/utils/sliceutil"
 	"kcaitech.com/kcserver/utils/str"
@@ -46,7 +45,7 @@ func DeleteUserShare(c *gin.Context) {
 		return
 	}
 	if _, err := services.NewDocumentService().DocumentPermissionService.HardDelete(
-		"grantee_type = ? and grantee_id = ? and id = ?", models.GranteeTypeExternal, userId, permissionId,
+		"grantee_id = ? and id = ?", userId, permissionId,
 	); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
 		response.Fail(c, "删除错误")
 		return
@@ -127,7 +126,7 @@ func SetDocumentShareType(c *gin.Context) {
 		}
 		_, _ = documentService.DocumentPermissionService.UpdateColumns(map[string]any{
 			"perm_type": permType,
-		}, "resource_type = ? and resource_id = ? and grantee_type = ? and perm_source_type = ?", models.ResourceTypeDoc, documentId, models.GranteeTypeExternal, models.PermSourceTypeDefault)
+		}, "resource_type = ? and resource_id = ? and perm_source_type = ?", models.ResourceTypeDoc, documentId, models.PermSourceTypeDefault)
 	}
 	response.Success(c, "")
 }
@@ -214,7 +213,7 @@ func SetDocumentSharePermission(c *gin.Context) {
 		return
 	}
 	// 权限校验
-	projectId := str.DefaultToInt(documentPermission.Document.ProjectId, 0)
+	projectId := documentPermission.Document.ProjectId
 	if projectId == 0 && documentPermission.Document.UserId != userId {
 		response.Forbidden(c, "")
 		return
@@ -446,7 +445,6 @@ func ReviewDocumentPermissionRequest(c *gin.Context) {
 			if err := documentService.DocumentPermissionService.Create(&models.DocumentPermission{
 				ResourceType:   models.ResourceTypeDoc,
 				ResourceId:     documentPermissionRequest.DocumentId,
-				GranteeType:    models.GranteeTypeExternal,
 				GranteeId:      documentPermissionRequest.UserId,
 				PermType:       documentPermissionRequest.PermType,
 				PermSourceType: models.PermSourceTypeCustom,
@@ -519,11 +517,13 @@ func GetWxMpCode(c *gin.Context) {
 		return
 	}
 
+	appid := services.GetConfig().WxMp.Appid
+	secret := services.GetConfig().WxMp.Secret
 	// 发起请求
 	// 获取AccessToken
 	queryParams := url.Values{}
-	queryParams.Set("appid", config.Config.WxMp.Appid)
-	queryParams.Set("secret", config.Config.WxMp.Secret)
+	queryParams.Set("appid", appid)
+	queryParams.Set("secret", secret)
 	queryParams.Set("grant_type", "client_credential")
 	resp, err := http.Get("https://api.weixin.qq.com/cgi-bin/token" + "?" + queryParams.Encode())
 	if err != nil {

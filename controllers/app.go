@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v3"
-	"kcaitech.com/kcserver/common/gin/response"
+	"kcaitech.com/kcserver/common/response"
 )
 
 // GetAppVersionList 获取APP版本列表

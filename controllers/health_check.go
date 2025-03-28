@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"kcaitech.com/kcserver/common/gin/response"
+	"kcaitech.com/kcserver/common/response"
 
 	"github.com/gin-gonic/gin"
 )

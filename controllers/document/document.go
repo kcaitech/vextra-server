@@ -4,23 +4,19 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"math"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
-	"kcaitech.com/kcserver/common/gin/response"
-	"kcaitech.com/kcserver/common/models"
-	"kcaitech.com/kcserver/common/mongo"
-	"kcaitech.com/kcserver/common/safereview"
-	safereviewBase "kcaitech.com/kcserver/common/safereview/base"
-	"kcaitech.com/kcserver/common/services"
-	"kcaitech.com/kcserver/common/snowflake"
-	"kcaitech.com/kcserver/common/storage"
+	"kcaitech.com/kcserver/common/response"
+	"kcaitech.com/kcserver/models"
+	"kcaitech.com/kcserver/providers/mongo"
+	safereviewBase "kcaitech.com/kcserver/providers/safereview"
+	"kcaitech.com/kcserver/providers/storage"
+	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils"
 	"kcaitech.com/kcserver/utils/radix_convert"
-	"kcaitech.com/kcserver/utils/sliceutil"
 	"kcaitech.com/kcserver/utils/str"
 )
 
@@ -103,10 +99,27 @@ func GetUserDocumentInfo(c *gin.Context) {
 	}
 	if result := services.NewDocumentService().GetDocumentInfoByDocumentAndUserId(documentId, userId, permType); result == nil {
 		response.BadRequest(c, "文档不存在")
-	} else if !result.Document.LockedAt.IsZero() && result.Document.UserId != userId {
+	} else if !result.LockedInfo.LockedAt.IsZero() && result.Document.UserId != userId {
 		response.Forbidden(c, "审核不通过")
 	} else {
 		response.Success(c, result)
+	}
+}
+
+func GetUserDocumentInfo1(userId string, documentId int64, permType models.PermType) (*services.DocumentInfoQueryRes, string) {
+
+	// permType := models.PermType(str.DefaultToInt(c.Query("perm_type"), 0))
+	// if permType < models.PermTypeReadOnly || permType > models.PermTypeEditable {
+	// 	permType = models.PermTypeNone
+	// }
+
+	result := services.NewDocumentService().GetDocumentInfoByDocumentAndUserId(documentId, userId, permType)
+	if result == nil {
+		return nil, "文档不存在"
+	} else if !result.LockedInfo.LockedAt.IsZero() && result.Document.UserId != userId {
+		return nil, "审核不通过"
+	} else {
+		return result, ""
 	}
 }
 
@@ -153,14 +166,17 @@ func SetDocumentName(c *gin.Context) {
 		}
 	}
 
-	reviewResponse, err := safereview.Client.ReviewText(req.Name)
-	if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
-		log.Println("名称审核不通过", req.Name, err, reviewResponse)
-		response.Fail(c, "审核不通过")
-		return
+	reviewClient := services.GetSafereviewClient()
+	if reviewClient != nil {
+		reviewResponse, err := (reviewClient).ReviewText(req.Name)
+		if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
+			log.Println("名称审核不通过", req.Name, err, reviewResponse)
+			response.Fail(c, "审核不通过")
+			return
+		}
 	}
 
-	if _, err = services.NewDocumentService().UpdateColumns(
+	if _, err = documentService.UpdateColumns(
 		map[string]any{"name": req.Name},
 		"id = ?", documentId,
 	); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
@@ -180,14 +196,19 @@ type CopyDocumentReq struct {
 
 var radixConvert, _ = radix_convert.NewRadixConvert(62, radix_convert.Default62RadixChars)
 
-func copyDocument(userId string, documentId int64, c *gin.Context, documentName string) (result *services.AccessRecordAndFavoritesQueryResItem) {
+func copyDocument(userId string, documentId int64, c *gin.Context, documentName string, dbModule *models.DBModule, _storage *storage.StorageClient, mongo *mongo.MongoDB) (result *services.AccessRecordAndFavoritesQueryResItem) {
 	documentService := services.NewDocumentService()
 	sourceDocument := models.Document{}
 	if err := documentService.Get(&sourceDocument, "id = ?", documentId); err != nil {
 		response.Forbidden(c, "")
 		return
 	}
-	if !sourceDocument.LockedAt.IsZero() {
+	lockedInfo, err := documentService.GetLocked(documentId)
+	if err != nil {
+		response.Forbidden(c, "")
+		return
+	}
+	if lockedInfo != nil && !lockedInfo.LockedAt.IsZero() {
 		response.Forbidden(c, "审核不通过")
 		return
 	}
@@ -218,78 +239,43 @@ func copyDocument(userId string, documentId int64, c *gin.Context, documentName 
 	}
 
 	// 获取文档cmd
-	type DocumentCmd struct {
-		Id           int64  `json:"id" bson:"_id"`
-		PreviousId   int64  `json:"previous_id" bson:"previous_id"`
-		BatchStartId int64  `json:"batch_start_id" bson:"batch_start_id"`
-		BatchEndId   int64  `json:"batch_end_id" bson:"batch_end_id"`
-		BatchLength  int    `json:"batch_length" bson:"batch_length"`
-		DocumentId   int64  `json:"document_id" bson:"document_id"`
-		UserId       int64  `json:"user_id" bson:"user_id"`
-		CmdId        string `json:"cmd_id" bson:"cmd_id"`
-		Cmd          bson.M `json:"cmd" bson:"cmd"`
+	type DocumentCmd = models.CmdItem
+
+	cmdServices := services.GetCmdService()
+	documentCmdList, err := cmdServices.GetCmdItemsFromStart(documentId, documentVersion.LastCmdVerId)
+	if err != nil {
+		response.Fail(c, "获取文档cmd失败")
+		return
 	}
-	documentCmdList := make([]DocumentCmd, 0)
-	reqParams := bson.M{
-		"document_id": documentId,
-		"_id": bson.M{
-			"$gt": documentVersion.LastCmdId,
-		},
-	}
-	documentCollection := mongo.DB.Collection("document1")
-	findOptions := options.Find()
-	findOptions.SetSort(bson.D{{"_id", 1}})
-	if cur, err := documentCollection.Find(nil, reqParams, findOptions); err == nil {
-		_ = cur.All(nil, &documentCmdList)
-	}
-	// 获取Cmd中的baseVer字段
-	baseVerList := sliceutil.MapT(func(item DocumentCmd) int64 {
-		return radixConvert.To(item.Cmd["baseVer"].(string))
-	}, documentCmdList...)
-	// 找到最小的baseVer
-	minBaseVer := int64(0)
-	if len(baseVerList) > 0 {
-		minBaseVer = baseVerList[0]
-	}
-	for i := 1; i < len(baseVerList); i++ {
-		if baseVerList[i] < minBaseVer {
-			minBaseVer = baseVerList[i]
+
+	minBaseVer := utils.Reduce(documentCmdList, func(acc uint, item DocumentCmd) uint {
+		if item.Cmd.BaseVer < acc {
+			return item.Cmd.BaseVer
 		}
+		return acc
+	}, math.MaxUint)
+
+	// 获取minBaseVer到documentVersion.lastCmdVerId之间的cmd
+	baseVerCmdList, err := cmdServices.GetCmdItems(documentId, minBaseVer, documentVersion.LastCmdVerId)
+	if err != nil {
+		response.Fail(c, "获取文档cmd失败")
+		return
 	}
-	// 获取minBaseVer到documentVersion.LastCmdId之间的cmd
-	reqParams = bson.M{
-		"document_id": documentId,
-		"_id": bson.M{
-			"$gte": minBaseVer,
-			"$lte": documentVersion.LastCmdId,
-		},
-	}
-	baseVerCmdList := make([]DocumentCmd, 0)
-	if cur, err := documentCollection.Find(nil, reqParams, findOptions); err == nil {
-		_ = cur.All(nil, &baseVerCmdList)
-	}
-	documentCmdList1 := append(baseVerCmdList, documentCmdList...)
-	// 生成新id
-	idMap := map[int64]int64{
-		0: 0,
-	}
-	for i := 0; i < len(documentCmdList1); i++ {
-		idMap[documentCmdList1[i].Id] = snowflake.NextId()
-	}
-	lastCmdId := int64(0)
+
+	lastCmdVerId := uint(0)
 	if len(baseVerCmdList) > 0 {
-		lastCmdId = idMap[baseVerCmdList[len(baseVerCmdList)-1].Id]
+		lastCmdVerId = baseVerCmdList[len(baseVerCmdList)-1].VerId
 	}
 
 	// 复制目录
 	targetDocumentPath := uuid.New().String()
-	if _, err := storage.Bucket.CopyDirectory(sourceDocument.Path, targetDocumentPath); err != nil {
+	if _, err := _storage.Bucket.CopyDirectory(sourceDocument.Path, targetDocumentPath); err != nil {
 		log.Println("复制目录失败：", err)
 		response.Fail(c, "复制失败")
 		return
 	}
 
-	documentMetaBytes, err := storage.Bucket.GetObject(targetDocumentPath + "/document-meta.json")
+	documentMetaBytes, err := _storage.Bucket.GetObject(targetDocumentPath + "/document-meta.json")
 	if err != nil {
 		log.Println("获取document-meta.json失败：", targetDocumentPath+"/document-meta.json", err)
 		response.Fail(c, "复制失败")
@@ -309,7 +295,7 @@ func copyDocument(userId string, documentId int64, c *gin.Context, documentName 
 			response.Fail(c, "复制失败")
 			return
 		}
-		pageObjectInfo, err := storage.Bucket.GetObjectInfo(targetDocumentPath + "/pages/" + pageItem["id"].(string) + ".json")
+		pageObjectInfo, err := _storage.Bucket.GetObjectInfo(targetDocumentPath + "/pages/" + pageItem["id"].(string) + ".json")
 		if err != nil {
 			log.Println("获取pageObjectInfo失败：", err)
 			response.Fail(c, "复制失败")
@@ -318,14 +304,7 @@ func copyDocument(userId string, documentId int64, c *gin.Context, documentName 
 		pageItem["versionId"] = pageObjectInfo.VersionID
 	}
 
-	freeSymbolsOjectInfo, err := storage.Bucket.GetObjectInfo(targetDocumentPath + "/freesymbols.json")
-	if err != nil {
-		log.Println("获取freeSymbolsOjectInfo失败：", err)
-		response.Fail(c, "复制失败")
-		return
-	}
-	documentMeta["lastCmdId"] = str.IntToString(lastCmdId)
-	documentMeta["freesymbolsVersionId"] = freeSymbolsOjectInfo.VersionID
+	documentMeta["lastCmdVerId"] = (lastCmdVerId)
 
 	documentMetaBytes, err = json.Marshal(documentMeta)
 	if err != nil {
@@ -333,7 +312,7 @@ func copyDocument(userId string, documentId int64, c *gin.Context, documentName 
 		response.Fail(c, "复制失败")
 		return
 	}
-	documentMetaUploadInfo, err := storage.Bucket.PutObjectByte(targetDocumentPath+"/document-meta.json", documentMetaBytes)
+	documentMetaUploadInfo, err := _storage.Bucket.PutObjectByte(targetDocumentPath+"/document-meta.json", documentMetaBytes)
 	if err != nil {
 		log.Println("documentMeta上传失败：", err)
 		response.Fail(c, "复制失败")
@@ -356,72 +335,55 @@ func copyDocument(userId string, documentId int64, c *gin.Context, documentName 
 		return
 	}
 
-	// 复制cmd
-	// 设置Id、PreviousId、DocumentId、BatchStartId、BatchEndId
-	lastId := int64(0)
-	newDocumentCmdList := sliceutil.MapT(func(item DocumentCmd) DocumentCmd {
-		item.Id = idMap[item.Id]
-		item.PreviousId = lastId
-		item.DocumentId = targetDocument.Id
-		lastId = item.Id
-		return item
-	}, documentCmdList1...)
-	for i := 0; i < len(newDocumentCmdList); i++ {
-		item := &newDocumentCmdList[i]
-		item.BatchStartId = idMap[item.BatchStartId]
-		item.BatchEndId = idMap[item.BatchEndId]
+	documentCmdList1 := append(baseVerCmdList, documentCmdList...)
+	// 生成新id
+	// idMap := map[string]string{}
+	offset := uint(0)
+	if len(documentCmdList1) > 0 {
+		offset = documentCmdList1[0].VerId
 	}
-	// 设置documentCmdList中的Cmd.baseVer
-	for i := 0; i < len(documentCmdList); i++ {
-		item := &documentCmdList[i]
-		item.Cmd["baseVer"] = radixConvert.From(idMap[radixConvert.To(item.Cmd["baseVer"].(string))])
+	for i := 0; i < len(documentCmdList1); i++ { // todo 这不对。会导致id重复
+		// newId := uuid.NewString()
+		cmd := documentCmdList1[i]
+		// idMap[cmd.Cmd.Id] = newId //不需要改cmd.id
+		// cmd.Cmd.Id = newId
+		cmd.DocumentId = targetDocument.Id
+		cmd.VerId -= offset
+		cmd.BatchStartId -= offset
+		cmd.Cmd.BaseVer -= offset
 	}
-	if len(newDocumentCmdList) > 0 {
-		_, err = documentCollection.InsertMany(nil, sliceutil.ConvertToAnySlice(newDocumentCmdList))
-		if err != nil {
-			log.Println("cmd复制失败：", err)
-		}
-	}
+
+	cmdServices.SaveCmdItems(documentCmdList1)
+
+	lastCmdVerId -= offset
 
 	// 创建文档版本
 	if err := documentService.DocumentVersionService.Create(&models.DocumentVersion{
-		DocumentId: targetDocument.Id,
-		VersionId:  documentMetaUploadInfo.VersionID,
-		LastCmdId:  lastCmdId,
+		DocumentId:   targetDocument.Id,
+		VersionId:    documentMetaUploadInfo.VersionID,
+		LastCmdVerId: lastCmdVerId,
 	}); err != nil {
 		log.Println("创建文档版本记录失败：", err)
 		return
 	}
 
 	// 复制评论数据
-	documentCommentList := make([]UserComment, 0)
-	reqParams = bson.M{
-		"document_id": str.IntToString(documentId),
+	commentService := services.GetUserCommentService()
+	documentCommentList, err := commentService.GetUserComment(documentId)
+	if err != nil {
+		log.Println("获取评论数据失败：", err)
+		return
 	}
-	commentCollection := mongo.DB.Collection("comment")
-	findOptions = options.Find()
-	findOptions.SetSort(bson.D{{"record_created_at", -1}, {"_id", -1}})
-	if cur, err := commentCollection.Find(nil, reqParams, findOptions); err == nil {
-		_ = cur.All(nil, &documentCommentList)
-	}
-	commentIdMap := map[string]string{}
+
+	//
+	// commentIdMap := map[string]string{}
 	for i := 0; i < len(documentCommentList); i++ {
 		item := &documentCommentList[i]
-		newId := str.IntToString(snowflake.NextId())
-		commentIdMap[item.Id] = newId
-		item.Id = newId
-		item.DocumentId = str.IntToString(targetDocument.Id)
+		item.DocumentId = (targetDocument.Id)
 	}
-	newDocumentCommentList := sliceutil.MapT(func(item UserComment) any {
-		item.ParentId = commentIdMap[item.ParentId]
-		item.RootId = commentIdMap[item.RootId]
-		return item
-	}, documentCommentList...)
-	if len(newDocumentCommentList) > 0 {
-		_, err = commentCollection.InsertMany(nil, newDocumentCommentList)
-		if err != nil {
-			log.Println("评论复制失败：", err)
-		}
+	_, err = commentService.SaveCommentItems(documentCommentList)
+	if err != nil {
+		log.Println("评论复制失败：", err)
 	}
 
 	// 添加最近访问
@@ -460,7 +422,7 @@ func CopyDocument(c *gin.Context) {
 		response.BadRequest(c, "参数错误：doc_id")
 		return
 	}
-	result := copyDocument(userId, documentId, c, "%s_副本")
+	result := copyDocument(userId, documentId, c, "%s_副本", services.GetDBModule(), services.GetStorageClient(), services.GetMongoDB())
 	if result != nil {
 		response.Success(c, result)
 	}
