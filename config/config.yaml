@@ -2,13 +2,13 @@ db:
   # url: root:kKEIjksvnOOIjdZ6rtzE@tcp(mysql:3306)/kcserver?charset=utf8&parseTime=True&loc=Local
   user: root
   password: kKEIjksvnOOIjdZ6rtzE
-  host: mysql
-  port: 3306
+  host: localhost
+  port: 3307
   database: kcserver
 
 storage_url:
   document: http://localhost:9000
-  attatch: http://localhost:9000/files
+  attatch: http://localhost:9000/attatch
 
 wx:
   appid: xxx
@@ -26,36 +26,17 @@ version_server:
 svg2png:
   url: http://kcsvg2png:10050/svg_to_png
 
-jwt:
-  secret: 123456
-  expire_hour: 168
-
 mongo:
   url: mongodb://root:jKKsinkjilKKLSW@mongo:27017
   db: kcserver
 
 redis:
-  url: redis:6379
+  url: redis:6380
   password: kcserver
   db: 0
   sentinel: true
   sentinelAddrs:
   masterName:
-
-safe_review:
-  provider: baidu
-  ali:
-    accessKeyId: accessKeyId
-    accessKeySecret: accessKeySecret
-    regionId: cn-hangzhou
-    endpoint: green-cip.cn-hangzhou.aliyuncs.com
-  baidu:
-    appId: 44042444
-    apiKey: skYZWZolIBpo4j4olXzNRUKD
-    secretKey: H5KUEgVaO08I3tDPjGp9m4LqdsKcOh40
-
-snowflake:
-  workerId: 1
 
 storage:
   provider: minio
@@ -67,7 +48,7 @@ storage:
     stsAccessKeyID: "user"
     stsSecretAccessKey: "GmwAzetY1L0jU4pUAqpO7RJGIsG7k3gozVH6whoJ"
     bucketName: "document"
-    filesBucketName: "files"
+    attatchBucketName: "attatch"
 
   s3:
     endpoint: "192.168.0.18:9000"
@@ -77,7 +58,7 @@ storage:
     accountID: ""
     roleName: ""
     bucketName: "document"
-    filesBucketName: "files"
+    attatchBucketName: "files"
 
   oss:
     endpoint: "oss-cn-hangzhou.aliyuncs.com"
@@ -88,7 +69,7 @@ storage:
     accountId: "1382280232399206"
     roleName: "ramoss"
     bucketName: "protodesign-document"
-    filesBucketName: "protodesign-files"
+    attatchBucketName: "protodesign-files"
 
 default_route: false
 detailed_log: false

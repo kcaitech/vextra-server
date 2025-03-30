@@ -66,7 +66,7 @@
             "stsAccessKeyID": "user",
             "stsSecretAccessKey": "GmwAzetY1L0jU4pUAqpO7RJGIsG7k3gozVH6whoJ",
             "bucketName": "document",
-            "filesBucketName": "files"
+            "attatchBucketName": "files"
         },
         "s3": {
             "endpoint": "192.168.0.18:9000",
@@ -76,7 +76,7 @@
             "accountID": "",
             "roleName": "",
             "bucketName": "document",
-            "filesBucketName": "files"
+            "attatchBucketName": "files"
         },
         "oss": {
             "endpoint": "oss-cn-hangzhou.aliyuncs.com",
@@ -87,7 +87,7 @@
             "accountId": "1382280232399206",
             "roleName": "ramoss",
             "bucketName": "protodesign-document",
-            "filesBucketName": "protodesign-files"
+            "attatchBucketName": "protodesign-files"
         }
     },
     "default_route": false,

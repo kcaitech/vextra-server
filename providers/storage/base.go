@@ -58,8 +58,8 @@ type Bucket interface {
 }
 
 type BucketConfig struct {
-	BucketName      string `yaml:"bucketName" json:"bucketName"`
-	FilesBucketName string `yaml:"filesBucketName" json:"filesBucketName"`
+	BucketName        string `yaml:"bucketName" json:"bucketName"`
+	attatchBucketName string `yaml:"attatchBucketName" json:"attatchBucketName"`
 }
 
 type Config struct {

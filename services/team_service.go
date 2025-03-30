@@ -89,7 +89,7 @@ func (s *TeamService) UploadTeamAvatar(team *models.Team, fileBytes []byte, cont
 	// }
 	fileName := fmt.Sprintf("%s.%s", str.GetUid(), suffix)
 	avatarPath := fmt.Sprintf("/teams/%d/avatar/%s", team.Id, fileName)
-	if _, err := s.storage.FilesBucket.PutObjectByte(avatarPath, fileBytes); err != nil {
+	if _, err := s.storage.AttatchBucket.PutObjectByte(avatarPath, fileBytes); err != nil {
 		return "", errors.New("上传文件失败")
 	}
 	team.Avatar = avatarPath
@@ -149,9 +149,9 @@ func (s *TeamService) GetTeamPermTypeByForUser(teamId int64, userId string) (*mo
 type TeamQueryResItem struct {
 	Team              models.Team         `gorm:"embedded;embeddedPrefix:t__" json:"team" table:"t"`
 	SelfTeamMember    models.TeamMember   `gorm:"embedded;embeddedPrefix:tm__" json:"-" join:"team_member,tm;inner;team_id,id"`
-	SelfUser          string  `gorm:"embedded;embeddedPrefix:u__" json:"-" join:"user,u;inner;id,tm.user_id"`
+	SelfUser          string              `gorm:"embedded;embeddedPrefix:u__" json:"-" join:"user,u;inner;id,tm.user_id"`
 	CreatorTeamMember models.TeamMember   `gorm:"embedded;embeddedPrefix:tm1__" json:"-" join:"team_member,tm1;inner;team_id,id;perm_type,?creator_perm_type"`
-	CreatorUser       string  `gorm:"embedded;embeddedPrefix:u1__" json:"creator" join:"user,u1;inner;id,tm1.user_id"`
+	CreatorUser       string              `gorm:"embedded;embeddedPrefix:u1__" json:"creator" join:"user,u1;inner;id,tm1.user_id"`
 	SelfPermType      models.TeamPermType `gorm:"-" json:"self_perm_type"`
 }
 
@@ -182,7 +182,7 @@ func (s *TeamService) FindTeamByUserId(userId string) []TeamQueryResItem {
 type TeamMemberQueryResItem struct {
 	TeamMember models.TeamMember   `gorm:"embedded;embeddedPrefix:team_member__" json:"team_member" table:""`
 	Team       models.Team         `gorm:"embedded;embeddedPrefix:team__" json:"-" join:";inner;id,team_id"`
-	User       string `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,user_id"`
+	User       string              `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,user_id"`
 	PermType   models.TeamPermType `gorm:"-" json:"perm_type"`
 }
 
@@ -222,8 +222,8 @@ type SelfTeamJoinRequestsQueryResItem struct {
 
 type TeamJoinRequestQuery struct {
 	BsseTeamJoinRequestsQueryResItem
-	TeamMember models.TeamMember  `gorm:"-" json:"-" join:";inner;team_id,team_id;user_id,?user_id"` // 自己的（非申请人的）权限
-	User       string `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,user_id"`
+	TeamMember models.TeamMember `gorm:"-" json:"-" join:";inner;team_id,team_id;user_id,?user_id"` // 自己的（非申请人的）权限
+	User       string            `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,user_id"`
 }
 
 // FindTeamJoinRequest 获取用户所创建或担任管理员的团队的加入申请列表

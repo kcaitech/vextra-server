@@ -17,15 +17,15 @@ else
     echo "document bucket already exists"
 fi
 
-# 创建 files bucket（如果不存在）
-if ! mc ls myminio/files > /dev/null 2>&1; then
-    mc mb myminio/files
-    echo "Created files bucket"
+# 创建 attatch bucket（如果不存在）
+if ! mc ls myminio/attatch > /dev/null 2>&1; then
+    mc mb myminio/attatch
+    echo "Created attatch bucket"
 else
-    echo "files bucket already exists"
+    echo "attatch bucket already exists"
 fi
 
-# 设置 files bucket 的自定义策略
+# 设置 attatch bucket 的自定义策略
 cat > /tmp/policy.json << EOF
 {
     "Version": "2012-10-17",
@@ -47,10 +47,10 @@ cat > /tmp/policy.json << EOF
 }
 EOF
 
-# 创建自定义策略并应用到 files bucket
+# 创建自定义策略并应用到 attatch bucket
 # mc admin policy create myminio custom /tmp/policy.json
-# mc policy set myminio/files /tmp/policy.json
-mc anonymous set-json /tmp/policy.json myminio/files
+# mc policy set myminio/attatch /tmp/policy.json
+mc anonymous set-json /tmp/policy.json myminio/attatch
 rm -f /tmp/policy.json
 
 # 创建用户和访问密钥（如果不存在）

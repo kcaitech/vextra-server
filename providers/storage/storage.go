@@ -12,9 +12,9 @@ type StorageConf struct {
 }
 
 type StorageClient struct {
-	Client      Client
-	Bucket      Bucket
-	FilesBucket Bucket
+	Client        Client
+	Bucket        Bucket
+	AttatchBucket Bucket
 }
 
 func NewStoraageClient(config *StorageConf) (*StorageClient, error) {
@@ -44,15 +44,15 @@ func NewStoraageClient(config *StorageConf) (*StorageClient, error) {
 		Bucket: client.NewBucket(&BucketConfig{
 			BucketName: bucketConfig.BucketName,
 		}),
-		FilesBucket: client.NewBucket(&BucketConfig{
-			BucketName: bucketConfig.FilesBucketName,
+		AttatchBucket: client.NewBucket(&BucketConfig{
+			BucketName: bucketConfig.attatchBucketName,
 		}),
 	}, nil
 }
 
 // var Client base.Client
 // var Bucket base.Bucket
-// var FilesBucket base.Bucket
+// var AttatchBucket base.Bucket
 
 // func Init(conf *config.StorageConf) error {
 // 	// conf := config.LoadConfig(filePath)
@@ -78,8 +78,8 @@ func NewStoraageClient(config *StorageConf) (*StorageClient, error) {
 // 	Bucket = Client.NewBucket(&base.BucketConfig{
 // 		BucketName: providerConf.BucketName,
 // 	})
-// 	FilesBucket = Client.NewBucket(&base.BucketConfig{
-// 		BucketName: providerConf.FilesBucketName,
+// 	AttatchBucket = Client.NewBucket(&base.BucketConfig{
+// 		BucketName: providerConf.attatchBucketName,
 // 	})
 // 	return nil
 // }

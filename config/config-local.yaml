@@ -8,7 +8,7 @@ db:
 
 storage_url:
   document: http://localhost:9000
-  attatch: http://localhost:9000/files
+  attatch: http://localhost:9000/attatch
 
 wx:
   appid: wx42bb87f7f2e86a6e
@@ -64,7 +64,7 @@ storage:
     stsAccessKeyID: "user"
     stsSecretAccessKey: "GmwAzetY1L0jU4pUAqpO7RJGIsG7k3gozVH6whoJ"
     bucketName: "document"
-    filesBucketName: "files"
+    attatchBucketName: "files"
 
   s3:
     endpoint: "192.168.0.18:9000"
@@ -74,7 +74,7 @@ storage:
     accountID: ""
     roleName: ""
     bucketName: "document"
-    filesBucketName: "files"
+    attatchBucketName: "files"
 
   oss:
     endpoint: "oss-cn-hangzhou.aliyuncs.com"
@@ -85,7 +85,7 @@ storage:
     accountId: "1382280232399206"
     roleName: "ramoss"
     bucketName: "protodesign-document"
-    filesBucketName: "protodesign-files"
+    attatchBucketName: "protodesign-files"
 
 default_route: true
 allow_cors: true

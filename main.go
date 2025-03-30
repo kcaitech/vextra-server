@@ -38,7 +38,10 @@ func Init() *config.Configuration {
 	}
 
 	// 初始化services
-	services.InitAllBaseServices(conf)
+	err = services.InitAllBaseServices(conf)
+	if err != nil {
+		log.Fatalf("kcserver服务初始化失败: %v", err)
+	}
 
 	return conf
 }

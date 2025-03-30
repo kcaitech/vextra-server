@@ -1,6 +1,8 @@
 package services
 
 import (
+	"log"
+
 	"kcaitech.com/kcserver/config"
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/providers/auth"
@@ -145,8 +147,9 @@ func GetUserCommentService() *models.UserCommentService {
 // 初始化所有服务
 func InitAllBaseServices(config *config.Configuration) error {
 	_config = config
+	var err error
 	// 初始化数据库
-	InitDBModule(&models.DBModuleConfig{
+	_, err = InitDBModule(&models.DBModuleConfig{
 		DB: models.DBConfig{
 			User:     config.DB.User,
 			Password: config.DB.Password,
@@ -155,16 +158,36 @@ func InitAllBaseServices(config *config.Configuration) error {
 			Database: config.DB.Database,
 		},
 	})
+	if err != nil {
+		return err
+	}
 	// 初始化redis
-	InitRedisDB(&config.Redis)
+	_, err = InitRedisDB(&config.Redis)
+	if err != nil {
+		return err
+	}
 	// 初始化mongo
-	InitMongoDB(&config.Mongo)
+	_, err = InitMongoDB(&config.Mongo)
+	if err != nil {
+		return err
+	}
 	// 初始化jwt
-	InitJWTClient(config.AuthServerURL)
-	// 初始化safereview
-	InitSafereviewClient(&config.SafeReiew)
+	_, err = InitJWTClient(config.AuthServerURL)
+	if err != nil {
+		return err
+	}
+	// 初始化safereview, 不是必须的
+	_, err = InitSafereviewClient(&config.SafeReiew)
+	if err != nil {
+		// return err
+		// 打印错误信息
+		log.Printf("初始内容审核服务失败: %v", err)
+	}
 	// 初始化storage
-	InitStorageClient(&config.Storage)
+	_, err = InitStorageClient(&config.Storage)
+	if err != nil {
+		return err
+	}
 
 	// 初始化cmdService
 	_cmdService = models.NewCmdService(GetMongoDB())
