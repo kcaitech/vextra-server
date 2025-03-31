@@ -82,7 +82,7 @@ func (s *TeamService) UploadTeamAvatar(team *models.Team, fileBytes []byte, cont
 	case "image/webp":
 		suffix = "webp"
 	default:
-		return "", errors.New(fmt.Sprintf("不支持的文件类型：%s", contentType))
+		return "", fmt.Errorf("不支持的文件类型：%s", contentType)
 	}
 	// if team.Uid == "" {
 	// 	team.Uid = str.GetUid()
@@ -188,9 +188,10 @@ type TeamMemberQueryResItem struct {
 
 // FindTeamMember 查询某个团队的成员列表
 func (s *TeamService) FindTeamMember(teamId int64) []TeamMemberQueryResItem {
+	// todo 当前db并没有用户信息，需要根据用户id再去获取
 	var result []TeamMemberQueryResItem
 	whereArgsList := []WhereArgs{
-		{"team.deleted_at is null and user.deleted_at is null", nil},
+		{"team.deleted_at is null", nil},
 		{"team_member.team_id = ?", []any{teamId}},
 	}
 	_ = s.TeamMemberService.Find(
@@ -231,7 +232,7 @@ func (s *TeamService) FindTeamJoinRequest(userId string, teamId int64, startTime
 	var result []TeamJoinRequestQuery
 	whereArgsList := []WhereArgs{
 		{
-			Query: "team_member.deleted_at is null and team.deleted_at is null and user.deleted_at is null",
+			Query: "team_member.deleted_at is null and team.deleted_at is null",
 		},
 		{
 			Query: "team_member.perm_type >= ? and team_member.perm_type <= ?",
