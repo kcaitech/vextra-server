@@ -72,5 +72,7 @@ storage:
     attatchBucketName: "protodesign-files"
 
 default_route: false
-detailed_log: false
-allow_cors: false
+detailed_log: true
+allow_cors: true
+
+auth_server_url: http://localhost:8080

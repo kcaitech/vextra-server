@@ -116,92 +116,92 @@ func (module *DBModule) AutoMigrate() error {
 	// document_access_record
 	err = DocumentAccessRecord{}.AutoMigrate(module.DB)
 	if err != nil {
-		return err
+		return fmt.Errorf("DocumentAccessRecord:%s", err.Error())
 	}
 	// document_favorites
 	err = DocumentFavorites{}.AutoMigrate(module.DB)
 	if err != nil {
-		return err
+		return fmt.Errorf("DocumentFavorites:%s", err.Error())
 	}
 	// document_permission_requests
 	err = DocumentPermissionRequests{}.AutoMigrate(module.DB)
 	if err != nil {
-		return err
+		return fmt.Errorf("DocumentPermissionRequests:%s", err.Error())
 	}
 	// document_permission
 	err = DocumentPermission{}.AutoMigrate(module.DB)
 	if err != nil {
-		return err
+		return fmt.Errorf("DocumentPermission:%s", err.Error())
 	}
 	// document_version
 	err = DocumentVersion{}.AutoMigrate(module.DB)
 	if err != nil {
-		return err
+		return fmt.Errorf("DocumentVersion:%s", err.Error())
 	}
 	// document_lock
 	err = DocumentLock{}.AutoMigrate(module.DB)
 	if err != nil {
-		return err
+		return fmt.Errorf("DocumentLock:%s", err.Error())
 	}
 	// document
 	err = Document{}.AutoMigrate(module.DB)
 	if err != nil {
-		return err
+		return fmt.Errorf("Document:%s", err.Error())
 	}
 	// feedback
 	err = Feedback{}.AutoMigrate(module.DB)
 	if err != nil {
-		return err
+		return fmt.Errorf("Feedback:%s", err.Error())
 	}
 	// project
 	err = Project{}.AutoMigrate(module.DB)
 	if err != nil {
-		return err
+		return fmt.Errorf("Project:%s", err.Error())
 	}
 	// project_member
 	err = ProjectMember{}.AutoMigrate(module.DB)
 	if err != nil {
-		return err
+		return fmt.Errorf("ProjectMember:%s", err.Error())
 	}
 	// project_join_request
 	err = ProjectJoinRequest{}.AutoMigrate(module.DB)
 	if err != nil {
-		return err
+		return fmt.Errorf("ProjectJoinRequest:%s", err.Error())
 	}
 	// project_join_request_message_show
 	err = ProjectJoinRequestMessageShow{}.AutoMigrate(module.DB)
 	if err != nil {
-		return err
+		return fmt.Errorf("ProjectJoinRequestMessageShow:%s", err.Error())
 	}
 	// project_favorite
 	err = ProjectFavorite{}.AutoMigrate(module.DB)
 	if err != nil {
-		return err
+		return fmt.Errorf("ProjectFavorite:%s", err.Error())
 	}
 	// team
 	err = Team{}.AutoMigrate(module.DB)
 	if err != nil {
-		return err
+		return fmt.Errorf("Team:%s", err.Error())
 	}
 	// team_member
 	err = TeamMember{}.AutoMigrate(module.DB)
 	if err != nil {
-		return err
+		return fmt.Errorf("TeamMember:%s", err.Error())
 	}
 	// team_join_request
 	err = TeamJoinRequest{}.AutoMigrate(module.DB)
 	if err != nil {
-		return err
+		return fmt.Errorf("TeamJoinRequest:%s", err.Error())
 	}
 	// team_join_request_message_show
 	err = TeamJoinRequestMessageShow{}.AutoMigrate(module.DB)
 	if err != nil {
-		return err
+		return fmt.Errorf("TeamJoinRequestMessageShow:%s", err.Error())
 	}
 	// user_kv_storage
 	err = UserKVStorage{}.AutoMigrate(module.DB)
 	if err != nil {
-		return err
+		return fmt.Errorf("UserKVStorage:%s", err.Error())
 	}
 	// 这两个不是这里实现的
 	// user

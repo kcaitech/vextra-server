@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 	"sync"
@@ -13,6 +14,29 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// 添加日志接口定义
+type Logger interface {
+	Debug(msg string, args ...any)
+	Info(msg string, args ...any)
+	Error(msg string, args ...any)
+}
+
+// 默认日志记录器实现
+type defaultLogger struct{}
+
+func (l *defaultLogger) Debug(msg string, args ...any) {
+	// 默认实现，可以根据需要调整
+	fmt.Printf("DEBUG: %s %v\n", msg, args)
+}
+
+func (l *defaultLogger) Info(msg string, args ...any) {
+	fmt.Printf("INFO: %s %v\n", msg, args)
+}
+
+func (l *defaultLogger) Error(msg string, args ...any) {
+	fmt.Printf("ERROR: %s %v\n", msg, args)
+}
+
 // JWTClient JWT客户端
 type JWTClient struct {
 	AuthServerURL string           // 认证服务URL
@@ -21,6 +45,7 @@ type JWTClient struct {
 	tokenCache    map[string]int64 // 令牌缓存，用于减少对认证服务的请求
 	cacheMutex    sync.RWMutex     // 缓存锁
 	cacheExpiry   time.Duration    // 缓存过期时间
+	Logger        Logger           // 日志记录器
 }
 
 // 需要与服务端定义的 Claims 结构一致
@@ -67,6 +92,7 @@ func NewJWTClient(authServerURL string) *JWTClient {
 		Timeout:     10 * time.Second,
 		tokenCache:  make(map[string]int64),
 		cacheExpiry: 15 * time.Minute, // 默认缓存15分钟
+		Logger:      &defaultLogger{},
 	}
 }
 
@@ -90,7 +116,7 @@ func getJWTClaims(accessToken string) (*CustomClaims, error) {
 // remoteValidateToken 验证令牌
 func (c *JWTClient) remoteValidateToken(accessToken string) (bool, error) {
 	// 创建请求
-	req, err := http.NewRequest("GET", c.AuthServerURL+"/auth/token/validate", nil)
+	req, err := http.NewRequest("POST", c.AuthServerURL+"/authapi/token/validate", nil)
 	if err != nil {
 		return false, err
 	}
@@ -103,13 +129,26 @@ func (c *JWTClient) remoteValidateToken(accessToken string) (bool, error) {
 	}
 	defer resp.Body.Close()
 
+	// 读取响应内容
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return false, fmt.Errorf("读取响应内容失败: %v", err)
+	}
+
+	c.Logger.Debug("JWT验证响应",
+		"状态码", resp.StatusCode,
+		"响应内容", string(body),
+		"请求URL", req.URL.String())
+
 	// 检查响应状态
 	if resp.StatusCode == http.StatusOK {
+		c.Logger.Debug("JWT验证成功", "状态码", resp.StatusCode)
 		return true, nil
 	}
 
 	// 令牌无效
 	if resp.StatusCode == http.StatusUnauthorized {
+		c.Logger.Debug("JWT验证失败", "状态码", resp.StatusCode)
 		return false, nil
 	}
 
@@ -117,8 +156,8 @@ func (c *JWTClient) remoteValidateToken(accessToken string) (bool, error) {
 	var errResp struct {
 		Error string `json:"error"`
 	}
-	if err := json.NewDecoder(resp.Body).Decode(&errResp); err != nil {
-		return false, fmt.Errorf("验证令牌失败: %d", resp.StatusCode)
+	if err := json.Unmarshal(body, &errResp); err != nil {
+		return false, fmt.Errorf("验证令牌失败: 状态码 %d, 响应 %s", resp.StatusCode, string(body))
 	}
 	return false, errors.New(errResp.Error)
 }
@@ -174,6 +213,8 @@ func (c *JWTClient) ValidateToken(tokenString string) (*CustomClaims, error) {
 	}
 	claims, err = getJWTClaims(tokenString)
 	if err != nil {
+		// logger
+		c.Logger.Debug("get Clains fail", err)
 		return nil, err
 	}
 	c.cacheToken(tokenString)
@@ -242,7 +283,7 @@ func (c *JWTClient) cacheToken(token string) {
 // GetUserInfo 获取用户信息
 func (c *JWTClient) GetUserInfo(accessToken string) (*UserInfo, error) {
 	// 创建请求
-	req, err := http.NewRequest("GET", c.AuthServerURL+"/auth/user", nil)
+	req, err := http.NewRequest("GET", c.AuthServerURL+"/authapi/user", nil)
 	if err != nil {
 		return nil, err
 	}

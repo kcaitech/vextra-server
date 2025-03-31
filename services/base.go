@@ -21,6 +21,13 @@ func InitDBModule(config *models.DBModuleConfig) (*models.DBModule, error) {
 	}
 	var err error
 	dbModule, err = models.NewDBModule(config)
+	if err != nil {
+		return nil, err
+	}
+	err = dbModule.AutoMigrate()
+	if err != nil {
+		return nil, err
+	}
 	return dbModule, err
 }
 

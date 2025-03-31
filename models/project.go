@@ -156,7 +156,7 @@ func (model ProjectJoinRequestMessageShow) TableName() string {
 // ProjectFavorite 项目收藏（固定）
 type ProjectFavorite struct {
 	BaseModelStruct
-	UserId    string `gorm:"uniqueIndex:idx_user_project;not null" json:"user_id"`
+	UserId    string `gorm:"uniqueIndex:idx_user_project,length:64;not null" json:"user_id"`
 	ProjectId int64  `gorm:"uniqueIndex:idx_user_project;not null" json:"project_id"`
 	IsFavor   bool   `gorm:"not null;default:true" json:"is_favor"`
 }
