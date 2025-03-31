@@ -103,10 +103,9 @@ func getJWTClaims(accessToken string) (*CustomClaims, error) {
 
 	if claims, ok := token.Claims.(*CustomClaims); ok {
 		now := time.Now()
-		if claims.ExpiresAt.Time.Before(now) {
+		if claims.ExpiresAt.Time.After(now) {
 			return claims, nil
 		}
-		// return claims, nil
 		return nil, errors.New("token expired")
 	}
 
@@ -264,7 +263,7 @@ func (c *JWTClient) getTokenCached(token string) (*CustomClaims, error) {
 	// 检查缓存是否过期
 	if time.Now().Unix() > expiry {
 		delete(c.tokenCache, token)
-		return nil, errors.New("token expired")
+		return nil, errors.New("token cache expired")
 	}
 
 	return getJWTClaims(token)
