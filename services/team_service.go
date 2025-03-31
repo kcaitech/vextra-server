@@ -159,7 +159,7 @@ type TeamQueryResItem struct {
 func (s *TeamService) FindTeamByUserId(userId string) []TeamQueryResItem {
 	var result []TeamQueryResItem
 	whereArgsList := []WhereArgs{
-		{"tm.deleted_at is null and u.deleted_at is null", nil},
+		{"tm.deleted_at is null", nil},
 		{"tm.user_id = ?", []any{userId}},
 	}
 	err := s.Find(

@@ -62,5 +62,5 @@ func (model DocumentPermission) GetId() int64 {
 
 // tablename
 func (model DocumentPermission) TableName() string {
-	return "document_permissions"
+	return "document_permission"
 }

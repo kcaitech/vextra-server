@@ -27,7 +27,7 @@ func (model DocumentLock) AutoMigrate(db *gorm.DB) error {
 
 // tablename
 func (model DocumentLock) TableName() string {
-	return "document_locks"
+	return "document_lock"
 }
 
 // DocType 文档类型
@@ -77,5 +77,5 @@ func (model Document) AutoMigrate(db *gorm.DB) error {
 
 // tablename
 func (model Document) TableName() string {
-	return "documents"
+	return "document"
 }

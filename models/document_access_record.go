@@ -27,5 +27,5 @@ func (model DocumentAccessRecord) GetId() int64 {
 
 // tablename
 func (model DocumentAccessRecord) TableName() string {
-	return "document_access_records"
+	return "document_access_record"
 }

@@ -36,5 +36,5 @@ func (model Feedback) GetId() int64 {
 
 // tablename
 func (model Feedback) TableName() string {
-	return "feedbacks"
+	return "feedback"
 }

@@ -52,7 +52,7 @@ func (model Project) GetId() int64 {
 
 // tablename
 func (model Project) TableName() string {
-	return "projects"
+	return "project"
 }
 
 // ProjectPermSourceType 权限来源类型
@@ -86,7 +86,7 @@ func (model ProjectMember) GetId() int64 {
 
 // tablename
 func (model ProjectMember) TableName() string {
-	return "project_members"
+	return "project_member"
 }
 
 // ProjectJoinRequestStatus 申请状态
@@ -125,7 +125,7 @@ func (model ProjectJoinRequest) GetId() int64 {
 
 // tablename
 func (model ProjectJoinRequest) TableName() string {
-	return "project_join_requests"
+	return "project_join_request"
 }
 
 type ProjectJoinRequestMessageShow struct {
@@ -150,7 +150,7 @@ func (model ProjectJoinRequestMessageShow) GetId() int64 {
 
 // tablename
 func (model ProjectJoinRequestMessageShow) TableName() string {
-	return "project_join_request_message_shows"
+	return "project_join_request_message_show"
 }
 
 // ProjectFavorite 项目收藏（固定）
@@ -175,5 +175,5 @@ func (model ProjectFavorite) GetId() int64 {
 
 // tablename
 func (model ProjectFavorite) TableName() string {
-	return "project_favorites"
+	return "project_favorite"
 }

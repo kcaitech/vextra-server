@@ -40,7 +40,7 @@ func (model Team) GetId() int64 {
 
 // tablename
 func (model Team) TableName() string {
-	return "teams"
+	return "team"
 }
 
 // TeamMember 团队成员
@@ -66,7 +66,7 @@ func (model TeamMember) GetId() int64 {
 
 // tablename
 func (model TeamMember) TableName() string {
-	return "team_members"
+	return "team_member"
 }
 
 // TeamJoinRequestStatus 申请状态
@@ -105,7 +105,7 @@ func (model TeamJoinRequest) GetId() int64 {
 
 // tablename
 func (model TeamJoinRequest) TableName() string {
-	return "team_join_requests"
+	return "team_join_request"
 }
 
 type TeamJoinRequestMessageShow struct {
@@ -130,5 +130,5 @@ func (model TeamJoinRequestMessageShow) GetId() int64 {
 
 // tablename
 func (model TeamJoinRequestMessageShow) TableName() string {
-	return "team_join_request_message_shows"
+	return "team_join_request_message_show"
 }

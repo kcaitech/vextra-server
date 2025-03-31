@@ -28,5 +28,5 @@ func (model DocumentVersion) GetId() int64 {
 
 // tablename
 func (model DocumentVersion) TableName() string {
-	return "document_versions"
+	return "document_version"
 }
