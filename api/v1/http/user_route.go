@@ -45,7 +45,12 @@ func GetUserInfo(c *gin.Context) {
 		response.Fail(c, "操作失败")
 		return
 	}
-	response.Success(c, user)
+
+	response.Success(c, map[string]any{
+		"id":       user.UserID,
+		"nickname": user.Profile.Nickname,
+		"avatar":   user.Profile.Avatar,
+	})
 }
 func SetNickname(c *gin.Context) {
 	var req struct {

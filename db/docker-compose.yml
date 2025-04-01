@@ -3,9 +3,9 @@ services:
     image: quay.io/minio/minio
     entrypoint: sh
     command: -c "minio server /data --console-address ':9001' & sleep 5 && /usr/bin/minio-init.sh && tail -f /dev/null"
-    container_name: minio
-    networks:
-      kcserver:
+    container_name: minio1
+    # networks:
+    #   kcserver:
     restart: always
     environment:
       TZ: Asia/Shanghai
@@ -27,8 +27,8 @@ services:
   mongo:
     image: mongo:latest
     container_name: mongo
-    networks:
-      kcserver:
+    # networks:
+    #   kcserver:
     restart: always
     ports:
       - "27017:27017" # 测试用
@@ -45,8 +45,8 @@ services:
   mysql:
     image: mysql:8.0.32
     container_name: mysql
-    networks:
-      kcserver:
+    # networks:
+    #   kcserver:
 #        ipv4_address: 172.21.0.2
     restart: always
     ports:
@@ -72,16 +72,16 @@ services:
     restart: always
     volumes:
       - redis_data:/data
-    networks:
-      - kcserver
+    # networks:
+    #   - kcserver
     command: redis-server --appendonly yes
     ports:
       - "6380:6379"
     # environment:
     #   - REDIS_PASSWORD=conZYDv8Ro
 
-networks:
-  kcserver:
+# networks:
+#   kcserver:
     # external: true
   
 volumes:
