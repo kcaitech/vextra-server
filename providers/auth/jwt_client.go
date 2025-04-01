@@ -1,10 +1,11 @@
 package auth
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
+	"mime/multipart"
 	"net/http"
 	"strings"
 	"sync"
@@ -14,29 +15,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// 添加日志接口定义
-type Logger interface {
-	Debug(msg string, args ...any)
-	Info(msg string, args ...any)
-	Error(msg string, args ...any)
-}
-
-// 默认日志记录器实现
-type defaultLogger struct{}
-
-func (l *defaultLogger) Debug(msg string, args ...any) {
-	// 默认实现，可以根据需要调整
-	fmt.Printf("DEBUG: %s %v\n", msg, args)
-}
-
-func (l *defaultLogger) Info(msg string, args ...any) {
-	fmt.Printf("INFO: %s %v\n", msg, args)
-}
-
-func (l *defaultLogger) Error(msg string, args ...any) {
-	fmt.Printf("ERROR: %s %v\n", msg, args)
-}
-
 // JWTClient JWT客户端
 type JWTClient struct {
 	AuthServerURL string           // 认证服务URL
@@ -45,7 +23,6 @@ type JWTClient struct {
 	tokenCache    map[string]int64 // 令牌缓存，用于减少对认证服务的请求
 	cacheMutex    sync.RWMutex     // 缓存锁
 	cacheExpiry   time.Duration    // 缓存过期时间
-	Logger        Logger           // 日志记录器
 }
 
 // 需要与服务端定义的 Claims 结构一致
@@ -92,7 +69,6 @@ func NewJWTClient(authServerURL string) *JWTClient {
 		Timeout:     10 * time.Second,
 		tokenCache:  make(map[string]int64),
 		cacheExpiry: 15 * time.Minute, // 默认缓存15分钟
-		Logger:      &defaultLogger{},
 	}
 }
 
@@ -128,26 +104,13 @@ func (c *JWTClient) remoteValidateToken(accessToken string) (bool, error) {
 	}
 	defer resp.Body.Close()
 
-	// 读取响应内容
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return false, fmt.Errorf("读取响应内容失败: %v", err)
-	}
-
-	c.Logger.Debug("JWT验证响应",
-		"状态码", resp.StatusCode,
-		"响应内容", string(body),
-		"请求URL", req.URL.String())
-
 	// 检查响应状态
 	if resp.StatusCode == http.StatusOK {
-		c.Logger.Debug("JWT验证成功", "状态码", resp.StatusCode)
 		return true, nil
 	}
 
 	// 令牌无效
 	if resp.StatusCode == http.StatusUnauthorized {
-		c.Logger.Debug("JWT验证失败", "状态码", resp.StatusCode)
 		return false, nil
 	}
 
@@ -155,8 +118,8 @@ func (c *JWTClient) remoteValidateToken(accessToken string) (bool, error) {
 	var errResp struct {
 		Error string `json:"error"`
 	}
-	if err := json.Unmarshal(body, &errResp); err != nil {
-		return false, fmt.Errorf("验证令牌失败: 状态码 %d, 响应 %s", resp.StatusCode, string(body))
+	if err := json.NewDecoder(resp.Body).Decode(&errResp); err != nil {
+		return false, fmt.Errorf("验证令牌失败: %d", resp.StatusCode)
 	}
 	return false, errors.New(errResp.Error)
 }
@@ -212,8 +175,6 @@ func (c *JWTClient) ValidateToken(tokenString string) (*CustomClaims, error) {
 	}
 	claims, err = getJWTClaims(tokenString)
 	if err != nil {
-		// logger
-		c.Logger.Debug("get Clains fail", err)
 		return nil, err
 	}
 	c.cacheToken(tokenString)
@@ -279,6 +240,16 @@ func (c *JWTClient) cacheToken(token string) {
 	c.tokenCache[token] = expiry
 }
 
+func (c *JWTClient) refreshCacheToken(old string, newtoken string) {
+	c.cacheMutex.Lock()
+	defer c.cacheMutex.Unlock()
+
+	delete(c.tokenCache, old)
+	// 设置缓存过期时间
+	expiry := time.Now().Add(c.cacheExpiry).Unix()
+	c.tokenCache[newtoken] = expiry
+}
+
 // GetUserInfo 获取用户信息
 func (c *JWTClient) GetUserInfo(accessToken string) (*UserInfo, error) {
 	// 创建请求
@@ -316,4 +287,175 @@ func (c *JWTClient) GetUserInfo(accessToken string) (*UserInfo, error) {
 	}
 
 	return &userInfo, nil
+}
+
+// UpdateUserInfo 更新用户信息
+func (c *JWTClient) UpdateUserInfo(accessToken string, userInfo *UserInfo) error {
+	// 将用户信息转换为 JSON
+	jsonData, err := json.Marshal(userInfo)
+	if err != nil {
+		return fmt.Errorf("序列化用户信息失败: %v", err)
+	}
+
+	// 创建请求
+	req, err := http.NewRequest("PUT", c.AuthServerURL+"/authapi/user", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("Content-Type", "application/json")
+
+	// 发送请求
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	// 检查响应状态
+	if resp.StatusCode != http.StatusOK {
+		if resp.StatusCode == http.StatusUnauthorized {
+			return errors.New("invalid token")
+		}
+		var errResp struct {
+			Error string `json:"error"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&errResp); err != nil {
+			return fmt.Errorf("更新用户信息失败: %d", resp.StatusCode)
+		}
+		return errors.New(errResp.Error)
+	}
+
+	return nil
+}
+
+// UpdateAvatar 更新用户头像
+func (c *JWTClient) UpdateAvatar(accessToken string, fileData []byte, fileName string) error {
+	// 创建multipart请求
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// 添加文件
+	part, err := writer.CreateFormFile("file", fileName)
+	if err != nil {
+		return fmt.Errorf("创建表单文件失败: %v", err)
+	}
+	if _, err := part.Write(fileData); err != nil {
+		return fmt.Errorf("写入文件数据失败: %v", err)
+	}
+
+	// 关闭writer
+	if err := writer.Close(); err != nil {
+		return fmt.Errorf("关闭writer失败: %v", err)
+	}
+
+	// 创建请求
+	req, err := http.NewRequest("POST", c.AuthServerURL+"/authapi/avatar", body)
+	if err != nil {
+		return fmt.Errorf("创建请求失败: %v", err)
+	}
+
+	// 设置请求头
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	// 发送请求
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("发送请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// 检查响应状态
+	if resp.StatusCode != http.StatusOK {
+		var errResp struct {
+			Error string `json:"error"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&errResp); err != nil {
+			return fmt.Errorf("更新头像失败: %d", resp.StatusCode)
+		}
+		return errors.New(errResp.Error)
+	}
+
+	return nil
+}
+
+// DeleteAvatar 删除用户头像
+func (c *JWTClient) DeleteAvatar(accessToken string) error {
+	// 创建请求
+	req, err := http.NewRequest("DELETE", c.AuthServerURL+"/authapi/avatar", nil)
+	if err != nil {
+		return fmt.Errorf("创建请求失败: %v", err)
+	}
+
+	// 设置请求头
+	req.Header.Set("Authorization", "Bearer "+accessToken)
+
+	// 发送请求
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("发送请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// 检查响应状态
+	if resp.StatusCode != http.StatusOK {
+		var errResp struct {
+			Error string `json:"error"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&errResp); err != nil {
+			return fmt.Errorf("删除头像失败: %d", resp.StatusCode)
+		}
+		return errors.New(errResp.Error)
+	}
+
+	return nil
+}
+
+// RefreshToken 刷新访问令牌
+func (c *JWTClient) RefreshToken(accessToken string) (string, error) {
+	// 创建请求
+	req, err := http.NewRequest("POST", c.AuthServerURL+"/authapi/token/refresh", nil)
+	if err != nil {
+		return "", fmt.Errorf("创建请求失败: %v", err)
+	}
+
+	// 设置请求头
+	// req.Header.Set("Authorization", "Bearer "+accessToken)
+
+	// 发送请求
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("发送请求失败: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// 检查响应状态
+	if resp.StatusCode != http.StatusOK {
+		var errResp struct {
+			Error string `json:"error"`
+		}
+		if err := json.NewDecoder(resp.Body).Decode(&errResp); err != nil {
+			return "", fmt.Errorf("刷新令牌失败: %d", resp.StatusCode)
+		}
+		return "", errors.New(errResp.Error)
+	}
+
+	// 解析响应
+	var result struct {
+		AccessToken string `json:"access_token"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		return "", fmt.Errorf("解析响应失败: %v", err)
+	}
+
+	// 清除旧令牌的缓存
+	// c.cacheMutex.Lock()
+	// delete(c.tokenCache, accessToken)
+	// c.cacheMutex.Unlock()
+
+	// 缓存新token
+	c.refreshCacheToken(accessToken, result.AccessToken)
+
+	return result.AccessToken, nil
 }

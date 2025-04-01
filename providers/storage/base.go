@@ -4,9 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"sync"
-
-	"kcaitech.com/kcserver/utils/my_map"
 )
 
 type Provider string
@@ -49,7 +46,7 @@ type Bucket interface {
 	GetConfig() *Config
 	PutObject(putObjectInput *PutObjectInput) (*UploadInfo, error)
 	PutObjectByte(objectName string, content []byte) (*UploadInfo, error)
-	PutObjectList(putObjectInputList []*PutObjectInput) ([]*UploadInfo, []error)
+	// PutObjectList(putObjectInputList []*PutObjectInput) ([]*UploadInfo, []error)
 	GenerateAccessKey(authPath string, authOp int, expires int, roleSessionName string) (*AccessKeyValue, error)
 	CopyObject(srcPath string, destPath string) (*UploadInfo, error)
 	CopyDirectory(srcDirPath string, destDirPath string) (*UploadInfo, error)
@@ -59,7 +56,7 @@ type Bucket interface {
 
 type BucketConfig struct {
 	BucketName        string `yaml:"bucketName" json:"bucketName"`
-	attatchBucketName string `yaml:"attatchBucketName" json:"attatchBucketName"`
+	AttatchBucketName string `yaml:"attatchBucketName" json:"attatchBucketName"`
 }
 
 type Config struct {
@@ -96,30 +93,30 @@ func (that *DefaultBucket) PutObjectByte(objectName string, content []byte) (*Up
 	})
 }
 
-func (that *DefaultBucket) PutObjectList(putObjectInputList []*PutObjectInput) ([]*UploadInfo, []error) {
-	uploadInfoMap := my_map.NewSyncMap[int, *UploadInfo]()
-	errorMap := my_map.NewSyncMap[int, error]()
-	uploadWaitGroup := sync.WaitGroup{}
-	for index, putObjectInput := range putObjectInputList {
-		uploadWaitGroup.Add(1)
-		go func(index int, putObjectInput *PutObjectInput) {
-			defer uploadWaitGroup.Done()
-			result, err := that.That.PutObject(putObjectInput)
-			uploadInfoMap.Set(index, result)
-			errorMap.Set(index, err)
-		}(index, putObjectInput)
-	}
-	uploadWaitGroup.Wait()
-	uploadInfoList := make([]*UploadInfo, 0, len(putObjectInputList))
-	errorList := make([]error, 0, len(putObjectInputList))
-	for index := 0; index < len(putObjectInputList); index++ {
-		uploadInfo, _ := uploadInfoMap.Get(index)
-		err, _ := errorMap.Get(index)
-		uploadInfoList = append(uploadInfoList, uploadInfo)
-		errorList = append(errorList, err)
-	}
-	return uploadInfoList, errorList
-}
+// func (that *DefaultBucket) PutObjectList(putObjectInputList []*PutObjectInput) ([]*UploadInfo, []error) {
+// 	uploadInfoMap := my_map.NewSyncMap[int, *UploadInfo]()
+// 	errorMap := my_map.NewSyncMap[int, error]()
+// 	uploadWaitGroup := sync.WaitGroup{}
+// 	for index, putObjectInput := range putObjectInputList {
+// 		uploadWaitGroup.Add(1)
+// 		go func(index int, putObjectInput *PutObjectInput) {
+// 			defer uploadWaitGroup.Done()
+// 			result, err := that.That.PutObject(putObjectInput)
+// 			uploadInfoMap.Set(index, result)
+// 			errorMap.Set(index, err)
+// 		}(index, putObjectInput)
+// 	}
+// 	uploadWaitGroup.Wait()
+// 	uploadInfoList := make([]*UploadInfo, 0, len(putObjectInputList))
+// 	errorList := make([]error, 0, len(putObjectInputList))
+// 	for index := 0; index < len(putObjectInputList); index++ {
+// 		uploadInfo, _ := uploadInfoMap.Get(index)
+// 		err, _ := errorMap.Get(index)
+// 		uploadInfoList = append(uploadInfoList, uploadInfo)
+// 		errorList = append(errorList, err)
+// 	}
+// 	return uploadInfoList, errorList
+// }
 
 func (that *DefaultBucket) CopyObject(srcPath string, destPath string) (*UploadInfo, error) {
 	return nil, errors.New("CopyObject方法未实现")

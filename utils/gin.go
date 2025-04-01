@@ -13,3 +13,11 @@ func GetUserId(c *gin.Context) (string, error) {
 	}
 	return _userId.(string), nil
 }
+
+func GetAccessToken(c *gin.Context) (string, error) {
+	token, _ := c.Get("access_token")
+	if token == nil {
+		return "", errors.New("用户未登录")
+	}
+	return token.(string), nil
+}

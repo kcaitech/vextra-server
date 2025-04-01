@@ -45,7 +45,7 @@ type DocumentInfo struct {
 	DocumentId   string `json:"id"` // 可能是int
 	Path         string `json:"path"`
 	VersionId    string `json:"version_id"`
-	lastCmdVerId string `json:"last_cmd_id"`
+	LastCmdVerId string `json:"last_cmd_id"`
 }
 
 type ExFromJson struct {
@@ -61,7 +61,7 @@ type ExFromJson struct {
 
 type VersionResp struct {
 	// DocumentInfo DocumentInfo `json:"documentInfo"`
-	lastCmdVerId string     `json:"lastCmdVerId"`
+	LastCmdVerId string     `json:"lastCmdVerId"`
 	DocumentData ExFromJson `json:"documentData"`
 	DocumentText string     `json:"documentText"`
 	MediasSize   uint64     `json:"mediasSize"`
@@ -250,7 +250,7 @@ func AutoUpdate(documentId int64, config *config.Configuration) {
 	// upload document data
 	header := Header{
 		DocumentId:   documentIdStr,
-		lastCmdVerId: version.lastCmdVerId,
+		LastCmdVerId: version.LastCmdVerId,
 	}
 	response := Response{}
 	data := UploadData{

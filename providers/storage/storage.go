@@ -45,7 +45,7 @@ func NewStoraageClient(config *StorageConf) (*StorageClient, error) {
 			BucketName: bucketConfig.BucketName,
 		}),
 		AttatchBucket: client.NewBucket(&BucketConfig{
-			BucketName: bucketConfig.attatchBucketName,
+			BucketName: bucketConfig.AttatchBucketName,
 		}),
 	}, nil
 }

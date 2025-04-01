@@ -27,7 +27,7 @@ type Header struct {
 	UserId       string `json:"user_id"`
 	DocumentId   string `json:"document_id"`
 	ProjectId    string `json:"project_id"`
-	lastCmdVerId string `json:"last_cmd_id"`
+	LastCmdVerId string `json:"last_cmd_id"`
 }
 
 type ResponseStatusType string
@@ -239,7 +239,7 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 	userId := header.UserId
 	documentId := str.DefaultToInt(header.DocumentId, 0)
 	projectId := str.DefaultToInt(header.ProjectId, 0)
-	lastCmdVerId := header.lastCmdVerId
+	lastCmdVerId := header.LastCmdVerId
 	if (userId == "" && documentId <= 0) || (userId != "" && documentId > 0) || (documentId > 0 && lastCmdVerId == "") { // userId和documentId必须只传一个 // todo这不对吧，要鉴权
 		resp.Message = "参数错误"
 		log.Println("参数错误", userId, documentId)
