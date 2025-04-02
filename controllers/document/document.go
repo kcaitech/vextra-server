@@ -116,7 +116,7 @@ func GetUserDocumentInfo1(userId string, documentId int64, permType models.PermT
 	result := services.NewDocumentService().GetDocumentInfoByDocumentAndUserId(documentId, userId, permType)
 	if result == nil {
 		return nil, "文档不存在"
-	} else if !result.LockedInfo.LockedAt.IsZero() && result.Document.UserId != userId {
+	} else if result.LockedInfo != nil && !result.LockedInfo.LockedAt.IsZero() && result.Document.UserId != userId {
 		return nil, "审核不通过"
 	} else {
 		return result, ""

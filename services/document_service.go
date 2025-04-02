@@ -337,7 +337,7 @@ func (s *DocumentService) GetDocumentInfoByDocumentAndUserId(documentId int64, u
 	if err := s.Get(
 		&result,
 		"document.id = ?", documentId,
-		&ParamArgs{"?user_id": userId, "?resource_type": models.ResourceTypeDoc, "?resource_id": documentId},
+		&ParamArgs{"?user_id": userId, "?resource_type": models.ResourceTypeDoc, "?resource_id": documentId, "?grantee_type": models.GranteeTypeInternal},
 		&OrderLimitArgs{"document_access_record.last_access_time desc", 0},
 	); err != nil {
 		return nil

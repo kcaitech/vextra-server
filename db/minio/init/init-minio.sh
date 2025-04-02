@@ -54,13 +54,13 @@ fi
 # rm -f /tmp/policy.json
 
 # 创建用户和访问密钥（如果不存在）
-# if ! mc admin user info myminio user > /dev/null 2>&1; then
-#     mc admin user add myminio user GmwAzetY1L0jU4pUAqpO7RJGIsG7k3gozVH6whoJ
-#     mc admin policy attach myminio readonly --user user
-#     echo "Created user and attached policy"
-# else
-#     echo "User already exists"
-# fi
+if ! mc admin user info myminio user > /dev/null 2>&1; then
+    mc admin user add myminio user GmwAzetY1L0jU4pUAqpO7RJGIsG7k3gozVH6whoJ
+    mc admin policy attach myminio readonly --user user
+    echo "Created user and attached policy"
+else
+    echo "User already exists"
+fi
 
 # 尝试创建服务账户，忽略错误
 mc admin user svcacct add myminio $MINIO_ROOT_USER \

@@ -71,7 +71,7 @@ func GetDocumentAccessKey1(userId string, documentId int64) (*map[string]any, st
 		// response.Forbidden(c, "")
 		return nil, "无访问权限"
 	}
-	locked, err := documentService.GetLocked(documentId)
+	locked, _ := documentService.GetLocked(documentId)
 	if locked != nil && !locked.LockedAt.IsZero() && document.UserId != userId {
 		// response.Forbidden(c, "审核不通过")
 		return nil, "审核不通过"
@@ -129,7 +129,7 @@ func GetDocumentAccessKey1(userId string, documentId int64) (*map[string]any, st
 		"secret_access_key": accessKeyValue.SecretAccessKey,
 		"session_token":     accessKeyValue.SessionToken,
 		"signer_type":       accessKeyValue.SignerType,
-		"provider":          storageConfig.Provider,
+		"provider":          services.GetConfig().Storage.Provider,
 		"region":            storageConfig.Region,
 		"bucket_name":       storageConfig.BucketName,
 		"endpoint":          documentStorageUrl,
