@@ -413,7 +413,7 @@ func (c *JWTClient) DeleteAvatar(accessToken string) error {
 }
 
 // RefreshToken 刷新访问令牌
-func (c *JWTClient) RefreshToken(accessToken, refreshToken string) (string, error) {
+func (c *JWTClient) RefreshToken(refreshToken string) (string, error) {
 	// 创建请求
 	req, err := http.NewRequest("POST", c.AuthServerURL+"/authapi/token/refresh", nil)
 	if err != nil {
@@ -464,7 +464,8 @@ func (c *JWTClient) RefreshToken(accessToken, refreshToken string) (string, erro
 	// c.cacheMutex.Unlock()
 
 	// 缓存新token
-	c.refreshCacheToken(accessToken, result.AccessToken)
+	// c.refreshCacheToken(accessToken, result.AccessToken)
+	c.cacheToken(result.AccessToken)
 
 	return result.AccessToken, nil
 }

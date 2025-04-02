@@ -43,8 +43,8 @@ func LoadRoutes(router *gin.Engine) {
 
 	apiGroup := router.Group("/api")
 	loadApiGatewayRoutes(apiGroup) // 单独鉴权
+	loadLoginRoutes(apiGroup)      // 从refreshToken获取信息
 	apiGroup.Use(services.GetJWTClient().AuthRequired())
-	loadLoginRoutes(apiGroup)
 	loadUserRoutes(apiGroup)
 	loadDocumentRoutes(apiGroup)
 	apiGroup.POST("/batch_request", controllers.BatchRequestHandler(router))
