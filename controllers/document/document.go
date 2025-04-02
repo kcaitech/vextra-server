@@ -99,7 +99,7 @@ func GetUserDocumentInfo(c *gin.Context) {
 	}
 	if result := services.NewDocumentService().GetDocumentInfoByDocumentAndUserId(documentId, userId, permType); result == nil {
 		response.BadRequest(c, "文档不存在")
-	} else if !result.LockedInfo.LockedAt.IsZero() && result.Document.UserId != userId {
+	} else if result.LockedInfo != nil && !result.LockedInfo.LockedAt.IsZero() && result.Document.UserId != userId {
 		response.Forbidden(c, "审核不通过")
 	} else {
 		response.Success(c, result)

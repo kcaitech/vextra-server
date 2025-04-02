@@ -24,7 +24,12 @@ func RefreshToken(c *gin.Context) {
 		return
 	}
 	client := services.GetJWTClient()
-	token, err = client.RefreshToken(token)
+	refreshToken, _ := c.Cookie("refreshToken")
+	if refreshToken == "" {
+		response.BadRequest(c, "Refresh token not provided")
+		return
+	}
+	token, err = client.RefreshToken(token, refreshToken)
 	if err != nil {
 		response.Fail(c, err.Error())
 		return

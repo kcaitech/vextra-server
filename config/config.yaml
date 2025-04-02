@@ -27,7 +27,7 @@ svg2png:
   url: http://kcsvg2png:10050/svg_to_png
 
 mongo:
-  url: mongodb://root:jKKsinkjilKKLSW@mongo:27017
+  url: mongodb://root:jKKsinkjilKKLSW@localhost:27017
   db: kcserver
 
 redis:

@@ -8,7 +8,6 @@ import (
 
 	"github.com/go-redsync/redsync/v4"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	autoupdate "kcaitech.com/kcserver/controllers/document"
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/providers/mongo"
@@ -153,15 +152,12 @@ func NewOpServe(ws *websocket.Ws, userId string, documentId int64, versionId str
 
 func (serv *opServe) start(documentId int64, lastCmdVersion uint) {
 	go func() {
-		// defer tunnelServer.Close()
-
 		cmdService := services.GetCmdService()
 		cmdItemList, err := cmdService.GetCmdItemsFromStart(documentId, lastCmdVersion)
 		if err != nil {
 			log.Println("cmdList查询失败", err)
 			return
 		}
-
 		cmdItemListData, err := json.Marshal(cmdItemList)
 		if err != nil {
 			log.Println("json编码错误 cmdItemsData", err)
@@ -169,22 +165,6 @@ func (serv *opServe) start(documentId int64, lastCmdVersion uint) {
 		}
 
 		serv.send(string(cmdItemListData))
-
-		// if err := tunnel.Client.WriteJSONLock(true, &ServerCmd{
-		// 	CmdType: ServerCmdTypeTunnelData,
-		// 	CmdId:   uuid.New().String(),
-		// 	Data: CmdData{
-		// 		"tunnel_id": tunnel.Id,
-		// 		"data_type": websocket.MessageTypeText,
-		// 		"data": SendData{
-		// 			Type:     "update",
-		// 			CmdsData: string(cmdItemListData),
-		// 		},
-		// 	},
-		// }); err != nil {
-		// 	log.Println("初始数据发送失败", err)
-		// 	return
-		// }
 
 		documentIdStr := str.IntToString(documentId)
 		pubsub := serv.redis.Client.Subscribe(context.Background(), "Document Op[DocumentId:"+documentIdStr+"]")
@@ -202,17 +182,6 @@ func (serv *opServe) start(documentId int64, lastCmdVersion uint) {
 				return
 			}
 		}
-		// for {
-		// 	msg, err := pubsub.ReceiveMessage(context.Background())
-		// 	if err != nil {
-		// 		log.Println("读取redis订阅消息失败", err)
-		// 		return
-		// 	}
-		// 	if err := sendUpdate(msg.Payload); err != nil {
-		// 		log.Println("数据发送失败", err)
-		// 		return
-		// 	}
-		// }
 	}()
 }
 
@@ -419,28 +388,14 @@ func (serv *opServe) handlePullCmds(data *TransData, receiveData *ReceiveData) {
 	var cmdItemList []CmdItem
 	fromId := str.DefaultToInt(receiveData.From, 0)
 	toId := str.DefaultToInt(receiveData.To, 0)
-	idFilter := bson.M{
-		"$gte": fromId,
-	}
-	findOptions := options.Find()
-	findOptions.SetSort(bson.D{{Key: "_id", Value: 1}})
-	if toId > 0 {
-		idFilter["$lte"] = toId
-	} else {
-		//findOptions.SetLimit(100)
-	}
-	cur, err := serv.mongo.DB.Collection("document").Find(context.Background(), bson.M{
-		"document_id": serv.documentId,
-		"_id":         idFilter,
-	}, findOptions)
+
+	cmdsService := services.GetCmdService()
+	cmdItemList, err := cmdsService.GetCmdItems(serv.documentId, uint(fromId), uint(toId))
 	if err != nil {
 		msgErr("数据查询失败", &serverData, &err)
 		return
 	}
-	if err := cur.All(context.Background(), &cmdItemList); err != nil {
-		msgErr("数据查询失败2", &serverData, &err)
-		return
-	}
+
 	cmdItemListData, err := json.Marshal(cmdItemList)
 	if err != nil {
 		msgErr("json编码错误", &serverData, &err)

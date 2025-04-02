@@ -107,7 +107,8 @@ func (s *CmdService) GetCmdItemsFromStart(documentId int64, verStart uint) ([]Cm
 	if err != nil {
 		return nil, err
 	}
-	var cmdItems []CmdItem
+	// 使用 make 创建非 nil 的空切片
+	cmdItems := make([]CmdItem, 0)
 	if err := cursor.All(context.Background(), &cmdItems); err != nil {
 		return nil, err
 	}
