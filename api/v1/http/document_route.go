@@ -2,7 +2,6 @@ package http
 
 import (
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/services"
 
 	controllers "kcaitech.com/kcserver/controllers/document"
 )
@@ -12,10 +11,10 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 	router := api.Group("/documents")
 
 	// 不验证登录
-	router.GET("/shares/wx_mp_code", controllers.GetWxMpCode)
+	// router.GET("/shares/wx_mp_code", controllers.GetWxMpCode)
 
 	// 登陆验证
-	router.Use(services.GetJWTClient().AuthRequired())
+	// router.Use(services.GetJWTClient().AuthRequired())
 
 	router.GET("/access_records", controllers.GetUserDocumentAccessRecordsList)
 	router.DELETE("/access_record", controllers.DeleteUserDocumentAccessRecord)

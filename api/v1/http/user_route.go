@@ -20,7 +20,7 @@ func loadUserRoutes(api *gin.RouterGroup) {
 	router := api.Group("/users")
 
 	authorized := router.Group("/")
-	authorized.Use(services.GetJWTClient().AuthRequired())
+	// authorized.Use(services.GetJWTClient().AuthRequired())
 	{
 		authorized.GET("/info", GetUserInfo)
 		authorized.PUT("/info/nickname", SetNickname)

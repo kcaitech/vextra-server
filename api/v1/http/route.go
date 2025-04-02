@@ -42,9 +42,10 @@ func LoadRoutes(router *gin.Engine) {
 	}, middlewares.DefaultRateLimiterConfig()).RateLimitMiddleware())
 
 	apiGroup := router.Group("/api")
+	loadApiGatewayRoutes(apiGroup) // 单独鉴权
+	apiGroup.Use(services.GetJWTClient().AuthRequired())
 	loadLoginRoutes(apiGroup)
 	loadUserRoutes(apiGroup)
 	loadDocumentRoutes(apiGroup)
-	loadApiGatewayRoutes(apiGroup)
 	apiGroup.POST("/batch_request", controllers.BatchRequestHandler(router))
 }

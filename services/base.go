@@ -111,9 +111,9 @@ func InitSafereviewClient(config *safereview.SafeReviewConf) (safereview.Client,
 }
 
 func GetSafereviewClient() safereview.Client {
-	if safereviewClient == nil {
-		panic("safereviewClient is nil")
-	}
+	// if safereviewClient == nil {
+	// 	panic("safereviewClient is nil")
+	// }
 	return safereviewClient
 }
 
