@@ -70,7 +70,7 @@ func RestoreUserRecycleBinDocument(c *gin.Context) {
 		"id = ? and deleted_at is not null and purged_at is null", documentId,
 		&services.Unscoped{},
 	); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
-		response.Fail(c, "更新错误")
+		response.ServerError(c, "更新错误")
 		return
 	}
 	response.Success(c, "")
@@ -113,7 +113,7 @@ func DeleteUserRecycleBinDocument(c *gin.Context) {
 		"id = ? and deleted_at is not null", documentId,
 		&services.Unscoped{},
 	); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
-		response.Fail(c, "更新错误")
+		response.ServerError(c, "更新错误")
 		return
 	}
 	response.Success(c, "")

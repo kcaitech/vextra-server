@@ -2,7 +2,6 @@ package middlewares
 
 import (
 	"fmt"
-	"net/http"
 	"runtime/debug"
 
 	"github.com/gin-gonic/gin"
@@ -15,7 +14,7 @@ func ErrorHandler() gin.HandlerFunc {
 			if err := recover(); err != nil {
 				stackTrace := debug.Stack()
 				fmt.Printf("panic occurred: %v\nStack Trace:\n%s\n", err, stackTrace)
-				response.Abort(c, http.StatusInternalServerError, "服务器错误", nil)
+				response.ServerError(c, "服务器错误")
 			}
 		}()
 		c.Next()

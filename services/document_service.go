@@ -124,10 +124,10 @@ func (model DocumentPermissionRequests) MarshalJSON() ([]byte, error) {
 type DocumentQueryResItem struct {
 	Document models.Document `gorm:"embedded;embeddedPrefix:document__" json:"document" join:";inner;id,[#document_id document_id]"`
 	// User             string             `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,[#user_id document.user_id]"`
-	Team             *models.Team       `gorm:"embedded;embeddedPrefix:team__" json:"team" join:";left;id,document.team_id"`
-	Project          *models.Project    `gorm:"embedded;embeddedPrefix:project__" json:"project" join:";left;id,document.project_id"`
-	UserTeamMember   *models.TeamMember `gorm:"embedded;embeddedPrefix:tm__" json:"-" join:"team_member,tm;left;team_id,document.team_id;user_id,document.user_id;deleted_at,##is null"`
-	UserTeamNickname string             `gorm:"-" json:"user_team_nickname"`
+	Team           *models.Team       `gorm:"embedded;embeddedPrefix:team__" json:"team" join:";left;id,document.team_id"`
+	Project        *models.Project    `gorm:"embedded;embeddedPrefix:project__" json:"project" join:";left;id,document.project_id"`
+	UserTeamMember *models.TeamMember `gorm:"embedded;embeddedPrefix:tm__" json:"-" join:"team_member,tm;left;team_id,document.team_id;user_id,document.user_id;deleted_at,##is null"`
+	// UserTeamNickname string             `gorm:"-" json:"user_team_nickname"`
 }
 
 type AccessRecordAndFavoritesQueryResItem struct {
@@ -159,11 +159,11 @@ func (s *DocumentService) FindRecycleBinByUserId(userId string, projectId int64)
 		&OrderLimitArgs{"document_access_record.last_access_time desc", 0},
 		&Unscoped{},
 	)
-	for i, _ := range result {
-		if result[i].UserTeamMember != nil {
-			result[i].UserTeamNickname = result[i].UserTeamMember.Nickname
-		}
-	}
+	// for i, _ := range result {
+	// 	if result[i].UserTeamMember != nil {
+	// 		result[i].UserTeamNickname = result[i].UserTeamMember.Nickname
+	// 	}
+	// }
 	return &result
 }
 
@@ -188,11 +188,11 @@ func (s *DocumentService) FindDocumentByProjectId(projectId int64, userId string
 		&WhereArgs{"document.project_id = ?", []any{projectId}},
 		&OrderLimitArgs{"document_access_record.last_access_time desc", 0},
 	)
-	for i, _ := range result {
-		if result[i].UserTeamMember != nil {
-			result[i].UserTeamNickname = result[i].UserTeamMember.Nickname
-		}
-	}
+	// for i, _ := range result {
+	// 	if result[i].UserTeamMember != nil {
+	// 		result[i].UserTeamNickname = result[i].UserTeamMember.Nickname
+	// 	}
+	// }
 	return &result
 }
 

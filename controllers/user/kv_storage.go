@@ -40,10 +40,8 @@ func GetUserKVStorage(c *gin.Context) {
 
 	if err == nil {
 		result[key] = userKVStorage
-		response.Success(c, result)
-	} else {
-		response.Fail(c, "Not Find")
 	}
+	response.Success(c, result)
 }
 
 func SetUserKVStorage(c *gin.Context) {
@@ -73,7 +71,7 @@ func SetUserKVStorage(c *gin.Context) {
 
 	userKVStorageService := services.NewUserKVStorageService()
 	if !userKVStorageService.SetOne(userId, req.Key, req.Value) {
-		response.Fail(c, "操作失败")
+		response.ServerError(c, "操作失败")
 		return
 	}
 

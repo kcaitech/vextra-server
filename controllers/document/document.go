@@ -59,7 +59,7 @@ func DeleteUserDocument(c *gin.Context) {
 		if _, err := documentService.Delete(
 			"user_id = ? and id = ?", userId, documentId,
 		); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
-			response.Fail(c, "删除错误")
+			response.ServerError(c, "删除错误")
 			return
 		}
 		_, _ = documentService.UpdateColumns(map[string]any{"delete_by": userId}, "deleted_at is not null and id = ?", documentId, &services.Unscoped{})
@@ -73,7 +73,7 @@ func DeleteUserDocument(c *gin.Context) {
 		if _, err := documentService.Delete(
 			"id = ?", documentId,
 		); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
-			response.Fail(c, "删除错误")
+			response.ServerError(c, "删除错误")
 			return
 		}
 		_, _ = documentService.UpdateColumns(map[string]any{"delete_by": userId}, "deleted_at is not null and id = ?", documentId, &services.Unscoped{})
@@ -171,7 +171,7 @@ func SetDocumentName(c *gin.Context) {
 		reviewResponse, err := (reviewClient).ReviewText(req.Name)
 		if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
 			log.Println("名称审核不通过", req.Name, err, reviewResponse)
-			response.Fail(c, "审核不通过")
+			response.BadRequest(c, "审核不通过")
 			return
 		}
 	}
@@ -180,7 +180,7 @@ func SetDocumentName(c *gin.Context) {
 		map[string]any{"name": req.Name},
 		"id = ?", documentId,
 	); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
-		response.Fail(c, "更新错误")
+		response.ServerError(c, "更新错误")
 		return
 	}
 	if errors.Is(err, services.ErrRecordNotFound) {
@@ -234,7 +234,7 @@ func copyDocument(userId string, documentId int64, c *gin.Context, documentName 
 
 	documentVersion := models.DocumentVersion{}
 	if err := documentService.DocumentVersionService.Get(&documentVersion, "document_id = ? and version_id = ?", documentId, sourceDocument.VersionId); err != nil {
-		response.Fail(c, "获取文档版本失败")
+		response.ServerError(c, "获取文档版本失败")
 		return
 	}
 
@@ -244,7 +244,7 @@ func copyDocument(userId string, documentId int64, c *gin.Context, documentName 
 	cmdServices := services.GetCmdService()
 	documentCmdList, err := cmdServices.GetCmdItemsFromStart(documentId, documentVersion.LastCmdVerId)
 	if err != nil {
-		response.Fail(c, "获取文档cmd失败")
+		response.ServerError(c, "获取文档cmd失败")
 		return
 	}
 
@@ -258,7 +258,7 @@ func copyDocument(userId string, documentId int64, c *gin.Context, documentName 
 	// 获取minBaseVer到documentVersion.lastCmdVerId之间的cmd
 	baseVerCmdList, err := cmdServices.GetCmdItems(documentId, minBaseVer, documentVersion.LastCmdVerId)
 	if err != nil {
-		response.Fail(c, "获取文档cmd失败")
+		response.ServerError(c, "获取文档cmd失败")
 		return
 	}
 
@@ -271,20 +271,20 @@ func copyDocument(userId string, documentId int64, c *gin.Context, documentName 
 	targetDocumentPath := uuid.New().String()
 	if _, err := _storage.Bucket.CopyDirectory(sourceDocument.Path, targetDocumentPath); err != nil {
 		log.Println("复制目录失败：", err)
-		response.Fail(c, "复制失败")
+		response.ServerError(c, "复制失败")
 		return
 	}
 
 	documentMetaBytes, err := _storage.Bucket.GetObject(targetDocumentPath + "/document-meta.json")
 	if err != nil {
 		log.Println("获取document-meta.json失败：", targetDocumentPath+"/document-meta.json", err)
-		response.Fail(c, "复制失败")
+		response.ServerError(c, "复制失败")
 		return
 	}
 	documentMeta := map[string]any{}
 	if err := json.Unmarshal(documentMetaBytes, &documentMeta); err != nil {
 		log.Println("documentMetaBytes转json失败：", err)
-		response.Fail(c, "复制失败")
+		response.ServerError(c, "复制失败")
 		return
 	}
 
@@ -292,13 +292,13 @@ func copyDocument(userId string, documentId int64, c *gin.Context, documentName 
 		pageItem, ok := page.(map[string]any)
 		if !ok {
 			log.Println("pageItem转map失败：", err)
-			response.Fail(c, "复制失败")
+			response.ServerError(c, "复制失败")
 			return
 		}
 		pageObjectInfo, err := _storage.Bucket.GetObjectInfo(targetDocumentPath + "/pages/" + pageItem["id"].(string) + ".json")
 		if err != nil {
 			log.Println("获取pageObjectInfo失败：", err)
-			response.Fail(c, "复制失败")
+			response.ServerError(c, "复制失败")
 			return
 		}
 		pageItem["versionId"] = pageObjectInfo.VersionID
@@ -309,13 +309,13 @@ func copyDocument(userId string, documentId int64, c *gin.Context, documentName 
 	documentMetaBytes, err = json.Marshal(documentMeta)
 	if err != nil {
 		log.Println("documentMeta转json失败：", err)
-		response.Fail(c, "复制失败")
+		response.ServerError(c, "复制失败")
 		return
 	}
 	documentMetaUploadInfo, err := _storage.Bucket.PutObjectByte(targetDocumentPath+"/document-meta.json", documentMetaBytes)
 	if err != nil {
 		log.Println("documentMeta上传失败：", err)
-		response.Fail(c, "复制失败")
+		response.ServerError(c, "复制失败")
 		return
 	}
 
@@ -331,7 +331,7 @@ func copyDocument(userId string, documentId int64, c *gin.Context, documentName 
 		VersionId: documentMetaUploadInfo.VersionID,
 	}
 	if err := documentService.Create(&targetDocument); err != nil {
-		response.Fail(c, "创建失败")
+		response.ServerError(c, "创建失败")
 		return
 	}
 

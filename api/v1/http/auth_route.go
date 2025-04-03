@@ -34,7 +34,7 @@ func RefreshToken(c *gin.Context) {
 	token, err := client.RefreshToken(refreshToken)
 	if err != nil {
 		log.Printf("Refresh token failed: %s", err.Error())
-		response.Fail(c, err.Error())
+		response.BadRequest(c, err.Error())
 		return
 	}
 	response.Success(c, map[string]any{

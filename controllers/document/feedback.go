@@ -34,6 +34,7 @@ func PostFeedback(c *gin.Context) {
 	form, err := c.MultipartForm()
 	if err != nil {
 		response.BadRequest(c, "参数错误：files")
+		return
 	}
 	fileHeaderList := form.File["files"]
 	for _, fileHeader := range fileHeaderList {
@@ -58,7 +59,7 @@ func PostFeedback(c *gin.Context) {
 		contentType := fileHeader.Header.Get("Content-Type")
 		imagePath, err := feedbackService.UploadImage(userId, fileBytes, contentType)
 		if err != nil {
-			response.Fail(c, err.Error())
+			response.ServerError(c, err.Error())
 			return
 		}
 		imagePathList = append(imagePathList, imagePath)
@@ -75,7 +76,7 @@ func PostFeedback(c *gin.Context) {
 		ImagePathList: imagePathListJson,
 		PageUrl:       req.PageUrl,
 	}); err != nil {
-		response.Fail(c, "")
+		response.ServerError(c, "")
 	}
 	response.Success(c, nil)
 }

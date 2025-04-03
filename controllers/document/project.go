@@ -49,7 +49,7 @@ func CreateProject(c *gin.Context) {
 		if errors.Is(err, services.ErrRecordNotFound) {
 			response.BadRequest(c, "团队不存在")
 		} else {
-			response.Fail(c, "查询错误")
+			response.ServerError(c, "查询错误")
 		}
 		return
 	}
@@ -69,7 +69,7 @@ func CreateProject(c *gin.Context) {
 		reviewResponse, err := (reviewClient).ReviewText(req.Name)
 		if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
 			log.Println("名称审核不通过", req.Name, err, reviewResponse)
-			response.Fail(c, "审核不通过")
+			response.BadRequest(c, "审核不通过")
 			return
 		}
 	}
@@ -77,7 +77,7 @@ func CreateProject(c *gin.Context) {
 		reviewResponse, err := (reviewClient).ReviewText(req.Description)
 		if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
 			log.Println("描述审核不通过", req.Description, err, reviewResponse)
-			response.Fail(c, "审核不通过")
+			response.BadRequest(c, "审核不通过")
 			return
 		}
 	}
@@ -88,7 +88,7 @@ func CreateProject(c *gin.Context) {
 		Description: req.Description,
 	}
 	if projectService.Create(&project) != nil {
-		response.Fail(c, "项目创建失败")
+		response.ServerError(c, "项目创建失败")
 		return
 	}
 
@@ -100,7 +100,7 @@ func CreateProject(c *gin.Context) {
 		PermSourceType: models.ProjectPermSourceTypeCustom,
 	}
 	if projectMemberService.Create(&projectMember) != nil {
-		response.Fail(c, "项目创建失败.")
+		response.ServerError(c, "项目创建失败.")
 		return
 	}
 
@@ -134,7 +134,7 @@ func GetProjectMemberList(c *gin.Context) {
 	}
 	projectService := services.NewProjectService()
 	if permType, err := projectService.GetProjectPermTypeByForUser(projectId, userId); err != nil || permType == nil {
-		response.Fail(c, "查询错误")
+		response.ServerError(c, "查询错误")
 		return
 	} else if *permType == models.ProjectPermTypeNone || *permType < models.ProjectPermTypeReadOnly {
 		response.Forbidden(c, "")
@@ -151,7 +151,7 @@ func GetProjectMemberList(c *gin.Context) {
 	users, err := services.GetKCAuthClient().GetUsersInfo(token, userIds)
 	if err != nil {
 		log.Println("get users info fail:", err.Error())
-		response.Fail(c, "查询错误")
+		response.ServerError(c, "查询错误")
 		return
 	}
 
@@ -217,14 +217,14 @@ func DeleteProject(c *gin.Context) {
 		if errors.Is(err, services.ErrRecordNotFound) {
 			response.BadRequest(c, "项目不存在")
 		} else {
-			response.Fail(c, "项目查询错误")
+			response.ServerError(c, "项目查询错误")
 		}
 		return
 	}
 	// 权限校验
 	permType, err := projectService.GetProjectPermTypeByForUser(projectId, userId)
 	if err != nil || permType == nil {
-		response.Fail(c, "权限查询错误")
+		response.ServerError(c, "权限查询错误")
 		return
 	}
 	if *permType == models.ProjectPermTypeNone || *permType < models.ProjectPermTypeCreator {
@@ -234,23 +234,23 @@ func DeleteProject(c *gin.Context) {
 	// 删除项目申请记录
 	projectMemberService := projectService.ProjectMemberService
 	if _, err := projectMemberService.Delete("project_id = ?", projectId); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
-		response.Fail(c, "项目申请记录删除失败")
+		response.ServerError(c, "项目申请记录删除失败")
 		return
 	}
 	// 删除项目成员
 	if _, err := projectMemberService.Delete("project_id = ?", projectId); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
-		response.Fail(c, "项目成员删除失败")
+		response.ServerError(c, "项目成员删除失败")
 		return
 	}
 	// 删除项目
 	if _, err := projectService.Delete("id = ?", projectId); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
-		response.Fail(c, "项目删除失败")
+		response.ServerError(c, "项目删除失败")
 		return
 	}
 	// 删除项目文档
 	documentService := services.NewDocumentService()
 	if _, err := documentService.Delete("project_id = ?", projectId); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
-		response.Fail(c, "项目文档删除失败")
+		response.ServerError(c, "项目文档删除失败")
 		return
 	}
 	response.Success(c, "")
@@ -282,7 +282,7 @@ func ApplyJoinProject(c *gin.Context) {
 		if errors.Is(err, services.ErrRecordNotFound) {
 			response.BadRequest(c, "项目不存在")
 		} else {
-			response.Fail(c, "项目查询错误")
+			response.ServerError(c, "项目查询错误")
 		}
 		return
 	}
@@ -292,7 +292,7 @@ func ApplyJoinProject(c *gin.Context) {
 	}
 	permType, err := projectService.GetProjectPermTypeByForUser(projectId, userId)
 	if err != nil || permType == nil {
-		response.Fail(c, "权限查询错误")
+		response.ServerError(c, "权限查询错误")
 		return
 	}
 	if *permType != models.ProjectPermTypeNone {
@@ -301,7 +301,7 @@ func ApplyJoinProject(c *gin.Context) {
 	}
 	projectJoinRequestService := projectService.ProjectJoinRequestService
 	if ok, err := projectJoinRequestService.Exist("deleted_at is null and project_id = ? and user_id = ? and status = ?", projectId, userId, models.ProjectJoinRequestStatusPending); err != nil {
-		response.Fail(c, "申请查询错误")
+		response.ServerError(c, "申请查询错误")
 		return
 	} else if ok {
 		response.BadRequest(c, "不能重复申请")
@@ -326,7 +326,7 @@ func ApplyJoinProject(c *gin.Context) {
 		}
 	}
 	if err := projectJoinRequestService.Create(&projectJoinRequest); err != nil {
-		response.Fail(c, "申请新建错误")
+		response.ServerError(c, "申请新建错误")
 		return
 	}
 	if !project.NeedApproval {
@@ -336,7 +336,7 @@ func ApplyJoinProject(c *gin.Context) {
 			PermType:       project.PermType,
 			PermSourceType: models.ProjectPermSourceTypeCustom,
 		}); err != nil {
-			response.Fail(c, "权限新建错误")
+			response.ServerError(c, "权限新建错误")
 			return
 		}
 	}
@@ -370,7 +370,7 @@ func GetProjectJoinRequestList(c *gin.Context) {
 	var messageShowList []models.ProjectJoinRequestMessageShow
 	if err := projectJoinRequestMessageShowService.Find(&messageShowList, "user_id = ? and project_id = ?", userId, projectId); err != nil {
 		log.Println("ProjectJoinRequestMessageShow查询错误", err)
-		response.Fail(c, "")
+		response.ServerError(c, "")
 		return
 	}
 	result = sliceutil.FilterT(func(item services.ProjectJoinRequestQuery) bool {
@@ -389,7 +389,7 @@ func GetProjectJoinRequestList(c *gin.Context) {
 	for i := range newMessageShowList {
 		if err := projectJoinRequestMessageShowService.Create(newMessageShowList[i]); err != nil {
 			log.Println("ProjectJoinRequestMessageShow新建错误", err)
-			response.Fail(c, "")
+			response.ServerError(c, "")
 			return
 		}
 	}
@@ -461,7 +461,7 @@ func ReviewProjectJoinRequest(c *gin.Context) {
 		if errors.Is(err, services.ErrRecordNotFound) {
 			response.BadRequest(c, "申请已被处理或无权限")
 		} else {
-			response.Fail(c, "查询错误")
+			response.ServerError(c, "查询错误")
 		}
 		return
 	}
@@ -477,12 +477,12 @@ func ReviewProjectJoinRequest(c *gin.Context) {
 	projectJoinRequest.ProcessedAt = myTime.Time(time.Now())
 	projectJoinRequest.ProcessedBy = userId
 	if _, err := projectService.ProjectJoinRequestService.UpdatesById(projectJoinRequestsId, &projectJoinRequest); err != nil {
-		response.Fail(c, "更新错误")
+		response.ServerError(c, "更新错误")
 		return
 	}
 	if approvalCode == 1 {
 		if permType, err := projectService.GetProjectPermTypeByForUser(projectJoinRequest.ProjectId, projectJoinRequest.UserId); err != nil || permType == nil {
-			response.Fail(c, "查询错误")
+			response.ServerError(c, "查询错误")
 			return
 		} else if *permType == models.ProjectPermTypeNone {
 			if err := projectService.ProjectMemberService.Create(&models.ProjectMember{
@@ -491,7 +491,7 @@ func ReviewProjectJoinRequest(c *gin.Context) {
 				PermType:       projectJoinRequest.PermType,
 				PermSourceType: models.ProjectPermSourceTypeCustom,
 			}); err != nil {
-				response.Fail(c, "新建错误")
+				response.ServerError(c, "新建错误")
 				return
 			}
 		} else if projectJoinRequest.PermType <= *permType {
@@ -502,7 +502,7 @@ func ReviewProjectJoinRequest(c *gin.Context) {
 				PermType:       projectJoinRequest.PermType,
 				PermSourceType: models.ProjectPermSourceTypeCustom,
 			}, "project_id = ? and user_id = ?", projectJoinRequest.ProjectId, projectJoinRequest.UserId); err != nil {
-				response.Fail(c, "更新错误")
+				response.ServerError(c, "更新错误")
 				return
 			}
 		}
@@ -533,7 +533,7 @@ func SetProjectInfo(c *gin.Context) {
 	}
 	projectService := services.NewProjectService()
 	if permType, err := projectService.GetProjectPermTypeByForUser(projectId, userId); err != nil || permType == nil {
-		response.Fail(c, "查询错误")
+		response.ServerError(c, "查询错误")
 		return
 	} else if *permType == models.ProjectPermTypeNone || *permType < models.ProjectPermTypeAdmin {
 		response.Forbidden(c, "")
@@ -549,7 +549,7 @@ func SetProjectInfo(c *gin.Context) {
 			reviewResponse, err := (reviewClient).ReviewText(req.Name)
 			if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
 				log.Println("名称审核不通过", req.Name, err, reviewResponse)
-				response.Fail(c, "审核不通过")
+				response.BadRequest(c, "审核不通过")
 				return
 			}
 		}
@@ -557,7 +557,7 @@ func SetProjectInfo(c *gin.Context) {
 			reviewResponse, err := (reviewClient).ReviewText(req.Description)
 			if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
 				log.Println("描述审核不通过", req.Description, err, reviewResponse)
-				response.Fail(c, "审核不通过")
+				response.BadRequest(c, "审核不通过")
 				return
 			}
 		}
@@ -565,7 +565,7 @@ func SetProjectInfo(c *gin.Context) {
 			Name:        req.Name,
 			Description: req.Description,
 		}); err != nil {
-			response.Fail(c, "更新错误")
+			response.ServerError(c, "更新错误")
 			return
 		}
 	}
@@ -605,7 +605,7 @@ func SetProjectInvited(c *gin.Context) {
 	}
 	projectService := services.NewProjectService()
 	if permType, err := projectService.GetProjectPermTypeByForUser(projectId, userId); err != nil || permType == nil {
-		response.Fail(c, "查询错误")
+		response.ServerError(c, "查询错误")
 		return
 	} else if *permType == models.ProjectPermTypeNone || *permType < models.ProjectPermTypeAdmin {
 		response.Forbidden(c, "")
@@ -625,7 +625,7 @@ func SetProjectInvited(c *gin.Context) {
 		updateColumns["need_approval"] = *req.NeedApproval
 	}
 	if _, err := projectService.UpdateColumnsById(projectId, updateColumns); err != nil {
-		response.Fail(c, "更新错误")
+		response.ServerError(c, "更新错误")
 		return
 	}
 	response.Success(c, "")
@@ -646,16 +646,16 @@ func GetProjectInvitedInfo(c *gin.Context) {
 	projectService := services.NewProjectService()
 	var project models.Project
 	if err := projectService.GetById(projectId, &project); err != nil {
-		response.Fail(c, "查询错误")
+		response.ServerError(c, "查询错误")
 		return
 	}
 	if !project.OpenInvite {
-		response.Fail(c, "项目邀请已关闭")
+		response.BadRequest(c, "项目邀请已关闭")
 		return
 	}
 	selfPermType, err := projectService.GetProjectPermTypeByForUser(projectId, userId)
 	if err != nil {
-		response.Fail(c, "查询错误")
+		response.ServerError(c, "查询错误")
 		return
 	}
 	result := map[string]any{
@@ -689,7 +689,7 @@ func ExitProject(c *gin.Context) {
 	}
 	projectService := services.NewProjectService()
 	if permType, err := projectService.GetProjectPermTypeByForUser(projectId, userId); err != nil || permType == nil {
-		response.Fail(c, "查询错误")
+		response.ServerError(c, "查询错误")
 		return
 	} else if *permType == models.ProjectPermTypeNone || *permType == models.ProjectPermTypeCreator {
 		response.Forbidden(c, "")
@@ -698,7 +698,7 @@ func ExitProject(c *gin.Context) {
 	// 删除项目成员
 	projectMemberService := services.NewProjectMemberService()
 	if _, err := projectMemberService.Delete("project_id = ? and user_id = ?", projectId, userId); err != nil {
-		response.Fail(c, "项目成员删除失败")
+		response.ServerError(c, "项目成员删除失败")
 		return
 	}
 	response.Success(c, "")
@@ -737,7 +737,7 @@ func SetProjectMemberPermission(c *gin.Context) {
 	projectService := services.NewProjectService()
 	selfPermType, err := projectService.GetProjectPermTypeByForUser(projectId, userId)
 	if err != nil {
-		response.Fail(c, "查询错误")
+		response.ServerError(c, "查询错误")
 		return
 	} else if selfPermType == nil || *selfPermType < models.ProjectPermTypeAdmin {
 		response.Forbidden(c, "")
@@ -745,7 +745,7 @@ func SetProjectMemberPermission(c *gin.Context) {
 	}
 	permType, err := projectService.GetProjectPermTypeByForUser(projectId, reqUserId)
 	if err != nil || permType == nil {
-		response.Fail(c, "查询错误")
+		response.ServerError(c, "查询错误")
 		return
 	}
 	if *permType >= *selfPermType {
@@ -756,7 +756,7 @@ func SetProjectMemberPermission(c *gin.Context) {
 	if _, err := projectMemberService.UpdateColumns(map[string]any{
 		"perm_type": req.PermType,
 	}, "project_id = ? and user_id = ?", projectId, reqUserId); err != nil {
-		response.Fail(c, "更新错误")
+		response.ServerError(c, "更新错误")
 		return
 	}
 	response.Success(c, "")
@@ -794,7 +794,7 @@ func ChangeProjectCreator(c *gin.Context) {
 	projectService := services.NewProjectService()
 	selfPermType, err := projectService.GetProjectPermTypeByForUser(projectId, userId)
 	if err != nil {
-		response.Fail(c, "查询错误")
+		response.ServerError(c, "查询错误")
 		return
 	} else if selfPermType == nil || *selfPermType != models.ProjectPermTypeCreator {
 		response.Forbidden(c, "")
@@ -811,21 +811,21 @@ func ChangeProjectCreator(c *gin.Context) {
 		}
 	}()
 	if err := transactDB.Error; err != nil {
-		response.Fail(c, "更新错误")
+		response.ServerError(c, "更新错误")
 		needRollback = true
 		return
 	}
 	if _, err := projectMemberService.UpdateColumns(map[string]any{
 		"perm_type": models.ProjectPermTypeAdmin,
 	}, "project_id = ? and user_id = ?", projectId, userId); err != nil {
-		response.Fail(c, "更新错误.")
+		response.ServerError(c, "更新错误.")
 		needRollback = true
 		return
 	}
 	if _, err := projectMemberService.UpdateColumns(map[string]any{
 		"perm_type": models.ProjectPermTypeCreator,
 	}, "project_id = ? and user_id = ?", projectId, reqUserId); err != nil {
-		response.Fail(c, "更新错误..")
+		response.ServerError(c, "更新错误..")
 		needRollback = true
 		return
 	}
@@ -856,7 +856,7 @@ func RemoveProjectMember(c *gin.Context) {
 	projectService := services.NewProjectService()
 	selfPermType, err := projectService.GetProjectPermTypeByForUser(projectId, userId)
 	if err != nil {
-		response.Fail(c, "查询错误")
+		response.ServerError(c, "查询错误")
 		return
 	} else if selfPermType == nil || *selfPermType < models.ProjectPermTypeAdmin {
 		response.Forbidden(c, "")
@@ -864,7 +864,7 @@ func RemoveProjectMember(c *gin.Context) {
 	}
 	permType, err := projectService.GetProjectPermTypeByForUser(projectId, reqUserId)
 	if err != nil || permType == nil {
-		response.Fail(c, "查询错误")
+		response.ServerError(c, "查询错误")
 		return
 	} else if *permType >= *selfPermType {
 		response.Forbidden(c, "")
@@ -873,7 +873,7 @@ func RemoveProjectMember(c *gin.Context) {
 	// 删除项目成员
 	projectMemberService := services.NewProjectMemberService()
 	if _, err := projectMemberService.Delete("project_id = ? and user_id = ?", projectId, reqUserId); err != nil {
-		response.Fail(c, "团队成员删除失败")
+		response.ServerError(c, "团队成员删除失败")
 		return
 	}
 	response.Success(c, "")
@@ -902,7 +902,7 @@ func SetProjectFavorite(c *gin.Context) {
 	}
 	projectService := services.NewProjectService()
 	if err := projectService.ToggleProjectFavorite(userId, projectId, isFavor); err != nil {
-		response.Fail(c, "操作失败")
+		response.ServerError(c, "操作失败")
 		return
 	}
 	response.Success(c, "")
@@ -946,7 +946,7 @@ func MoveDocument(c *gin.Context) {
 	var document models.Document
 	documentService := services.NewDocumentService()
 	if err := documentService.GetById(documentId, &document); err != nil {
-		response.Fail(c, "查询错误")
+		response.ServerError(c, "查询错误")
 		return
 	}
 
@@ -969,7 +969,7 @@ func MoveDocument(c *gin.Context) {
 	if sourceProjectId != 0 {
 		sourcePermType, err := projectService.GetProjectPermTypeByForUser(sourceProjectId, userId)
 		if err != nil {
-			response.Fail(c, "查询错误")
+			response.ServerError(c, "查询错误")
 			return
 		}
 		if sourcePermType == nil || *sourcePermType < models.ProjectPermTypeEditable {
@@ -982,7 +982,7 @@ func MoveDocument(c *gin.Context) {
 	if targetProjectId != 0 {
 		targetPermType, err := projectService.GetProjectPermTypeByForUser(targetProjectId, userId)
 		if err != nil {
-			response.Fail(c, "查询错误")
+			response.ServerError(c, "查询错误")
 			return
 		}
 		if targetPermType == nil || *targetPermType < models.ProjectPermTypeEditable {
@@ -991,7 +991,7 @@ func MoveDocument(c *gin.Context) {
 		}
 		var targetProject models.Project
 		if err := projectService.GetById(targetProjectId, &targetProject); err != nil {
-			response.Fail(c, "查询错误")
+			response.ServerError(c, "查询错误")
 			return
 		}
 		targetTeamId = targetProject.TeamId
@@ -1001,7 +1001,7 @@ func MoveDocument(c *gin.Context) {
 		"team_id":    targetTeamId,
 		"project_id": targetProjectId,
 	}, "id = ?", documentId); err != nil {
-		response.Fail(c, "更新错误")
+		response.ServerError(c, "更新错误")
 		return
 	}
 

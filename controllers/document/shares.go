@@ -47,7 +47,7 @@ func DeleteUserShare(c *gin.Context) {
 	if _, err := services.NewDocumentService().DocumentPermissionService.HardDelete(
 		"grantee_id = ? and id = ?", userId, permissionId,
 	); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
-		response.Fail(c, "删除错误")
+		response.ServerError(c, "删除错误")
 		return
 	}
 	response.Success(c, nil)
@@ -88,7 +88,7 @@ func SetDocumentShareType(c *gin.Context) {
 			response.Forbidden(c, "")
 		} else {
 			log.Println("查询错误", err)
-			response.Fail(c, "")
+			response.ServerError(c, "")
 		}
 		return
 	}
@@ -101,7 +101,7 @@ func SetDocumentShareType(c *gin.Context) {
 		permType, err := projectService.GetProjectPermTypeByForUser(document.ProjectId, userId)
 		if err != nil || permType == nil {
 			log.Println("权限查询错误", err)
-			response.Fail(c, "")
+			response.ServerError(c, "")
 			return
 		}
 		if (document.UserId != userId && *permType < models.ProjectPermTypeAdmin) || (document.UserId == userId && *permType < models.ProjectPermTypeCommentable) {
@@ -111,7 +111,7 @@ func SetDocumentShareType(c *gin.Context) {
 	}
 	document.DocType = docType
 	if _, err := documentService.UpdatesById(documentId, &document); err != nil {
-		response.Fail(c, "更新错误")
+		response.ServerError(c, "更新错误")
 		return
 	}
 	if docType == models.DocTypePublicReadable || docType == models.DocTypePublicCommentable || docType == models.DocTypePublicEditable {
@@ -162,7 +162,7 @@ func GetDocumentSharesList(c *gin.Context) {
 		permType, err := projectService.GetProjectPermTypeByForUser(document.ProjectId, userId)
 		if err != nil || permType == nil {
 			log.Println("权限查询错误", err)
-			response.Fail(c, "")
+			response.ServerError(c, "")
 			return
 		}
 		if (document.UserId != userId && *permType < models.ProjectPermTypeAdmin) || (document.UserId == userId && *permType < models.ProjectPermTypeCommentable) {
@@ -208,7 +208,7 @@ func SetDocumentSharePermission(c *gin.Context) {
 			response.BadRequest(c, "数据不存在")
 		} else {
 			log.Println("查询错误", err)
-			response.Fail(c, "")
+			response.ServerError(c, "")
 		}
 		return
 	}
@@ -222,7 +222,7 @@ func SetDocumentSharePermission(c *gin.Context) {
 		permType, err := projectService.GetProjectPermTypeByForUser(projectId, userId)
 		if err != nil || permType == nil {
 			log.Println("权限查询错误", err)
-			response.Fail(c, "")
+			response.ServerError(c, "")
 			return
 		}
 		if (documentPermission.Document.UserId != userId && *permType < models.ProjectPermTypeAdmin) || (documentPermission.Document.UserId == userId && *permType < models.ProjectPermTypeCommentable) {
@@ -258,7 +258,7 @@ func DeleteDocumentSharePermission(c *gin.Context) {
 		&services.WhereArgs{Query: "document_permission.resource_type = ? and document_permission.id = ? and document.user_id = ?", Args: []any{models.ResourceTypeDoc, permissionId, userId}},
 	); err != nil || count <= 0 {
 		if err != nil {
-			response.Fail(c, "删除错误")
+			response.ServerError(c, "删除错误")
 		} else {
 			response.Forbidden(c, "")
 		}
@@ -297,7 +297,7 @@ func ApplyDocumentPermission(c *gin.Context) {
 		if errors.Is(err, services.ErrRecordNotFound) {
 			response.BadRequest(c, "文档不存在")
 		} else {
-			response.Fail(c, "查询错误")
+			response.ServerError(c, "查询错误")
 		}
 		return
 	}
@@ -333,7 +333,7 @@ func ApplyDocumentPermission(c *gin.Context) {
 		PermType:       permType,
 		ApplicantNotes: req.ApplicantNotes,
 	}); err != nil {
-		response.Fail(c, "新建错误")
+		response.ServerError(c, "新建错误")
 		return
 	}
 	response.Success(c, "")
@@ -411,7 +411,7 @@ func ReviewDocumentPermissionRequest(c *gin.Context) {
 		if errors.Is(err, services.ErrRecordNotFound) {
 			response.BadRequest(c, "申请已被处理")
 		} else {
-			response.Fail(c, "查询错误")
+			response.ServerError(c, "查询错误")
 		}
 		return
 	}
@@ -427,7 +427,7 @@ func ReviewDocumentPermissionRequest(c *gin.Context) {
 	documentPermissionRequest.ProcessedAt = myTime.Time(time.Now())
 	documentPermissionRequest.ProcessedBy = userId
 	if _, err := documentService.DocumentPermissionRequestsService.UpdatesById(documentPermissionRequestsId, &documentPermissionRequest); err != nil {
-		response.Fail(c, "更新错误")
+		response.ServerError(c, "更新错误")
 		return
 	}
 	if approvalCode == 1 {
@@ -438,7 +438,7 @@ func ReviewDocumentPermissionRequest(c *gin.Context) {
 			documentPermissionRequest.UserId,
 		)
 		if err != nil {
-			response.Fail(c, "查询错误")
+			response.ServerError(c, "查询错误")
 			return
 		}
 		if documentPermission == nil {
@@ -449,7 +449,7 @@ func ReviewDocumentPermissionRequest(c *gin.Context) {
 				PermType:       documentPermissionRequest.PermType,
 				PermSourceType: models.PermSourceTypeCustom,
 			}); err != nil {
-				response.Fail(c, "新建错误")
+				response.ServerError(c, "新建错误")
 				return
 			}
 		} else {
@@ -459,7 +459,7 @@ func ReviewDocumentPermissionRequest(c *gin.Context) {
 			} else {
 				documentPermission.PermType = documentPermissionRequest.PermType
 				if _, err := documentService.DocumentPermissionService.UpdatesById(documentPermission.Id, documentPermission); err != nil {
-					response.Fail(c, "更新错误")
+					response.ServerError(c, "更新错误")
 					return
 				}
 			}
@@ -528,7 +528,7 @@ func GetWxMpCode(c *gin.Context) {
 	resp, err := http.Get("https://api.weixin.qq.com/cgi-bin/token" + "?" + queryParams.Encode())
 	if err != nil {
 		log.Println(err)
-		response.Fail(c, "获取失败")
+		response.ServerError(c, "获取失败")
 		return
 	}
 	defer resp.Body.Close()
@@ -536,7 +536,7 @@ func GetWxMpCode(c *gin.Context) {
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Println(err)
-		response.Fail(c, "获取失败")
+		response.ServerError(c, "获取失败")
 		return
 	}
 	// json解析
@@ -544,7 +544,7 @@ func GetWxMpCode(c *gin.Context) {
 	err = json.Unmarshal(body, &wxAccessTokenResp)
 	if err != nil {
 		log.Println(err)
-		response.Fail(c, "获取失败")
+		response.ServerError(c, "获取失败")
 		return
 	}
 
@@ -576,7 +576,7 @@ func GetWxMpCode(c *gin.Context) {
 	resp, err = http.Post("https://api.weixin.qq.com/wxa/getwxacodeunlimit"+"?"+queryParams.Encode(), "application/json", bytes.NewBuffer(requestBodyBytes))
 	if err != nil {
 		log.Println(err)
-		response.Fail(c, "获取失败")
+		response.ServerError(c, "获取失败")
 		return
 	}
 	defer resp.Body.Close()
@@ -588,11 +588,11 @@ func GetWxMpCode(c *gin.Context) {
 	if strings.Contains(contentType, "application/json") {
 		if err != nil {
 			log.Println(err)
-			response.Fail(c, "获取失败")
+			response.ServerError(c, "获取失败")
 			return
 		}
 		log.Println("获取小程序码失败", string(body))
-		response.Fail(c, "获取失败")
+		response.ServerError(c, "获取失败")
 		return
 	}
 

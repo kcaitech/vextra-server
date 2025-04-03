@@ -58,14 +58,14 @@ func SetUserDocumentFavoriteStatus(c *gin.Context) {
 		services.SelectArgs{Select: "document_favorites.*"},
 	); err != nil {
 		if !errors.Is(err, services.ErrRecordNotFound) {
-			response.Fail(c, "查询错误")
+			response.ServerError(c, "查询错误")
 			return
 		}
 		documentFavorites.UserId = userId
 		documentFavorites.DocumentId = documentId
 		documentFavorites.IsFavorite = req.Status
 		if err := documentFavoritesService.Create(&documentFavorites); err != nil {
-			response.Fail(c, "创建失败")
+			response.ServerError(c, "创建失败")
 			return
 		}
 		response.Success(c, "")
@@ -73,7 +73,7 @@ func SetUserDocumentFavoriteStatus(c *gin.Context) {
 	}
 	documentFavorites.IsFavorite = req.Status
 	if _, err := documentFavoritesService.UpdatesById(documentFavorites.Id, &documentFavorites); err != nil {
-		response.Fail(c, "更新失败")
+		response.ServerError(c, "更新失败")
 		return
 	}
 	response.Success(c, "")

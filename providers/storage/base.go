@@ -19,7 +19,7 @@ type Client interface {
 }
 
 type ClientConfig struct {
-	Provider        Provider `yaml:"provider" json:"provider"`
+	// Provider        Provider `yaml:"provider" json:"provider"`
 	Endpoint        string   `yaml:"endpoint" json:"endpoint"`
 	Region          string   `yaml:"region" json:"region"`
 	AccessKeyID     string   `yaml:"accessKeyID" json:"accessKeyID"`

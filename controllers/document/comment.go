@@ -139,7 +139,7 @@ func PostUserComment(c *gin.Context) {
 			var document models.Document
 			if documentService.GetById(documentId, &document) != nil {
 				log.Println("文档不存在", documentId)
-				response.Fail(c, "文档不存在")
+				response.BadRequest(c, "文档不存在")
 				return
 			}
 			LockedAt := (time.Now())
@@ -156,7 +156,7 @@ func PostUserComment(c *gin.Context) {
 	commentCollection := mongoDB.DB.Collection("comment")
 	if _, err := commentCollection.InsertOne(nil, userComment); err != nil {
 		log.Println("mongo插入失败", err)
-		response.Fail(c, "评论失败")
+		response.ServerError(c, "评论失败")
 	}
 	if publishData, err := json.Marshal(&models.UserCommentPublishData{
 		Type:    models.UserCommentPublishTypeAdd,
@@ -230,7 +230,7 @@ func PutUserComment(c *gin.Context) {
 		reviewResponse, err := (reviewClient).ReviewText(userComment.Content)
 		if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
 			log.Println("评论审核不通过", userComment.Content, err, reviewResponse)
-			response.Fail(c, "审核不通过")
+			response.BadRequest(c, "审核不通过")
 			return
 		}
 	}
@@ -239,7 +239,7 @@ func PutUserComment(c *gin.Context) {
 	commentCollection := mongoDB.DB.Collection("comment")
 	if _, err := commentCollection.UpdateByID(nil, userComment.Id, bson.M{"$set": &userComment}); err != nil {
 		log.Println("mongo更新失败", err)
-		response.Fail(c, "更新失败")
+		response.ServerError(c, "更新失败")
 	}
 	if publishData, err := json.Marshal(&models.UserCommentPublishData{
 		Type:    models.UserCommentPublishTypeUpdate,
@@ -292,7 +292,7 @@ func DeleteUserComment(c *gin.Context) {
 		var comment models.UserComment
 		if err := commentRes.Decode(&comment); err != nil {
 			fmt.Println("文档数据错误1", err)
-			response.Fail(c, "文档数据错误")
+			response.ServerError(c, "文档数据错误")
 			return
 		}
 		if comment.User != (userId) {
@@ -302,7 +302,7 @@ func DeleteUserComment(c *gin.Context) {
 	}
 	if _, err := commentCollection.DeleteOne(nil, bson.M{"_id": commentId}); err != nil {
 		log.Println("mongo删除失败", err)
-		response.Fail(c, "删除失败")
+		response.ServerError(c, "删除失败")
 	}
 	if publishData, err := json.Marshal(&models.UserCommentPublishData{
 		Type: models.UserCommentPublishTypeDel,
@@ -358,7 +358,7 @@ func SetUserCommentStatus(c *gin.Context) {
 	commentCollection := mongoDB.DB.Collection("comment")
 	if _, err := commentCollection.UpdateByID(nil, userComment.Id, bson.M{"$set": &userComment}); err != nil {
 		log.Println("mongo更新失败", err)
-		response.Fail(c, "更新失败")
+		response.ServerError(c, "更新失败")
 	}
 	if publishData, err := json.Marshal(&models.UserCommentPublishData{
 		Type:    models.UserCommentPublishTypeUpdate,

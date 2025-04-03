@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net/http"
 	"sync/atomic"
 
 	"github.com/gin-gonic/gin"
@@ -121,11 +120,11 @@ func (c *ACommuncation) handleBind(clientData *TransData) {
 
 	docInfo, errmsg := document.GetUserDocumentInfo1(c.userId, documentId, permType)
 	if nil == docInfo {
-		c.msgErr(errmsg, &serverData, nil)
+		c.msgErr(err.Error(), &serverData, nil)
 		return
 	}
 
-	accessKey, errmsg := document.GetDocumentAccessKey1(c.userId, documentId)
+	accessKey, err := document.GetDocumentAccessKey1(c.userId, documentId)
 	if nil == accessKey {
 		c.msgErr(errmsg, &serverData, nil)
 		return
@@ -272,7 +271,7 @@ func Communication(c *gin.Context) {
 	token := c.Query("token")
 	if token == "" {
 		log.Println("communication-未登录")
-		response.Abort(c, http.StatusUnauthorized, "未登录", nil)
+		response.Unauthorized(c)
 		return
 	}
 
@@ -280,14 +279,14 @@ func Communication(c *gin.Context) {
 	claims, err := jwtClient.ValidateToken(token)
 	if err != nil {
 		log.Println("communication-Token错误", err)
-		response.Abort(c, http.StatusForbidden, "Token错误", nil)
+		response.Unauthorized(c)
 		return
 	}
 
 	userId := claims.UserID
 	if userId == "" {
 		log.Println("communication-UserId错误", userId)
-		response.Abort(c, http.StatusForbidden, "UserId错误", nil)
+		response.BadRequest(c, "UserId错误")
 		return
 	}
 
@@ -295,7 +294,7 @@ func Communication(c *gin.Context) {
 	ws, err := websocket.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Println("communication-建立ws连接失败：", userId, err)
-		response.Fail(c, "建立ws连接失败")
+		response.ServerError(c, "建立ws连接失败")
 		return
 	}
 	defer ws.Close()

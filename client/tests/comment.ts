@@ -1,0 +1,97 @@
+import { CommentAPI } from '../request/comment'
+import { HttpMgr } from '../request/http'
+import { TEST_API_URL, TEST_TOKEN, TEST_UNAUTHORIZED } from './config';
+
+// 创建HTTP管理器实例
+const httpManager = new HttpMgr(TEST_API_URL, TEST_UNAUTHORIZED, TEST_TOKEN);
+
+// 创建CommentAPI实例
+const commentAPI = new CommentAPI(httpManager);
+
+// 测试获取文档评论
+async function testGetDocumentComment() {
+    try {
+        const response = await commentAPI.getDocumentCommentAPI({
+            doc_id: '123', // 替换为实际的文档ID
+        });
+        console.log('获取文档评论:', response);
+    } catch (error) {
+        console.error('获取文档评论失败:', error);
+    }
+}
+
+// 测试创建评论
+async function testCreateComment() {
+    try {
+        const response = await commentAPI.createCommentAPI({
+            doc_id: '123', // 替换为实际的文档ID
+            page_id: 'page1',
+            shape_id: 'shape1',
+            target_shape_id: 'target1',
+            shape_frame: {
+                x1: 0,
+                x2: 100,
+                y1: 0,
+                y2: 100,
+            },
+            content: '测试评论内容',
+        });
+        console.log('创建评论:', response);
+    } catch (error) {
+        console.error('创建评论失败:', error);
+    }
+}
+
+// 测试编辑评论
+async function testEditComment() {
+    try {
+        const response = await commentAPI.editCommentAPI({
+            id: 'comment123', // 替换为实际的评论ID
+            content: '修改后的评论内容',
+        });
+        console.log('编辑评论:', response);
+    } catch (error) {
+        console.error('编辑评论失败:', error);
+    }
+}
+
+// 测试删除评论
+async function testDeleteComment() {
+    try {
+        const response = await commentAPI.deleteCommentAPI({
+            id: 'comment123', // 替换为实际的评论ID
+        });
+        console.log('删除评论:', response);
+    } catch (error) {
+        console.error('删除评论失败:', error);
+    }
+}
+
+// 测试设置评论状态
+async function testSetCommentStatus() {
+    try {
+        const response = await commentAPI.setCommentStatusAPI({
+            id: 'comment123', // 替换为实际的评论ID
+            status: 1, // 1表示已解决
+        });
+        console.log('设置评论状态:', response);
+    } catch (error) {
+        console.error('设置评论状态失败:', error);
+    }
+}
+
+// 运行所有测试
+async function runAllTests() {
+    console.log('开始测试评论相关API...');
+    
+    await testGetDocumentComment();
+    await testCreateComment();
+    await testEditComment();
+    await testDeleteComment();
+    await testSetCommentStatus();
+    
+    console.log('测试完成');
+}
+
+// 执行测试
+runAllTests().catch(console.error); 

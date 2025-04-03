@@ -42,7 +42,7 @@ func get_user_info(c *gin.Context) (*auth.UserInfo, error) {
 func GetUserInfo(c *gin.Context) {
 	user, err := get_user_info(c)
 	if err != nil {
-		response.Fail(c, "操作失败")
+		response.ServerError(c, "操作失败")
 		return
 	}
 
@@ -66,14 +66,14 @@ func SetNickname(c *gin.Context) {
 		reviewResponse, err := safereview.ReviewText(req.Nickname)
 		if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
 			log.Println("昵称审核不通过", req.Nickname, err, reviewResponse)
-			response.Fail(c, "审核不通过")
+			response.BadRequest(c, "审核不通过")
 			return
 		}
 	}
 	// get user info
 	user, err := get_user_info(c)
 	if err != nil {
-		response.Fail(c, "操作失败")
+		response.ServerError(c, "操作失败")
 		return
 	}
 	user.Profile.Nickname = req.Nickname
@@ -85,7 +85,7 @@ func SetNickname(c *gin.Context) {
 	}
 	err = client.UpdateUserInfo(token, user)
 	if err != nil {
-		response.Fail(c, "操作失败")
+		response.ServerError(c, "操作失败")
 		return
 	}
 	response.Success(c, "")
@@ -124,12 +124,12 @@ func SetAvatar(c *gin.Context) {
 		reviewResponse, err := safereview.ReviewPictureFromBase64(base64Str)
 		if err != nil {
 			log.Println("头像审核失败", err)
-			response.Fail(c, "头像审核失败")
+			response.BadRequest(c, "头像审核失败")
 			return
 
 		} else if reviewResponse.Status != safereviewBase.ReviewImageResultPass {
 			log.Println("头像审核不通过", err, reviewResponse)
-			response.Fail(c, "头像审核不通过")
+			response.BadRequest(c, "头像审核不通过")
 			return
 		}
 	}
@@ -141,7 +141,7 @@ func SetAvatar(c *gin.Context) {
 	client := services.GetKCAuthClient()
 	err = client.UpdateAvatar(token, fileBytes, fileHeader.Filename)
 	if err != nil {
-		response.Fail(c, "操作失败")
+		response.ServerError(c, "操作失败")
 		return
 	}
 	response.Success(c, "")
