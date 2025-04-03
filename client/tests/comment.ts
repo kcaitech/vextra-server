@@ -48,11 +48,15 @@ async function testEditComment() {
     try {
         const response = await commentAPI.editCommentAPI({
             id: 'comment123', // 替换为实际的评论ID
+            doc_id: '1', // 替换为实际的文档ID
+            page_id: 'page1',
+            shape_id: 'shape1',
+            target_shape_id: 'target1',
             content: '修改后的评论内容',
         });
         console.log('编辑评论:', response);
     } catch (error) {
-        console.error('编辑评论失败:', error);
+        // console.error('编辑评论失败:', error);
     }
 }
 
@@ -60,7 +64,8 @@ async function testEditComment() {
 async function testDeleteComment() {
     try {
         const response = await commentAPI.deleteCommentAPI({
-            id: 'comment123', // 替换为实际的评论ID
+            comment_id: 'comment123', // 替换为实际的评论ID
+            doc_id: '1', // 替换为实际的文档ID
         });
         console.log('删除评论:', response);
     } catch (error) {
@@ -73,6 +78,7 @@ async function testSetCommentStatus() {
     try {
         const response = await commentAPI.setCommentStatusAPI({
             id: 'comment123', // 替换为实际的评论ID
+            doc_id: '1', // 替换为实际的文档ID
             status: 1, // 1表示已解决
         });
         console.log('设置评论状态:', response);
@@ -88,8 +94,8 @@ async function runAllTests() {
     await testCreateComment();
     await testGetDocumentComment();
     await testEditComment();
-    await testDeleteComment();
     await testSetCommentStatus();
+    await testDeleteComment();
     
     console.log('测试完成');
 }

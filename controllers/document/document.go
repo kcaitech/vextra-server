@@ -379,7 +379,7 @@ func copyDocument(userId string, documentId int64, c *gin.Context, documentName 
 	// commentIdMap := map[string]string{}
 	for i := 0; i < len(documentCommentList); i++ {
 		item := &documentCommentList[i]
-		item.DocumentId = (targetDocument.Id)
+		item.DocumentId = str.IntToString(targetDocument.Id)
 	}
 	_, err = commentService.SaveCommentItems(documentCommentList)
 	if err != nil {

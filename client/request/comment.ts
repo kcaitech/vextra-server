@@ -65,26 +65,29 @@ const CreateCommentSchema = z.object({
 export type CreateComment = z.infer<typeof CreateCommentSchema>
 
 // 更新评论请求类型
-const UpdateCommentSchema = z.object({
+const CommentCommonSchema = z.object({
+    doc_id: z.string(),
     id: z.string(),
     parent_id: z.string().optional(),
     root_id: z.string().optional(),
-    page_id: z.string().optional(),
-    shape_id: z.string().optional(),
-    target_shape_id: z.string().optional(),
+    page_id: z.string(),
+    shape_id: z.string(),
+    target_shape_id: z.string(),
     shape_frame: z.object({
         x1: z.number(),
         x2: z.number(),
         y1: z.number(),
         y2: z.number()
-    }).optional(),
-    content: z.string().optional()
+    }).nullable().optional(),
+    content: z.string().optional(),
+    status: z.nativeEnum(CommentStatus).optional()
 })
 
-export type UpdateComment = z.infer<typeof UpdateCommentSchema>
+export type CommentCommon = z.infer<typeof CommentCommonSchema>
 
 // 设置评论状态请求类型
 const SetCommentStatusSchema = z.object({
+    doc_id: z.string(),
     id: z.string(),
     status: z.nativeEnum(CommentStatus)
 })
@@ -100,7 +103,7 @@ export type CommentListResponse = z.infer<typeof CommentListResponseSchema>;
 
 // 单个评论响应类型
 const SingleCommentResponseSchema = BaseResponseSchema.extend({
-    data: CommentItemSchema
+    data: CommentCommonSchema
 });
 
 export type SingleCommentResponse = z.infer<typeof SingleCommentResponseSchema>;
@@ -159,6 +162,7 @@ export class CommentAPI {
             method: 'put',
             data: validatedParams,
         })
+        // console.log('设置评论状态响应数据:', result);
         try {
             return SingleCommentResponseSchema.parse(result);
         } catch (error) {
@@ -168,8 +172,8 @@ export class CommentAPI {
     }
 
     //编辑评论
-    async editCommentAPI(params: UpdateComment): Promise<SingleCommentResponse> {
-        const validatedParams = UpdateCommentSchema.parse(params);
+    async editCommentAPI(params: CommentCommon): Promise<SingleCommentResponse> {
+        const validatedParams = CommentCommonSchema.parse(params);
         const result = await this.http.request({
             url: `/documents/comment`,
             method: 'put',
@@ -178,13 +182,13 @@ export class CommentAPI {
         try {
             return SingleCommentResponseSchema.parse(result);
         } catch (error) {
-            console.error('编辑评论响应数据校验失败:', error);
+            console.error('编辑评论响应数据校验失败:', error, result);
             throw error;
         }
     }
 
     //删除评论
-    async deleteCommentAPI(params: { id: string }): Promise<BaseResponse> {
+    async deleteCommentAPI(params: { comment_id: string, doc_id: string }): Promise<BaseResponse> {
         const result = await this.http.request({
             url: `/documents/comment`,
             method: 'delete',
