@@ -1,6 +1,8 @@
 package http
 
 import (
+	"log"
+
 	"github.com/gin-gonic/gin"
 	"kcaitech.com/kcserver/common/response"
 	"kcaitech.com/kcserver/services"
@@ -22,14 +24,16 @@ func RefreshToken(c *gin.Context) {
 	// 	response.Unauthorized(c)
 	// 	return
 	// }
-	client := services.GetJWTClient()
+	client := services.GetKCAuthClient()
 	refreshToken, _ := c.Cookie("refreshToken")
 	if refreshToken == "" {
+		log.Print("Refresh token not provided")
 		response.BadRequest(c, "Refresh token not provided")
 		return
 	}
 	token, err := client.RefreshToken(refreshToken)
 	if err != nil {
+		log.Printf("Refresh token failed: %s", err.Error())
 		response.Fail(c, err.Error())
 		return
 	}

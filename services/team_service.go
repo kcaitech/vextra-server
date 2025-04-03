@@ -180,10 +180,10 @@ func (s *TeamService) FindTeamByUserId(userId string) []TeamQueryResItem {
 }
 
 type TeamMemberQueryResItem struct {
-	TeamMember models.TeamMember   `gorm:"embedded;embeddedPrefix:team_member__" json:"team_member" table:""`
-	Team       models.Team         `gorm:"embedded;embeddedPrefix:team__" json:"-" join:";inner;id,team_id"`
-	User       string              `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,user_id"`
-	PermType   models.TeamPermType `gorm:"-" json:"perm_type"`
+	TeamMember models.TeamMember `gorm:"embedded;embeddedPrefix:team_member__" json:"team_member" table:""`
+	Team       models.Team       `gorm:"embedded;embeddedPrefix:team__" json:"-" join:";inner;id,team_id"`
+	// User       string              `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,user_id"`
+	// PermType models.TeamPermType `gorm:"-" json:"perm_type"`
 }
 
 // FindTeamMember 查询某个团队的成员列表
@@ -199,9 +199,9 @@ func (s *TeamService) FindTeamMember(teamId int64) []TeamMemberQueryResItem {
 		&whereArgsList,
 		&OrderLimitArgs{"team_member.perm_type desc, team_member.id asc", 0},
 	)
-	for i := range result {
-		result[i].PermType = result[i].TeamMember.PermType
-	}
+	// for i := range result {
+	// 	result[i].PermType = result[i].TeamMember.PermType
+	// }
 	return result
 }
 
@@ -218,13 +218,13 @@ type BsseTeamJoinRequestsQueryResItem struct {
 
 type SelfTeamJoinRequestsQueryResItem struct {
 	BsseTeamJoinRequestsQueryResItem
-	User string `gorm:"embedded;embeddedPrefix:user__" json:"approver" join:";inner;id,processed_by"`
+	// User string `gorm:"embedded;embeddedPrefix:user__" json:"approver" join:";inner;id,processed_by"`
 }
 
 type TeamJoinRequestQuery struct {
 	BsseTeamJoinRequestsQueryResItem
 	TeamMember models.TeamMember `gorm:"-" json:"-" join:";inner;team_id,team_id;user_id,?user_id"` // 自己的（非申请人的）权限
-	User       string            `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,user_id"`
+	// User       string            `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,user_id"`
 }
 
 // FindTeamJoinRequest 获取用户所创建或担任管理员的团队的加入申请列表

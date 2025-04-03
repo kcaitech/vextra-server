@@ -112,7 +112,7 @@ func PostUserComment(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	jwtClient := services.GetJWTClient()
+	jwtClient := services.GetKCAuthClient()
 	userInfo, err := jwtClient.GetUserInfo(accessToken.(string))
 	if err != nil {
 		response.Unauthorized(c)

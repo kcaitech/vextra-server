@@ -122,8 +122,8 @@ func (model DocumentPermissionRequests) MarshalJSON() ([]byte, error) {
 
 // 这得联合好几个表，唉
 type DocumentQueryResItem struct {
-	Document         models.Document    `gorm:"embedded;embeddedPrefix:document__" json:"document" join:";inner;id,[#document_id document_id]"`
-	User             string             `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,[#user_id document.user_id]"`
+	Document models.Document `gorm:"embedded;embeddedPrefix:document__" json:"document" join:";inner;id,[#document_id document_id]"`
+	// User             string             `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,[#user_id document.user_id]"`
 	Team             *models.Team       `gorm:"embedded;embeddedPrefix:team__" json:"team" join:";left;id,document.team_id"`
 	Project          *models.Project    `gorm:"embedded;embeddedPrefix:project__" json:"project" join:";left;id,document.project_id"`
 	UserTeamMember   *models.TeamMember `gorm:"embedded;embeddedPrefix:tm__" json:"-" join:"team_member,tm;left;team_id,document.team_id;user_id,document.user_id;deleted_at,##is null"`
@@ -549,7 +549,7 @@ type DocumentPermissionQuery struct {
 	models.BaseModelStruct
 	DocumentPermission models.DocumentPermission `gorm:"embedded;embeddedPrefix:document_permission__" json:"-" table:""`
 	Document           models.Document           `gorm:"embedded;embeddedPrefix:document__" json:"-" join:";inner;id,resource_id"`
-	User               string                    `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,grantee_id"`
+	// User               string                    `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,grantee_id"`
 }
 
 func (model DocumentPermissionQuery) MarshalJSON() ([]byte, error) {

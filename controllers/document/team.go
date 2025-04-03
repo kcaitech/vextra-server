@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"kcaitech.com/kcserver/common/response"
 	"kcaitech.com/kcserver/models"
+	"kcaitech.com/kcserver/providers/auth"
 	"kcaitech.com/kcserver/providers/safereview"
 	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils"
@@ -156,7 +157,61 @@ func GetTeamMemberList(c *gin.Context) {
 		return
 	}
 	result := teamService.FindTeamMember(teamId)
-	response.Success(c, result)
+	// 获取user信息
+	userIds := make([]string, 0)
+	for _, member := range result {
+		userIds = append(userIds, member.TeamMember.UserId)
+	}
+	token, _ := utils.GetAccessToken(c)
+	users, err := services.GetKCAuthClient().GetUsersInfo(token, userIds)
+	if err != nil {
+		log.Println("get users info fail:", err.Error())
+		response.Fail(c, "查询错误")
+		return
+	}
+
+	type User struct {
+		Nickname string `json:"nickname"`
+		Id       string `json:"id"`
+		Avatar   string `json:"avatar"`
+	}
+
+	// 将用户信息与团队成员信息合并
+	type MemberWithUser struct {
+		Team       models.Team       `json:"team"`
+		TeamMember models.TeamMember `json:"team_member"`
+		User       User              `json:"user"`
+	}
+
+	mergedResult := make([]MemberWithUser, 0)
+	userMap := make(map[string]interface{})
+
+	// 将用户信息转换为map以便快速查找
+	for _, user := range users {
+		userMap[user.UserID] = &user
+	}
+
+	// 合并团队成员和用户信息
+	for _, member := range result {
+		userId := member.TeamMember.UserId
+		userInfo, exists := userMap[userId]
+
+		if exists {
+			user := userInfo.(*auth.UserInfo)
+			mergedMember := MemberWithUser{
+				Team:       member.Team,
+				TeamMember: member.TeamMember,
+				User: User{
+					Id:       user.UserID,
+					Nickname: user.Profile.Nickname,
+					Avatar:   user.Profile.Avatar,
+				},
+			}
+			mergedResult = append(mergedResult, mergedMember)
+		}
+	}
+
+	response.Success(c, mergedResult)
 }
 
 // DeleteTeam 解散团队

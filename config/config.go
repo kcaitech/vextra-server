@@ -116,7 +116,9 @@ type Configuration struct {
 	DetailedLog  bool `yaml:"detailed_log,omitempty" json:"detailed_log,omitempty"`
 	AllowCors    bool `yaml:"allow_cors,omitempty" json:"allow_cors,omitempty"`
 
-	AuthServerURL string `yaml:"auth_server_url,omitempty" json:"auth_server_url,omitempty"`
+	AuthServerURL    string `yaml:"auth_server_url,omitempty" json:"auth_server_url,omitempty"`
+	AuthClientID     string `yaml:"auth_client_id,omitempty" json:"auth_client_id,omitempty"`
+	AuthClientSecret string `yaml:"auth_client_secret,omitempty" json:"auth_client_secret,omitempty"`
 }
 
 func LoadYamlFile(filePath string) (*Configuration, error) {

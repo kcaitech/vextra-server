@@ -14,7 +14,7 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 	// router.GET("/shares/wx_mp_code", controllers.GetWxMpCode)
 
 	// 登陆验证
-	// router.Use(services.GetJWTClient().AuthRequired())
+	// router.Use(services.GetKCAuthClient().AuthRequired())
 
 	router.GET("/access_records", controllers.GetUserDocumentAccessRecordsList)
 	router.DELETE("/access_record", controllers.DeleteUserDocumentAccessRecord)

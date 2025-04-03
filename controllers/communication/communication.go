@@ -276,7 +276,7 @@ func Communication(c *gin.Context) {
 		return
 	}
 
-	jwtClient := services.GetJWTClient()
+	jwtClient := services.GetKCAuthClient()
 	claims, err := jwtClient.ValidateToken(token)
 	if err != nil {
 		log.Println("communication-Token错误", err)

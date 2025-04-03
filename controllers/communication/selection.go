@@ -61,7 +61,7 @@ func NewSelectionServe(ws *websocket.Ws, token, userId string, documentId int64,
 		return nil
 	}
 
-	jwtClient := services.GetJWTClient()
+	jwtClient := services.GetKCAuthClient()
 	userInfo, err := jwtClient.GetUserInfo(token)
 	if err != nil {
 		log.Println("document comment ws建立失败，用户不存在", err, userId)

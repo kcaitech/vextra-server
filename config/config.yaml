@@ -76,3 +76,5 @@ detailed_log: true
 allow_cors: true
 
 auth_server_url: http://localhost:8080
+auth_client_id: kcserver
+auth_client_secret: yourSecurePassword123

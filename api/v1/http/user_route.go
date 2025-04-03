@@ -20,7 +20,7 @@ func loadUserRoutes(api *gin.RouterGroup) {
 	router := api.Group("/users")
 
 	authorized := router.Group("/")
-	// authorized.Use(services.GetJWTClient().AuthRequired())
+	// authorized.Use(services.GetKCAuthClient().AuthRequired())
 	{
 		authorized.GET("/info", GetUserInfo)
 		authorized.PUT("/info/nickname", SetNickname)
@@ -35,7 +35,7 @@ func get_user_info(c *gin.Context) (*auth.UserInfo, error) {
 	if err != nil {
 		return nil, err
 	}
-	client := services.GetJWTClient()
+	client := services.GetKCAuthClient()
 	return client.GetUserInfo(token)
 }
 
@@ -77,7 +77,7 @@ func SetNickname(c *gin.Context) {
 		return
 	}
 	user.Profile.Nickname = req.Nickname
-	client := services.GetJWTClient()
+	client := services.GetKCAuthClient()
 	token, err := utils.GetAccessToken(c)
 	if err != nil {
 		response.Unauthorized(c)
@@ -138,7 +138,7 @@ func SetAvatar(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	client := services.GetJWTClient()
+	client := services.GetKCAuthClient()
 	err = client.UpdateAvatar(token, fileBytes, fileHeader.Filename)
 	if err != nil {
 		response.Fail(c, "操作失败")
