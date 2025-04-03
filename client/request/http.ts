@@ -1,5 +1,6 @@
 import axios, { AxiosResponse } from 'axios'
 import { ElMessage } from 'element-plus'
+import { HttpCode } from './httpcode'
 
 declare module "axios" {
     interface AxiosResponse<T = any> {
@@ -50,9 +51,24 @@ export class HttpMgr {
     private onUnauthorized: () => void
     private _token?: string
 
+    private get localStorage() {
+        if (typeof window !== 'undefined' && window.localStorage) {
+            return window.localStorage
+        }
+        return undefined
+    }
+
     private get token() {
         if (this._token) return this._token
-        return localStorage.getItem('token')
+        return this.localStorage?.getItem('token') ?? undefined
+    }
+    private set token(value: string | undefined) {
+        this._token = value
+        if (value) {
+            this.localStorage?.setItem('token', value)
+        } else {
+            this.localStorage?.removeItem('token')
+        }
     }
     private auth_request(config: any) {
         const token = this.token
@@ -63,32 +79,31 @@ export class HttpMgr {
     }
 
     private handle401() {
-        if (localStorage.getItem('token')) {
+        if (this.token) {
             if (this.timer) clearTimeout(this.timer)
             this.timer = setTimeout(() => {
-                ElMessage({ duration: 3000, message: '登录失效，请重新登录', type: 'info' });
+                // ElMessage({ duration: 3000, message: '登录失效，请重新登录', type: 'info' });
                 this.timer = undefined;
             }, 500);
         }
-        localStorage.removeItem('token')
         this.onUnauthorized()
+        this.token = undefined
     }
 
     private handle_response(response: any) {
         const dataAxios = response?.data || {}
-        if (dataAxios.code === 200) {
+        if (dataAxios.code === HttpCode.StatusOK) {
             return Promise.resolve(dataAxios)
-        } else if (dataAxios.code === 400) {
+        } else if (dataAxios.code === HttpCode.StatusBadRequest) {
             return Promise.resolve(dataAxios)
-        } else if (dataAxios.code === -1) {
+        } else if (dataAxios.code === HttpCode.StatusForbidden) {
             return Promise.resolve(dataAxios)
-        } else if (dataAxios.code === 403) {
-            return Promise.resolve(dataAxios)
-        } else if (dataAxios.code === 401) {
+        } else if (dataAxios.code === HttpCode.StatusUnauthorized) {
             this.handle401()
             return Promise.reject(response)
-        }
-        else {
+        } else if (dataAxios.code === HttpCode.StatusInternalServerError) {
+            return Promise.resolve(response)
+        } else {
             return Promise.reject(response)
         }
     }

@@ -32,11 +32,7 @@ const CommentItemSchema = z.object({
         y1: z.number(),
         y2: z.number()
     }),
-    user: z.object({
-        avatar: z.string(),
-        id: z.string(),
-        nickname: z.string()
-    }),
+    user: z.string(),
     created_at: z.string(),
     record_created_at: z.string(),
     content: z.string(),
@@ -50,6 +46,7 @@ const CommentItemsSchema = z.array(CommentItemSchema)
 
 // 创建评论请求类型
 const CreateCommentSchema = z.object({
+    id: z.string(),
     parent_id: z.string().optional(),
     root_id: z.string().optional(),
     doc_id: z.string(),

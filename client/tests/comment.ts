@@ -12,7 +12,7 @@ const commentAPI = new CommentAPI(httpManager);
 async function testGetDocumentComment() {
     try {
         const response = await commentAPI.getDocumentCommentAPI({
-            doc_id: '123', // 替换为实际的文档ID
+            doc_id: '1', // 替换为实际的文档ID
         });
         console.log('获取文档评论:', response);
     } catch (error) {
@@ -24,7 +24,8 @@ async function testGetDocumentComment() {
 async function testCreateComment() {
     try {
         const response = await commentAPI.createCommentAPI({
-            doc_id: '123', // 替换为实际的文档ID
+            id: 'comment123', // 替换为实际的评论ID
+            doc_id: '1', // 替换为实际的文档ID
             page_id: 'page1',
             shape_id: 'shape1',
             target_shape_id: 'target1',
@@ -84,8 +85,8 @@ async function testSetCommentStatus() {
 async function runAllTests() {
     console.log('开始测试评论相关API...');
     
-    await testGetDocumentComment();
     await testCreateComment();
+    await testGetDocumentComment();
     await testEditComment();
     await testDeleteComment();
     await testSetCommentStatus();

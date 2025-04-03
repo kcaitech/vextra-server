@@ -22,7 +22,7 @@ type UserComment struct {
 	UnionId struct {
 		DocumentId int64  `json:"document_id" bson:"document_id"`
 		CommentId  string `json:"comment_id" bson:"comment_id"`
-	} `json:"union_id" bson:"union_id"`
+	} `json:"union_id" bson:"_id"`
 	Id              string            `json:"id" bson:"id,omitempty"` // 前端生成,uuid
 	ParentId        string            `json:"parent_id" bson:"parent_id"`
 	RootId          string            `json:"root_id" bson:"root_id"`
