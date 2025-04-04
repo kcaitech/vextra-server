@@ -16,7 +16,6 @@ import (
 	"kcaitech.com/kcserver/providers/storage"
 	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils"
-	"kcaitech.com/kcserver/utils/radix_convert"
 	"kcaitech.com/kcserver/utils/str"
 )
 
@@ -194,7 +193,7 @@ type CopyDocumentReq struct {
 	DocId string `json:"doc_id" binding:"required"`
 }
 
-var radixConvert, _ = radix_convert.NewRadixConvert(62, radix_convert.Default62RadixChars)
+// var radixConvert, _ = radix_convert.NewRadixConvert(62, radix_convert.Default62RadixChars)
 
 func copyDocument(userId string, documentId int64, c *gin.Context, documentName string, dbModule *models.DBModule, _storage *storage.StorageClient, mongo *mongo.MongoDB) (result *services.AccessRecordAndFavoritesQueryResItem) {
 	documentService := services.NewDocumentService()
@@ -379,7 +378,7 @@ func copyDocument(userId string, documentId int64, c *gin.Context, documentName 
 	// commentIdMap := map[string]string{}
 	for i := 0; i < len(documentCommentList); i++ {
 		item := &documentCommentList[i]
-		item.DocumentId = str.IntToString(targetDocument.Id)
+		item.DocumentId = (targetDocument.Id)
 	}
 	_, err = commentService.SaveCommentItems(documentCommentList)
 	if err != nil {

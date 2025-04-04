@@ -22,7 +22,7 @@ type UserCommentCommon struct {
 	Id            string            `json:"id" bson:"id,omitempty" binding:"required"` // 前端生成,uuid
 	ParentId      string            `json:"parent_id" bson:"parent_id"`
 	RootId        string            `json:"root_id" bson:"root_id"`
-	DocumentId    string            `json:"doc_id" bson:"document_id" binding:"required"`
+	DocumentId    int64             `json:"doc_id,string" bson:"document_id" binding:"required"`
 	PageId        string            `json:"page_id" bson:"page_id" binding:"required"`
 	ShapeId       string            `json:"shape_id" bson:"shape_id" binding:"required"`
 	TargetShapeId string            `json:"target_shape_id" bson:"target_shape_id" binding:"required"`
@@ -114,7 +114,7 @@ func (s *UserCommentService) SaveCommentItems(commentItems []UserComment) (*mong
 	}
 	// 设置联合id
 	for i := range commentItems {
-		commentItems[i].UnionId.DocumentId = str.DefaultToInt(commentItems[i].DocumentId, 0)
+		commentItems[i].UnionId.DocumentId = commentItems[i].DocumentId
 		commentItems[i].UnionId.CommentId = commentItems[i].Id
 	}
 	collection := s.MongoDB.DB.Collection("comment")

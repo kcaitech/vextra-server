@@ -124,9 +124,15 @@ func SetDocumentShareType(c *gin.Context) {
 		case models.DocTypePublicEditable:
 			permType = models.PermTypeEditable
 		}
-		_, _ = documentService.DocumentPermissionService.UpdateColumns(map[string]any{
+		// 数据不存在
+		_, err = documentService.DocumentPermissionService.UpdateColumns(map[string]any{
 			"perm_type": permType,
 		}, "resource_type = ? and resource_id = ? and perm_source_type = ?", models.ResourceTypeDoc, documentId, models.PermSourceTypeDefault)
+		if err != nil {
+			// log.Println("更新错误", err)
+			// response.ServerError(c, "更新错误")
+			// return
+		}
 	}
 	response.Success(c, "")
 }

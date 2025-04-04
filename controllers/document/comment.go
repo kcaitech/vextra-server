@@ -101,7 +101,7 @@ func PostUserComment(c *gin.Context) {
 		response.BadRequest(c, "")
 		return
 	}
-	documentId := str.DefaultToInt(userComment.DocumentId, 0)
+	documentId := (userComment.DocumentId)
 	if documentId <= 0 {
 		response.BadRequest(c, "参数错误：doc_id")
 		return
@@ -232,7 +232,7 @@ func PutUserComment(c *gin.Context) {
 		response.BadRequest(c, "")
 		return
 	}
-	documentId := str.DefaultToInt(userComment.DocumentId, 0)
+	documentId := (userComment.DocumentId)
 	if documentId <= 0 {
 		response.BadRequest(c, "参数错误：doc_id")
 		return
@@ -284,7 +284,7 @@ func PutUserComment(c *gin.Context) {
 		Comment: userComment,
 	}); err == nil {
 		redisClient := services.GetRedisDB()
-		redisClient.Client.Publish(context.Background(), "Document Comment[DocumentId:"+(comment.DocumentId)+"]", publishData)
+		redisClient.Client.Publish(context.Background(), "Document Comment[DocumentId:"+str.IntToString(comment.DocumentId)+"]", publishData)
 	}
 	response.Success(c, &userComment)
 }
@@ -364,7 +364,7 @@ func DeleteUserComment(c *gin.Context) {
 		},
 	}); err == nil {
 		redisClient := services.GetRedisDB()
-		redisClient.Client.Publish(context.Background(), "Document Comment[DocumentId:"+(comment.DocumentId)+"]", publishData)
+		redisClient.Client.Publish(context.Background(), "Document Comment[DocumentId:"+str.IntToString(comment.DocumentId)+"]", publishData)
 	}
 	response.Success(c, gin.H{
 		"deleted": delres.DeletedCount,
@@ -426,7 +426,7 @@ func SetUserCommentStatus(c *gin.Context) {
 		Comment: comment.UserCommentCommon,
 	}); err == nil {
 		redisClient := services.GetRedisDB()
-		redisClient.Client.Publish(context.Background(), "Document Comment[DocumentId:"+(comment.DocumentId)+"]", publishData)
+		redisClient.Client.Publish(context.Background(), "Document Comment[DocumentId:"+str.IntToString(comment.DocumentId)+"]", publishData)
 	}
 	response.Success(c, comment.UserCommentCommon)
 }
