@@ -240,11 +240,18 @@ func DeleteTeam(c *gin.Context) {
 	teamMemberService := teamService.TeamMemberService
 	var teamMember models.TeamMember
 	if err := teamMemberService.Get(&teamMember, "team_id = ? and user_id = ?", teamId, userId); err != nil {
-		response.Forbidden(c, "")
-		return
+		if errors.Is(err, services.ErrRecordNotFound) {
+			// 记录不存在
+			log.Println("团队成员不存在", err, teamId, userId)
+			response.Forbidden(c, "不是团队成员")
+			return
+		} else {
+			response.ServerError(c, "查询错误")
+			return
+		}
 	}
 	if teamMember.PermType != models.TeamPermTypeCreator {
-		response.Forbidden(c, "")
+		response.Forbidden(c, "团队所有者才可删除团队")
 		return
 	}
 	// 删除团队申请记录
@@ -267,6 +274,7 @@ func DeleteTeam(c *gin.Context) {
 	// 删除团队文档
 	documentService := services.NewDocumentService()
 	if _, err := documentService.Delete("team_id = ?", teamId); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
+		log.Println("团队文档删除失败", err)
 		response.ServerError(c, "团队文档删除失败")
 		return
 	}
@@ -726,7 +734,7 @@ func ExitTeam(c *gin.Context) {
 		response.ServerError(c, "查询错误")
 		return
 	} else if *permType == models.TeamPermTypeCreator {
-		response.Forbidden(c, "")
+		response.Forbidden(c, "团队创建者不能退出团队，需要先转移团队")
 		return
 	}
 	// 退出或删除项目 todo
@@ -776,7 +784,7 @@ func SetTeamMemberPermission(c *gin.Context) {
 		response.ServerError(c, "查询错误")
 		return
 	} else if selfPermType == nil || *selfPermType < models.TeamPermTypeAdmin {
-		response.Forbidden(c, "")
+		response.Forbidden(c, "权限不足")
 		return
 	}
 	permType, err := teamService.GetTeamPermTypeByForUser(teamId, reqUserId)
@@ -785,7 +793,7 @@ func SetTeamMemberPermission(c *gin.Context) {
 		return
 	}
 	if *permType >= *selfPermType {
-		response.Forbidden(c, "")
+		response.Forbidden(c, "不可设置比自己更高的权限")
 		return
 	}
 	teamMemberService := services.NewTeamMemberService()

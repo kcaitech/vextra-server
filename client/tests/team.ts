@@ -36,22 +36,22 @@ async function testGetTeamList() {
 }
 
 // 测试获取团队详情
-async function testGetTeamInfo() {
-  try {
-    const response = await teamAPI.getTeamInfo({
-      team_id: '123', // 替换为实际的团队ID
-    });
-    console.log('获取团队详情:', response);
-  } catch (error) {
-    console.error('获取团队详情失败:', error);
-  }
-}
+// async function testGetTeamInfo() {
+//   try {
+//     const response = await teamAPI.getTeamInfo({
+//       team_id: '1', // 替换为实际的团队ID
+//     });
+//     console.log('获取团队详情:', response);
+//   } catch (error) {
+//     console.error('获取团队详情失败:', error);
+//   }
+// }
 
 // 测试更新团队信息
 async function testSetTeamInfo() {
   try {
     const response = await teamAPI.setTeamInfo({
-      team_id: '123', // 替换为实际的团队ID
+      team_id: '1', // 替换为实际的团队ID
       name: '更新后的团队名称',
       description: '更新后的团队描述',
     });
@@ -65,7 +65,7 @@ async function testSetTeamInfo() {
 async function testDeleteTeam() {
   try {
     const response = await teamAPI.deleteTeam({
-      team_id: '123', // 替换为实际的团队ID
+      team_id: '2', // 替换为实际的团队ID
     });
     console.log('删除团队:', response);
   } catch (error) {
@@ -77,8 +77,8 @@ async function testDeleteTeam() {
 async function testSetTeamMemberPermission() {
   try {
     const response = await teamAPI.setTeamMemberPermission({
-      team_id: '123', // 替换为实际的团队ID
-      user_id: 'user123', // 替换为实际的用户ID
+      team_id: '3', // 替换为实际的团队ID
+      user_id: 'kcai1', // 替换为实际的用户ID
       perm_type: TeamPermType.Admin, // 设置为管理员权限
     });
     console.log('设置团队成员权限:', response);
@@ -91,8 +91,8 @@ async function testSetTeamMemberPermission() {
 async function testSetTeamMemberNickname() {
   try {
     const response = await teamAPI.setTeamMemberNickname({
-      team_id: '123', // 替换为实际的团队ID
-      user_id: 'user123', // 替换为实际的用户ID
+      team_id: '3', // 替换为实际的团队ID
+      user_id: 'kcai1', // 替换为实际的用户ID
       nickname: '新昵称',
     });
     console.log('设置团队成员昵称:', response);
@@ -105,7 +105,7 @@ async function testSetTeamMemberNickname() {
 async function testExitTeam() {
   try {
     const response = await teamAPI.exitTeam({
-      team_id: '123', // 替换为实际的团队ID
+      team_id: '3', // 替换为实际的团队ID
     });
     console.log('退出团队:', response);
   } catch (error) {
@@ -117,7 +117,7 @@ async function testExitTeam() {
 async function testGetTeamMemberList() {
   try {
     const response = await teamAPI.getTeamMemberList({
-      team_id: '123', // 替换为实际的团队ID
+      team_id: '3', // 替换为实际的团队ID
       page: 1,
       page_size: 10,
     });
@@ -127,19 +127,34 @@ async function testGetTeamMemberList() {
   }
 }
 
+// 测试转移团队创建者
+async function testChangeTeamCreator() {
+  try {
+    const response = await teamAPI.changeTeamCreator({
+      team_id: '3', // 替换为实际的团队ID
+      user_id: 'kcai1', // 替换为实际的用户ID
+    });
+    console.log('转移团队创建者:', response);
+  } catch (error) {
+    console.error('转移团队创建者失败:', error);
+  }
+}
+
 // 运行所有测试
 async function runAllTests() {
   console.log('开始测试团队相关API...');
-  
+  // 逐一测试，需要修改数据库数据
   await testCreateTeam();
   await testGetTeamList();
-  await testGetTeamInfo();
+  // await testGetTeamInfo();
   await testSetTeamInfo();
-  await testDeleteTeam();
   await testSetTeamMemberPermission();
   await testSetTeamMemberNickname();
-  await testExitTeam();
   await testGetTeamMemberList();
+  await testChangeTeamCreator();
+  
+  await testExitTeam();
+  await testDeleteTeam();
   
   console.log('测试完成');
 }

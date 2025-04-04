@@ -23,7 +23,7 @@ type DocumentService struct {
 
 func NewDocumentService() *DocumentService {
 	that := &DocumentService{
-		DefaultService:                    NewDefaultService(models.Document{}),
+		DefaultService:                    NewDefaultService(&models.Document{}),
 		DocumentPermissionService:         NewDocumentPermissionService(),
 		DocumentAccessRecordService:       NewDocumentAccessRecordService(),
 		DocumentFavoritesService:          NewDocumentFavoritesService(),

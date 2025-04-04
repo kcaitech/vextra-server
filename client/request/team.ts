@@ -13,14 +13,18 @@ export enum TeamPermType {
 
 // 团队模型
 const TeamSchema = z.object({
-    id: z.string(),
-    name: z.string(),
-    description: z.string().optional(),
-    avatar: z.string().optional(),
-    invited_perm_type: z.nativeEnum(TeamPermType),
-    open_invite: z.boolean(),
-    created_at: z.string(),
-    updated_at: z.string()
+    team: z.object({
+        id: z.string(),
+        name: z.string(),
+        description: z.string().optional(),
+        avatar: z.string().optional(),
+        invited_perm_type: z.nativeEnum(TeamPermType),
+        open_invite: z.boolean(),
+        created_at: z.string(),
+        updated_at: z.string()
+    }),
+    creator: z.string(),
+    self_perm_type: z.nativeEnum(TeamPermType)
 })
 
 export type Team = z.infer<typeof TeamSchema>
@@ -65,7 +69,32 @@ export type TeamListResponse = z.infer<typeof TeamListResponseSchema>
 
 // 团队成员列表响应类型
 const TeamMemberListResponseSchema = BaseResponseSchema.extend({
-    data: z.array(TeamMemberWithUserSchema)
+    data: z.array(z.object({
+        team: z.object({
+            id: z.string(),
+            name: z.string(),
+            description: z.string().optional(),
+            avatar: z.string().optional(),
+            invited_perm_type: z.nativeEnum(TeamPermType),
+            open_invite: z.boolean(),
+            created_at: z.string(),
+            updated_at: z.string()
+        }),
+        team_member: z.object({
+            id: z.string(),
+            team_id: z.string(),
+            user_id: z.string(),
+            perm_type: z.nativeEnum(TeamPermType),
+            nickname: z.string(),
+            created_at: z.string(),
+            updated_at: z.string()
+        }),
+        user: z.object({
+            id: z.string(),
+            nickname: z.string(),
+            avatar: z.string()
+        })
+    }))
 })
 
 export type TeamMemberListResponse = z.infer<typeof TeamMemberListResponseSchema>
@@ -272,23 +301,23 @@ export class TeamAPI {
     }
 
     //获取团队成员列表
-    async getTeamMemberListAPI(params: {
-        team_id: string;
-        page?: number;
-        page_size?: number;
-    }): Promise<TeamMemberListResponse> {
-        const result = await this.http.request({
-            url: '/documents/team/member/list',
-            method: 'get',
-            params: params,
-        });
-        try {
-            return TeamMemberListResponseSchema.parse(result);
-        } catch (error) {
-            console.error('团队成员列表数据校验失败:', error);
-            throw error;
-        }
-    }
+    // async getTeamMemberListAPI(params: {
+    //     team_id: string;
+    //     page?: number;
+    //     page_size?: number;
+    // }): Promise<TeamMemberListResponse> {
+    //     const result = await this.http.request({
+    //         url: '/documents/team/member/list',
+    //         method: 'get',
+    //         params: params,
+    //     });
+    //     try {
+    //         return TeamMemberListResponseSchema.parse(result);
+    //     } catch (error) {
+    //         console.error('团队成员列表数据校验失败:', error);
+    //         throw error;
+    //     }
+    // }
 
     //退出项目
     async exitProjectAPI(params: {
@@ -457,21 +486,21 @@ export class TeamAPI {
     }
 
     // 获取团队信息
-    async getTeamInfo(params: {
-        team_id: string;
-    }): Promise<TeamInfoResponse> {
-        const result = await this.http.request({
-            url: '/documents/team/info',
-            method: 'get',
-            params,
-        });
-        try {
-            return TeamInfoResponseSchema.parse(result);
-        } catch (error) {
-            console.error('团队信息数据校验失败:', error);
-            throw error;
-        }
-    }
+    // async getTeamInfo(params: {
+    //     team_id: string;
+    // }): Promise<TeamInfoResponse> {
+    //     const result = await this.http.request({
+    //         url: '/documents/team/info',
+    //         method: 'get',
+    //         params,
+    //     });
+    //     try {
+    //         return TeamInfoResponseSchema.parse(result);
+    //     } catch (error) {
+    //         console.error('团队信息数据校验失败:', error);
+    //         throw error;
+    //     }
+    // }
 
     // 设置团队信息
     async setTeamInfo(params: {
@@ -560,6 +589,24 @@ export class TeamAPI {
             return BaseResponseSchema.parse(result);
         } catch (error) {
             console.error('删除团队响应数据校验失败:', error);
+            throw error;
+        }
+    }
+
+    // 转移团队创建者
+    async changeTeamCreator(params: {
+        team_id: string;
+        user_id: string;
+    }): Promise<BaseResponse> {
+        const result = await this.http.request({
+            url: '/documents/team/creator',
+            method: 'put',
+            data: params,
+        });
+        try {
+            return BaseResponseSchema.parse(result);
+        } catch (error) {
+            console.error('转移团队创建者响应数据校验失败:', error);
             throw error;
         }
     }
