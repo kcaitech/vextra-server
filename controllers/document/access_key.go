@@ -79,6 +79,7 @@ func GetDocumentAccessKey1(userId string, documentId int64) (*map[string]any, er
 		// response.Forbidden(c, "审核不通过")
 		return nil, fmt.Errorf("审核不通过")
 	}
+	log.Println("documentPermission", documentPermission, isPublicPerm)
 	if documentPermission == nil && isPublicPerm {
 		if err := documentService.DocumentPermissionService.Create(&models.DocumentPermission{
 			ResourceType: models.ResourceTypeDoc,

@@ -23,14 +23,17 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 	router.GET("/", controllers.GetUserDocumentList)
 	router.DELETE("/", controllers.DeleteUserDocument)
 	router.PUT("/name", controllers.SetDocumentName)
-	router.GET("/shares", controllers.GetUserDocumentSharesList)
-	router.DELETE("/share", controllers.DeleteUserShare)
 	router.GET("/recycle_bin", controllers.GetUserRecycleBinDocumentList)
 	router.PUT("/recycle_bin", controllers.RestoreUserRecycleBinDocument)
 	router.DELETE("/recycle_bin", controllers.DeleteUserRecycleBinDocument)
 	router.GET("/info", controllers.GetUserDocumentInfo)
 	router.GET("/permission", controllers.GetUserDocumentPerm)
 	router.GET("/access_key", controllers.GetDocumentAccessKey)
+	// 复制文档
+	router.POST("/copy", controllers.CopyDocument)
+	// 分享
+	router.GET("/shares", controllers.GetUserDocumentSharesList)
+	router.DELETE("/share", controllers.DeleteUserShare)
 	router.PUT("/shares/set", controllers.SetDocumentShareType)
 	router.GET("/shares/all", controllers.GetDocumentSharesList)
 	router.PUT("/shares", controllers.SetDocumentSharePermission)
@@ -38,13 +41,13 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 	router.POST("/shares/apply", controllers.ApplyDocumentPermission)
 	router.GET("/shares/apply", controllers.GetDocumentPermissionRequestsList)
 	router.POST("/shares/apply/audit", controllers.ReviewDocumentPermissionRequest)
-
+	// 评论
 	router.GET("/comments", controllers.GetDocumentComment)
 	router.POST("/comment", controllers.PostUserComment)
 	router.PUT("/comment", controllers.PutUserComment)
 	router.DELETE("/comment", controllers.DeleteUserComment)
 	router.PUT("/comment/status", controllers.SetUserCommentStatus)
-	router.POST("/copy", controllers.CopyDocument)
+	// team
 	router.POST("/team", controllers.CreateTeam)
 	router.GET("/team/list", controllers.GetTeamList)
 	router.GET("/team/member/list", controllers.GetTeamMemberList)
@@ -61,6 +64,7 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 	router.PUT("/team/creator", controllers.ChangeTeamCreator)
 	router.DELETE("/team/member", controllers.RemoveTeamMember)
 	router.PUT("/team/member/nickname", controllers.SetTeamMemberNickname)
+	// team/project
 	router.POST("/team/project", controllers.CreateProject)
 	router.GET("/team/project/list", controllers.GetProjectList)
 	router.GET("/team/project/member/list", controllers.GetProjectMemberList)
@@ -79,6 +83,7 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 	router.PUT("/team/project/favorite", controllers.SetProjectFavorite)
 	router.GET("/team/project/favorite/list", controllers.GetFavorProjectList)
 	router.POST("/team/project/document/move", controllers.MoveDocument)
+	// 反馈
 	router.POST("/feedback", controllers.PostFeedback)
 	// router.POST("/test/001", controllers.CreateTest)
 	// router.GET("/storage_auth", controllers.CheckStorageAuth)

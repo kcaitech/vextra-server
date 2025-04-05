@@ -221,7 +221,7 @@ func SetDocumentSharePermission(c *gin.Context) {
 	// 权限校验
 	projectId := documentPermission.Document.ProjectId
 	if projectId == 0 && documentPermission.Document.UserId != userId {
-		response.Forbidden(c, "")
+		response.Forbidden(c, "非团队文档，权限不足")
 		return
 	} else if projectId != 0 {
 		projectService := services.NewProjectService()
@@ -232,7 +232,7 @@ func SetDocumentSharePermission(c *gin.Context) {
 			return
 		}
 		if (documentPermission.Document.UserId != userId && *permType < models.ProjectPermTypeAdmin) || (documentPermission.Document.UserId == userId && *permType < models.ProjectPermTypeCommentable) {
-			response.Forbidden(c, "")
+			response.Forbidden(c, "权限不足")
 			return
 		}
 	}

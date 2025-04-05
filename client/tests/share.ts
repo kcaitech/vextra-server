@@ -73,12 +73,12 @@ async function testSetShareType() {
 async function testPutShareAuthority() {
     try {
         const response = await shareAPI.putShareAuthorityAPI({
-            share_id: '1', // 替换为实际的文档ID
-            perm_type: PermType.Commentable, // 只读权限
+            share_id: '1', // 替换为实际的分享ID
+            perm_type: PermType.ReadOnly, // 只读权限
         });
         console.log('更新分享权限:', response);
     } catch (error) {
-        console.error('更新分享权限失败:', error);
+        // console.error('更新分享权限失败:', error);
     }
 }
 
@@ -86,7 +86,7 @@ async function testPutShareAuthority() {
 async function testDelShareAuthority() {
     try {
         const response = await shareAPI.delShareAuthorityAPI({
-            document_id: '123', // 替换为实际的文档ID
+            share_id: '1', // 替换为实际的文档ID
         });
         console.log('删除分享权限:', response);
     } catch (error) {
@@ -98,7 +98,7 @@ async function testDelShareAuthority() {
 async function testPostDocumentAuthority() {
     try {
         const response = await shareAPI.postDocumentAuthorityAPI({
-            doc_id: '1', // 替换为实际的文档ID
+            doc_id: '2', // 替换为实际的文档ID
             perm_type: PermType.Commentable, // 申请只读权限
             applicant_notes: '需要查看文档内容',
         });
@@ -138,18 +138,18 @@ async function testPromissionApplyAudit() {
 async function runAllTests() {
     console.log('开始测试分享相关API...');
     
-    await testGetShareList();
-    await testGetDocumentAuthority();
-    await testSetShareType();
-    await testGetDocumentKey();
-    await testGetDocumentInfo();
-    await testGetApplyList();
+    // await testGetShareList();
+    // await testGetDocumentAuthority();
+    // await testSetShareType();
+    // await testGetDocumentKey();
+    // await testGetDocumentInfo();
+    // await testGetApplyList();
+    // await testPutShareAuthority();
 
     // todo 未通过
-    // await testPutShareAuthority();
-    // await testDelShareAuthority();
-    // await testPostDocumentAuthority();
-    // await testPromissionApplyAudit();
+    await testPostDocumentAuthority();
+    await testPromissionApplyAudit();
+    await testDelShareAuthority();
     
     console.log('测试完成');
 }

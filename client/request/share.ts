@@ -310,7 +310,7 @@ export class ShareAPI {
     }
 
     //移除分享权限
-    async delShareAuthorityAPI(params: { document_id: string }): Promise<BaseResponse> {
+    async delShareAuthorityAPI(params: { share_id: string }): Promise<BaseResponse> {
         const result = await this.http.request({
             url: `/documents/shares`,
             method: 'delete',
