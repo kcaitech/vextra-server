@@ -636,7 +636,7 @@ func SetTeamInvited(c *gin.Context) {
 	var req struct {
 		TeamId          string               `json:"team_id" binding:"required"`
 		InvitedPermType *models.TeamPermType `json:"invited_perm_type"`
-		InvitedSwitch   *bool                `json:"invited_switch"`
+		OpenInvite      *bool                `json:"open_invite"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, err.Error())
@@ -647,7 +647,7 @@ func SetTeamInvited(c *gin.Context) {
 		response.BadRequest(c, "参数错误：team_id")
 		return
 	}
-	if req.InvitedPermType == nil && req.InvitedSwitch == nil {
+	if req.InvitedPermType == nil && req.OpenInvite == nil {
 		response.BadRequest(c, "")
 		return
 	}
@@ -667,8 +667,8 @@ func SetTeamInvited(c *gin.Context) {
 	if req.InvitedPermType != nil {
 		updateColumns["invited_perm_type"] = *req.InvitedPermType
 	}
-	if req.InvitedSwitch != nil {
-		updateColumns["invited_switch"] = *req.InvitedSwitch
+	if req.OpenInvite != nil {
+		updateColumns["open_invite"] = *req.OpenInvite
 	}
 	if _, err := teamService.UpdateColumnsById(teamId, updateColumns); err != nil {
 		response.ServerError(c, "更新错误")

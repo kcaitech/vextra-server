@@ -1,5 +1,4 @@
 import axios, { AxiosResponse } from 'axios'
-import { ElMessage } from 'element-plus'
 import { HttpCode } from './httpcode'
 
 declare module "axios" {

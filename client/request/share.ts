@@ -73,10 +73,12 @@ export enum PermType {
 }
 
 // 文档权限类型
-export const DocumentPermissionSchema = z.object({
-    // document_id: z.string(),
-    // permissions: z.array(z.string()),
-    perm_type: z.nativeEnum(PermType),
+export const DocumentPermissionSchema = BaseResponseSchema.extend({
+    data: z.object({
+        // document_id: z.string(),
+        // permissions: z.array(z.string()),
+        perm_type: z.nativeEnum(PermType),
+    })
 });
 
 export type DocumentPermission = z.infer<typeof DocumentPermissionSchema>;
@@ -242,7 +244,7 @@ export class ShareAPI {
             params: params,
         });
         try {
-            return DocumentPermissionSchema.parse(result.data);
+            return DocumentPermissionSchema.parse(result);
         } catch (error) {
             console.error('文档权限数据校验失败:', error);
             throw error;
@@ -340,7 +342,7 @@ export class ShareAPI {
     }
 
     // 获取申请列表
-    async getApplyListAPI(params: { page?: number; page_size?: number }): Promise<ShareListResponse> {
+    async getApplyListAPI(params: { start_time?: number, page?: number; page_size?: number }): Promise<ShareListResponse> {
         const result = await this.http.request({
             url: `/documents/shares/apply`,
             method: 'get',

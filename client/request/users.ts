@@ -1,5 +1,5 @@
 import { HttpMgr } from './http'
-import { UserInfoSchema, DocumentListResponseSchema, BaseResponseSchema, DocumentListResponse, UserInfo, BaseResponse } from './types'
+import { UserInfoSchema, BaseResponseSchema, BaseResponse } from './types'
 import { z } from 'zod';
 
 const KVSSchema = z.object({
@@ -136,21 +136,48 @@ export type UserInfoResponse = z.infer<typeof UserInfoResponseSchema>
 
 // 文档列表响应类型
 const UsersDocumentListResponseSchema = BaseResponseSchema.extend({
-    data: z.object({
-        total: z.number(),
-        items: z.array(z.object({
+    data: z.array(z.object({
+        document: z.object({
             id: z.string(),
+            user_id: z.string(),
+            path: z.string(),
+            doc_type: z.number(),
             name: z.string(),
-            type: z.string(),
-            parent_id: z.string().optional(),
+            size: z.number(),
+            version_id: z.string(),
+            team_id: z.string().nullable(),
+            project_id: z.string().nullable(),
             created_at: z.string(),
             updated_at: z.string(),
-            size: z.number(),
-            owner_id: z.string(),
-            is_favorite: z.boolean(),
-            is_deleted: z.boolean()
-        }))
-    })
+            deleted_at: z.string().nullable()
+        }),
+        team: z.object({
+            id: z.string(),
+            name: z.string(),
+            description: z.string().optional(),
+            avatar: z.string().optional()
+        }).nullable(),
+        project: z.object({
+            id: z.string(),
+            name: z.string(),
+            description: z.string().optional()
+        }).nullable(),
+        document_favorites: z.object({
+            id: z.string(),
+            user_id: z.string(),
+            document_id: z.string(),
+            created_at: z.string(),
+            updated_at: z.string()
+        }).nullable(),
+        document_access_record: z.object({
+            id: z.string(),
+            user_id: z.string(),
+            document_id: z.string(),
+            last_access_time: z.string(),
+            created_at: z.string(),
+            updated_at: z.string()
+        }).nullable()
+    }))
 })
 
 export type UsersDocumentListResponse = z.infer<typeof UsersDocumentListResponseSchema>
@@ -276,7 +303,7 @@ export class UsersAPI {
 
     // 移除历史记录
     async DeleteList(params: {
-        access_record_id: number;
+        access_record_id: string;
     }): Promise<BaseResponse> {
         return this.http.request({
             url: 'documents/access_record',
@@ -286,7 +313,7 @@ export class UsersAPI {
     }
 
     // 获取收藏列表
-    async GetfavoritesList(params: {
+    async GetFavoritesList(params: {
         page?: number;
         page_size?: number;
     }): Promise<FavoriteListResponse> {
@@ -304,9 +331,9 @@ export class UsersAPI {
     }
 
     //设置收藏列表
-    async SetfavoriteStatus(params: {
-        document_id: number;
-        is_favorite: boolean;
+    async SetFavoriteStatus(params: {
+        doc_id: string;
+        status: boolean;
     }): Promise<BaseResponse> {
         return this.http.request({
             url: 'documents/favorites',
@@ -316,7 +343,7 @@ export class UsersAPI {
     }
 
     //获取回收站列表
-    async GetrecycleList(params: {
+    async GetRecycleList(params: {
         page?: number;
         page_size?: number;
     }): Promise<RecycleListResponse> {
@@ -335,7 +362,7 @@ export class UsersAPI {
 
     //恢复文件
     async RecoverFile(params: {
-        document_id: number;
+        doc_id: string;
     }): Promise<BaseResponse> {
         return this.http.request({
             url: 'documents/recycle_bin',
@@ -346,7 +373,7 @@ export class UsersAPI {
 
     //彻底删除文件
     async DeleteFile(params: {
-        document_id: number;
+        doc_id: string;
     }): Promise<BaseResponse> {
         return this.http.request({
             url: 'documents/recycle_bin',
@@ -357,7 +384,7 @@ export class UsersAPI {
 
     //退出共享
     async ExitSharing(params: {
-        document_id: number;
+        share_id: string;
     }): Promise<BaseResponse> {
         return this.http.request({
             url: 'documents/share',
@@ -368,7 +395,7 @@ export class UsersAPI {
 
     //移动文件到回收站
     async MoveFile(params: {
-        document_id: number;
+        doc_id: string;
     }): Promise<BaseResponse> {
         return this.http.request({
             url: 'documents/',
@@ -431,8 +458,8 @@ export class UsersAPI {
     }
 
     //文件重命名
-    async Setfilename(params: {
-        document_id: number;
+    async SetFileName(params: {
+        doc_id: string;
         name: string;
     }): Promise<BaseResponse> {
         return this.http.request({
@@ -443,9 +470,8 @@ export class UsersAPI {
     }
 
     //复制文档
-    async Copyfile(params: {
-        document_id: number;
-        parent_id: string;
+    async CopyFile(params: {
+        doc_id: string;
     }): Promise<BaseResponse> {
         return this.http.request({
             url: '/documents/copy',
@@ -486,7 +512,7 @@ export class UsersAPI {
 
     //获取团队成员
     async GetteamMember(params: {
-        team_id: number;
+        team_id: string;
         page?: number;
         page_size?: number;
     }): Promise<TeamMemberListResponse> {
@@ -504,154 +530,48 @@ export class UsersAPI {
     }
 
     //设置团队信息
-    async Setteaminfo(params: {
-        team_id: number;
-        name: string;
-        description: string;
-    }): Promise<BaseResponse> {
-        return this.http.request({
-            url: '/documents/team/info',
-            method: 'put',
-            data: params,
-        })
-    }
+    // async Setteaminfo(params: {
+    //     team_id: string;
+    //     name: string;
+    //     description: string;
+    // }): Promise<BaseResponse> {
+    //     return this.http.request({
+    //         url: '/documents/team/info',
+    //         method: 'put',
+    //         data: params,
+    //     })
+    // }
 
-    //设置团队邀请选项
-    async Setteaminviteinfo(params: {
-        team_id: number;
-        open_invite: boolean;
-        invited_perm_type: number;
-    }): Promise<BaseResponse> {
-        return this.http.request({
-            url: '/documents/team/invited',
-            method: 'put',
-            data: params,
-        })
-    }
-
-    //设置团队成员权限
-    async Setteammemberperm(params: {
-        team_id: number;
-        user_id: string;
-        perm_type: number;
-    }): Promise<BaseResponse> {
-        return this.http.request({
-            url: '/documents/team/member/perm',
-            method: 'put',
-            data: params,
-        })
-    }
-
-    //转移团队创建者
-    async Setteamcreator(params: {
-        team_id: number;
-        user_id: string;
-    }): Promise<BaseResponse> {
-        return this.http.request({
-            url: '/documents/team/creator',
-            method: 'put',
-            data: params,
-        })
-    }
-
-    //获取团队信息
-    async Getteaminfo(params: {
-        team_id: number;
-    }): Promise<BaseResponse> {
-        return this.http.request({
-            url: '/documents/team/info/invited',
-            method: 'get',
-            params: params,
-        })
-    }
-
-    //申请加入团队
-    async JoinTeam(params: {
-        team_id: number;
-    }): Promise<BaseResponse> {
-        return this.http.request({
-            url: '/documents/team/join',
-            method: 'post',
-            data: params,
-        })
-    }
-
-    //获取申请列表
-    async Getjoinlist(params: {
-        team_id: number;
-        page?: number;
-        page_size?: number;
-    }): Promise<BaseResponse> {
-        return this.http.request({
-            url: '/documents/team/join/list',
-            method: 'get',
-            params: params,
-        })
-    }
-
-    //退出团队
-    async Leaveteam(params: {
-        team_id: number;
-    }): Promise<BaseResponse> {
-        return this.http.request({
-            url: '/documents/team/leave',
-            method: 'post',
-            data: params,
-        })
-    }
-
-    //删除团队成员
-    async Deletteamemember(params: {
-        team_id: number;
-        user_id: string;
-    }): Promise<BaseResponse> {
-        return this.http.request({
-            url: '/documents/team/member',
-            method: 'delete',
-            params: params,
-        })
-    }
-
-    //解散团队
-    async Disbandteam(params: {
-        team_id: number;
-    }): Promise<BaseResponse> {
-        return this.http.request({
-            url: '/documents/team',
-            method: 'delete',
-            params: params,
-        })
-    }
 
     //获取项目列表
-    async GetprojectLists(params: {
-        page?: number;
-        page_size?: number;
-    }): Promise<ProjectListResponse> {
-        const result = await this.http.request({
-            url: '/documents/project/list',
-            method: 'get',
-            params: params,
-        })
-        try {
-            return ProjectListResponseSchema.parse(result)
-        } catch (error) {
-            console.error('项目列表数据校验失败:', error)
-            throw error
-        }
-    }
+    // async GetProjectLists(params: {
+    //     page?: number;
+    //     page_size?: number;
+    // }): Promise<ProjectListResponse> {
+    //     const result = await this.http.request({
+    //         url: '/documents/project/list',
+    //         method: 'get',
+    //         params: params,
+    //     })
+    //     try {
+    //         return ProjectListResponseSchema.parse(result)
+    //     } catch (error) {
+    //         console.error('项目列表数据校验失败:', error)
+    //         throw error
+    //     }
+    // }
 
     //创建项目
-    async CreateProject(params: {
-        name: string;
-        description: string;
-    }): Promise<BaseResponse> {
-        return this.http.request({
-            url: '/documents/project',
-            method: 'post',
-            data: params,
-        })
-    }
+    // async CreateProject(params: {
+    //     name: string;
+    //     description: string;
+    // }): Promise<BaseResponse> {
+    //     return this.http.request({
+    //         url: '/documents/project',
+    //         method: 'post',
+    //         data: params,
+    //     })
+    // }
 
     //获取文档列表
     async getDoucmentListAPI(params: {

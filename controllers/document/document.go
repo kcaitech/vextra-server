@@ -27,7 +27,7 @@ func GetUserDocumentList(c *gin.Context) {
 		return
 	}
 	projectId := str.DefaultToInt(c.Query("project_id"), 0)
-	var result any
+	var result *[]services.AccessRecordAndFavoritesQueryResItem
 	if projectId > 0 {
 		result = services.NewDocumentService().FindDocumentByProjectId(projectId, userId)
 	} else {

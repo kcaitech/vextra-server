@@ -61,16 +61,53 @@ async function testUserFeedback() {
   }
 }
 
+// setfilename
+async function testSetFilename() {
+  try {
+    const response = await usersAPI.SetFileName({
+      doc_id: '1',
+      name: 'test',
+    });
+    console.log('设置文件名:', response);
+  } catch (error) {
+    console.error('设置文件名失败:', error);
+  }
+}
+
+// copyfile
+async function testCopyfile() {
+  try {
+    const response = await usersAPI.CopyFile({
+      doc_id: '1',
+    });
+    console.log('复制文件:', response);
+  } catch (error) {
+    console.error('复制文件失败:', error);
+  }
+}
+
+
 // 运行所有测试
 async function runAllTests() {
   console.log('开始测试用户相关API...');
   
+  
   await testUserKVStorage();
   await testUserDocumentAccessRecords();
   await testUserFeedback();
-  
+
+  // todo 未测试
+  await testSetFilename();
+  await testCopyfile();
+
+
+  await testSetfavoriteStatus();
   console.log('测试完成');
 }
 
 // 执行测试
 runAllTests().catch(console.error); 
+
+function testSetfavoriteStatus() {
+  throw new Error('Function not implemented.');
+}
