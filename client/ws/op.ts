@@ -1,10 +1,15 @@
-import { Cmd, ICoopNet, serialCmds, parseCmds, cloneCmds, RadixConvert } from "@kcdesign/data"
+// import { Cmd, ICoopNet, serialCmds, parseCmds, cloneCmds, RadixConvert } from "@kcdesign/data"
 import * as timing_util from "./timing_util"
 import { convert } from "./cmd_convert";
 import { Connect, ConnectClient } from "./connect";
-import { DataTypes } from "./types";
+import { Cmd, DataTypes } from "./types";
 
-export class CoopNet extends ConnectClient implements ICoopNet {
+export interface CoopNetError {
+    type: "duplicate";
+    duplicateCmd: Cmd;
+}
+
+export class CoopNet extends ConnectClient {
 
     constructor(connect: Connect) {
         super(connect, DataTypes.Op)
@@ -12,25 +17,51 @@ export class CoopNet extends ConnectClient implements ICoopNet {
 
     // private send?: (data: any, isListened?: boolean, timeout?: number) => Promise<boolean>
     private watcherList: ((cmds: Cmd[]) => void)[] = []
-    private errorWatcherList: ((errorInfo: {
-        type: "duplicate",
-        duplicateCmd: Cmd,
-    }) => void)[] = []
+    private errorWatcherList: ((errorInfo: CoopNetError) => void)[] = []
     // private onClose?: () => void
     // private isConnected = false
     private pullCmdsPromiseList: Record<string, {
         resolve: (value: Cmd[]) => void,
         reject: (reason: any) => void
     }[]> = {}
-    private radixRevert: RadixConvert = new RadixConvert(62)
 
+    private serialCmds(cmds: Cmd[]): any[] {
+        return cmds.map(cmd => ({
+            // cmd_id: cmd.id,
+            // id: cmd.version ? this.radixRevert.to(cmd.version) : undefined,
+            // previous_id: cmd.previousVersion ? this.radixRevert.to(cmd.previousVersion) : undefined,
+            cmd: {
+                ...cmd,
+                id: undefined,
+                version: undefined,
+                previousVersion: undefined
+            }
+        }));
+    }
+
+    private parseCmds(data: any[]): Cmd[] {
+        return data.map(item => ({
+            ...item,
+            id: item.id || "",
+            baseVer: Number(item.baseVer) || 0,
+            batchId: item.batchId || "",
+            ops: item.ops || [],
+            isRecovery: Boolean(item.isRecovery),
+            description: item.description || "",
+            time: Number(item.time) || 0,
+            posttime: Number(item.posttime) || 0,
+            dataFmtVer: item.dataFmtVer || "",
+            version: item.version || undefined,
+            preVersion: item.preVersion || undefined
+        }));
+    }
 
     async _pullCmds(from?: string, to?: string): Promise<Cmd[]> {
         const ready = await this.waitReady()
         if (!ready) return [];
-        from = from ? this.radixRevert.to(from).toString(10) : ""
-        to = to ? this.radixRevert.to(to).toString(10) : ""
-        console.log("pullCmds", from, to)
+        // from = from ? this.radixRevert.to(from).toString(10) : ""
+        // to = to ? this.radixRevert.to(to).toString(10) : ""
+        // console.log("pullCmds", from, to)
         this.send({
             type: "pullCmds",
             from: from,
@@ -49,10 +80,10 @@ export class CoopNet extends ConnectClient implements ICoopNet {
     async _postCmds(cmds: Cmd[]): Promise<boolean> {
         const ready = await this.waitReady()
         if (!ready) return false;
-        console.log("postCmds", cloneCmds(cmds))
+        // console.log("postCmds", cloneCmds(cmds))
         this.send({
             type: "commit",
-            cmds: serialCmds(cmds),
+            cmds: this.serialCmds(cmds),
         }, 0, 0)
         return true;
     }
@@ -68,10 +99,7 @@ export class CoopNet extends ConnectClient implements ICoopNet {
         }
     }
 
-    watchError(watcher: (errorInfo: {
-        type: "duplicate",
-        duplicateCmd: Cmd,
-    }) => void): void {
+    watchError(watcher: (errorInfo: CoopNetError) => void): void {
         this.errorWatcherList.push(watcher)
     }
 
@@ -81,13 +109,13 @@ export class CoopNet extends ConnectClient implements ICoopNet {
         let cmds1: Cmd[] | undefined
         if (Array.isArray(cmdsData)) {
             const data = cmdsData.map(item => {
-                item.cmd.id = item.cmd_id
-                item.cmd.version = this.radixRevert.from(item.id)
-                item.cmd.previousVersion = this.radixRevert.from(item.previous_id)
+                // item.cmd.id = item.cmd_id
+                // item.cmd.version = this.radixRevert.from(item.id)
+                // item.cmd.previousVersion = this.radixRevert.from(item.previous_id)
                 return item.cmd
             })
-            cmds = parseCmds(data)
-            cmds1 = parseCmds(data)
+            cmds = this.parseCmds(data)
+            cmds1 = this.parseCmds(data)
         }
         // pullCmdsResult update errorInvalidParams errorNoPermission errorInsertFailed errorPullCmdsFailed
         if (data.type === "pullCmdsResult" || data.type === "errorPullCmdsFailed") {
@@ -142,10 +170,10 @@ export class CoopNet extends ConnectClient implements ICoopNet {
                     return
                 }
                 duplicateCmd.cmd.id = duplicateCmd.cmd_id
-                duplicateCmd.cmd.version = this.radixRevert.from(duplicateCmd.id)
-                duplicateCmd.cmd.previousVersion = this.radixRevert.from(duplicateCmd.previous_id)
+                // duplicateCmd.cmd.version = this.radixRevert.from(duplicateCmd.id)
+                // duplicateCmd.cmd.previousVersion = this.radixRevert.from(duplicateCmd.previous_id)
                 if (!duplicateCmd.cmd.ops) duplicateCmd.cmd.ops = [];
-                const duplicateCmd1 = parseCmds([duplicateCmd.cmd])[0]
+                const duplicateCmd1 = this.parseCmds([duplicateCmd.cmd])[0]
                 for (const watcher of this.errorWatcherList) {
                     watcher({
                         type: "duplicate",

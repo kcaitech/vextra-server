@@ -1,7 +1,18 @@
-import { exportExForm, Document } from "@kcdesign/data";
+// import { exportExForm, Document } from "@kcdesign/data";
 import { v4 } from "uuid";
 import { Connect, ConnectClient } from "./connect";
 import { DataTypes } from "./types";
+
+export type ExportFunc = () => Promise<{
+    media_names: string[]
+    // todo
+}>
+
+export interface MediasMgr {
+    get(name: string): Promise<{
+        buff: Uint8Array
+    }>
+}
 
 export class DocUpload extends ConnectClient {
     constructor(connect: Connect) {
@@ -12,7 +23,7 @@ export class DocUpload extends ConnectClient {
         // 
     }
 
-    public async upload(document: Document, project_id?: string): Promise<undefined | { document_id: string, version_id: string }> {
+    public async upload(exportExForm: ExportFunc, mediasMgr: MediasMgr, project_id?: string): Promise<undefined | { document_id: string, version_id: string }> {
 
         const netReady = await this.waitReady();
         if (!netReady) return;
@@ -20,7 +31,7 @@ export class DocUpload extends ConnectClient {
         let data
         let ret = false;
         try {
-            data = await exportExForm(document)
+            data = await exportExForm()
             ret = !!await this.send({ document_id, project_id, export: data }, 60000) // 一分钟超时
         } catch (e) {
             console.log(e)
@@ -32,7 +43,7 @@ export class DocUpload extends ConnectClient {
         }
         for (let i = 0, len = data.media_names.length; i < len; i++) {
             const name = data.media_names[i];
-            const buffer = await document.mediasMgr.get(name)
+            const buffer = await mediasMgr.get(name)
             if (buffer !== undefined) {
                 ret = !!await this.sendBinary({ document_id, media: name }, buffer.buff.buffer, 60000); // 一分钟超时
                 if (!ret) {

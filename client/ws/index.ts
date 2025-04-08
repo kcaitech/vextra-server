@@ -1,17 +1,17 @@
-import { Cmd, Document, WatchableObject } from "@kcdesign/data";
-import { IContext, INet } from "@kcdesign/editor";
+// import { Cmd, Document, WatchableObject } from "@kcdesign/data";
+// import { IContext, INet } from "@kcdesign/editor";
 import { Connect } from "./connect";
 import { CoopNet } from "./op";
 import { Resource } from "./resource";
 import { Selection } from "./selection"
 import { Comment } from "./comment"
-import { DocUpload } from "./upload";
-import { DataTypes, NetworkStatusType } from "./types";
+import { DocUpload, ExportFunc, MediasMgr } from "./upload";
+import { Cmd, DataTypes, IContext, NetworkStatusType } from "./types";
 export { Connect } from "./connect"
 export { Selection as SelectionSync } from "./selection"
 export { DocUpload } from "./upload"
 
-export class Communication extends WatchableObject implements INet {
+export class WSClient {
     // private context: IContext
     connect: Connect
 
@@ -35,7 +35,7 @@ export class Communication extends WatchableObject implements INet {
     }
 
     constructor() {
-        super();
+        // super();
         // this.context = context;
         this.connect = new Connect();
         this.connect.addOnChange(this.onNetChange.bind(this))
@@ -96,7 +96,7 @@ export class Communication extends WatchableObject implements INet {
         return this.comment
     }
 
-    uploadDocument(document: Document, projectId?: string) {
-        return new DocUpload(this.connect).upload(document, projectId)
+    uploadDocument(exportExForm: ExportFunc, mediasMgr: MediasMgr, project_id?: string) {
+        return new DocUpload(this.connect).upload(exportExForm, mediasMgr, project_id)
     }
 }

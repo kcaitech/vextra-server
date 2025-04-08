@@ -9,7 +9,7 @@ interface LocalData {
     retryCount: number
     resolve?: (value: { data?: any, buffer?: ArrayBuffer, err?: string }) => void
     // reject?: () => void
-    timmer?: any
+    timer?: ReturnType<typeof setTimeout>
 }
 
 function encodeBinaryData(str: string, buffer: ArrayBufferLike): ArrayBuffer {
@@ -71,7 +71,7 @@ export class Connect {
     // private pendingDatas: PromisData[] = []
     private autoReconnect: boolean = true;
     private reconnectCount: number = 0;
-    private connectTimmer: any;
+    private connectTimer?: ReturnType<typeof setTimeout>;
 
     private data_id: number = 0;
     private promises: Map<string, LocalData> = new Map();
@@ -79,6 +79,7 @@ export class Connect {
 
     private onChangeList: ((networkStatus: NetworkStatusType) => void)[] = []
     private _waitReady: ((val: boolean) => void)[] = []
+    private _heartbeatInterval?: ReturnType<typeof setInterval>;
 
     setMessageHandler(type: string, handler: ((data: any, binary?: ArrayBuffer) => void) | undefined) {
         if (handler) this.dataHandler[type] = handler;
@@ -91,9 +92,9 @@ export class Connect {
 
     start(delay: number = 0) {
         if (this.ws) return;
-        if (this.connectTimmer) {
-            clearTimeout(this.connectTimmer)
-            this.connectTimmer = undefined
+        if (this.connectTimer) {
+            clearTimeout(this.connectTimer)
+            this.connectTimer = undefined
         }
 
         const connect = () => {
@@ -111,8 +112,8 @@ export class Connect {
         if (delay === 0) {
             connect();
         } else {
-            this.connectTimmer = setTimeout(() => {
-                this.connectTimmer = undefined;
+            this.connectTimer = setTimeout(() => {
+                this.connectTimer = undefined;
                 connect()
             }, delay)
         }
@@ -134,16 +135,16 @@ export class Connect {
         if (timeout) {
             const timeoutf = () => {
                 // 超时
-                data.timmer = undefined
+                data.timer = undefined
                 if (data.retryCount <= 0) {
                     data.resolve?.({ err: "time out" });
                 } else {
                     sendpack();
                     --data.retryCount
-                    data.timmer = setTimeout(timeoutf, timeout)
+                    data.timer = setTimeout(timeoutf, timeout)
                 }
             }
-            data.timmer = setTimeout(timeoutf, timeout)
+            data.timer = setTimeout(timeoutf, timeout)
         }
 
         sendpack();
@@ -218,7 +219,7 @@ export class Connect {
             if (err) console.log(err)
             if (promise) {
                 this.promises.delete(json.data_id)
-                if (promise.timmer) clearTimeout(promise.timmer)
+                if (promise.timer) clearTimeout(promise.timer)
                 promise.resolve?.({ data: json_data, buffer: _buffer, err: json.err });
             }
         } else {
@@ -234,12 +235,11 @@ export class Connect {
             data_id: ""
         }))
     }
-    private _heartbeat_interval: any;
 
     private receiveOpen(ev: Event) {
 
-        if (!this._heartbeat_interval) {
-            this._heartbeat_interval = setInterval(this._heartbeat.bind(this), 30 * 1000); // 30s
+        if (!this._heartbeatInterval) {
+            this._heartbeatInterval = setInterval(this._heartbeat.bind(this), 30 * 1000); // 30s
         }
 
         console.log("ws receive open")
@@ -269,9 +269,13 @@ export class Connect {
     }
 
     close() {
-        if (this._heartbeat_interval) {
-            clearInterval(this._heartbeat_interval)
-            this._heartbeat_interval = undefined
+        if (this._heartbeatInterval) {
+            clearInterval(this._heartbeatInterval)
+            this._heartbeatInterval = undefined
+        }
+        if (this.connectTimer) {
+            clearTimeout(this.connectTimer)
+            this.connectTimer = undefined
         }
         console.log("close connect")
         this.autoReconnect = false;
