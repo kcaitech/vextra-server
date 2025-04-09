@@ -18,7 +18,7 @@ func (model DocumentFavorites) AutoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(model)
 }
 
-func (model DocumentFavorites) GetId() int64 {
+func (model DocumentFavorites) GetId() interface{} {
 	return model.Id
 }
 

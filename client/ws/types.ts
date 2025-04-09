@@ -60,8 +60,8 @@ export type DocSelectionData = {
     // 以下字段仅读取时有效
     user_id?: string,
     permission?: number,
-    avatar?: string,
-    nickname?: string,
+    // avatar?: string,
+    // nickname?: string,
     enter_time?: number,
 }
 
@@ -99,8 +99,8 @@ export interface Cmd {
     time: number;
     posttime: number;
     dataFmtVer: string;
-    version?: string;
-    preVersion?: string;
+    version: number;
+    // preVersion: number;
 }
 export interface OpItem {
     op: Op;
@@ -148,7 +148,7 @@ export interface IContext {
         };
         watch: (callback: (type: string) => void) => void;
     };
-    lastRemoteCmdVersion: () => string;
+    lastRemoteCmdVersion: () => string | undefined;
 }
 
 export enum SelectionEvents {

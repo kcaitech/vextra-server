@@ -15,7 +15,6 @@ import (
 	"github.com/go-redsync/redsync/v4"
 	"kcaitech.com/kcserver/providers/redis"
 	"kcaitech.com/kcserver/utils/my_map"
-	"kcaitech.com/kcserver/utils/str"
 
 	// "kcaitech.com/kcserver/common"
 	config "kcaitech.com/kcserver/config"
@@ -27,15 +26,15 @@ import (
 // const minUpdateTimeInterval time.Duration = time.Second * 60 * 10
 
 type DocumentVersioningInfo struct {
-	DocId          int64     `json:"docId"`
+	DocId          string    `json:"docId"`
 	LastUpdateTime time.Time `json:"lastUpdateTime"`
 }
 
 // 并不是同一个文档的都在一个服务实例里，也就个人编辑有点用
-var documentVersioningInfoMap = my_map.NewSyncMap[int64, DocumentVersioningInfo]()
+var documentVersioningInfoMap = my_map.NewSyncMap[string, DocumentVersioningInfo]()
 
-func getDocumentLastUpdateTimeFromRedis(documentId int64, redis *redis.RedisDB) time.Time {
-	if lastUpdateTime, err := redis.Client.Get(context.Background(), "Document Versioning LastUpdateTime[DocumentId:"+str.IntToString(documentId)+"]").Int64(); err == nil && lastUpdateTime > 0 {
+func getDocumentLastUpdateTimeFromRedis(documentId string, redis *redis.RedisDB) time.Time {
+	if lastUpdateTime, err := redis.Client.Get(context.Background(), "Document Versioning LastUpdateTime[DocumentId:"+(documentId)+"]").Int64(); err == nil && lastUpdateTime > 0 {
 		return time.UnixMilli(lastUpdateTime)
 	}
 	return time.UnixMilli(0)
@@ -172,7 +171,7 @@ func svg2png(svgs []string, svg2pngUrl string) *[][]byte {
 	return &pngs
 }
 
-func AutoUpdate(documentId int64, config *config.Configuration) {
+func AutoUpdate(documentId string, config *config.Configuration) {
 	info, ok := documentVersioningInfoMap.Get(documentId)
 	if !ok {
 		info = DocumentVersioningInfo{
@@ -187,9 +186,9 @@ func AutoUpdate(documentId int64, config *config.Configuration) {
 		return
 	}
 	// 上锁
-	documentIdStr := str.IntToString(documentId)
+	// documentIdStr := str.IntToString(documentId)
 	redis := services.GetRedisDB()
-	documentVersioningMutex := redis.RedSync.NewMutex("Document Versioning Mutex[DocumentId:"+documentIdStr+"]", redsync.WithExpiry(time.Second*10))
+	documentVersioningMutex := redis.RedSync.NewMutex("Document Versioning Mutex[DocumentId:"+documentId+"]", redsync.WithExpiry(time.Second*10))
 	if err := documentVersioningMutex.TryLock(); err != nil {
 		info.LastUpdateTime = time.Now()
 		return
@@ -217,7 +216,7 @@ func AutoUpdate(documentId int64, config *config.Configuration) {
 	var generateApiUrl = config.VersionServer.Url
 
 	// 构建请求
-	resp, err := http.Get(generateApiUrl + "?documentId=" + documentIdStr)
+	resp, err := http.Get(generateApiUrl + "?documentId=" + documentId)
 	if err != nil {
 		log.Println(generateApiUrl, "http.NewRequest err", err)
 		return
@@ -249,7 +248,7 @@ func AutoUpdate(documentId int64, config *config.Configuration) {
 	log.Println("auto update document, start upload data", documentId)
 	// upload document data
 	header := Header{
-		DocumentId:   documentIdStr,
+		DocumentId:   documentId,
 		LastCmdVerId: version.LastCmdVerId,
 	}
 	response := Response{}
@@ -270,7 +269,7 @@ func AutoUpdate(documentId int64, config *config.Configuration) {
 	}
 
 	// 更新redis
-	if _, err := redis.Client.Set(context.Background(), "Document Versioning LastUpdateTime[DocumentId:"+documentIdStr+"]", time.Now().UnixMilli(), time.Hour*1).Result(); err != nil {
+	if _, err := redis.Client.Set(context.Background(), "Document Versioning LastUpdateTime[DocumentId:"+documentId+"]", time.Now().UnixMilli(), time.Hour*1).Result(); err != nil {
 		log.Println("redis.Client.Set err", err)
 	} else {
 		log.Println("auto update successed")

@@ -11,20 +11,19 @@ import (
 	"kcaitech.com/kcserver/providers/safereview"
 	"kcaitech.com/kcserver/providers/storage"
 	"kcaitech.com/kcserver/services"
-	myTime "kcaitech.com/kcserver/utils/time"
 	"kcaitech.com/kcserver/utils/websocket"
 )
 
 type resourceServe struct {
 	ws         *websocket.Ws
 	userId     string
-	documentId int64
+	documentId string
 	storage    *storage.StorageClient
 	dbModule   *models.DBModule
 	review     safereview.Client
 }
 
-func NewResourceServe(ws *websocket.Ws, userId string, documentId int64) *resourceServe {
+func NewResourceServe(ws *websocket.Ws, userId string, documentId string) *resourceServe {
 
 	// 权限校验
 	// var permType models.PermType
@@ -45,7 +44,7 @@ func NewResourceServe(ws *websocket.Ws, userId string, documentId int64) *resour
 	return &serv
 }
 
-func (serv *resourceServe) start(documentId int64) {
+func (serv *resourceServe) start(documentId string) {
 
 }
 
@@ -117,7 +116,7 @@ func (serv *resourceServe) handle(data *TransData, binaryData *([]byte)) {
 
 }
 
-func reviewResGo(documentId int64, resourceData []byte) {
+func reviewResGo(documentId string, resourceData []byte) {
 	reviewClient := services.GetSafereviewClient()
 	if reviewClient == nil {
 		return
@@ -143,7 +142,7 @@ func reviewResGo(documentId int64, resourceData []byte) {
 				LockedReason: "[图片审核不通过：" + reviewResponse.Reason + "]",
 			}
 		} else {
-			lockedInfo.LockedAt = myTime.Time(time.Now())
+			lockedInfo.LockedAt = (time.Now())
 			lockedInfo.LockedReason += "[图片审核不通过：" + reviewResponse.Reason + "]"
 		}
 		documentService.UpdateLocked(documentId, time.Now(), lockedInfo.LockedReason, lockedInfo.LockedWords)

@@ -28,8 +28,13 @@ func (projectPermType ProjectPermType) ToPermType() PermType {
 
 // Project 项目
 type Project struct {
-	BaseModelStruct
-	TeamId       int64           `gorm:"not null" json:"team_id"`
+	// BaseModelStruct
+	Id        string    `gorm:"primaryKey" json:"id,string"` // 主键，自增
+	CreatedAt time.Time `gorm:"autoCreateTime;type:datetime(6)" json:"created_at"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime;type:datetime(6)" json:"updated_at"`
+	DeletedAt DeletedAt `gorm:"index" json:"deleted_at"`
+
+	TeamId       string          `gorm:"not null" json:"team_id"`
 	Name         string          `gorm:"size:64;not null" json:"name"`
 	Description  string          `gorm:"size:128" json:"description"`
 	IsPublic     bool            `gorm:"not null;default:false" json:"is_public"`    // 是否在团队内部公开
@@ -46,7 +51,7 @@ func (model Project) AutoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(model)
 }
 
-func (model Project) GetId() int64 {
+func (model Project) GetId() interface{} {
 	return model.Id
 }
 
@@ -66,7 +71,7 @@ const (
 // ProjectMember 项目成员
 type ProjectMember struct {
 	BaseModelStruct
-	ProjectId      int64                 `gorm:"not null" json:"project_id"`                 // 项目ID
+	ProjectId      string                `gorm:"not null" json:"project_id"`                 // 项目ID
 	UserId         string                `gorm:"not null" json:"user_id"`                    // 用户ID
 	PermType       ProjectPermType       `gorm:"default:1;not null" json:"perm_type"`        // 权限类型
 	PermSourceType ProjectPermSourceType `gorm:"default:0;not null" json:"perm_source_type"` // 权限来源类型
@@ -80,7 +85,7 @@ func (model ProjectMember) AutoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(model)
 }
 
-func (model ProjectMember) GetId() int64 {
+func (model ProjectMember) GetId() interface{} {
 	return model.Id
 }
 
@@ -101,7 +106,7 @@ const (
 type ProjectJoinRequest struct {
 	BaseModelStruct
 	UserId           string                   `gorm:"index;not null" json:"user_id"`
-	ProjectId        int64                    `gorm:"index;not null" json:"project_id"`
+	ProjectId        string                   `gorm:"index;not null" json:"project_id"`
 	PermType         ProjectPermType          `gorm:"not null" json:"perm_type"`
 	Status           ProjectJoinRequestStatus `gorm:"not null;default:0" json:"status"`
 	FirstDisplayedAt time.Time                `gorm:"" json:"first_displayed_at"`
@@ -119,7 +124,7 @@ func (model ProjectJoinRequest) AutoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(model)
 }
 
-func (model ProjectJoinRequest) GetId() int64 {
+func (model ProjectJoinRequest) GetId() interface{} {
 	return model.Id
 }
 
@@ -144,7 +149,7 @@ func (model ProjectJoinRequestMessageShow) AutoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(model)
 }
 
-func (model ProjectJoinRequestMessageShow) GetId() int64 {
+func (model ProjectJoinRequestMessageShow) GetId() interface{} {
 	return model.Id
 }
 
@@ -157,7 +162,7 @@ func (model ProjectJoinRequestMessageShow) TableName() string {
 type ProjectFavorite struct {
 	BaseModelStruct
 	UserId    string `gorm:"uniqueIndex:idx_user_project,length:64;not null" json:"user_id"`
-	ProjectId int64  `gorm:"uniqueIndex:idx_user_project;not null" json:"project_id"`
+	ProjectId string `gorm:"uniqueIndex:idx_user_project;not null" json:"project_id"`
 	IsFavor   bool   `gorm:"not null;default:true" json:"is_favor"`
 }
 
@@ -169,7 +174,7 @@ func (model ProjectFavorite) AutoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(model)
 }
 
-func (model ProjectFavorite) GetId() int64 {
+func (model ProjectFavorite) GetId() interface{} {
 	return model.Id
 }
 

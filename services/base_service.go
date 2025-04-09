@@ -722,7 +722,7 @@ func (s *DefaultService) Get(modelData models.BaseModel, args ...any) error {
 	}
 }
 
-func (s *DefaultService) GetById(id int64, modelData models.BaseModel) error {
+func (s *DefaultService) GetById(id interface{}, modelData models.BaseModel) error {
 	if err := s.DBModule.DB.Model(s.Model).Where("id = ?", id).First(modelData).Error; !errors.Is(err, gorm.ErrRecordNotFound) {
 		return err
 	} else {
@@ -764,14 +764,23 @@ func HasWhere(args *[]any) bool {
 // 若原本就存在搜索条件，或成功添加Id条件，则返回true，否则返回false
 func AddIdCondIfNoWhere(modelData models.BaseModel, args *[]any) bool {
 	// 如果没有传入搜索条件，则添加modelData中的Id字段作为搜索条件
-	if !HasWhere(args) {
-		// 无传入Id
-		if id := modelData.GetId(); id <= 0 {
-			return false
-		} else {
-			*args = append(*args, WhereArgs{Query: "id = ?", Args: []any{id}})
-		}
+	if HasWhere(args) {
+		return true
 	}
+	id := modelData.GetId()
+	if strid, ok := id.(string); ok {
+		if strid == "" {
+			return false
+		}
+	} else if numid, ok := id.(int64); ok {
+		if numid <= 0 {
+			return false
+		}
+	} else {
+		return false
+	}
+	*args = append(*args, WhereArgs{Query: "id = ?", Args: []any{id}})
+
 	return true
 }
 
@@ -813,7 +822,7 @@ func (s *DefaultService) Updates(modelData models.BaseModel, args ...any) (int64
 	return s.updates(modelData, false, args...)
 }
 
-func (s *DefaultService) UpdatesById(id int64, modelData models.BaseModel) (int64, error) {
+func (s *DefaultService) UpdatesById(id interface{}, modelData models.BaseModel) (int64, error) {
 	return s.Updates(modelData, "id = ?", id)
 }
 
@@ -821,7 +830,7 @@ func (s *DefaultService) UpdatesIgnoreZero(modelData models.BaseModel, args ...a
 	return s.updates(modelData, true, args...)
 }
 
-func (s *DefaultService) UpdatesIgnoreZeroById(id int64, modelData models.BaseModel) (int64, error) {
+func (s *DefaultService) UpdatesIgnoreZeroById(id interface{}, modelData models.BaseModel) (int64, error) {
 	return s.UpdatesIgnoreZero(modelData, "id = ?", id)
 }
 
@@ -848,7 +857,7 @@ func (s *DefaultService) UpdateColumns(values map[string]any, args ...any) (int6
 	return tx.RowsAffected, nil
 }
 
-func (s *DefaultService) UpdateColumnsById(id int64, values map[string]any) (int64, error) {
+func (s *DefaultService) UpdateColumnsById(id string, values map[string]any) (int64, error) {
 	return s.UpdateColumns(values, "id = ?", id)
 }
 

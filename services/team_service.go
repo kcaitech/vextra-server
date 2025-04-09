@@ -7,7 +7,7 @@ import (
 
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/providers/storage"
-	"kcaitech.com/kcserver/utils/str"
+	"kcaitech.com/kcserver/utils"
 )
 
 type TeamService struct {
@@ -84,11 +84,13 @@ func (s *TeamService) UploadTeamAvatar(team *models.Team, fileBytes []byte, cont
 	default:
 		return "", fmt.Errorf("不支持的文件类型：%s", contentType)
 	}
-	// if team.Uid == "" {
-	// 	team.Uid = str.GetUid()
-	// }
-	fileName := fmt.Sprintf("%s.%s", str.GetUid(), suffix)
-	avatarPath := fmt.Sprintf("/teams/%d/avatar/%s", team.Id, fileName)
+
+	id, err := utils.GenerateBase62ID()
+	if err != nil {
+		return "", err
+	}
+	fileName := fmt.Sprintf("%s.%s", id, suffix)
+	avatarPath := fmt.Sprintf("/teams/%s/avatar/%s", team.Id, fileName)
 	if _, err := s.storage.AttatchBucket.PutObjectByte(avatarPath, fileBytes); err != nil {
 		return "", errors.New("上传文件失败")
 	}
@@ -101,7 +103,7 @@ func (s *TeamService) UploadTeamAvatar(team *models.Team, fileBytes []byte, cont
 	return avatarPath, nil
 }
 
-func (s *TeamService) UploadTeamAvatarById(teamId int64, fileBytes []byte, contentType string) (string, error) {
+func (s *TeamService) UploadTeamAvatarById(teamId string, fileBytes []byte, contentType string) (string, error) {
 	team := models.Team{}
 	if err := s.GetById(teamId, &team); err != nil {
 		return "", err
@@ -110,7 +112,7 @@ func (s *TeamService) UploadTeamAvatarById(teamId int64, fileBytes []byte, conte
 }
 
 // GetTeamPermTypeByForUser 获取用户在团队中的权限
-func (s *TeamService) GetTeamPermTypeByForUser(teamId int64, userId string) (*models.TeamPermType, error) {
+func (s *TeamService) GetTeamPermTypeByForUser(teamId string, userId string) (*models.TeamPermType, error) {
 	var teamMember models.TeamMember
 	if err := s.TeamMemberService.Get(&teamMember, WhereArgs{Query: "team_id = ? and user_id = ?", Args: []any{teamId, userId}}); err != nil {
 		if errors.Is(err, ErrRecordNotFound) {
@@ -187,7 +189,7 @@ type TeamMemberQueryResItem struct {
 }
 
 // FindTeamMember 查询某个团队的成员列表
-func (s *TeamService) FindTeamMember(teamId int64) []TeamMemberQueryResItem {
+func (s *TeamService) FindTeamMember(teamId string) []TeamMemberQueryResItem {
 	// todo 当前db并没有用户信息，需要根据用户id再去获取
 	var result []TeamMemberQueryResItem
 	whereArgsList := []WhereArgs{

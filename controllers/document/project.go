@@ -34,8 +34,8 @@ func CreateProject(c *gin.Context) {
 		response.BadRequest(c, err.Error())
 		return
 	}
-	teamId := str.DefaultToInt(req.TeamId, 0)
-	if teamId <= 0 {
+	teamId := (req.TeamId)
+	if teamId == "" {
 		response.BadRequest(c, "参数错误：team_id")
 		return
 	}
@@ -82,10 +82,17 @@ func CreateProject(c *gin.Context) {
 		}
 	}
 
+	id, err := utils.GenerateBase62ID()
+	if err != nil {
+		response.ServerError(c, err.Error())
+		return
+	}
+
 	project := models.Project{
 		TeamId:      teamId,
 		Name:        req.Name,
 		Description: req.Description,
+		Id:          id,
 	}
 	if projectService.Create(&project) != nil {
 		response.ServerError(c, "项目创建失败")
@@ -127,8 +134,8 @@ func GetProjectMemberList(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	projectId := str.DefaultToInt(c.Query("project_id"), 0)
-	if projectId <= 0 {
+	projectId := (c.Query("project_id"))
+	if projectId == "" {
 		response.BadRequest(c, "参数错误：project_id")
 		return
 	}
@@ -206,8 +213,8 @@ func DeleteProject(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	projectId := str.DefaultToInt(c.Query("project_id"), 0)
-	if projectId <= 0 {
+	projectId := (c.Query("project_id"))
+	if projectId == "" {
 		response.BadRequest(c, "参数错误：project_id")
 		return
 	}
@@ -271,8 +278,8 @@ func ApplyJoinProject(c *gin.Context) {
 		response.BadRequest(c, "")
 		return
 	}
-	projectId := str.DefaultToInt(req.ProjectId, 0)
-	if projectId <= 0 {
+	projectId := (req.ProjectId)
+	if projectId == "" {
 		response.BadRequest(c, "参数错误：project_id")
 		return
 	}
@@ -526,8 +533,8 @@ func SetProjectInfo(c *gin.Context) {
 		response.BadRequest(c, err.Error())
 		return
 	}
-	projectId := str.DefaultToInt(req.ProjectId, 0)
-	if projectId <= 0 {
+	projectId := (req.ProjectId)
+	if projectId == "" {
 		response.BadRequest(c, "参数错误：project_id")
 		return
 	}
@@ -590,8 +597,8 @@ func SetProjectInvited(c *gin.Context) {
 		response.BadRequest(c, err.Error())
 		return
 	}
-	projectId := str.DefaultToInt(req.ProjectId, 0)
-	if projectId <= 0 {
+	projectId := (req.ProjectId)
+	if projectId == "" {
 		response.BadRequest(c, "参数错误：project_id")
 		return
 	}
@@ -638,8 +645,8 @@ func GetProjectInvitedInfo(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	projectId := str.DefaultToInt(c.Query("project_id"), 0)
-	if projectId <= 0 {
+	projectId := (c.Query("project_id"))
+	if projectId == "" {
 		response.BadRequest(c, "参数错误：project_id")
 		return
 	}
@@ -682,8 +689,8 @@ func ExitProject(c *gin.Context) {
 		response.BadRequest(c, "")
 		return
 	}
-	projectId := str.DefaultToInt(req.ProjectId, 0)
-	if projectId <= 0 {
+	projectId := (req.ProjectId)
+	if projectId == "" {
 		response.BadRequest(c, "参数错误：project_id")
 		return
 	}
@@ -720,8 +727,8 @@ func SetProjectMemberPermission(c *gin.Context) {
 		response.BadRequest(c, "")
 		return
 	}
-	projectId := str.DefaultToInt(req.ProjectId, 0)
-	if projectId <= 0 {
+	projectId := (req.ProjectId)
+	if projectId == "" {
 		response.BadRequest(c, "参数错误：project_id")
 		return
 	}
@@ -777,8 +784,8 @@ func ChangeProjectCreator(c *gin.Context) {
 		response.BadRequest(c, "")
 		return
 	}
-	projectId := str.DefaultToInt(req.ProjectId, 0)
-	if projectId <= 0 {
+	projectId := (req.ProjectId)
+	if projectId == "" {
 		response.BadRequest(c, "参数错误：project_id")
 		return
 	}
@@ -839,8 +846,8 @@ func RemoveProjectMember(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	projectId := str.DefaultToInt(c.Query("project_id"), 0)
-	if projectId <= 0 {
+	projectId := (c.Query("project_id"))
+	if projectId == "" {
 		response.BadRequest(c, "参数错误：project_id")
 		return
 	}
@@ -895,8 +902,8 @@ func SetProjectFavorite(c *gin.Context) {
 		return
 	}
 	isFavor := *req.IsFavor
-	projectId := str.DefaultToInt(req.ProjectId, 0)
-	if projectId <= 0 {
+	projectId := (req.ProjectId)
+	if projectId == "" {
 		response.BadRequest(c, "参数错误：project_id")
 		return
 	}
@@ -950,9 +957,9 @@ func MoveDocument(c *gin.Context) {
 		return
 	}
 
-	sourceProjectId := str.DefaultToInt(req.SourceProjectId, 0)
-	targetProjectId := str.DefaultToInt(req.TargetProjectId, 0)
-	if (sourceProjectId <= 0 && targetProjectId <= 0) || sourceProjectId == targetProjectId {
+	sourceProjectId := (req.SourceProjectId)
+	targetProjectId := (req.TargetProjectId)
+	if (sourceProjectId == "" && targetProjectId == "") || sourceProjectId == targetProjectId {
 		response.BadRequest(c, "参数错误：source_project_id、target_project_id")
 		return
 	}
@@ -960,13 +967,13 @@ func MoveDocument(c *gin.Context) {
 		response.BadRequest(c, "参数错误：document.project_id")
 		return
 	}
-	if document.ProjectId == 0 && document.UserId != userId {
+	if document.ProjectId == "" && document.UserId != userId {
 		response.Forbidden(c, "")
 		return
 	}
 
 	projectService := services.NewProjectService()
-	if sourceProjectId != 0 {
+	if sourceProjectId != "" {
 		sourcePermType, err := projectService.GetProjectPermTypeByForUser(sourceProjectId, userId)
 		if err != nil {
 			response.ServerError(c, "查询错误")
@@ -978,8 +985,8 @@ func MoveDocument(c *gin.Context) {
 		}
 	}
 
-	var targetTeamId int64
-	if targetProjectId != 0 {
+	var targetTeamId string
+	if targetProjectId != "" {
 		targetPermType, err := projectService.GetProjectPermTypeByForUser(targetProjectId, userId)
 		if err != nil {
 			response.ServerError(c, "查询错误")

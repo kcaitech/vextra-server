@@ -11,7 +11,7 @@ export type ExportFunc = () => Promise<{
 export interface MediasMgr {
     get(name: string): Promise<{
         buff: Uint8Array
-    }>
+    } | undefined>
 }
 
 export class DocUpload extends ConnectClient {

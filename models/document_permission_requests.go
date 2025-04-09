@@ -17,7 +17,7 @@ const (
 type DocumentPermissionRequests struct {
 	BaseModelStruct
 	UserId           string     `gorm:"index" json:"user_id"`
-	DocumentId       int64      `gorm:"index" json:"document_id"`
+	DocumentId       string     `gorm:"index" json:"document_id"`
 	PermType         PermType   `gorm:"" json:"perm_type"`
 	Status           StatusType `gorm:"" json:"status"`
 	FirstDisplayedAt time.Time  `gorm:"" json:"first_displayed_at"`
@@ -35,7 +35,7 @@ func (model DocumentPermissionRequests) AutoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(model)
 }
 
-func (model DocumentPermissionRequests) GetId() int64 {
+func (model DocumentPermissionRequests) GetId() interface{} {
 	return model.Id
 }
 

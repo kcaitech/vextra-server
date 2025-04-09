@@ -8,7 +8,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"kcaitech.com/kcserver/providers/mongo"
 	"kcaitech.com/kcserver/utils/sliceutil"
-	"kcaitech.com/kcserver/utils/str"
 )
 
 type UserCommentStatus uint8
@@ -22,7 +21,7 @@ type UserCommentCommon struct {
 	Id            string            `json:"id" bson:"id,omitempty" binding:"required"` // 前端生成,uuid
 	ParentId      string            `json:"parent_id" bson:"parent_id"`
 	RootId        string            `json:"root_id" bson:"root_id"`
-	DocumentId    int64             `json:"doc_id,string" bson:"document_id" binding:"required"`
+	DocumentId    string            `json:"doc_id,string" bson:"document_id" binding:"required"`
 	PageId        string            `json:"page_id" bson:"page_id" binding:"required"`
 	ShapeId       string            `json:"shape_id" bson:"shape_id" binding:"required"`
 	TargetShapeId string            `json:"target_shape_id" bson:"target_shape_id" binding:"required"`
@@ -46,7 +45,7 @@ type UserCommentCommon struct {
 type UserComment struct {
 	UserCommentCommon `json:",inline" bson:",inline"`
 	UnionId           struct {
-		DocumentId int64  `json:"document_id" bson:"document_id"`
+		DocumentId string `json:"document_id" bson:"document_id"`
 		CommentId  string `json:"comment_id" bson:"comment_id"`
 	} `json:"union_id" bson:"_id"`
 	User            string `json:"user" bson:"user"`
@@ -86,10 +85,10 @@ func NewUserCommentService(mongoDB *mongo.MongoDB) *UserCommentService {
 	return &UserCommentService{MongoDB: mongoDB}
 }
 
-func (s *UserCommentService) GetUserComment(documentId int64) ([]UserComment, error) {
+func (s *UserCommentService) GetUserComment(documentId string) ([]UserComment, error) {
 
 	filter := bson.M{
-		"document_id": str.IntToString(documentId),
+		"document_id": (documentId),
 	}
 	options := options.Find()
 	options.SetSort(bson.D{{Key: "record_created_at", Value: -1}})

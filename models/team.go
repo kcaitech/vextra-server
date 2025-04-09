@@ -17,7 +17,12 @@ const (
 
 // Team 团队
 type Team struct {
-	BaseModelStruct
+	// BaseModelStruct
+	Id        string    `gorm:"primaryKey" json:"id,string"` // 主键，自增
+	CreatedAt time.Time `gorm:"autoCreateTime;type:datetime(6)" json:"created_at"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime;type:datetime(6)" json:"updated_at"`
+	DeletedAt DeletedAt `gorm:"index" json:"deleted_at"`
+
 	Name        string `gorm:"size:64;not null" json:"name"`
 	Description string `gorm:"size:128" json:"description"`
 	Avatar      string `gorm:"size:256" json:"avatar"`
@@ -34,7 +39,7 @@ func (model Team) AutoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(model)
 }
 
-func (model Team) GetId() int64 {
+func (model Team) GetId() interface{} {
 	return model.Id
 }
 
@@ -46,7 +51,7 @@ func (model Team) TableName() string {
 // TeamMember 团队成员
 type TeamMember struct {
 	BaseModelStruct
-	TeamId   int64        `gorm:"not null" json:"team_id"`          // 团队ID
+	TeamId   string       `gorm:"not null" json:"team_id"`          // 团队ID
 	UserId   string       `gorm:"not null" json:"user_id"`          // 用户ID
 	PermType TeamPermType `gorm:"not null" json:"perm_type"`        // 权限类型
 	Nickname string       `gorm:"size:64;not null" json:"nickname"` // 团队成员昵称
@@ -60,7 +65,7 @@ func (model TeamMember) AutoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(model)
 }
 
-func (model TeamMember) GetId() int64 {
+func (model TeamMember) GetId() interface{} {
 	return model.Id
 }
 
@@ -81,7 +86,7 @@ const (
 type TeamJoinRequest struct {
 	BaseModelStruct
 	UserId           string                `gorm:"index;not null" json:"user_id"`
-	TeamId           int64                 `gorm:"index;not null" json:"team_id"`
+	TeamId           string                `gorm:"index;not null" json:"team_id"`
 	PermType         TeamPermType          `gorm:"not null" json:"perm_type"` // 取值：只读、可编辑
 	Status           TeamJoinRequestStatus `gorm:"not null;default:0" json:"status"`
 	FirstDisplayedAt time.Time             `gorm:"" json:"first_displayed_at"`
@@ -99,7 +104,7 @@ func (model TeamJoinRequest) AutoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(model)
 }
 
-func (model TeamJoinRequest) GetId() int64 {
+func (model TeamJoinRequest) GetId() interface{} {
 	return model.Id
 }
 
@@ -124,7 +129,7 @@ func (model TeamJoinRequestMessageShow) AutoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(model)
 }
 
-func (model TeamJoinRequestMessageShow) GetId() int64 {
+func (model TeamJoinRequestMessageShow) GetId() interface{} {
 	return model.Id
 }
 

@@ -18,3 +18,6 @@ export class Request {
         this.share_api = new ShareAPI(httpmgr);
     }
 }
+
+export { HttpCode } from "./httpcode"
+export * from "./users"

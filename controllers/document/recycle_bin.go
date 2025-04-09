@@ -51,7 +51,7 @@ func RestoreUserRecycleBinDocument(c *gin.Context) {
 		response.BadRequest(c, "文档不存在")
 		return
 	}
-	if document.ProjectId <= 0 {
+	if document.ProjectId == "" {
 		if document.UserId != userId {
 			response.Forbidden(c, "")
 			return
@@ -94,7 +94,7 @@ func DeleteUserRecycleBinDocument(c *gin.Context) {
 		response.BadRequest(c, "文档不存在")
 		return
 	}
-	if document.ProjectId <= 0 {
+	if document.ProjectId == "" {
 		if document.UserId != userId {
 			response.Forbidden(c, "")
 			return

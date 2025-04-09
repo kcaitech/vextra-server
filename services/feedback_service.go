@@ -6,7 +6,7 @@ import (
 
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/providers/storage"
-	"kcaitech.com/kcserver/utils/str"
+	"kcaitech.com/kcserver/utils"
 )
 
 type FeedbackService struct {
@@ -41,7 +41,11 @@ func (s *FeedbackService) UploadImage(userId string, fileBytes []byte, contentTy
 	default:
 		return "", (fmt.Errorf("不支持的文件类型：%s", contentType))
 	}
-	fileName := fmt.Sprintf("%s.%s", str.GetUid(), suffix)
+	id, err := utils.GenerateBase62ID()
+	if err != nil {
+		return "", err
+	}
+	fileName := fmt.Sprintf("%s.%s", id, suffix)
 	imagePath := fmt.Sprintf("/feedback/%s/%s", (userId), fileName)
 	if _, err := s.storage.AttatchBucket.PutObjectByte(imagePath, fileBytes); err != nil {
 		return "", errors.New("上传文件失败")

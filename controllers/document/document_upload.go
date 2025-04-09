@@ -237,19 +237,17 @@ func compressPutObjectByte(path string, content []byte, _storage *storage.Storag
 func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media, resp *Response) {
 
 	userId := header.UserId
-	documentId := str.DefaultToInt(header.DocumentId, 0)
-	projectId := str.DefaultToInt(header.ProjectId, 0)
+	documentId := (header.DocumentId)
+	projectId := (header.ProjectId)
 	lastCmdVerId := header.LastCmdVerId
-	if (userId == "" && documentId <= 0) || (userId != "" && documentId > 0) || (documentId > 0 && lastCmdVerId == "") { // userId和documentId必须只传一个 // todo这不对吧，要鉴权
+	if (userId == "" && documentId == "") || (userId != "" && documentId != "") || (documentId != "" && lastCmdVerId == "") { // userId和documentId必须只传一个 // todo这不对吧，要鉴权
 		resp.Message = "参数错误"
 		log.Println("参数错误", userId, documentId)
 		return
 	}
-	isFirstUpload := documentId <= 0
-	var teamId int64
-	if projectId < 0 {
-		projectId = 0
-	} else if projectId > 0 {
+	isFirstUpload := documentId == ""
+	var teamId string
+	if projectId != "" {
 		projectService := services.NewProjectService()
 		project := models.Project{}
 		if err := projectService.GetById(projectId, &project); err != nil {
@@ -457,7 +455,7 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 
 	resp.Status = ResponseStatusSuccess
 	resp.Data = Data{
-		"document_id": str.IntToString(documentId),
+		"document_id": (documentId),
 		"version_id":  documentVersionId,
 	}
 }

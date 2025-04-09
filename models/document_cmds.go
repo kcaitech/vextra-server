@@ -30,10 +30,10 @@ type Cmd struct {
 
 type CmdItem struct {
 	UnionId struct { // 联合id
-		DocumentId int64  `json:"document_id" bson:"document_id"`
+		DocumentId string `json:"document_id" bson:"document_id"`
 		CmdId      string `json:"cmd_id" bson:"cmd_id"`
 	} `json:"union_id" bson:"_id"`
-	DocumentId   int64  `json:"document_id" bson:"document_id"`
+	DocumentId   string `json:"document_id" bson:"document_id"`
 	Cmd          Cmd    `json:",inline" bson:",inline"`
 	UserId       string `json:"user_id" bson:"user_id"`
 	VerId        uint   `json:"ver_id" bson:"ver_id"`           // version id
@@ -83,7 +83,7 @@ func NewCmdService(mongoDB *mongo.MongoDB) *CmdService {
 }
 
 // 获取DocumentId的文档中VerId范围从start到end的CmdItem
-func (s *CmdService) GetCmdItems(documentId int64, verStart uint, verEnd uint) ([]CmdItem, error) {
+func (s *CmdService) GetCmdItems(documentId string, verStart uint, verEnd uint) ([]CmdItem, error) {
 	filter := bson.M{"document_id": documentId, "ver_id": bson.M{"$gte": verStart, "$lte": verEnd}}
 	options := options.Find()
 	options.SetSort(bson.D{{Key: "ver_id", Value: 1}})
@@ -99,7 +99,7 @@ func (s *CmdService) GetCmdItems(documentId int64, verStart uint, verEnd uint) (
 }
 
 // 获取DocumentId的文档中VerId范围从start开始的所有的CmdItem
-func (s *CmdService) GetCmdItemsFromStart(documentId int64, verStart uint) ([]CmdItem, error) {
+func (s *CmdService) GetCmdItemsFromStart(documentId string, verStart uint) ([]CmdItem, error) {
 	filter := bson.M{"document_id": documentId, "ver_id": bson.M{"$gte": verStart}}
 	options := options.Find()
 	options.SetSort(bson.D{{Key: "ver_id", Value: 1}})
@@ -127,7 +127,7 @@ func (s *CmdService) SaveCmdItems(cmdItems []CmdItem) (*mongodb.InsertManyResult
 }
 
 // 获取DocumentId的文档中按VerId排序的最后一个CmdItem
-func (s *CmdService) GetLastCmdItem(documentId int64) (*CmdItem, error) {
+func (s *CmdService) GetLastCmdItem(documentId string) (*CmdItem, error) {
 
 	filter := bson.M{"document_id": documentId}
 	options := options.FindOne()

@@ -133,7 +133,7 @@ const UserInfoResponseSchema = BaseResponseSchema.extend({
 })
 
 export type UserInfoResponse = z.infer<typeof UserInfoResponseSchema>
-
+export type UserInfoData = z.infer<typeof UserInfoResponseSchema.shape.data>
 // 文档列表响应类型
 const UsersDocumentListResponseSchema = BaseResponseSchema.extend({
     data: z.array(z.object({
@@ -268,10 +268,11 @@ export class UsersAPI {
     }
 
     // 获取用户信息
-    async GetInfo(): Promise<UserInfoResponse> {
+    async GetInfo(params?: { user_id: string }): Promise<UserInfoResponse> {
         const result = await this.http.request({
             url: '/users/info',
             method: 'get',
+            params
         })
         try {
             return UserInfoResponseSchema.parse(result)
@@ -426,7 +427,7 @@ export class UsersAPI {
     async SetAvatar(file: File): Promise<BaseResponse> {
         const formData = new FormData()
         formData.append('file', file)
-        
+
         const result = await this.http.request({
             url: '/users/info/avatar',
             method: 'put',

@@ -67,7 +67,7 @@ type ACommuncation struct {
 	token      string
 	genSId     func() string
 	userId     string
-	documentId int64
+	documentId string
 	versionId  string
 	// dbModule         *models.DBModule
 	// redis            *redis.RedisDB
@@ -107,8 +107,8 @@ func (c *ACommuncation) handleBind(clientData *TransData) {
 		return
 	}
 
-	documentId := str.DefaultToInt(bindData.DocumentId, 0)
-	if documentId <= 0 {
+	documentId := (bindData.DocumentId)
+	if documentId == "" {
 		c.msgErr("wrong document id", &serverData, nil)
 		return
 	}
@@ -120,11 +120,11 @@ func (c *ACommuncation) handleBind(clientData *TransData) {
 
 	docInfo, errmsg := document.GetUserDocumentInfo1(c.userId, documentId, permType)
 	if nil == docInfo {
-		c.msgErr(err.Error(), &serverData, nil)
+		c.msgErr(errmsg, &serverData, nil)
 		return
 	}
 
-	accessKey, err := document.GetDocumentAccessKey1(c.userId, documentId)
+	accessKey, _ := document.GetDocumentAccessKey1(c.userId, documentId)
 	if nil == accessKey {
 		c.msgErr(errmsg, &serverData, nil)
 		return
@@ -152,7 +152,7 @@ func (c *ACommuncation) handleStart(clientData *TransData) {
 	serverData.Type = clientData.Type
 	serverData.DataId = clientData.DataId
 
-	if c.documentId == 0 {
+	if c.documentId == "" {
 		c.msgErr("not bind document", &serverData, nil)
 		return
 	}

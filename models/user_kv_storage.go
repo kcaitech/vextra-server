@@ -18,7 +18,7 @@ func (model UserKVStorage) AutoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(model)
 }
 
-func (model UserKVStorage) GetId() int64 {
+func (model UserKVStorage) GetId() interface{} {
 	return model.Id
 }
 

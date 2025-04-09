@@ -105,7 +105,7 @@ func NewProjectFavoriteService() *ProjectFavoriteService {
 // }
 
 // GetProjectPermTypeByForUser 获取用户在项目中的权限
-func (s *ProjectService) GetProjectPermTypeByForUser(projectId int64, userId string) (*models.ProjectPermType, error) {
+func (s *ProjectService) GetProjectPermTypeByForUser(projectId string, userId string) (*models.ProjectPermType, error) {
 	var projectMember models.ProjectMember
 	err := s.ProjectMemberService.Get(&projectMember, WhereArgs{Query: "project_id = ? and user_id = ?", Args: []any{projectId, userId}})
 	if err == nil {
@@ -164,7 +164,7 @@ type PublishProjectQuery struct { // 通过项目的团队公开权限进入的�
 }
 
 // 查询用户的项目列表
-func (s *ProjectService) findProject(teamId int64, userId string, projectIdList *[]int64) []*ProjectQuery {
+func (s *ProjectService) findProject(teamId int64, userId string, projectIdList *[]string) []*ProjectQuery {
 	var whereArgsList []WhereArgs
 	if teamId > 0 {
 		whereArgsList = append(whereArgsList, WhereArgs{"p.team_id = ?", []any{teamId}})
@@ -187,7 +187,7 @@ func (s *ProjectService) findProject(teamId int64, userId string, projectIdList 
 	)
 
 	var publishProjectQueryResult []PublishProjectQuery
-	selfProjectIdList := sliceutil.MapT(func(item SelfProjectQuery) int64 {
+	selfProjectIdList := sliceutil.MapT(func(item SelfProjectQuery) string {
 		return item.Project.Id
 	}, selfProjectQueryResult...)
 	whereArgsList2 := append(
@@ -240,10 +240,10 @@ func (s *ProjectService) FindFavorProject(teamId int64, userId string) []*Projec
 		&WhereArgs{"user_id = ? and is_favor = true", []any{userId}},
 		&OrderLimitArgs{"id desc", 0},
 	)
-	projectIdList := sliceutil.MapT(func(item models.ProjectFavorite) int64 {
+	projectIdList := sliceutil.MapT(func(item models.ProjectFavorite) string {
 		return item.ProjectId
 	}, projectFavoriteList...)
-	projectIdToIndex := make(map[int64]int, len(projectIdList))
+	projectIdToIndex := make(map[string]int, len(projectIdList))
 	for i, projectId := range projectIdList {
 		projectIdToIndex[projectId] = i
 	}
@@ -262,7 +262,7 @@ type ProjectMemberQuery struct {
 }
 
 // FindProjectMember 查询某个项目中的成员列表
-func (s *ProjectService) FindProjectMember(projectId int64) []ProjectMemberQuery {
+func (s *ProjectService) FindProjectMember(projectId string) []ProjectMemberQuery {
 	var result []ProjectMemberQuery
 	whereArgsList := []WhereArgs{
 		{"project.deleted_at is null", nil},
@@ -355,7 +355,7 @@ func (s *ProjectService) FindSelfProjectJoinRequest(userId string, projectId int
 }
 
 // ToggleProjectFavorite 收藏/取消收藏项目
-func (s *ProjectService) ToggleProjectFavorite(userId string, projectId int64, isFavor bool) error {
+func (s *ProjectService) ToggleProjectFavorite(userId string, projectId string, isFavor bool) error {
 	if _, err := s.ProjectFavoriteService.HardDelete("user_id = ? and project_id = ?", userId, projectId); err != nil && !errors.Is(err, ErrRecordNotFound) {
 		return err
 	}

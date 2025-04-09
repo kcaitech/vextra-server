@@ -92,10 +92,10 @@ func SetDocumentShareType(c *gin.Context) {
 		}
 		return
 	}
-	if document.ProjectId == 0 && document.UserId != userId {
+	if document.ProjectId == "" && document.UserId != userId {
 		response.Forbidden(c, "")
 		return
-	} else if document.ProjectId != 0 {
+	} else if document.ProjectId != "" {
 		projectService := services.NewProjectService()
 		// 权限校验
 		permType, err := projectService.GetProjectPermTypeByForUser(document.ProjectId, userId)
@@ -160,10 +160,10 @@ func GetDocumentSharesList(c *gin.Context) {
 		}
 		return
 	}
-	if document.ProjectId == 0 && document.UserId != userId {
+	if document.ProjectId == "" && document.UserId != userId {
 		response.Forbidden(c, "")
 		return
-	} else if document.ProjectId != 0 {
+	} else if document.ProjectId != "" {
 		projectService := services.NewProjectService()
 		permType, err := projectService.GetProjectPermTypeByForUser(document.ProjectId, userId)
 		if err != nil || permType == nil {
@@ -220,10 +220,10 @@ func SetDocumentSharePermission(c *gin.Context) {
 	}
 	// 权限校验
 	projectId := documentPermission.Document.ProjectId
-	if projectId == 0 && documentPermission.Document.UserId != userId {
+	if projectId == "" && documentPermission.Document.UserId != userId {
 		response.Forbidden(c, "非团队文档，权限不足")
 		return
-	} else if projectId != 0 {
+	} else if projectId != "" {
 		projectService := services.NewProjectService()
 		permType, err := projectService.GetProjectPermTypeByForUser(projectId, userId)
 		if err != nil || permType == nil {
@@ -292,8 +292,8 @@ func ApplyDocumentPermission(c *gin.Context) {
 		response.BadRequest(c, "")
 		return
 	}
-	documentId := str.DefaultToInt(req.DocId, 0)
-	if documentId <= 0 {
+	documentId := (req.DocId)
+	if documentId == "" {
 		response.BadRequest(c, "参数错误：doc_id")
 		return
 	}
@@ -490,8 +490,8 @@ func GetUserDocumentPerm(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	documentId := str.DefaultToInt(c.Query("doc_id"), 0)
-	if documentId <= 0 {
+	documentId := (c.Query("doc_id"))
+	if documentId == "" {
 		response.BadRequest(c, "参数错误：doc_id")
 		return
 	}

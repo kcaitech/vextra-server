@@ -255,13 +255,19 @@ func (c *KCAuthClient) cacheToken(token string) {
 // }
 
 // GetUserInfo 获取用户信息
-func (c *KCAuthClient) GetUserInfo(accessToken string) (*UserInfo, error) {
+func (c *KCAuthClient) GetUserInfo(accessToken string, userId string) (*UserInfo, error) {
 	// 创建请求
 	req, err := http.NewRequest("GET", c.AuthServerURL+"/authapi/user", nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
+	if userId != "" {
+		// 添加用户ID参数到请求URL
+		q := req.URL.Query()
+		q.Add("user_id", userId)
+		req.URL.RawQuery = q.Encode()
+	}
 
 	// 发送请求
 	resp, err := c.HTTPClient.Do(req)

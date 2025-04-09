@@ -12,7 +12,6 @@ import (
 	"kcaitech.com/kcserver/providers/storage"
 	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils"
-	"kcaitech.com/kcserver/utils/str"
 	myTime "kcaitech.com/kcserver/utils/time"
 )
 
@@ -24,8 +23,8 @@ func GetDocumentAccessKey(c *gin.Context) {
 		return
 	}
 
-	documentId := str.DefaultToInt(c.Query("doc_id"), 0)
-	if documentId == 0 {
+	documentId := (c.Query("doc_id"))
+	if documentId == "" {
 		response.BadRequest(c, "参数错误：doc_id")
 		return
 	}
@@ -41,7 +40,7 @@ func GetDocumentAccessKey(c *gin.Context) {
 }
 
 // GetDocumentAccessKey 获取文档访问密钥
-func GetDocumentAccessKey1(userId string, documentId int64) (*map[string]any, error) {
+func GetDocumentAccessKey1(userId string, documentId string) (*map[string]any, error) {
 	// userId, err := auth.GetUserId(c)
 	// if err != nil {
 	// 	response.Unauthorized(c)
@@ -97,7 +96,7 @@ func GetDocumentAccessKey1(userId string, documentId int64) (*map[string]any, er
 		document.Path+"/*",
 		storage.AuthOpGetObject|storage.AuthOpListObject,
 		3600,
-		"U"+(userId)+"D"+str.IntToString(documentId),
+		"U"+(userId)+"D"+(documentId),
 	)
 	if err != nil {
 		log.Println("生成密钥失败", err)

@@ -10,6 +10,7 @@ import { Cmd, DataTypes, IContext, NetworkStatusType } from "./types";
 export { Connect } from "./connect"
 export { Selection as SelectionSync } from "./selection"
 export { DocUpload } from "./upload"
+export * from "./types"
 
 export class WSClient {
     // private context: IContext

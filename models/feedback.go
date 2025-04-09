@@ -30,7 +30,7 @@ func (model Feedback) AutoMigrate(db *gorm.DB) error {
 	return db.AutoMigrate(model)
 }
 
-func (model Feedback) GetId() int64 {
+func (model Feedback) GetId() interface{} {
 	return model.Id
 }
 

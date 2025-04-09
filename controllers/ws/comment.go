@@ -7,7 +7,6 @@ import (
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/providers/redis"
 	"kcaitech.com/kcserver/services"
-	"kcaitech.com/kcserver/utils/str"
 	"kcaitech.com/kcserver/utils/websocket"
 )
 
@@ -19,7 +18,7 @@ type commnetServe struct {
 	redis  *redis.RedisDB
 }
 
-func NewCommentServe(ws *websocket.Ws, userId string, documentId int64, genSId func() string) *commnetServe {
+func NewCommentServe(ws *websocket.Ws, userId string, documentId string, genSId func() string) *commnetServe {
 
 	// 权限校验
 	var permType models.PermType
@@ -40,13 +39,13 @@ func NewCommentServe(ws *websocket.Ws, userId string, documentId int64, genSId f
 	return &serv
 }
 
-func (serv *commnetServe) start(documentId int64) {
+func (serv *commnetServe) start(documentId string) {
 
-	documentIdStr := str.IntToString(documentId)
+	// documentIdStr := str.IntToString(documentId)
 	// 监控评论变化
 	go func() {
 		// defer tunnelServer.Close()
-		pubsub := serv.redis.Client.Subscribe(context.Background(), "Document Comment[DocumentId:"+documentIdStr+"]")
+		pubsub := serv.redis.Client.Subscribe(context.Background(), "Document Comment[DocumentId:"+documentId+"]")
 		defer pubsub.Close()
 		channel := pubsub.Channel()
 		for {

@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strings"
 
+	"time"
+
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 	"gorm.io/gorm/schema"
@@ -59,17 +61,17 @@ func (n DeletedAt) DeleteClauses(f *schema.Field) []clause.Interface {
 // }
 
 type BaseModel interface {
-	GetId() int64
+	GetId() interface{}
 }
 
 type BaseModelStruct struct {
-	Id        int64       `gorm:"primaryKey;autoIncrement" json:"id,string"` // 主键，自增
-	CreatedAt myTime.Time `gorm:"autoCreateTime;type:datetime(6)" json:"created_at"`
-	UpdatedAt myTime.Time `gorm:"autoUpdateTime;type:datetime(6)" json:"updated_at"`
-	DeletedAt DeletedAt   `gorm:"index" json:"deleted_at"`
+	Id        int64     `gorm:"primaryKey;autoIncrement" json:"id,string"` // 主键，自增
+	CreatedAt time.Time `gorm:"autoCreateTime;type:datetime(6)" json:"created_at"`
+	UpdatedAt time.Time `gorm:"autoUpdateTime;type:datetime(6)" json:"updated_at"`
+	DeletedAt DeletedAt `gorm:"index" json:"deleted_at"`
 }
 
-func (data *BaseModelStruct) GetId() int64 {
+func (data BaseModelStruct) GetId() interface{} {
 	return data.Id
 }
 

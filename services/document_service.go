@@ -9,7 +9,6 @@ import (
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/utils/math"
 	"kcaitech.com/kcserver/utils/sliceutil"
-	myTime "kcaitech.com/kcserver/utils/time"
 )
 
 type DocumentService struct {
@@ -231,7 +230,7 @@ func (s *DocumentService) FindFavoritesByUserId(userId string, projectId int64) 
 }
 
 // update locked
-func (s *DocumentService) UpdateLocked(documentId int64, lockedAt time.Time, lockedReason string, lockedWords string) error {
+func (s *DocumentService) UpdateLocked(documentId string, lockedAt time.Time, lockedReason string, lockedWords string) error {
 	// 查找documentId对应的Locked
 	var locked models.DocumentLock
 	lockdb := s.DBModule.DB.Where("document_id = ?", documentId).First(&locked)
@@ -241,7 +240,7 @@ func (s *DocumentService) UpdateLocked(documentId int64, lockedAt time.Time, loc
 	if locked.Id == 0 {
 		locked = models.DocumentLock{
 			DocumentId:   documentId,
-			LockedAt:     myTime.Time(lockedAt),
+			LockedAt:     (lockedAt),
 			LockedReason: lockedReason,
 			LockedWords:  lockedWords,
 		}
@@ -249,7 +248,7 @@ func (s *DocumentService) UpdateLocked(documentId int64, lockedAt time.Time, loc
 			return lockdb.Error
 		}
 	} else {
-		locked.LockedAt = myTime.Time(lockedAt)
+		locked.LockedAt = (lockedAt)
 		locked.LockedReason = lockedReason
 		locked.LockedWords = lockedWords
 		if lockdb = lockdb.UpdateColumns(&locked); lockdb.Error != nil {
@@ -260,7 +259,7 @@ func (s *DocumentService) UpdateLocked(documentId int64, lockedAt time.Time, loc
 }
 
 // get locked
-func (s *DocumentService) GetLocked(documentId int64) (*models.DocumentLock, error) {
+func (s *DocumentService) GetLocked(documentId string) (*models.DocumentLock, error) {
 	var locked models.DocumentLock
 	if err := s.DBModule.DB.Where("document_id = ?", documentId).First(&locked).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -272,7 +271,7 @@ func (s *DocumentService) GetLocked(documentId int64) (*models.DocumentLock, err
 }
 
 // delete locked
-func (s *DocumentService) DeleteLocked(documentId int64) error {
+func (s *DocumentService) DeleteLocked(documentId string) error {
 	return s.DBModule.DB.Where("document_id = ?", documentId).Delete(&models.DocumentLock{}).Error
 }
 
@@ -332,7 +331,7 @@ type DocumentInfoQueryRes struct {
 
 // GetDocumentInfoByDocumentAndUserId 查询某个文档对某个用户的信息
 // 若传入permTypeForQueryApplicationCount不为models.PermTypeNone，则会返回该用户对该文档此权限的历史申请数量
-func (s *DocumentService) GetDocumentInfoByDocumentAndUserId(documentId int64, userId string, permTypeForQueryApplicationCount models.PermType) *DocumentInfoQueryRes {
+func (s *DocumentService) GetDocumentInfoByDocumentAndUserId(documentId string, userId string, permTypeForQueryApplicationCount models.PermType) *DocumentInfoQueryRes {
 	var result DocumentInfoQueryRes
 	if err := s.Get(
 		&result,
@@ -371,7 +370,7 @@ func (s *DocumentService) GetDocumentInfoByDocumentAndUserId(documentId int64, u
 
 // GetDocumentPermissionByDocumentAndUserId 获取用户的文档权限记录和用户的文档权限（包含文档本身的公共权限）
 // 返回值第2个参数：是否为公共权限
-func (s *DocumentService) GetDocumentPermissionByDocumentAndUserId(permType *models.PermType, documentId int64, userId string) (*models.DocumentPermission, bool, error) {
+func (s *DocumentService) GetDocumentPermissionByDocumentAndUserId(permType *models.PermType, documentId string, userId string) (*models.DocumentPermission, bool, error) {
 	isPublicPerm := false
 
 	var document models.Document
@@ -413,7 +412,7 @@ func (s *DocumentService) GetDocumentPermissionByDocumentAndUserId(permType *mod
 		currentPermType = models.PermTypeEditable
 	}
 
-	isProjectDocument := document.ProjectId > 0 // 是否为项目文档
+	isProjectDocument := document.ProjectId != "" // 是否为项目文档
 	if isProjectDocument {
 		projectService := NewProjectService()
 		if _projectPermType, err := projectService.GetProjectPermTypeByForUser(document.ProjectId, userId); err == nil && _projectPermType != nil {
@@ -438,7 +437,7 @@ func (s *DocumentService) GetDocumentPermissionByDocumentAndUserId(permType *mod
 }
 
 // GetPermTypeByDocumentAndUserId 获取用户对文档的权限（包含文档本身的公共权限）
-func (s *DocumentService) GetPermTypeByDocumentAndUserId(permType *models.PermType, documentId int64, userId string) error {
+func (s *DocumentService) GetPermTypeByDocumentAndUserId(permType *models.PermType, documentId string, userId string) error {
 	if _, _, err := s.GetDocumentPermissionByDocumentAndUserId(permType, documentId, userId); err != nil {
 		return err
 	}

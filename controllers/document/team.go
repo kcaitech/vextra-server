@@ -56,11 +56,15 @@ func CreateTeam(c *gin.Context) {
 			}
 		}
 	}
-
+	id, err := utils.GenerateBase62ID()
+	if err != nil {
+		response.ServerError(c, err.Error())
+		return
+	}
 	team := models.Team{
 		Name:        req.Name,
 		Description: req.Description,
-		// Uid:         str.GetUid(),
+		Id:          id,
 	}
 	if teamService.Create(&team) != nil {
 		response.ServerError(c, "团队创建失败")
@@ -113,7 +117,7 @@ func CreateTeam(c *gin.Context) {
 	}
 
 	result := map[string]any{
-		"id":          str.IntToString(team.Id),
+		"id":          (team.Id),
 		"name":        team.Name,
 		"description": team.Description,
 	}
@@ -143,8 +147,8 @@ func GetTeamMemberList(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	teamId := str.DefaultToInt(c.Query("team_id"), 0)
-	if teamId <= 0 {
+	teamId := (c.Query("team_id"))
+	if teamId == "" {
 		response.BadRequest(c, "参数错误：team_id")
 		return
 	}
@@ -310,8 +314,8 @@ func ApplyJoinTeam(c *gin.Context) {
 		response.BadRequest(c, "")
 		return
 	}
-	teamId := str.DefaultToInt(req.TeamId, 0)
-	if teamId <= 0 {
+	teamId := (req.TeamId)
+	if teamId == "" {
 		response.BadRequest(c, "参数错误：team_id")
 		return
 	}
@@ -542,8 +546,8 @@ func SetTeamInfo(c *gin.Context) {
 		response.BadRequest(c, err.Error())
 		return
 	}
-	teamId := str.DefaultToInt(req.TeamId, 0)
-	if teamId <= 0 {
+	teamId := (req.TeamId)
+	if teamId == "" {
 		response.BadRequest(c, "参数错误：team_id")
 		return
 	}
@@ -642,8 +646,8 @@ func SetTeamInvited(c *gin.Context) {
 		response.BadRequest(c, err.Error())
 		return
 	}
-	teamId := str.DefaultToInt(req.TeamId, 0)
-	if teamId <= 0 {
+	teamId := (req.TeamId)
+	if teamId == "" {
 		response.BadRequest(c, "参数错误：team_id")
 		return
 	}
@@ -684,8 +688,8 @@ func GetTeamInvitedInfo(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	teamId := str.DefaultToInt(c.Query("team_id"), 0)
-	if teamId <= 0 {
+	teamId := (c.Query("team_id"))
+	if teamId == "" {
 		response.BadRequest(c, "参数错误：team_id")
 		return
 	}
@@ -701,7 +705,7 @@ func GetTeamInvitedInfo(c *gin.Context) {
 		return
 	}
 	result := map[string]any{
-		"id":                str.IntToString(team.Id),
+		"id":                (team.Id),
 		"name":              team.Name,
 		"self_perm_type":    selfPermType,
 		"invited_perm_type": team.InvitedPermType,
@@ -724,8 +728,8 @@ func ExitTeam(c *gin.Context) {
 		response.BadRequest(c, "")
 		return
 	}
-	teamId := str.DefaultToInt(req.TeamId, 0)
-	if teamId <= 0 {
+	teamId := (req.TeamId)
+	if teamId == "" {
 		response.BadRequest(c, "参数错误：team_id")
 		return
 	}
@@ -764,8 +768,8 @@ func SetTeamMemberPermission(c *gin.Context) {
 		response.BadRequest(c, "")
 		return
 	}
-	teamId := str.DefaultToInt(req.TeamId, 0)
-	if teamId <= 0 {
+	teamId := (req.TeamId)
+	if teamId == "" {
 		response.BadRequest(c, "参数错误：team_id")
 		return
 	}
@@ -821,8 +825,8 @@ func ChangeTeamCreator(c *gin.Context) {
 		response.BadRequest(c, "")
 		return
 	}
-	teamId := str.DefaultToInt(req.TeamId, 0)
-	if teamId <= 0 {
+	teamId := (req.TeamId)
+	if teamId == "" {
 		response.BadRequest(c, "参数错误：team_id")
 		return
 	}
@@ -883,8 +887,8 @@ func RemoveTeamMember(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	teamId := str.DefaultToInt(c.Query("team_id"), 0)
-	if teamId <= 0 {
+	teamId := (c.Query("team_id"))
+	if teamId == "" {
 		response.BadRequest(c, "参数错误：team_id")
 		return
 	}
@@ -941,8 +945,8 @@ func SetTeamMemberNickname(c *gin.Context) {
 		response.BadRequest(c, "")
 		return
 	}
-	teamId := str.DefaultToInt(req.TeamId, 0)
-	if teamId <= 0 {
+	teamId := (req.TeamId)
+	if teamId == "" {
 		response.BadRequest(c, "参数错误：team_id")
 		return
 	}

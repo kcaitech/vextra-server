@@ -54,7 +54,7 @@ func DeleteUserDocument(c *gin.Context) {
 		response.BadRequest(c, "文档不存在")
 		return
 	}
-	if document.ProjectId == 0 {
+	if document.ProjectId == "" {
 		if _, err := documentService.Delete(
 			"user_id = ? and id = ?", userId, documentId,
 		); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
@@ -87,8 +87,8 @@ func GetUserDocumentInfo(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	documentId := str.DefaultToInt(c.Query("doc_id"), 0)
-	if documentId <= 0 {
+	documentId := (c.Query("doc_id"))
+	if documentId == "" {
 		response.BadRequest(c, "参数错误：doc_id")
 		return
 	}
@@ -96,16 +96,14 @@ func GetUserDocumentInfo(c *gin.Context) {
 	if permType < models.PermTypeReadOnly || permType > models.PermTypeEditable {
 		permType = models.PermTypeNone
 	}
-	if result := services.NewDocumentService().GetDocumentInfoByDocumentAndUserId(documentId, userId, permType); result == nil {
-		response.BadRequest(c, "文档不存在")
-	} else if result.LockedInfo != nil && !result.LockedInfo.LockedAt.IsZero() && result.Document.UserId != userId {
-		response.Forbidden(c, "审核不通过")
+	if result, err := GetUserDocumentInfo1(userId, documentId, permType); result == nil {
+		response.BadRequest(c, err)
 	} else {
 		response.Success(c, result)
 	}
 }
 
-func GetUserDocumentInfo1(userId string, documentId int64, permType models.PermType) (*services.DocumentInfoQueryRes, string) {
+func GetUserDocumentInfo1(userId string, documentId string, permType models.PermType) (*services.DocumentInfoQueryRes, string) {
 
 	// permType := models.PermType(str.DefaultToInt(c.Query("perm_type"), 0))
 	// if permType < models.PermTypeReadOnly || permType > models.PermTypeEditable {
@@ -150,7 +148,7 @@ func SetDocumentName(c *gin.Context) {
 		response.BadRequest(c, "文档不存在")
 		return
 	}
-	if document.ProjectId <= 0 {
+	if document.ProjectId == "" {
 		if document.UserId != userId {
 			response.Forbidden(c, "")
 			return
@@ -193,9 +191,7 @@ type CopyDocumentReq struct {
 	DocId string `json:"doc_id" binding:"required"`
 }
 
-// var radixConvert, _ = radix_convert.NewRadixConvert(62, radix_convert.Default62RadixChars)
-
-func copyDocument(userId string, documentId int64, c *gin.Context, documentName string, dbModule *models.DBModule, _storage *storage.StorageClient, mongo *mongo.MongoDB) (result *services.AccessRecordAndFavoritesQueryResItem) {
+func copyDocument(userId string, documentId string, c *gin.Context, documentName string, dbModule *models.DBModule, _storage *storage.StorageClient, mongo *mongo.MongoDB) (result *services.AccessRecordAndFavoritesQueryResItem) {
 	documentService := services.NewDocumentService()
 	sourceDocument := models.Document{}
 	if err := documentService.Get(&sourceDocument, "id = ?", documentId); err != nil {
@@ -211,7 +207,7 @@ func copyDocument(userId string, documentId int64, c *gin.Context, documentName 
 		response.Forbidden(c, "审核不通过")
 		return
 	}
-	if sourceDocument.ProjectId <= 0 {
+	if sourceDocument.ProjectId == "" {
 		var permType models.PermType
 		if err := documentService.GetPermTypeByDocumentAndUserId(&permType, documentId, userId); err != nil || permType < models.PermTypeEditable {
 			response.Forbidden(c, "")
@@ -416,8 +412,8 @@ func CopyDocument(c *gin.Context) {
 		response.BadRequest(c, "")
 		return
 	}
-	documentId := str.DefaultToInt(req.DocId, 0)
-	if documentId <= 0 {
+	documentId := (req.DocId)
+	if documentId == "" {
 		response.BadRequest(c, "参数错误：doc_id")
 		return
 	}
