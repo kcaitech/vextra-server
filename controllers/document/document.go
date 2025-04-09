@@ -96,11 +96,38 @@ func GetUserDocumentInfo(c *gin.Context) {
 	if permType < models.PermTypeReadOnly || permType > models.PermTypeEditable {
 		permType = models.PermTypeNone
 	}
-	if result, err := GetUserDocumentInfo1(userId, documentId, permType); result == nil {
-		response.BadRequest(c, err)
-	} else {
-		response.Success(c, result)
+	result, errmsg := GetUserDocumentInfo1(userId, documentId, permType)
+	if errmsg != "" {
+		response.BadRequest(c, errmsg)
+		return
 	}
+	// 获取文档对应的user信息
+	docUserId := result.Document.UserId
+	authClient := services.GetKCAuthClient()
+	token, exists := c.Get("token")
+	if !exists {
+		response.Unauthorized(c)
+		return
+	}
+	userInfo, err := authClient.GetUserInfoById(token.(string), docUserId)
+	if err != nil {
+		response.ServerError(c, err.Error())
+		return
+	}
+
+	response.Success(c, gin.H{
+		"user":                         userInfo,
+		"document":                     result.Document,
+		"team":                         result.Team,
+		"project":                      result.Project,
+		"document_favorites":           result.DocumentFavorites,
+		"document_access_record":       result.DocumentAccessRecord,
+		"document_permission":          result.DocumentPermission,
+		"document_permission_requests": result.DocumentPermissionRequests,
+		"shares_count":                 result.SharesCount,
+		"application_count":            result.ApplicationCount,
+		"locked_info":                  result.LockedInfo,
+	})
 }
 
 func GetUserDocumentInfo1(userId string, documentId string, permType models.PermType) (*services.DocumentInfoQueryRes, string) {

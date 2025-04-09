@@ -30,18 +30,22 @@ func loadUserRoutes(api *gin.RouterGroup) {
 	}
 }
 
-func get_user_info(c *gin.Context, userId string) (*auth.UserInfo, error) {
+func get_user_info(c *gin.Context) (*auth.UserInfo, error) {
 	token, err := utils.GetAccessToken(c)
 	if err != nil {
 		return nil, err
 	}
 	client := services.GetKCAuthClient()
-	return client.GetUserInfo(token, userId)
+	// if userId == "" {
+	return client.GetUserInfo(token)
+	// } else {
+	// return client.GetUserInfoById(token, userId)
+	// }
 }
 
 func GetUserInfo(c *gin.Context) {
-	userId := c.Query("user_id")
-	user, err := get_user_info(c, userId)
+	// userId := c.Query("user_id")
+	user, err := get_user_info(c)
 	if err != nil {
 		response.ServerError(c, "操作失败")
 		return
@@ -72,7 +76,7 @@ func SetNickname(c *gin.Context) {
 		}
 	}
 	// get user info
-	user, err := get_user_info(c, "")
+	user, err := get_user_info(c)
 	if err != nil {
 		response.ServerError(c, "操作失败")
 		return

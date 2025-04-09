@@ -10,7 +10,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/options"
 	"kcaitech.com/kcserver/common/response"
 	"kcaitech.com/kcserver/models"
 	safereviewBase "kcaitech.com/kcserver/providers/safereview"
@@ -51,7 +50,7 @@ func GetDocumentComment(c *gin.Context) {
 		response.Forbidden(c, "")
 		return
 	}
-	documentCommentList := make([]models.UserComment, 0)
+
 	reqParams := bson.M{
 		"document_id": documentId,
 	}
@@ -73,17 +72,11 @@ func GetDocumentComment(c *gin.Context) {
 	if status := c.Query("status"); status != "" {
 		reqParams["status"] = models.UserCommentStatus(str.DefaultToInt(c.Query("status"), 0))
 	}
-	mongoDB := services.GetMongoDB()
-	commentCollection := mongoDB.DB.Collection("comment")
-	findOptions := options.Find()
-	findOptions.SetSort(bson.D{{Key: "record_created_at", Value: -1}, {Key: "_id", Value: -1}})
-	if cur, err := commentCollection.Find(context.Background(), reqParams, findOptions); err == nil {
-		err = cur.All(context.Background(), &documentCommentList)
-		if err != nil {
-			log.Println("查询评论失败", err)
-			response.ServerError(c, "查询评论失败")
-			return
-		}
+	commentSrv := services.GetUserCommentService()
+	documentCommentList, err := commentSrv.FindComments(reqParams)
+	if err != nil {
+		response.ServerError(c, err.Error())
+		return
 	}
 
 	response.Success(c, &documentCommentList)
@@ -120,7 +113,7 @@ func PostUserComment(c *gin.Context) {
 		return
 	}
 	jwtClient := services.GetKCAuthClient()
-	userInfo, err := jwtClient.GetUserInfo(accessToken.(string), "")
+	userInfo, err := jwtClient.GetUserInfo(accessToken.(string))
 	if err != nil {
 		response.Unauthorized(c)
 		return
@@ -133,7 +126,7 @@ func PostUserComment(c *gin.Context) {
 
 	_userComment := models.UserComment{
 		UserCommentCommon: models.UserCommentCommon{
-			Id:            userComment.Id,
+			CommentId:     userComment.CommentId,
 			ParentId:      userComment.ParentId,
 			RootId:        userComment.RootId,
 			DocumentId:    userComment.DocumentId,
@@ -147,8 +140,8 @@ func PostUserComment(c *gin.Context) {
 		User:      userInfo.UserID,
 		CreatedAt: myTime.Time(time.Now()).String(),
 	}
-	_userComment.UnionId.DocumentId = documentId
-	_userComment.UnionId.CommentId = userComment.Id
+	// _userComment.UnionId.DocumentId = documentId
+	// _userComment.UnionId.CommentId = userComment.Id
 
 	if _, err := myTime.Parse(_userComment.CreatedAt); err != nil {
 		_userComment.RecordCreatedAt = _userComment.CreatedAt
@@ -176,10 +169,9 @@ func PostUserComment(c *gin.Context) {
 		}
 	}
 
-	mongoDB := services.GetMongoDB()
-	commentCollection := mongoDB.DB.Collection("comment")
+	commentSrv := services.GetUserCommentService()
 	// 设置
-	if _, err := commentCollection.InsertOne(context.Background(), _userComment); err != nil {
+	if err := commentSrv.InsertOne(&_userComment); err != nil {
 		log.Println("mongo插入失败", err)
 		response.ServerError(c, "评论失败")
 		return
@@ -197,27 +189,17 @@ func PostUserComment(c *gin.Context) {
 var errNoPermission = errors.New("无权限")
 
 func checkUserPermission(userId string, commentId string, documentId string, expectPermType models.PermType) (*models.UserComment, error) {
-	mongoDB := services.GetMongoDB()
-	commentCollection := mongoDB.DB.Collection("comment")
-	commentRes := commentCollection.FindOne(context.Background(), bson.M{
-		"_id": bson.M{
-			"document_id": documentId,
-			"comment_id":  commentId,
-		},
-	})
-	if commentRes.Err() != nil {
-		return nil, errors.New("评论不存在")
+	commentSrv := services.GetUserCommentService()
+	comment, err := commentSrv.GetComment(documentId, commentId)
+	if err != nil {
+		return nil, err
 	}
-	var comment models.UserComment
-	if err := commentRes.Decode(&comment); err != nil {
-		fmt.Println("评论数据错误", err)
-		return nil, errors.New("评论数据错误")
-	}
+
 	var permType models.PermType
 	if err := services.NewDocumentService().GetPermTypeByDocumentAndUserId(&permType, documentId, userId); err != nil || permType < expectPermType {
 		return nil, errNoPermission
 	}
-	return &comment, nil
+	return comment, nil
 }
 
 func PutUserComment(c *gin.Context) {
@@ -242,7 +224,7 @@ func PutUserComment(c *gin.Context) {
 	// 	response.BadRequest(c, "参数错误：id")
 	// 	return
 	// }
-	comment, err := checkUserPermission(userId, userComment.Id, documentId, models.PermTypeCommentable)
+	comment, err := checkUserPermission(userId, userComment.CommentId, documentId, models.PermTypeCommentable)
 	if err != nil {
 		if errors.Is(err, errNoPermission) {
 			response.Forbidden(c, "")
@@ -273,9 +255,9 @@ func PutUserComment(c *gin.Context) {
 		}
 	}
 
-	mongoDB := services.GetMongoDB()
-	commentCollection := mongoDB.DB.Collection("comment")
-	if _, err := commentCollection.UpdateByID(context.Background(), comment.UnionId, bson.M{"$set": &userComment}); err != nil {
+	commentSrv := services.GetUserCommentService()
+	err = commentSrv.Update(comment, &userComment)
+	if err != nil {
 		log.Println("mongo更新失败", err)
 		response.ServerError(c, "更新失败")
 	}
@@ -325,23 +307,14 @@ func DeleteUserComment(c *gin.Context) {
 		response.BadRequest(c, "文档不存在")
 		return
 	}
-	mongoDB := services.GetMongoDB()
-	commentCollection := mongoDB.DB.Collection("comment")
+	commentSrv := services.GetUserCommentService()
 	if document.UserId != userId && comment.User != (userId) {
 		if comment.ParentId == "" {
 			response.Forbidden(c, "")
 			return
 		}
-		commentRes := commentCollection.FindOne(context.Background(), bson.M{"_id": bson.M{
-			"document_id": documentId,
-			"comment_id":  comment.ParentId,
-		}})
-		if commentRes.Err() == nil {
-			response.Forbidden(c, "")
-			return
-		}
-		var comment models.UserComment
-		if err := commentRes.Decode(&comment); err != nil {
+		comment, err := commentSrv.GetComment(documentId, comment.ParentId)
+		if err != nil {
 			fmt.Println("文档数据错误1", err)
 			response.ServerError(c, "文档数据错误")
 			return
@@ -351,7 +324,7 @@ func DeleteUserComment(c *gin.Context) {
 			return
 		}
 	}
-	delres, err := commentCollection.DeleteOne(context.Background(), bson.M{"_id": comment.UnionId})
+	delres, err := commentSrv.DeleteOne(comment)
 	if err != nil || delres.DeletedCount <= 0 {
 		log.Println("mongo删除失败", err)
 		response.ServerError(c, "删除失败")
@@ -360,7 +333,7 @@ func DeleteUserComment(c *gin.Context) {
 	if publishData, err := json.Marshal(&models.UserCommentPublishData{
 		Type: models.UserCommentPublishTypeDel,
 		Comment: models.UserCommentCommon{
-			Id: commentId,
+			CommentId: commentId,
 		},
 	}); err == nil {
 		redisClient := services.GetRedisDB()
@@ -412,12 +385,9 @@ func SetUserCommentStatus(c *gin.Context) {
 			return
 		}
 	}
-	mongoDB := services.GetMongoDB()
-	commentCollection := mongoDB.DB.Collection("comment")
-	if _, err := commentCollection.UpdateByID(context.Background(), bson.M{
-		"document_id": documentId,
-		"comment_id":  comment.Id,
-	}, bson.M{"$set": &userComment}); err != nil {
+	commentSrv := services.GetUserCommentService()
+
+	if err := commentSrv.Update(comment, &userComment); err != nil {
 		log.Println("mongo更新失败", err)
 		response.ServerError(c, "更新失败")
 	}

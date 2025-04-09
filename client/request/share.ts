@@ -1,5 +1,5 @@
 import { HttpMgr } from './http'
-import { BaseResponseSchema, BaseResponse, DocumentListResponseSchema, DocumentListResponse } from './types';
+import { BaseResponseSchema, BaseResponse, DocumentListResponseSchema, DocumentListResponse, UserInfoSchema } from './types';
 import { z } from 'zod';
 
 // 分享相关类型定义
@@ -163,7 +163,8 @@ export const DocumentInfoSchema = z.object({
         locked_at: z.string(),
         locked_reason: z.string(),
         locked_words: z.string()
-    }).nullable()
+    }).nullable(),
+    user: UserInfoSchema
 });
 
 export type DocumentInfo = z.infer<typeof DocumentInfoSchema>;

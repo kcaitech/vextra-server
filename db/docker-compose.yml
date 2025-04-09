@@ -41,7 +41,7 @@ services:
     volumes:
       - mongo_db:/data/db
       - mongo_configdb:/data/configdb
-      - ./mongo/init/99-index-cmd-id.sh:/docker-entrypoint-initdb.d/99-index-cmd-id.sh
+      # - ./mongo/init/99-index-cmd-id.sh:/docker-entrypoint-initdb.d/99-index-cmd-id.sh
   mysql:
     image: mysql:8.0.32
     container_name: mysql

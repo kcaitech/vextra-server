@@ -268,11 +268,10 @@ export class UsersAPI {
     }
 
     // 获取用户信息
-    async GetInfo(params?: { user_id: string }): Promise<UserInfoResponse> {
+    async GetInfo(): Promise<UserInfoResponse> {
         const result = await this.http.request({
             url: '/users/info',
             method: 'get',
-            params
         })
         try {
             return UserInfoResponseSchema.parse(result)

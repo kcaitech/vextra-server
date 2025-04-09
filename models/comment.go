@@ -2,8 +2,11 @@ package models
 
 import (
 	"context"
+	"fmt"
+	"log"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	mongodb "go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"kcaitech.com/kcserver/providers/mongo"
@@ -18,7 +21,7 @@ const (
 )
 
 type UserCommentCommon struct {
-	Id            string            `json:"id" bson:"id,omitempty" binding:"required"` // 前端生成,uuid
+	CommentId     string            `json:"id" bson:"comment_id,omitempty" binding:"required"` // 前端生成,uuid
 	ParentId      string            `json:"parent_id" bson:"parent_id"`
 	RootId        string            `json:"root_id" bson:"root_id"`
 	DocumentId    string            `json:"doc_id,string" bson:"document_id" binding:"required"`
@@ -43,11 +46,12 @@ type UserCommentCommon struct {
 // }
 
 type UserComment struct {
+	Id                primitive.ObjectID `json:"-" bson:"_id"`
 	UserCommentCommon `json:",inline" bson:",inline"`
-	UnionId           struct {
-		DocumentId string `json:"document_id" bson:"document_id"`
-		CommentId  string `json:"comment_id" bson:"comment_id"`
-	} `json:"union_id" bson:"_id"`
+	// UnionId           struct {
+	// 	DocumentId string `json:"document_id" bson:"document_id"`
+	// 	CommentId  string `json:"comment_id" bson:"comment_id"`
+	// } `json:"union_id" bson:"_id"`
 	User            string `json:"user" bson:"user"`
 	CreatedAt       string `json:"created_at" bson:"created_at"`
 	RecordCreatedAt string `json:"record_created_at" bson:"record_created_at"`
@@ -78,11 +82,33 @@ type UserCommentSetStatus struct {
 }
 
 type UserCommentService struct {
-	MongoDB *mongo.MongoDB
+	MongoDB    *mongo.MongoDB
+	Collection *mongodb.Collection
 }
 
 func NewUserCommentService(mongoDB *mongo.MongoDB) *UserCommentService {
-	return &UserCommentService{MongoDB: mongoDB}
+	collection := mongoDB.DB.Collection("comment")
+	// 创建索引
+	// 创建多个索引
+	indexModels := []mongodb.IndexModel{
+		{
+			Keys:    bson.D{{Key: "document_id", Value: 1}, {Key: "comment_id", Value: 1}},
+			Options: options.Index().SetUnique(true),
+		},
+	}
+
+	// 批量创建索引
+	_, err := collection.Indexes().CreateMany(context.Background(), indexModels)
+	if err != nil {
+		if mongo.IsDuplicateKeyError(err) {
+			fmt.Println("索引已存在")
+		} else {
+			log.Fatalf("创建索引失败: %v", err)
+		}
+	}
+
+	return &UserCommentService{MongoDB: mongoDB,
+		Collection: collection}
 }
 
 func (s *UserCommentService) GetUserComment(documentId string) ([]UserComment, error) {
@@ -93,7 +119,7 @@ func (s *UserCommentService) GetUserComment(documentId string) ([]UserComment, e
 	options := options.Find()
 	options.SetSort(bson.D{{Key: "record_created_at", Value: -1}})
 	comments := make([]UserComment, 0)
-	cur, err := s.MongoDB.DB.Collection("comment").Find(context.Background(), filter, options)
+	cur, err := s.Collection.Find(context.Background(), filter, options)
 	if err != nil {
 		return nil, err
 	}
@@ -112,10 +138,56 @@ func (s *UserCommentService) SaveCommentItems(commentItems []UserComment) (*mong
 		return nil, nil
 	}
 	// 设置联合id
-	for i := range commentItems {
-		commentItems[i].UnionId.DocumentId = commentItems[i].DocumentId
-		commentItems[i].UnionId.CommentId = commentItems[i].Id
-	}
-	collection := s.MongoDB.DB.Collection("comment")
+	// for i := range commentItems {
+	// 	commentItems[i].UnionId.DocumentId = commentItems[i].DocumentId
+	// 	commentItems[i].UnionId.CommentId = commentItems[i].Id
+	// }
+	collection := s.Collection
 	return collection.InsertMany(context.Background(), sliceutil.ConvertToAnySlice(commentItems))
+}
+
+func (s *UserCommentService) GetComment(documentId, commentId string) (*UserComment, error) {
+	commentRes := s.Collection.FindOne(context.Background(), bson.M{
+		"document_id": documentId,
+		"comment_id":  commentId,
+	})
+	if commentRes.Err() != nil {
+		return nil, commentRes.Err()
+	}
+	var comment UserComment
+	if err := commentRes.Decode(&comment); err != nil {
+		return nil, err
+	}
+	return &comment, nil
+}
+
+func (s *UserCommentService) FindComments(filter bson.M) ([]UserComment, error) {
+
+	options := options.Find()
+	options.SetSort(bson.D{{Key: "record_created_at", Value: -1}, {Key: "_id", Value: -1}})
+	cur, err := s.Collection.Find(context.Background(), filter, options)
+	if err != nil {
+		return nil, err
+	}
+
+	documentCommentList := make([]UserComment, 0)
+	err = cur.All(context.Background(), &documentCommentList)
+	if err != nil {
+		return nil, err
+	}
+	return documentCommentList, nil
+}
+
+func (s *UserCommentService) InsertOne(_userComment *UserComment) error {
+	_, err := s.Collection.InsertOne(context.Background(), _userComment)
+	return err
+}
+
+func (s *UserCommentService) DeleteOne(_userComment *UserComment) (*mongodb.DeleteResult, error) {
+	return s.Collection.DeleteOne(context.Background(), _userComment)
+}
+
+func (s *UserCommentService) Update(comment *UserComment, update interface{}) error {
+	_, err := s.Collection.UpdateByID(context.Background(), comment.Id, bson.M{"$set": update})
+	return err
 }

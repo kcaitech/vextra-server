@@ -2,6 +2,8 @@ package models
 
 import (
 	"context"
+	"fmt"
+	"log"
 
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
@@ -29,10 +31,10 @@ type Cmd struct {
 // }
 
 type CmdItem struct {
-	UnionId struct { // 联合id
-		DocumentId string `json:"document_id" bson:"document_id"`
-		CmdId      string `json:"cmd_id" bson:"cmd_id"`
-	} `json:"union_id" bson:"_id"`
+	// UnionId struct { // 联合id
+	// 	DocumentId string `json:"document_id" bson:"document_id"`
+	// 	CmdId      string `json:"cmd_id" bson:"cmd_id"`
+	// } `json:"union_id" bson:"_id"`
 	DocumentId   string `json:"document_id" bson:"document_id"`
 	Cmd          Cmd    `json:",inline" bson:",inline"`
 	UserId       string `json:"user_id" bson:"user_id"`
@@ -74,11 +76,40 @@ func RenewCmdVerIds(cmdItems []CmdItem) {
 type CmdService struct {
 	MongoDB *mongo.MongoDB
 	// Redis   *redis.RedisDB // 用于同步锁及消息发布
+	Collection *mongodb.Collection
 }
 
 func NewCmdService(mongoDB *mongo.MongoDB) *CmdService {
+
+	collection := mongoDB.DB.Collection("document")
+
+	// 创建索引
+	// 创建多个索引
+	indexModels := []mongodb.IndexModel{
+		{
+			Keys:    bson.D{{Key: "document_id", Value: 1}, {Key: "cmd_id", Value: 1}},
+			Options: options.Index().SetUnique(true),
+		},
+		{
+			Keys:    bson.D{{Key: "document_id", Value: 1}, {Key: "ver_id", Value: 1}},
+			Options: options.Index().SetUnique(true),
+		},
+	}
+
+	// 批量创建索引
+	_, err := collection.Indexes().CreateMany(context.Background(), indexModels)
+	if err != nil {
+		if mongo.IsDuplicateKeyError(err) {
+			fmt.Println("索引已存在")
+		} else {
+			log.Fatalf("创建索引失败: %v", err)
+		}
+	}
+
+	// fmt.Printf("Created indexes %v\n", indexNames)
 	return &CmdService{
-		MongoDB: mongoDB,
+		MongoDB:    mongoDB,
+		Collection: collection,
 	}
 }
 
@@ -87,7 +118,7 @@ func (s *CmdService) GetCmdItems(documentId string, verStart uint, verEnd uint) 
 	filter := bson.M{"document_id": documentId, "ver_id": bson.M{"$gte": verStart, "$lte": verEnd}}
 	options := options.Find()
 	options.SetSort(bson.D{{Key: "ver_id", Value: 1}})
-	cursor, err := s.MongoDB.DB.Collection("document").Find(context.Background(), filter, options)
+	cursor, err := s.Collection.Find(context.Background(), filter, options)
 	if err != nil {
 		return nil, err
 	}
@@ -117,11 +148,11 @@ func (s *CmdService) GetCmdItemsFromStart(documentId string, verStart uint) ([]C
 
 func (s *CmdService) SaveCmdItems(cmdItems []CmdItem) (*mongodb.InsertManyResult, error) {
 	// 设置联合id
-	for i := range cmdItems {
-		cmdItems[i].UnionId.DocumentId = cmdItems[i].DocumentId
-		cmdItems[i].UnionId.CmdId = cmdItems[i].Cmd.Id
-	}
-	collection := s.MongoDB.DB.Collection("document")
+	// for i := range cmdItems {
+	// 	cmdItems[i].UnionId.DocumentId = cmdItems[i].DocumentId
+	// 	cmdItems[i].UnionId.CmdId = cmdItems[i].Cmd.Id
+	// }
+	collection := s.Collection
 	return collection.InsertMany(context.Background(), sliceutil.ConvertToAnySlice(cmdItems))
 	// return err
 }
@@ -134,7 +165,7 @@ func (s *CmdService) GetLastCmdItem(documentId string) (*CmdItem, error) {
 	options.SetSort(bson.D{{Key: "ver_id", Value: -1}})
 
 	var cmdItem CmdItem
-	err := s.MongoDB.DB.Collection("document").FindOne(context.Background(), filter, options).Decode(&cmdItem)
+	err := s.Collection.FindOne(context.Background(), filter, options).Decode(&cmdItem)
 	if err == nil {
 		return &cmdItem, nil
 	}
@@ -145,3 +176,10 @@ func (s *CmdService) GetLastCmdItem(documentId string) (*CmdItem, error) {
 }
 
 // 获取特定id的cmd
+func (s *CmdService) GetCmd(document_id, cmd_id string) (*CmdItem, error) {
+	item := &CmdItem{}
+	if err := s.Collection.FindOne(context.Background(), bson.M{"document_id": document_id, "cmd_id": cmd_id}).Decode(item); err != nil {
+		return nil, err
+	}
+	return item, nil
+}

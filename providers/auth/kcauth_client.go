@@ -254,20 +254,13 @@ func (c *KCAuthClient) cacheToken(token string) {
 // 	c.tokenCache[newtoken] = expiry
 // }
 
-// GetUserInfo 获取用户信息
-func (c *KCAuthClient) GetUserInfo(accessToken string, userId string) (*UserInfo, error) {
+func (c *KCAuthClient) getUserInfo(accessToken string, url string) (*UserInfo, error) {
 	// 创建请求
-	req, err := http.NewRequest("GET", c.AuthServerURL+"/authapi/user", nil)
+	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
-	if userId != "" {
-		// 添加用户ID参数到请求URL
-		q := req.URL.Query()
-		q.Add("user_id", userId)
-		req.URL.RawQuery = q.Encode()
-	}
 
 	// 发送请求
 	resp, err := c.HTTPClient.Do(req)
@@ -297,6 +290,16 @@ func (c *KCAuthClient) GetUserInfo(accessToken string, userId string) (*UserInfo
 	}
 
 	return &userInfo, nil
+}
+
+// GetUserInfo 获取用户信息
+func (c *KCAuthClient) GetUserInfo(accessToken string) (*UserInfo, error) {
+	return c.getUserInfo(accessToken, c.AuthServerURL+"/authapi/user")
+}
+
+// GetUserInfo 获取用户信息
+func (c *KCAuthClient) GetUserInfoById(accessToken string, userId string) (*UserInfo, error) {
+	return c.getUserInfo(accessToken, fmt.Sprintf("%s/authapi/user/%s", c.AuthServerURL, userId))
 }
 
 // UpdateUserInfo 更新用户信息

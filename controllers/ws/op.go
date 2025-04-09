@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/go-redsync/redsync/v4"
-	"go.mongodb.org/mongo-driver/bson"
 	autoupdate "kcaitech.com/kcserver/controllers/document"
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/providers/mongo"
@@ -53,7 +52,7 @@ type opServe struct {
 	userId     string
 	dbModule   *models.DBModule
 	redis      *redis.RedisDB
-	mongo      *mongo.MongoDB
+	// mongo      *mongo.MongoDB
 }
 
 // 从redis中获取最后一条cmd的id，若redis中没有则从mongodb中获取
@@ -319,7 +318,6 @@ func (serv *opServe) handleCommit(data *TransData, receiveData *ReceiveData) {
 		return
 	}
 	documentId := (serv.documentId)
-	documentCollection := serv.mongo.DB.Collection("document")
 
 	// 先删除，防止插入失败时无法正确更新lastCmdVerId
 	if _, err = serv.redis.Client.Del(context.Background(), "Document lastCmdVerId[DocumentId:"+documentId+"]").Result(); err != nil {
@@ -335,8 +333,9 @@ func (serv *opServe) handleCommit(data *TransData, receiveData *ReceiveData) {
 		index := len(insertRes.InsertedIDs) + 1
 		duplicateCmdCmdId := cmdItemList[index].Cmd.Id
 		duplicateCmdDocumentId := cmdItemList[index].DocumentId
-		duplicateCmd := &CmdItem{}
-		if err := documentCollection.FindOne(context.Background(), bson.M{"document_id": duplicateCmdDocumentId, "cmd_id": duplicateCmdCmdId}).Decode(duplicateCmd); err != nil {
+		// duplicateCmd := &CmdItem{}
+		duplicateCmd, err := cmdServices.GetCmd(duplicateCmdDocumentId, duplicateCmdCmdId)
+		if err != nil {
 			log.Println("重复数据查询失败", duplicateCmdDocumentId, duplicateCmdCmdId, err)
 			msgErr("数据插入失败", &serverData, &err)
 			return
