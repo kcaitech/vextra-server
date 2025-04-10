@@ -68,7 +68,7 @@ export class WSClient {
     hasConnected(): boolean {
         return this.connect.isReady;
     }
-    pullCmds(from: string, to?: string): Promise<Cmd[]> {
+    pullCmds(from: number, to?: number): Promise<Cmd[]> {
         return this.op.pullCmds(from, to);
     }
     postCmds(cmds: Cmd[]): Promise<boolean> {

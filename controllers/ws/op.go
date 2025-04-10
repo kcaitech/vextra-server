@@ -13,15 +13,14 @@ import (
 	"kcaitech.com/kcserver/providers/redis"
 	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils/sliceutil"
-	"kcaitech.com/kcserver/utils/str"
 	"kcaitech.com/kcserver/utils/websocket"
 )
 
 type ReceiveData struct {
 	Type string `json:"type"` // commit pullCmds
 	Cmds string `json:"cmds"` // commit
-	From string `json:"from"` // pullCmds
-	To   string `json:"to"`   // pullCmds
+	From int    `json:"from"` // pullCmds
+	To   int    `json:"to"`   // pullCmds
 }
 type Cmd = models.Cmd
 type CmdItem = models.CmdItem
@@ -34,8 +33,8 @@ type ReceiveCmd struct {
 type SendData struct {
 	Type       string   `json:"type"`                  // pullCmdsResult update errorInvalidParams errorNoPermission errorInsertFailed errorPullCmdsFailed
 	CmdsData   string   `json:"cmds_data,omitempty"`   // pullCmdsResult update
-	From       string   `json:"from,omitempty"`        // pullCmdsResult errorPullCmdsFailed
-	To         string   `json:"to,omitempty"`          // pullCmdsResult errorPullCmdsFailed
+	From       int      `json:"from,omitempty"`        // pullCmdsResult errorPullCmdsFailed
+	To         int      `json:"to,omitempty"`          // pullCmdsResult errorPullCmdsFailed
 	PreviousId string   `json:"previous_id,omitempty"` // pullCmdsResult
 	CmdIdList  []string `json:"cmd_id_list,omitempty"` // errorInsertFailed
 	Data       any      `json:"data,omitempty"`        // errorInsertFailed
@@ -50,8 +49,8 @@ type opServe struct {
 	permType   models.PermType
 	documentId string
 	userId     string
-	dbModule   *models.DBModule
-	redis      *redis.RedisDB
+	// dbModule   *models.DBModule
+	redis *redis.RedisDB
 	// mongo      *mongo.MongoDB
 }
 
@@ -385,8 +384,8 @@ func (serv *opServe) handlePullCmds(data *TransData, receiveData *ReceiveData) {
 	}
 
 	var cmdItemList []CmdItem
-	fromId := str.DefaultToInt(receiveData.From, 0)
-	toId := str.DefaultToInt(receiveData.To, 0)
+	fromId := (receiveData.From)
+	toId := (receiveData.To)
 
 	cmdsService := services.GetCmdService()
 	cmdItemList, err := cmdsService.GetCmdItems(serv.documentId, uint(fromId), uint(toId))

@@ -56,7 +56,7 @@ export class CoopNet extends ConnectClient {
         }));
     }
 
-    async _pullCmds(from?: string, to?: string): Promise<Cmd[]> {
+    async _pullCmds(from?: number, to?: number): Promise<Cmd[]> {
         const ready = await this.waitReady()
         if (!ready) return [];
         // from = from ? this.radixRevert.to(from).toString(10) : ""

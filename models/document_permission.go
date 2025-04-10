@@ -41,7 +41,7 @@ const (
 type DocumentPermission struct {
 	BaseModelStruct
 	ResourceType   ResourceType   `gorm:"default:0; uniqueIndex:unique_index" json:"resource_type"` // 资源类型，0-文档，1-文件夹
-	ResourceId     string         `gorm:"uniqueIndex:unique_index" json:"resource_id"`              // 资源ID，文档ID或文件夹ID？
+	ResourceId     string         `gorm:"uniqueIndex:unique_index,length:32" json:"resource_id"`    // 资源ID，文档ID或文件夹ID？
 	GranteeType    GranteeType    `gorm:"default:0; uniqueIndex:unique_index" json:"grantee_type"`  // 受让人类型，0-外部人员，1-内部人员，2-部门
 	GranteeId      string         `gorm:"uniqueIndex:unique_index,length:64" json:"grantee_id"`     // 受让人ID，用户id?
 	PermType       PermType       `gorm:"default:1" json:"perm_type"`                               // 权限类型，0-无权限，1-只读，2-可评论，3-可编辑
