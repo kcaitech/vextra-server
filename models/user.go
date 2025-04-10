@@ -5,7 +5,7 @@ type UserProfile struct {
 	// DefaultModelData
 	Nickname string `json:"nickname"` // Nickname
 	Avatar   string `json:"avatar"`   // Avatar URL
-	UserId   string `json:"user_id"`  // User ID
+	Id       string `json:"id"`       // User ID
 }
 
 func (user UserProfile) MarshalJSON() ([]byte, error) {

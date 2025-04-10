@@ -1,4 +1,4 @@
-import { url } from "./config";
+
 import { DataTypes, NetworkStatusType, TransData } from "./types";
 
 
@@ -81,6 +81,33 @@ export class Connect {
     private _waitReady: ((val: boolean) => void)[] = []
     private _heartbeatInterval?: ReturnType<typeof setInterval>;
 
+    private _wsUrl: string
+    private _token?: string
+    constructor(wsUrl: string, token?: string) {
+        this._wsUrl = wsUrl
+        this._token = token
+    }
+
+    private get localStorage() {
+        if (typeof window !== 'undefined' && window.localStorage) {
+            return window.localStorage
+        }
+        return undefined
+    }
+
+    private get token() {
+        if (this._token) return this._token
+        return this.localStorage?.getItem('token') ?? undefined
+    }
+    private set token(value: string | undefined) {
+        this._token = value
+        if (value) {
+            this.localStorage?.setItem('token', value)
+        } else {
+            this.localStorage?.removeItem('token')
+        }
+    }
+
     setMessageHandler(type: string, handler: ((data: any, binary?: ArrayBuffer) => void) | undefined) {
         if (handler) this.dataHandler[type] = handler;
         else delete this.dataHandler[type]
@@ -99,7 +126,7 @@ export class Connect {
 
         const connect = () => {
             console.log("connect")
-            const tokenUrl = url + '?token=' + encodeURIComponent(localStorage.getItem('token') || "")
+            const tokenUrl = this._wsUrl + '?token=' + encodeURIComponent(this.token ?? "")
             const ws = new WebSocket(tokenUrl);
             ws.onclose = this.receiveClose.bind(this)
             ws.onerror = this.receiveError.bind(this);

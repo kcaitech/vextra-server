@@ -121,7 +121,7 @@ func GetProjectList(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	teamId := str.DefaultToInt(c.Query("team_id"), 0)
+	teamId := (c.Query("team_id"))
 	projectService := services.NewProjectService()
 	result := projectService.FindProject(teamId, userId)
 	response.Success(c, result)
@@ -922,7 +922,7 @@ func GetFavorProjectList(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	teamId := str.DefaultToInt(c.Query("team_id"), 0)
+	teamId := (c.Query("team_id"))
 	projectService := services.NewProjectService()
 	result := projectService.FindFavorProject(teamId, userId)
 	response.Success(c, result)

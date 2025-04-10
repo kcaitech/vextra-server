@@ -12,6 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"kcaitech.com/kcserver/common/response"
 	"kcaitech.com/kcserver/models"
+	"kcaitech.com/kcserver/providers/auth"
 	safereviewBase "kcaitech.com/kcserver/providers/safereview"
 	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils"
@@ -78,8 +79,45 @@ func GetDocumentComment(c *gin.Context) {
 		response.ServerError(c, err.Error())
 		return
 	}
+	// 获取用户信息
+	userIds := make([]string, 0)
+	for _, comment := range documentCommentList {
+		userIds = append(userIds, comment.User)
+	}
+	token, _ := utils.GetAccessToken(c)
+	authClient := services.GetKCAuthClient()
+	users, err := authClient.GetUsersInfo(token, userIds)
+	if err != nil {
+		response.ServerError(c, err.Error())
+		return
+	}
+	userMap := make(map[string]interface{})
+	// 将用户信息转换为map以便快速查找
+	for _, user := range users {
+		userMap[user.UserID] = &user
+	}
+	result := make([]models.UserCommentWithUserInfo, 0)
+	for _, comment := range documentCommentList {
+		userId := comment.User
+		userInfo, exists := userMap[userId]
 
-	response.Success(c, &documentCommentList)
+		if exists {
+			user := userInfo.(*auth.UserInfo)
+			commentWithUser := models.UserCommentWithUserInfo{
+				Id:                comment.Id,
+				UserCommentCommon: comment.UserCommentCommon,
+				User: models.UserProfile{
+					Nickname: user.Profile.Nickname,
+					Id:       user.UserID,
+					Avatar:   user.Profile.Avatar,
+				},
+				CreatedAt:       comment.CreatedAt,
+				RecordCreatedAt: comment.RecordCreatedAt,
+			}
+			result = append(result, commentWithUser)
+		}
+	}
+	response.Success(c, &result)
 }
 
 func PostUserComment(c *gin.Context) {

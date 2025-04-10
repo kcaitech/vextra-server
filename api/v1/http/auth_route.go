@@ -31,7 +31,7 @@ func RefreshToken(c *gin.Context) {
 		response.BadRequest(c, "Refresh token not provided")
 		return
 	}
-	token, err := client.RefreshToken(refreshToken)
+	token, err := client.RefreshToken(refreshToken, c)
 	if err != nil {
 		log.Printf("Refresh token failed: %s", err.Error())
 		response.BadRequest(c, err.Error())

@@ -164,9 +164,9 @@ type PublishProjectQuery struct { // 通过项目的团队公开权限进入的�
 }
 
 // 查询用户的项目列表
-func (s *ProjectService) findProject(teamId int64, userId string, projectIdList *[]string) []*ProjectQuery {
+func (s *ProjectService) findProject(teamId string, userId string, projectIdList *[]string) []*ProjectQuery {
 	var whereArgsList []WhereArgs
-	if teamId > 0 {
+	if teamId != "" {
 		whereArgsList = append(whereArgsList, WhereArgs{"p.team_id = ?", []any{teamId}})
 	}
 	if projectIdList != nil {
@@ -228,12 +228,12 @@ func (s *ProjectService) findProject(teamId int64, userId string, projectIdList 
 }
 
 // FindProject 查询用户的项目列表
-func (s *ProjectService) FindProject(teamId int64, userId string) []*ProjectQuery {
+func (s *ProjectService) FindProject(teamId string, userId string) []*ProjectQuery {
 	return s.findProject(teamId, userId, nil)
 }
 
 // FindFavorProject 查询用户收藏的项目列表
-func (s *ProjectService) FindFavorProject(teamId int64, userId string) []*ProjectQuery {
+func (s *ProjectService) FindFavorProject(teamId string, userId string) []*ProjectQuery {
 	var projectFavoriteList []models.ProjectFavorite
 	_ = s.ProjectFavoriteService.Find(
 		&projectFavoriteList,

@@ -57,6 +57,18 @@ type UserComment struct {
 	RecordCreatedAt string `json:"record_created_at" bson:"record_created_at"`
 }
 
+type UserCommentWithUserInfo struct {
+	Id                primitive.ObjectID `json:"-" bson:"_id"`
+	UserCommentCommon `json:",inline" bson:",inline"`
+	// UnionId           struct {
+	// 	DocumentId string `json:"document_id" bson:"document_id"`
+	// 	CommentId  string `json:"comment_id" bson:"comment_id"`
+	// } `json:"union_id" bson:"_id"`
+	User            UserProfile `json:"user" bson:"user"`
+	CreatedAt       string      `json:"created_at" bson:"created_at"`
+	RecordCreatedAt string      `json:"record_created_at" bson:"record_created_at"`
+}
+
 type UserCommentPublishType uint8
 
 const (

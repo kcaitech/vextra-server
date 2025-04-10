@@ -4,11 +4,12 @@ import { z } from 'zod'
 
 // 团队权限类型枚举
 export enum TeamPermType {
-    ReadOnly = 0,  // 只读
-    Editable = 1,  // 可编辑
-    Admin = 2,     // 管理员
-    Creator = 3,   // 创建者
-    None = 255     // 无权限
+    None = 0,     // 无权限
+    ReadOnly = 1,  // 只读
+    Commentable = 2,
+    Editable = 3,  // 可编辑
+    Admin = 4,     // 管理员
+    Creator = 5,   // 创建者
 }
 
 // 团队模型
@@ -584,7 +585,7 @@ export class TeamAPI {
         try {
             return TeamProjectListResponseSchema.parse(result);
         } catch (error) {
-            console.error('项目列表数据校验失败:', error);
+            console.error('团队项目列表数据校验失败:', error);
             throw error;
         }
     }

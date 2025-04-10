@@ -35,10 +35,10 @@ export class WSClient {
         }
     }
 
-    constructor() {
+    constructor(wsUrl: string, token?: string) {
         // super();
         // this.context = context;
-        this.connect = new Connect();
+        this.connect = new Connect(wsUrl, token);
         this.connect.addOnChange(this.onNetChange.bind(this))
         this.op = new CoopNet(this.connect)
         this.resource = new Resource(this.connect)

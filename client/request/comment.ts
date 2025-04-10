@@ -1,6 +1,6 @@
 // 导入axios实例
 import { HttpMgr } from './http'
-import { BaseResponseSchema, BaseResponse } from './types';
+import { BaseResponseSchema, BaseResponse, UserInfoSchema } from './types';
 import { z } from 'zod';
 
 // 评论菜单类型
@@ -32,7 +32,7 @@ const CommentItemSchema = z.object({
         y1: z.number(),
         y2: z.number()
     }),
-    user: z.string(),
+    user: UserInfoSchema,
     created_at: z.string(),
     record_created_at: z.string(),
     content: z.string(),
@@ -79,7 +79,7 @@ const CommentCommonSchema = z.object({
         y1: z.number(),
         y2: z.number()
     }).nullable().optional(),
-    content: z.string().optional(),
+    content: z.string(),
     status: z.nativeEnum(CommentStatus).optional()
 })
 
