@@ -14,7 +14,7 @@ export const ShareSchema = z.object({
 
 export type Share = z.infer<typeof ShareSchema>;
 
-export const ShareListResponseSchema = BaseResponseSchema.extend({
+export const DocShareListResponseSchema = BaseResponseSchema.extend({
     data: z.array(z.object({
         total: z.number(),
         items: z.array(z.object({
@@ -53,7 +53,7 @@ export const ShareListResponseSchema = BaseResponseSchema.extend({
     })),
 });
 
-export type ShareListResponse = z.infer<typeof ShareListResponseSchema>;
+export type DocShareListResponse = z.infer<typeof DocShareListResponseSchema>;
 
 
 // type PermType uint8
@@ -209,14 +209,14 @@ export class ShareAPI {
     }
 
     //获取分享列表
-    async getShareListAPI(params: { doc_id: string }): Promise<ShareListResponse> {
+    async getShareListAPI(params: { doc_id: string }): Promise<DocShareListResponse> {
         const result = await this.http.request({
             url: `/documents/shares/all`,
             method: 'get',
             params: params,
         });
         try {
-            return ShareListResponseSchema.parse(result);
+            return DocShareListResponseSchema.parse(result);
         } catch (error) {
             console.error('分享列表数据校验失败:', error);
             throw error;
@@ -343,14 +343,14 @@ export class ShareAPI {
     }
 
     // 获取申请列表
-    async getApplyListAPI(params: { start_time?: number, page?: number; page_size?: number }): Promise<ShareListResponse> {
+    async getApplyListAPI(params: { start_time?: number, page?: number; page_size?: number }): Promise<DocShareListResponse> {
         const result = await this.http.request({
             url: `/documents/shares/apply`,
             method: 'get',
             params: params,
         });
         try {
-            return ShareListResponseSchema.parse(result);
+            return DocShareListResponseSchema.parse(result);
         } catch (error) {
             console.error('申请列表数据校验失败:', error);
             throw error;

@@ -195,7 +195,7 @@ func SetDocumentName(c *gin.Context) {
 		reviewResponse, err := (reviewClient).ReviewText(req.Name)
 		if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
 			log.Println("名称审核不通过", req.Name, err, reviewResponse)
-			response.BadRequest(c, "审核不通过")
+			response.ReviewFail(c, "审核不通过")
 			return
 		}
 	}

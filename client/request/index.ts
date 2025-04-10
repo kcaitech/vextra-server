@@ -21,3 +21,6 @@ export class Request {
 
 export { HttpCode } from "./httpcode"
 export * from "./users"
+export * from "./team"
+export * from "./share"
+export * from "./comment"

@@ -25,8 +25,8 @@ func loadUserRoutes(api *gin.RouterGroup) {
 		authorized.GET("/info", GetUserInfo)
 		authorized.PUT("/info/nickname", SetNickname)
 		authorized.PUT("/info/avatar", SetAvatar)
-		authorized.GET("/user_kv_storage", controllers.GetUserKVStorage)
-		authorized.POST("/user_kv_storage", controllers.SetUserKVStorage)
+		authorized.GET("/kv_storage", controllers.GetUserKVStorage)
+		authorized.POST("/kv_storage", controllers.SetUserKVStorage)
 	}
 }
 
@@ -71,7 +71,7 @@ func SetNickname(c *gin.Context) {
 		reviewResponse, err := safereview.ReviewText(req.Nickname)
 		if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
 			log.Println("昵称审核不通过", req.Nickname, err, reviewResponse)
-			response.BadRequest(c, "审核不通过")
+			response.ReviewFail(c, "审核不通过")
 			return
 		}
 	}
@@ -129,12 +129,12 @@ func SetAvatar(c *gin.Context) {
 		reviewResponse, err := safereview.ReviewPictureFromBase64(base64Str)
 		if err != nil {
 			log.Println("头像审核失败", err)
-			response.BadRequest(c, "头像审核失败")
+			response.ReviewFail(c, "头像审核失败")
 			return
 
 		} else if reviewResponse.Status != safereviewBase.ReviewImageResultPass {
 			log.Println("头像审核不通过", err, reviewResponse)
-			response.BadRequest(c, "头像审核不通过")
+			response.ReviewFail(c, "头像审核不通过")
 			return
 		}
 	}

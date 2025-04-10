@@ -44,3 +44,9 @@ export const DocumentListResponseSchema = BaseResponseSchema.extend({
 });
 
 export type DocumentListResponse = z.infer<typeof DocumentListResponseSchema>;
+
+const KVSSchema = z.object({
+  key: z.enum(['Preferences', 'FontList']),
+  value: z.union([z.string(), z.object({})]).optional()
+})
+export type KVS = z.infer<typeof KVSSchema>

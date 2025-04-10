@@ -44,14 +44,14 @@ func CreateTeam(c *gin.Context) {
 		reviewResponse, err := (reviewClient).ReviewText(req.Name)
 		if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
 			log.Println("名称审核不通过", req.Name, err, reviewResponse)
-			response.BadRequest(c, "审核不通过")
+			response.ReviewFail(c, "审核不通过")
 			return
 		}
 		if req.Description != "" {
 			reviewResponse, err = (reviewClient).ReviewText(req.Description)
 			if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
 				log.Println("描述审核不通过", req.Description, err, reviewResponse)
-				response.BadRequest(c, "审核不通过")
+				response.ReviewFail(c, "审核不通过")
 				return
 			}
 		}
@@ -575,7 +575,7 @@ func SetTeamInfo(c *gin.Context) {
 			reviewResponse, err := (reviewClient).ReviewText(req.Name)
 			if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
 				log.Println("名称审核不通过", req.Name, err, reviewResponse)
-				response.BadRequest(c, "审核不通过")
+				response.ReviewFail(c, "审核不通过")
 				return
 			}
 		}
@@ -583,7 +583,7 @@ func SetTeamInfo(c *gin.Context) {
 			reviewResponse, err := (reviewClient).ReviewText(req.Description)
 			if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
 				log.Println("描述审核不通过", req.Description, err, reviewResponse)
-				response.BadRequest(c, "审核不通过")
+				response.ReviewFail(c, "审核不通过")
 				return
 			}
 		}
@@ -614,11 +614,11 @@ func SetTeamInfo(c *gin.Context) {
 			reviewResponse, err := (reviewClient).ReviewPictureFromBase64(base64Str)
 			if err != nil {
 				log.Println("头像审核错误", err)
-				response.BadRequest(c, "头像审核错误")
+				response.ReviewFail(c, "头像审核错误")
 				return
 			} else if reviewResponse.Status != safereview.ReviewImageResultPass {
 				log.Println("头像审核不通过", err, reviewResponse)
-				response.BadRequest(c, "头像审核不通过")
+				response.ReviewFail(c, "头像审核不通过")
 				return
 			}
 		}
@@ -979,7 +979,7 @@ func SetTeamMemberNickname(c *gin.Context) {
 		reviewResponse, err := (reviewClient).ReviewText(req.Nickname)
 		if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
 			log.Println("昵称审核不通过", req.Nickname, err, reviewResponse)
-			response.BadRequest(c, "审核不通过")
+			response.ReviewFail(c, "审核不通过")
 			return
 		}
 	}

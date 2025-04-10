@@ -69,7 +69,7 @@ func CreateProject(c *gin.Context) {
 		reviewResponse, err := (reviewClient).ReviewText(req.Name)
 		if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
 			log.Println("名称审核不通过", req.Name, err, reviewResponse)
-			response.BadRequest(c, "审核不通过")
+			response.ReviewFail(c, "审核不通过")
 			return
 		}
 	}
@@ -77,7 +77,7 @@ func CreateProject(c *gin.Context) {
 		reviewResponse, err := (reviewClient).ReviewText(req.Description)
 		if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
 			log.Println("描述审核不通过", req.Description, err, reviewResponse)
-			response.BadRequest(c, "审核不通过")
+			response.ReviewFail(c, "审核不通过")
 			return
 		}
 	}
@@ -556,7 +556,7 @@ func SetProjectInfo(c *gin.Context) {
 			reviewResponse, err := (reviewClient).ReviewText(req.Name)
 			if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
 				log.Println("名称审核不通过", req.Name, err, reviewResponse)
-				response.BadRequest(c, "审核不通过")
+				response.ReviewFail(c, "审核不通过")
 				return
 			}
 		}
@@ -564,7 +564,7 @@ func SetProjectInfo(c *gin.Context) {
 			reviewResponse, err := (reviewClient).ReviewText(req.Description)
 			if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
 				log.Println("描述审核不通过", req.Description, err, reviewResponse)
-				response.BadRequest(c, "审核不通过")
+				response.ReviewFail(c, "审核不通过")
 				return
 			}
 		}

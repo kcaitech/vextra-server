@@ -2,11 +2,6 @@ import { HttpMgr } from './http'
 import { UserInfoSchema, BaseResponseSchema, BaseResponse } from './types'
 import { z } from 'zod';
 
-const KVSSchema = z.object({
-    key: z.enum(['Preferences', 'FontList']),
-    value: z.union([z.string(), z.object({})]).optional()
-})
-export type KVS = z.infer<typeof KVSSchema>
 
 // // 登录请求
 // export function PostLogin(params = {}) {
@@ -225,28 +220,28 @@ const ShareListResponseSchema = BaseResponseSchema.extend({
 export type ShareListResponse = z.infer<typeof ShareListResponseSchema>
 
 // 团队列表响应类型
-const TeamListResponseSchema = BaseResponseSchema.extend({
-    data: z.array(z.object({
-        id: z.number(),
-        name: z.string(),
-        description: z.string(),
-        created_at: z.string()
-    }))
-})
+// const TeamListResponseSchema = BaseResponseSchema.extend({
+//     data: z.array(z.object({
+//         id: z.number(),
+//         name: z.string(),
+//         description: z.string(),
+//         created_at: z.string()
+//     }))
+// })
 
-export type TeamListResponse = z.infer<typeof TeamListResponseSchema>
+// export type TeamListResponse = z.infer<typeof TeamListResponseSchema>
 
 // 团队成员列表响应类型
-const TeamMemberListResponseSchema = BaseResponseSchema.extend({
-    data: z.array(z.object({
-        user_id: z.string(),
-        nickname: z.string(),
-        avatar: z.string(),
-        perm_type: z.number()
-    }))
-})
+// const TeamMemberListResponseSchema = BaseResponseSchema.extend({
+//     data: z.array(z.object({
+//         user_id: z.string(),
+//         nickname: z.string(),
+//         avatar: z.string(),
+//         perm_type: z.number()
+//     }))
+// })
 
-export type TeamMemberListResponse = z.infer<typeof TeamMemberListResponseSchema>
+// export type TeamMemberListResponse = z.infer<typeof TeamMemberListResponseSchema>
 
 // 项目列表响应类型
 const ProjectListResponseSchema = BaseResponseSchema.extend({
@@ -259,6 +254,12 @@ const ProjectListResponseSchema = BaseResponseSchema.extend({
 })
 
 export type ProjectListResponse = z.infer<typeof ProjectListResponseSchema>
+
+const RefreshTokenSchema = BaseResponseSchema.extend({
+    data: z.object({
+        token: z.string()
+    })
+})
 
 export class UsersAPI {
     private http: HttpMgr
@@ -493,41 +494,41 @@ export class UsersAPI {
     }
 
     //获取团队列表
-    async GetteamList(params: {
-        page?: number;
-        page_size?: number;
-    }): Promise<TeamListResponse> {
-        const result = await this.http.request({
-            url: '/documents/team/list',
-            method: 'get',
-            params: params,
-        })
-        try {
-            return TeamListResponseSchema.parse(result)
-        } catch (error) {
-            console.error('团队列表数据校验失败:', error)
-            throw error
-        }
-    }
+    // async GetteamList(params: {
+    //     page?: number;
+    //     page_size?: number;
+    // }): Promise<TeamListResponse> {
+    //     const result = await this.http.request({
+    //         url: '/documents/team/list',
+    //         method: 'get',
+    //         params: params,
+    //     })
+    //     try {
+    //         return TeamListResponseSchema.parse(result)
+    //     } catch (error) {
+    //         console.error('团队列表数据校验失败:', error)
+    //         throw error
+    //     }
+    // }
 
     //获取团队成员
-    async GetteamMember(params: {
-        team_id: string;
-        page?: number;
-        page_size?: number;
-    }): Promise<TeamMemberListResponse> {
-        const result = await this.http.request({
-            url: '/documents/team/member/list',
-            method: 'get',
-            params: params,
-        })
-        try {
-            return TeamMemberListResponseSchema.parse(result)
-        } catch (error) {
-            console.error('团队成员列表数据校验失败:', error)
-            throw error
-        }
-    }
+    // async GetteamMember(params: {
+    //     team_id: string;
+    //     page?: number;
+    //     page_size?: number;
+    // }): Promise<TeamMemberListResponse> {
+    //     const result = await this.http.request({
+    //         url: '/documents/team/member/list',
+    //         method: 'get',
+    //         params: params,
+    //     })
+    //     try {
+    //         return TeamMemberListResponseSchema.parse(result)
+    //     } catch (error) {
+    //         console.error('团队成员列表数据校验失败:', error)
+    //         throw error
+    //     }
+    // }
 
     //设置团队信息
     // async Setteaminfo(params: {
@@ -544,22 +545,22 @@ export class UsersAPI {
 
 
     //获取项目列表
-    // async GetProjectLists(params: {
-    //     page?: number;
-    //     page_size?: number;
-    // }): Promise<ProjectListResponse> {
-    //     const result = await this.http.request({
-    //         url: '/documents/project/list',
-    //         method: 'get',
-    //         params: params,
-    //     })
-    //     try {
-    //         return ProjectListResponseSchema.parse(result)
-    //     } catch (error) {
-    //         console.error('项目列表数据校验失败:', error)
-    //         throw error
-    //     }
-    // }
+    async GetProjectLists(params: {
+        page?: number;
+        page_size?: number;
+    }): Promise<ProjectListResponse> {
+        const result = await this.http.request({
+            url: '/documents/project/list',
+            method: 'get',
+            params: params,
+        })
+        try {
+            return ProjectListResponseSchema.parse(result)
+        } catch (error) {
+            console.error('项目列表数据校验失败:', error)
+            throw error
+        }
+    }
 
     //创建项目
     // async CreateProject(params: {
@@ -575,13 +576,10 @@ export class UsersAPI {
 
     //获取文档列表
     async getDoucmentListAPI(params: {
-        page?: number;
-        page_size?: number;
-        parent_id?: string;
-        type?: string;
+        project_id?: string;
     }): Promise<UsersDocumentListResponse> {
         const result = await this.http.request({
-            url: '/documents/list',
+            url: '/documents',
             method: 'get',
             params: params,
         })
@@ -696,6 +694,19 @@ export class UsersAPI {
             method: 'post',
             data: formData,
         })
+    }
+
+    async RefreshToken() {
+        const result = await this.http.request({
+            url: 'auth/refresh_token',
+            method: 'post',
+        })
+        try {
+            return RefreshTokenSchema.parse(result);
+        } catch (error) {
+            console.error('RefreshToken数据校验失败:', error);
+            throw error;
+        }
     }
 }
 

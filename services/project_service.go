@@ -297,7 +297,7 @@ type ProjectJoinRequestQuery struct {
 
 // FindProjectJoinRequest 获取用户所创建或担任管理员的项目的加入申请列表
 func (s *ProjectService) FindProjectJoinRequest(userId string, projectId int64, startTime string) []ProjectJoinRequestQuery {
-	var result []ProjectJoinRequestQuery
+	var result = make([]ProjectJoinRequestQuery, 0)
 	whereArgsList := []WhereArgs{
 		{
 			Query: "project_member.deleted_at is null and project.deleted_at is null and user.deleted_at is null",

@@ -156,7 +156,7 @@ func PostUserComment(c *gin.Context) {
 			var document models.Document
 			if documentService.GetById(documentId, &document) != nil {
 				log.Println("文档不存在", documentId)
-				response.BadRequest(c, "文档不存在")
+				response.ReviewFail(c, "文档不存在")
 				return
 			}
 			LockedAt := (time.Now())

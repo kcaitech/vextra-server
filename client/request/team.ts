@@ -149,7 +149,7 @@ const TeamApplyListResponseSchema = BaseResponseSchema.extend({
 export type TeamApplyListResponse = z.infer<typeof TeamApplyListResponseSchema>
 
 // 项目列表响应类型
-const ProjectListResponseSchema = BaseResponseSchema.extend({
+const TeamProjectListResponseSchema = BaseResponseSchema.extend({
     data: z.array(z.object({
         project: z.object({
             id: z.string(),
@@ -171,7 +171,7 @@ const ProjectListResponseSchema = BaseResponseSchema.extend({
     }))
 })
 
-export type ProjectListResponse = z.infer<typeof ProjectListResponseSchema>
+export type TeamProjectListResponse = z.infer<typeof TeamProjectListResponseSchema>
 
 // 项目成员列表响应类型
 const ProjectMemberListResponseSchema = BaseResponseSchema.extend({
@@ -575,14 +575,14 @@ export class TeamAPI {
         team_id?: string;
         page?: number;
         page_size?: number;
-    }): Promise<ProjectListResponse> {
+    }): Promise<TeamProjectListResponse> {
         const result = await this.http.request({
             url: '/documents/team/project/list',
             method: 'get',
             params: params,
         });
         try {
-            return ProjectListResponseSchema.parse(result);
+            return TeamProjectListResponseSchema.parse(result);
         } catch (error) {
             console.error('项目列表数据校验失败:', error);
             throw error;

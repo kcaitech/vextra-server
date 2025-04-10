@@ -6,6 +6,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	StatusContentReviewFail = 494 // 审核失败
+)
+
 type Response struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
@@ -76,4 +80,11 @@ func ServerError(c *gin.Context, message string) Response {
 		message = "服务器出错"
 	}
 	return Resp(c, http.StatusInternalServerError, message, nil)
+}
+
+func ReviewFail(c *gin.Context, message string) Response {
+	if message == "" {
+		message = "审核失败"
+	}
+	return Resp(c, StatusContentReviewFail, message, nil)
 }

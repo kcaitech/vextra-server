@@ -102,6 +102,8 @@ export class HttpMgr {
             return Promise.reject(response)
         } else if (dataAxios.code === HttpCode.StatusInternalServerError) {
             return Promise.resolve(response)
+        } else if (dataAxios.code === HttpCode.StatusContentReviewFail) {
+            return Promise.resolve(response)
         } else {
             return Promise.reject(response)
         }
