@@ -11,14 +11,13 @@ import (
 	"time"
 
 	"kcaitech.com/kcserver/providers/safereview"
+	"kcaitech.com/kcserver/utils"
 	"kcaitech.com/kcserver/utils/my_map"
 
-	"github.com/google/uuid"
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/providers/storage"
 	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils/str"
-	myTime "kcaitech.com/kcserver/utils/time"
 )
 
 // type Data map[string]any
@@ -267,7 +266,9 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 
 	// 获取文档信息
 	documentService := services.NewDocumentService()
-	docPath := uuid.New().String()
+
+	docPath := ""
+	docId := ""
 	var document = models.Document{}
 	if !isFirstUpload {
 		if documentService.GetById(documentId, &document) != nil {
@@ -275,6 +276,15 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 			return
 		}
 		docPath = document.Path
+		docId = document.Id
+	} else {
+		id, err := utils.GenerateBase62ID()
+		if err != nil {
+			resp.Message = err.Error()
+			return
+		}
+		docPath = id
+		docId = id
 	}
 
 	newDocument := models.Document{
@@ -398,11 +408,12 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 	documentName, _ := uploadData.DocumentMeta["name"].(string)
 	documentAccessRecordService := services.NewDocumentAccessRecordService()
 	// 创建文档记录和历史记录
-	now := myTime.Time(time.Now())
+	now := (time.Now())
 	if isFirstUpload {
 		newDocument.Name = documentName
 		newDocument.Size = documentSize
 		newDocument.VersionId = documentVersionId
+		newDocument.Id = docId
 		if err := documentService.Create(&newDocument); err != nil {
 			resp.Message = "对象上传错误."
 			log.Println("对象上传错误2", err)

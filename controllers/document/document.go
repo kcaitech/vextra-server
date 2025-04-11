@@ -84,6 +84,7 @@ func DeleteUserDocument(c *gin.Context) {
 func GetUserDocumentInfo(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
+		log.Println("获取userId失败", err.Error())
 		response.Unauthorized(c)
 		return
 	}
@@ -104,19 +105,24 @@ func GetUserDocumentInfo(c *gin.Context) {
 	// 获取文档对应的user信息
 	docUserId := result.Document.UserId
 	authClient := services.GetKCAuthClient()
-	token, exists := c.Get("token")
-	if !exists {
+	token, err := utils.GetAccessToken(c)
+	if err != nil {
+		log.Println("获取token失败")
 		response.Unauthorized(c)
 		return
 	}
-	userInfo, err := authClient.GetUserInfoById(token.(string), docUserId)
+	userInfo, err := authClient.GetUserInfoById(token, docUserId)
 	if err != nil {
 		response.ServerError(c, err.Error())
 		return
 	}
 
 	response.Success(c, gin.H{
-		"user":                         userInfo,
+		"user": models.UserProfile{
+			Id:       userInfo.UserID,
+			Nickname: userInfo.Profile.Nickname,
+			Avatar:   userInfo.Profile.Avatar,
+		},
 		"document":                     result.Document,
 		"team":                         result.Team,
 		"project":                      result.Project,

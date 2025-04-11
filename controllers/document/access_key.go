@@ -12,7 +12,6 @@ import (
 	"kcaitech.com/kcserver/providers/storage"
 	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils"
-	myTime "kcaitech.com/kcserver/utils/time"
 )
 
 // GetDocumentAccessKey 获取文档访问密钥
@@ -105,7 +104,7 @@ func GetDocumentAccessKey1(userId string, documentId string) (*map[string]any, e
 	}
 
 	// 插入/更新访问记录
-	now := myTime.Time(time.Now())
+	now := (time.Now())
 	documentAccessRecord := models.DocumentAccessRecord{}
 	err = documentService.DocumentAccessRecordService.Get(&documentAccessRecord, "document_id = ? and user_id = ?", documentId, userId, &services.Unscoped{})
 	if err != nil {

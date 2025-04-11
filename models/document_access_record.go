@@ -1,8 +1,9 @@
 package models
 
 import (
+	"time"
+
 	"gorm.io/gorm"
-	"kcaitech.com/kcserver/utils/time"
 )
 
 // DocumentAccessRecord 文档访问记录

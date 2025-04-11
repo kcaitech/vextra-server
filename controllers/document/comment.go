@@ -145,13 +145,13 @@ func PostUserComment(c *gin.Context) {
 	// 使用mongo的_id
 	// userComment.Id = str.IntToString(snowflake.NextId())
 
-	accessToken, _ := c.Get("access_token")
-	if accessToken == nil {
+	accessToken, err := utils.GetAccessToken(c)
+	if err != nil {
 		response.Unauthorized(c)
 		return
 	}
 	jwtClient := services.GetKCAuthClient()
-	userInfo, err := jwtClient.GetUserInfo(accessToken.(string))
+	userInfo, err := jwtClient.GetUserInfo(accessToken)
 	if err != nil {
 		response.Unauthorized(c)
 		return

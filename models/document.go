@@ -50,16 +50,16 @@ type Document struct {
 	UpdatedAt time.Time `gorm:"autoUpdateTime;type:datetime(6)" json:"updated_at"`
 	DeletedAt DeletedAt `gorm:"index" json:"deleted_at"`
 
-	UserId    string    `gorm:"index" json:"user_id"`
-	Path      string    `gorm:"size:64" json:"path"`
-	DocType   DocType   `gorm:"default:0" json:"doc_type"`
-	Name      string    `gorm:"size:64" json:"name"`
-	Size      uint64    `gorm:"" json:"size"`
-	PurgedAt  time.Time `gorm:"" json:"purged_at"`
-	DeleteBy  int64     `gorm:"" json:"delete_by"` // 删除人ID
-	VersionId string    `gorm:"size:64" json:"version_id"`
-	TeamId    string    `gorm:"index" json:"team_id"`
-	ProjectId string    `gorm:"index" json:"project_id"`
+	UserId  string  `gorm:"index" json:"user_id"`
+	Path    string  `gorm:"size:64" json:"path"`
+	DocType DocType `gorm:"default:0" json:"doc_type"`
+	Name    string  `gorm:"size:64" json:"name"`
+	Size    uint64  `gorm:"" json:"size"`
+	// PurgedAt  *time.Time `gorm:"" json:"purged_at"`
+	DeleteBy  int64  `gorm:"" json:"delete_by"` // 删除人ID
+	VersionId string `gorm:"size:64" json:"version_id"`
+	TeamId    string `gorm:"index" json:"team_id"`
+	ProjectId string `gorm:"index" json:"project_id"`
 	// LockedAt     time.Time `gorm:"" json:"locked_at"`
 	// LockedReason string    `gorm:"size:255" json:"locked_reason"`
 	// LockedWords  string    `gorm:"size:255" json:"locked_words"`

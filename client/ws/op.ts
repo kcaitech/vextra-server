@@ -25,19 +25,19 @@ export class CoopNet extends ConnectClient {
         reject: (reason: any) => void
     }[]> = {}
 
-    private serialCmds(cmds: Cmd[]): any[] {
-        return cmds.map(cmd => ({
-            // cmd_id: cmd.id,
-            // id: cmd.version ? this.radixRevert.to(cmd.version) : undefined,
-            // previous_id: cmd.previousVersion ? this.radixRevert.to(cmd.previousVersion) : undefined,
-            cmd: {
-                ...cmd,
-                id: undefined,
-                version: undefined,
-                previousVersion: undefined
-            }
-        }));
-    }
+    // private serialCmds(cmds: Cmd[]): any[] {
+    //     return cmds.map(cmd => ({
+    //         // cmd_id: cmd.id,
+    //         // id: cmd.version ? this.radixRevert.to(cmd.version) : undefined,
+    //         // previous_id: cmd.previousVersion ? this.radixRevert.to(cmd.previousVersion) : undefined,
+    //         cmd: {
+    //             ...cmd,
+    //             id: undefined,
+    //             version: undefined,
+    //             previousVersion: undefined
+    //         }
+    //     }));
+    // }
 
     private parseCmds(data: any[]): Cmd[] {
         return data.map(item => ({
@@ -77,13 +77,13 @@ export class CoopNet extends ConnectClient {
 
     pullCmds = timing_util.throttle(this._pullCmds.bind(this), 1000)
 
-    async _postCmds(cmds: Cmd[]): Promise<boolean> {
+    async _postCmds(cmds: Cmd[], serial:(cmds: Cmd[])=> string): Promise<boolean> {
         const ready = await this.waitReady()
         if (!ready) return false;
         // console.log("postCmds", cloneCmds(cmds))
         this.send({
             type: "commit",
-            cmds: this.serialCmds(cmds),
+            cmds: serial(cmds),
         }, 0, 0)
         return true;
     }

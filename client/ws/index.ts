@@ -71,8 +71,8 @@ export class WSClient {
     pullCmds(from: number, to?: number): Promise<Cmd[]> {
         return this.op.pullCmds(from, to);
     }
-    postCmds(cmds: Cmd[]): Promise<boolean> {
-        return this.op.postCmds(cmds);
+    postCmds(cmds: Cmd[], serial:(cmds: Cmd[])=> string): Promise<boolean> {
+        return this.op.postCmds(cmds, serial);
     }
 
     watchCmds(watcher: (cmds: Cmd[]) => void) {

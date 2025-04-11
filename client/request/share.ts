@@ -143,18 +143,18 @@ export const DocumentInfoSchema = z.object({
         perm_type: z.number(),
         perm_source_type: z.number()
     }),
-    apply_list: z.array(z.object({
-        id: z.string(),
-        user_id: z.string(),
-        document_id: z.string(),
-        perm_type: z.number(),
-        status: z.number(),
-        first_displayed_at: z.string().nullable(),
-        processed_at: z.string().nullable(),
-        processed_by: z.string().nullable(),
-        applicant_notes: z.string().nullable(),
-        processor_notes: z.string().nullable()
-    })),
+    // apply_list: z.array(z.object({
+    //     id: z.string(),
+    //     user_id: z.string(),
+    //     document_id: z.string(),
+    //     perm_type: z.number(),
+    //     status: z.number(),
+    //     first_displayed_at: z.string().nullable(),
+    //     processed_at: z.string().nullable(),
+    //     processed_by: z.string().nullable(),
+    //     applicant_notes: z.string().nullable(),
+    //     processor_notes: z.string().nullable()
+    // })),
     shares_count: z.number(),
     application_count: z.number(),
     locked_info: z.object({
