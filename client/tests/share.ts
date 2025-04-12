@@ -11,7 +11,7 @@ const shareAPI = new ShareAPI(httpManager);
 const documentAPI = new DocumentAPI(httpManager);
 
 // 测试获取分享列表
-async function testGetShareList() {
+async function testGetShareGranteesList() {
     try {
         const response = await shareAPI.getShareGranteesList({
             doc_id: '1'
@@ -72,9 +72,9 @@ async function testSetShareType() {
 }
 
 // 测试更新分享权限
-async function testPutShareAuthority() {
+async function testChangeShareAuthority() {
     try {
-        const response = await shareAPI.putShareAuthority({
+        const response = await shareAPI.changeShareAuthority({
             share_id: '1', // 替换为实际的分享ID
             perm_type: PermType.ReadOnly, // 只读权限
         });
@@ -97,9 +97,9 @@ async function testDelShareAuthority() {
 }
 
 // 测试申请文档权限
-async function testPostDocumentAuthority() {
+async function testApplyDocumentAuthority() {
     try {
-        const response = await shareAPI.postDocumentAuthority({
+        const response = await shareAPI.applyDocumentAuthority({
             doc_id: '2', // 替换为实际的文档ID
             perm_type: PermType.Commentable, // 申请只读权限
             applicant_notes: '需要查看文档内容',
@@ -139,20 +139,17 @@ async function testPromissionApplyAudit() {
 // 运行所有测试
 async function runAllTests() {
     console.log('开始测试分享相关API...');
-    
-    // await testGetShareList();
-    // await testGetDocumentAuthority();
-    // await testSetShareType();
-    // await testGetDocumentKey();
-    // await testGetDocumentInfo();
-    // await testGetApplyList();
-    // await testPutShareAuthority();
 
-    // todo 未通过
-    await testPostDocumentAuthority();
-    await testPromissionApplyAudit();
+    // await testGetShareGranteesList();
+    // getShareReceivesLists
+    // await testSetShareType();
+    // await testChangeShareAuthority();
     await testDelShareAuthority();
-    
+    await testApplyDocumentAuthority();
+    // await testGetApplyList();
+    await testPromissionApplyAudit();
+    // exitSharing
+
     console.log('测试完成');
 }
 

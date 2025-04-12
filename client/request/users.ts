@@ -2,23 +2,6 @@ import { HttpMgr } from './http'
 import { UserInfoSchema, BaseResponseSchema, BaseResponse } from './types'
 import { z } from 'zod';
 
-
-// 用户信息模型
-// const UserProfileSchema = z.object({
-//     user_id: z.string(),
-//     nickname: z.string(),
-//     avatar: z.string()
-// })
-// export type UserProfile = z.infer<typeof UserProfileSchema>
-
-// 用户KV存储模型
-// const UserKVStorageSchema = z.object({
-//     user_id: z.string(),
-//     key: z.string(),
-//     value: z.string()
-// })
-// export type UserKVStorage = z.infer<typeof UserKVStorageSchema>
-
 // 用户反馈类型枚举
 export enum FeedbackType {
     Report1 = 0, // 举报-欺诈
@@ -27,16 +10,6 @@ export enum FeedbackType {
     Report4 = 3, // 举报-其他
     Last = 4    // 最后一个
 }
-
-// 用户反馈模型
-// const FeedbackSchema = z.object({
-//     user_id: z.string(),
-//     type: z.nativeEnum(FeedbackType),
-//     content: z.string(),
-//     image_path_list: z.string(),
-//     page_url: z.string()
-// })
-// export type Feedback = z.infer<typeof FeedbackSchema>
 
 // 用户KV存储响应类型
 const UserKVStorageResponseSchema = BaseResponseSchema.extend({
@@ -53,32 +26,6 @@ const UserInfoResponseSchema = BaseResponseSchema.extend({
 
 export type UserInfoResponse = z.infer<typeof UserInfoResponseSchema>
 export type UserInfoData = z.infer<typeof UserInfoResponseSchema.shape.data>
-
-
-
-// 回收站列表响应类型
-// const RecycleListResponseSchema = BaseResponseSchema.extend({
-//     data: z.array(z.object({
-//         id: z.number(),
-//         name: z.string(),
-//         type: z.string(),
-//         parent_id: z.string(),
-//         created_at: z.string(),
-//         deleted_at: z.string()
-//     }))
-// })
-// export type RecycleListResponse = z.infer<typeof RecycleListResponseSchema>
-
-// 项目列表响应类型
-// const ProjectListResponseSchema = BaseResponseSchema.extend({
-//     data: z.array(z.object({
-//         id: z.number(),
-//         name: z.string(),
-//         description: z.string(),
-//         created_at: z.string()
-//     }))
-// })
-// export type ProjectListResponse = z.infer<typeof ProjectListResponseSchema>
 
 const RefreshTokenSchema = BaseResponseSchema.extend({
     data: z.object({
@@ -141,7 +88,6 @@ export class UsersAPI {
             throw error
         }
     }
-
 
     // 获取用户KV存储
     async getKVStorage(params: {

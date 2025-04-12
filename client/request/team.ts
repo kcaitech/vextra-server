@@ -329,7 +329,7 @@ export class TeamAPI {
     }
 
     //项目加入审核
-    async postTeamProjectAudit(params: {
+    async promissionTeamProjectApply(params: {
         apply_id: string;
         approval_code: number;
     }): Promise<BaseResponse> {
@@ -368,7 +368,7 @@ export class TeamAPI {
     }
 
     //团队加入审核
-    async postTeamAudit(params: {
+    async promissionTeamApply(params: {
         apply_id: string;
         approval_code: number;
     }): Promise<BaseResponse> {
@@ -442,7 +442,7 @@ export class TeamAPI {
     }
 
     //设置项目邀请信息
-    async setProjectInvitedInfo(params: {
+    async setProjectInviteInfo(params: {
         project_id: string;
         invited_perm_type?: number;
         invited_switch?: boolean;
@@ -461,7 +461,7 @@ export class TeamAPI {
     }
 
     // 获取项目邀请信息
-    async getProjectInvitedInfo(params: {
+    async getProjectInviteInfo(params: {
         project_id: string;
     }): Promise<ProjectInvitedInfoResponse> {
         const result = await this.http.request({
@@ -623,7 +623,7 @@ export class TeamAPI {
     }
 
     //移动文档
-    async moveDocument(params: {
+    async moveFileToProject(params: {
         document_id: string;
         target_team_id?: string;
         target_project_id?: string;
@@ -780,7 +780,7 @@ export class TeamAPI {
     }
 
     //转移团队创建者
-    async setTeamCreator(params: {
+    async transferTeamCreator(params: {
         team_id: string;
         user_id: string;
     }): Promise<BaseResponse> {
@@ -803,7 +803,7 @@ export class TeamAPI {
     }
 
     //申请加入团队
-    async joinTeam(params: {
+    async applyJoinTeam(params: {
         team_id: string;
         applicant_notes?: string
     }): Promise<BaseResponse> {
@@ -815,13 +815,13 @@ export class TeamAPI {
     }
 
     //获取申请列表
-    async getJoinList(params: {
+    async getTeamApplyList(params: {
         team_id: string;
         page?: number;
         page_size?: number;
     }): Promise<BaseResponse> {
         return this.http.request({
-            url: '/documents/team/join/list',
+            url: '/documents/team/apply',
             method: 'get',
             params: params,
         })
@@ -893,20 +893,20 @@ export class TeamAPI {
     }
 
     // 转移团队创建者
-    async changeTeamCreator(params: {
-        team_id: string;
-        user_id: string;
-    }): Promise<BaseResponse> {
-        const result = await this.http.request({
-            url: '/documents/team/creator',
-            method: 'put',
-            data: params,
-        });
-        try {
-            return BaseResponseSchema.parse(result);
-        } catch (error) {
-            console.error('转移团队创建者响应数据校验失败:', error);
-            throw error;
-        }
-    }
+    // async transferTeamCreator(params: {
+    //     team_id: string;
+    //     user_id: string;
+    // }): Promise<BaseResponse> {
+    //     const result = await this.http.request({
+    //         url: '/documents/team/creator',
+    //         method: 'put',
+    //         data: params,
+    //     });
+    //     try {
+    //         return BaseResponseSchema.parse(result);
+    //     } catch (error) {
+    //         console.error('转移团队创建者响应数据校验失败:', error);
+    //         throw error;
+    //     }
+    // }
 }

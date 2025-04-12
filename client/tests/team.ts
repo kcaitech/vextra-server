@@ -128,9 +128,9 @@ async function testGetTeamMemberList() {
 }
 
 // 测试转移团队创建者
-async function testChangeTeamCreator() {
+async function testTransferTeamCreator() {
   try {
-    const response = await teamAPI.changeTeamCreator({
+    const response = await teamAPI.transferTeamCreator({
       team_id: '3', // 替换为实际的团队ID
       user_id: 'kcai1', // 替换为实际的用户ID
     });
@@ -145,23 +145,52 @@ async function runAllTests() {
   console.log('开始测试团队相关API...');
   // 逐一测试，需要修改数据库数据
   await testCreateTeam();
-  await testGetTeamList();
-  // await testGetTeamInfo();
-  await testSetTeamInfo();
-  await testSetTeamMemberPermission();
+  //createProject
+  //getTeamProjectApply
+  //promissionTeamProjectApply
+  //getTeamApply
+  //promissionTeamApply
+  //getProjectFavoriteLists
+  //setProjectIsFavorite
+  //setProjectInfo
+  //setProjectInviteInfo
+  //getProjectInviteInfo
+  //applyJoinProject
+  //getProjectLists
+  //getProjectMemberList
+  //exitProject
+  //setProjectMemberPerm
+  //delProjectMember
+  //transferProjectCreator
+  //delProject
+  //moveFileToProject
+  //getProjectNotice
+  //getTeamNotice
   await testSetTeamMemberNickname();
+
+  await testGetTeamList();
+
   await testGetTeamMemberList();
-  await testChangeTeamCreator();
-  
+  await testSetTeamInfo();
+  //setTeamInviteInfo
+  //setTeamCreator
+  await testTransferTeamCreator();
+
+  // await testGetTeamInfo();
+  //applyJoinTeam
+  //getTeamApplyList
+  //deletTeamMember
+
+  await testSetTeamMemberPermission()
   await testExitTeam();
   await testDeleteTeam();
-  // await testGetDoucmentListAPI();
-  
+
+
   console.log('测试完成');
 }
 
 // 执行测试
-runAllTests().catch(console.error); 
+runAllTests().catch(console.error);
 
 // async function testGetDoucmentListAPI() {
 //   try {

@@ -193,7 +193,7 @@ export class ShareAPI {
     }
 
     //修改分享权限
-    async putShareAuthority(params: { share_id: string; perm_type: PermType }): Promise<BaseResponse> {
+    async changeShareAuthority(params: { share_id: string; perm_type: PermType }): Promise<BaseResponse> {
         const result = await this.http.request({
             url: '/documents/shares',
             method: 'put',
@@ -223,7 +223,7 @@ export class ShareAPI {
     }
 
     // 申请文档权限
-    async postDocumentAuthority(params: ShareApply): Promise<BaseResponse> {
+    async applyDocumentAuthority(params: ShareApply): Promise<BaseResponse> {
         const result = await this.http.request({
             url: '/documents/shares/apply',
             method: 'post',

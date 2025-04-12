@@ -11,7 +11,7 @@ const usersAPI = new UsersAPI(httpManager);
 const documentAPI = new DocumentAPI(httpManager);
 
 // 测试用户KV存储
-async function testUserKVStorage() {
+async function testGetKVStorage() {
   try {
     // 获取用户KV存储
     const getResponse = await usersAPI.getKVStorage({ key: 'Preferences' });
@@ -48,7 +48,7 @@ async function testUserDocumentAccessRecords() {
 }
 
 // 测试用户反馈
-async function testUserFeedback() {
+async function testSubmitFeedback() {
   try {
     // 提交用户反馈
     const response = await usersAPI.submitFeedback({
@@ -92,23 +92,20 @@ async function testCopyfile() {
 // 运行所有测试
 async function runAllTests() {
   console.log('开始测试用户相关API...');
-  
-  
-  await testUserKVStorage();
-  await testUserDocumentAccessRecords();
-  await testUserFeedback();
 
-  // todo 未测试
-  await testSetFilename();
-  await testCopyfile();
+  // getInfo
+  // setAvatar
+  // setNickname
+  await testGetKVStorage();
+  // setKVStorage
+  await testSubmitFeedback();
+  // refreshToken
 
-
-  await testSetfavoriteStatus();
   console.log('测试完成');
 }
 
 // 执行测试
-runAllTests().catch(console.error); 
+runAllTests().catch(console.error);
 
 function testSetfavoriteStatus() {
   throw new Error('Function not implemented.');

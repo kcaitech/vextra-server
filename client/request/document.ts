@@ -210,7 +210,7 @@ export class DocumentAPI {
     }
 
     // 移除历史记录
-    async deleteList(params: {
+    async deleteAccessRecord(params: {
         access_record_id: string;
     }): Promise<BaseResponse> {
         return this.http.request({
@@ -359,10 +359,8 @@ export class DocumentAPI {
         })
     }
 
-
-
     //移动文件到回收站
-    async moveFile(params: {
+    async moveFileToRecycleBin(params: {
         doc_id: string;
     }): Promise<BaseResponse> {
         return this.http.request({
@@ -371,7 +369,6 @@ export class DocumentAPI {
             params: params,
         })
     }
-
 
     //获取文档权限
     async getDocumentAuthority(params: { doc_id: string }): Promise<DocumentPermission> {
