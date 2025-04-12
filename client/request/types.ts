@@ -19,3 +19,9 @@ export const UserInfoSchema = z.object({
 
 export type UserInfo = z.infer<typeof UserInfoSchema>;
 
+export enum PermType {
+  None = 0,
+  ReadOnly = 1,
+  Commentable = 2,
+  Editable = 3,
+}

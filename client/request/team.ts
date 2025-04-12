@@ -269,6 +269,24 @@ export class TeamAPI {
         this.http = http
     }
 
+    // 创建团队
+    async createTeam(params: {
+        name: string;
+        description?: string;
+    }): Promise<BaseResponse> {
+        const result = await this.http.request({
+            url: '/documents/team',
+            method: 'post',
+            data: params,
+        });
+        try {
+            return BaseResponseSchema.parse(result);
+        } catch (error) {
+            console.error('创建团队响应数据校验失败:', error);
+            throw error;
+        }
+    }
+
     // 创建项目
     async createProject(params: {
         team_id: string;
@@ -694,24 +712,6 @@ export class TeamAPI {
             return TeamListResponseSchema.parse(result);
         } catch (error) {
             console.error('团队列表数据校验失败:', error);
-            throw error;
-        }
-    }
-
-    // 创建团队
-    async createTeam(params: {
-        name: string;
-        description?: string;
-    }): Promise<BaseResponse> {
-        const result = await this.http.request({
-            url: '/documents/team',
-            method: 'post',
-            data: params,
-        });
-        try {
-            return BaseResponseSchema.parse(result);
-        } catch (error) {
-            console.error('创建团队响应数据校验失败:', error);
             throw error;
         }
     }

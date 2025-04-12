@@ -1,12 +1,14 @@
-import { DocType, PermType, ShareAPI } from '../request/share'
+import { DocType, ShareAPI } from '../request/share'
 import { HttpMgr } from '../request/http'
 import { TEST_API_URL, TEST_TOKEN, TEST_UNAUTHORIZED } from './config';
-
+import { DocumentAPI } from '../request/document';
+import { PermType } from '../request/types';
 // 创建HTTP管理器实例
 const httpManager = new HttpMgr(TEST_API_URL, TEST_UNAUTHORIZED, TEST_TOKEN);
 
 // 创建ShareAPI实例
 const shareAPI = new ShareAPI(httpManager);
+const documentAPI = new DocumentAPI(httpManager);
 
 // 测试获取分享列表
 async function testGetShareList() {
@@ -23,7 +25,7 @@ async function testGetShareList() {
 // 测试获取文档权限
 async function testGetDocumentAuthority() {
     try {
-        const response = await shareAPI.getDocumentAuthority({
+        const response = await documentAPI.getDocumentAuthority({
             doc_id: '1', // 替换为实际的文档ID
         });
         console.log('获取文档权限:', response);
@@ -35,7 +37,7 @@ async function testGetDocumentAuthority() {
 // 测试获取文档密钥
 async function testGetDocumentKey() {
     try {
-        const response = await shareAPI.getDocumentKey({
+        const response = await documentAPI.getDocumentKey({
             doc_id: '1', // 替换为实际的文档ID
         });
         console.log('获取文档密钥:', response);
@@ -47,7 +49,7 @@ async function testGetDocumentKey() {
 // 测试获取文档信息
 async function testGetDocumentInfo() {
     try {
-        const response = await shareAPI.getDocumentInfo({
+        const response = await documentAPI.getDocumentInfo({
             doc_id: '1', // 替换为实际的文档ID
         });
         console.log('获取文档信息:', response);

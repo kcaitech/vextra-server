@@ -1,5 +1,5 @@
 import { HttpMgr } from "./http"
-import { BaseResponse, BaseResponseSchema } from "./types"
+import { BaseResponse, BaseResponseSchema, PermType, UserInfoSchema } from "./types"
 import { z } from 'zod';
 
 // 文档列表响应类型
@@ -123,6 +123,97 @@ const ShareListResponseSchema = BaseResponseSchema.extend({
 })
 
 export type ShareListResponse = z.infer<typeof ShareListResponseSchema>
+
+// 文档权限类型
+export const DocumentPermissionSchema = BaseResponseSchema.extend({
+    data: z.object({
+        // document_id: z.string(),
+        // permissions: z.array(z.string()),
+        perm_type: z.nativeEnum(PermType),
+    })
+});
+
+export type DocumentPermission = z.infer<typeof DocumentPermissionSchema>;
+
+// 文档密钥类型
+export const DocumentKeySchema = z.object({
+    endpoint: z.string(),
+    region: z.string(),
+    access_key: z.string(),
+    secret_access_key: z.string(),
+    session_token: z.string(),
+    bucket_name: z.string(),
+    provider: z.string(),
+});
+
+export type DocumentKey = z.infer<typeof DocumentKeySchema>;
+
+export const DocumentKeyResponseSchema = BaseResponseSchema.extend({
+    data: DocumentKeySchema,
+});
+
+export type DocumentKeyResponse = z.infer<typeof DocumentKeyResponseSchema>;
+
+// 文档信息类型
+export const DocumentInfoSchema = z.object({
+    document: z.object({
+        id: z.string(),
+        user_id: z.string(),
+        path: z.string(),
+        doc_type: z.number(),
+        name: z.string(),
+        size: z.number(),
+        version_id: z.string(),
+        team_id: z.string().nullable(),
+        project_id: z.string().nullable(),
+        created_at: z.string(),
+        updated_at: z.string(),
+        deleted_at: z.string().nullable()
+    }),
+    team: z.object({
+        id: z.string(),
+        name: z.string()
+    }).nullable(),
+    project: z.object({
+        id: z.string(),
+        name: z.string()
+    }).nullable(),
+    document_favorites: z.object({
+        id: z.string(),
+        is_favorite: z.boolean()
+    }),
+    document_access_record: z.object({
+        id: z.string(),
+        last_access_time: z.string()
+    }),
+    document_permission: z.object({
+        id: z.string(),
+        resource_type: z.number(),
+        resource_id: z.string(),
+        grantee_type: z.number(),
+        grantee_id: z.string(),
+        perm_type: z.number(),
+        perm_source_type: z.number()
+    }),
+    shares_count: z.number(),
+    application_count: z.number(),
+    locked_info: z.object({
+        id: z.string(),
+        document_id: z.string(),
+        locked_at: z.string(),
+        locked_reason: z.string(),
+        locked_words: z.string()
+    }).nullable(),
+    user: UserInfoSchema
+});
+
+export type DocumentInfo = z.infer<typeof DocumentInfoSchema>;
+
+export const DocumentInfoResponseSchema = BaseResponseSchema.extend({
+    data: DocumentInfoSchema,
+});
+
+export type DocumentInfoResponse = z.infer<typeof DocumentInfoResponseSchema>;
 
 export class DocumentAPI {
     private http: HttpMgr
@@ -310,6 +401,52 @@ export class DocumentAPI {
             method: 'delete',
             params: params,
         })
+    }
+
+
+    //获取文档权限
+    async getDocumentAuthority(params: { doc_id: string }): Promise<DocumentPermission> {
+        const result = await this.http.request({
+            url: `/documents/permission`,
+            method: 'get',
+            params: params,
+        });
+        try {
+            return DocumentPermissionSchema.parse(result);
+        } catch (error) {
+            console.error('文档权限数据校验失败:', error);
+            throw error;
+        }
+    }
+
+    //获取文档密钥
+    async getDocumentKey(params: { doc_id: string }): Promise<DocumentKeyResponse> {
+        const result = await this.http.request({
+            url: `/documents/access_key`,
+            method: 'get',
+            params: params,
+        });
+        try {
+            return DocumentKeyResponseSchema.parse(result);
+        } catch (error) {
+            console.error('文档密钥数据校验失败:', error);
+            throw error;
+        }
+    }
+
+    //获取文档信息
+    async getDocumentInfo(params: { doc_id: string }): Promise<DocumentInfoResponse> {
+        const result = await this.http.request({
+            url: `/documents/info`,
+            method: 'get',
+            params: params,
+        });
+        try {
+            return DocumentInfoResponseSchema.parse(result);
+        } catch (error) {
+            console.error('文档信息数据校验失败:', error);
+            throw error;
+        }
     }
 
 }
