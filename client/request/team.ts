@@ -121,7 +121,7 @@ const ProjectApplyListResponseSchema = BaseResponseSchema.extend({
 })
 
 export type ProjectApplyListResponse = z.infer<typeof ProjectApplyListResponseSchema>
-
+export type ProjectApplyListItem = z.infer<typeof ProjectApplyListResponseSchema.shape.data.element>
 // 团队申请列表响应类型
 const TeamApplyListResponseSchema = BaseResponseSchema.extend({
     data: z.array(z.object({
@@ -139,6 +139,7 @@ const TeamApplyListResponseSchema = BaseResponseSchema.extend({
 })
 
 export type TeamApplyListResponse = z.infer<typeof TeamApplyListResponseSchema>
+export type TeamApplyListItem = z.infer<typeof TeamApplyListResponseSchema.shape.data.element>
 
 // 项目列表响应类型
 const TeamProjectListResponseSchema = BaseResponseSchema.extend({
@@ -241,6 +242,7 @@ const ProjectNoticeResponseSchema = BaseResponseSchema.extend({
 })
 
 export type ProjectNoticeResponse = z.infer<typeof ProjectNoticeResponseSchema>
+export type ProjectNoticeListItem = z.infer<typeof ProjectNoticeResponseSchema.shape.data.element>
 
 // 团队申请通知响应类型
 const TeamNoticeResponseSchema = BaseResponseSchema.extend({
@@ -259,7 +261,7 @@ const TeamNoticeResponseSchema = BaseResponseSchema.extend({
 })
 
 export type TeamNoticeResponse = z.infer<typeof TeamNoticeResponseSchema>
-
+export type TeamNoticeListItem = z.infer<typeof TeamNoticeResponseSchema.shape.data.element>
 export class TeamAPI {
     private http: HttpMgr
 

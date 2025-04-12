@@ -3,18 +3,18 @@ import { BaseResponseSchema, BaseResponse, UserInfoSchema } from './types';
 import { z } from 'zod';
 
 // 分享相关类型定义
-export const ShareSchema = z.object({
-    id: z.string(),
-    document_id: z.string(),
-    share_type: z.string(),
-    created_at: z.string(),
-    updated_at: z.string(),
-    permissions: z.array(z.string()),
-});
+// export const ShareSchema = z.object({
+//     id: z.string(),
+//     document_id: z.string(),
+//     share_type: z.string(),
+//     created_at: z.string(),
+//     updated_at: z.string(),
+//     permissions: z.array(z.string()),
+// });
 
-export type Share = z.infer<typeof ShareSchema>;
+// export type Share = z.infer<typeof ShareSchema>;
 
-export const DocShareListResponseSchema = BaseResponseSchema.extend({
+export const ShareListResponseSchema1 = BaseResponseSchema.extend({
     data: z.array(z.object({
         total: z.number(),
         items: z.array(z.object({
@@ -53,8 +53,47 @@ export const DocShareListResponseSchema = BaseResponseSchema.extend({
     })),
 });
 
-export type DocShareListResponse = z.infer<typeof DocShareListResponseSchema>;
+export type ShareListResponse1 = z.infer<typeof ShareListResponseSchema1>;
 
+export const ShareApplyListResponseSchema = BaseResponseSchema.extend({
+    data: z.array(z.object({
+        document: z.object({
+            id: z.string(),
+            user_id: z.string(),
+            path: z.string(),
+            doc_type: z.number(),
+            name: z.string(),
+            size: z.number(),
+            version_id: z.string(),
+            team_id: z.string().nullable(),
+            project_id: z.string().nullable(),
+            created_at: z.string(),
+            updated_at: z.string(),
+            deleted_at: z.string().nullable()
+        }),
+        team: z.object({
+            id: z.string(),
+            name: z.string()
+        }).nullable(),
+        project: z.object({
+            id: z.string(),
+            name: z.string()
+        }).nullable(),
+        apply: z.object({
+            id: z.string(),
+            user_id: z.string(),
+            document_id: z.string(),
+            perm_type: z.number(),
+            status: z.number(),
+            created_at: z.string(),
+            updated_at: z.string(),
+            first_displayed_at: z.string().nullable()
+        })
+    }))
+});
+
+export type ShareApplyListResponse = z.infer<typeof ShareApplyListResponseSchema>;
+export type ShareApplyListItem = z.infer<typeof ShareApplyListResponseSchema.shape.data.element>;
 
 export enum PermType {
     None = 0,
@@ -188,14 +227,14 @@ export class ShareAPI {
     }
 
     //获取分享列表
-    async getShareList(params: { doc_id: string }): Promise<DocShareListResponse> {
+    async getShareList(params: { doc_id: string }): Promise<ShareListResponse1> {
         const result = await this.http.request({
             url: `/documents/shares/all`,
             method: 'get',
             params: params,
         });
         try {
-            return DocShareListResponseSchema.parse(result);
+            return ShareListResponseSchema1.parse(result);
         } catch (error) {
             console.error('分享列表数据校验失败:', error);
             throw error;
@@ -308,14 +347,14 @@ export class ShareAPI {
     }
 
     // 获取申请列表
-    async getApplyList(params: { start_time?: number, page?: number; page_size?: number }): Promise<DocShareListResponse> {
+    async getApplyList(params: { start_time?: number, page?: number; page_size?: number }): Promise<ShareApplyListResponse> {
         const result = await this.http.request({
             url: `/documents/shares/apply`,
             method: 'get',
             params: params,
         });
         try {
-            return DocShareListResponseSchema.parse(result);
+            return ShareApplyListResponseSchema.parse(result);
         } catch (error) {
             console.error('申请列表数据校验失败:', error);
             throw error;

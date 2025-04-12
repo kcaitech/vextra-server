@@ -19,19 +19,3 @@ export const UserInfoSchema = z.object({
 
 export type UserInfo = z.infer<typeof UserInfoSchema>;
 
-// 文档类型
-// export const DocumentSchema = z.object({
-//   id: z.string(),
-//   name: z.string(),
-//   type: z.string(),
-//   created_at: z.string(),
-//   updated_at: z.string(),
-//   size: z.number(),
-//   owner_id: z.string(),
-//   parent_id: z.string().optional(),
-//   is_favorite: z.boolean(),
-//   is_deleted: z.boolean(),
-// });
-
-// export type Document = z.infer<typeof DocumentSchema>;
-
