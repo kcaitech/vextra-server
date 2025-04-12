@@ -4,7 +4,7 @@
 middlewares，鉴权中间件等
 api，对外服务api
 config，服务相关配置
-controllers，业务代码
+handlers，业务代码
 
 ### config
 - `server.port`：服务监听的端口

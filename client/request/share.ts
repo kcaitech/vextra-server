@@ -1,5 +1,5 @@
 import { HttpMgr } from './http'
-import { BaseResponseSchema, BaseResponse, DocumentListResponseSchema, DocumentListResponse, UserInfoSchema } from './types';
+import { BaseResponseSchema, BaseResponse, UserInfoSchema } from './types';
 import { z } from 'zod';
 
 // 分享相关类型定义
@@ -55,15 +55,6 @@ export const DocShareListResponseSchema = BaseResponseSchema.extend({
 
 export type DocShareListResponse = z.infer<typeof DocShareListResponseSchema>;
 
-
-// type PermType uint8
-
-// const (
-// 	PermTypeNone        PermType = iota // 无权限
-// 	PermTypeReadOnly                    // 只读
-// 	PermTypeCommentable                 // 可评论
-// 	PermTypeEditable                    // 可编辑
-// )
 
 export enum PermType {
     None = 0,
@@ -143,18 +134,6 @@ export const DocumentInfoSchema = z.object({
         perm_type: z.number(),
         perm_source_type: z.number()
     }),
-    // apply_list: z.array(z.object({
-    //     id: z.string(),
-    //     user_id: z.string(),
-    //     document_id: z.string(),
-    //     perm_type: z.number(),
-    //     status: z.number(),
-    //     first_displayed_at: z.string().nullable(),
-    //     processed_at: z.string().nullable(),
-    //     processed_by: z.string().nullable(),
-    //     applicant_notes: z.string().nullable(),
-    //     processor_notes: z.string().nullable()
-    // })),
     shares_count: z.number(),
     application_count: z.number(),
     locked_info: z.object({
@@ -209,7 +188,7 @@ export class ShareAPI {
     }
 
     //获取分享列表
-    async getShareListAPI(params: { doc_id: string }): Promise<DocShareListResponse> {
+    async getShareList(params: { doc_id: string }): Promise<DocShareListResponse> {
         const result = await this.http.request({
             url: `/documents/shares/all`,
             method: 'get',
@@ -223,22 +202,8 @@ export class ShareAPI {
         }
     }
 
-    //获取文档列表
-    async getDoucmentListAPI(): Promise<DocumentListResponse> {
-        const result = await this.http.request({
-            url: '/documents/',
-            method: 'get'
-        });
-        try {
-            return DocumentListResponseSchema.parse(result);
-        } catch (error) {
-            console.error('文档列表数据校验失败:', error);
-            throw error;
-        }
-    }
-
     //获取文档权限
-    async getDocumentAuthorityAPI(params: { doc_id: string }): Promise<DocumentPermission> {
+    async getDocumentAuthority(params: { doc_id: string }): Promise<DocumentPermission> {
         const result = await this.http.request({
             url: `/documents/permission`,
             method: 'get',
@@ -253,7 +218,7 @@ export class ShareAPI {
     }
 
     //获取文档密钥
-    async getDocumentKeyAPI(params: { doc_id: string }): Promise<DocumentKeyResponse> {
+    async getDocumentKey(params: { doc_id: string }): Promise<DocumentKeyResponse> {
         const result = await this.http.request({
             url: `/documents/access_key`,
             method: 'get',
@@ -268,7 +233,7 @@ export class ShareAPI {
     }
 
     //获取文档信息
-    async getDocumentInfoAPI(params: { doc_id: string }): Promise<DocumentInfoResponse> {
+    async getDocumentInfo(params: { doc_id: string }): Promise<DocumentInfoResponse> {
         const result = await this.http.request({
             url: `/documents/info`,
             method: 'get',
@@ -283,7 +248,7 @@ export class ShareAPI {
     }
 
     //设置分享类型
-    async setShateTypeAPI(params: { doc_id: string; doc_type: DocType }): Promise<BaseResponse> {
+    async setShateType(params: { doc_id: string; doc_type: DocType }): Promise<BaseResponse> {
         const result = await this.http.request({
             url: '/documents/shares/set',
             method: 'put',
@@ -298,7 +263,7 @@ export class ShareAPI {
     }
 
     //修改分享权限
-    async putShareAuthorityAPI(params: { share_id: string; perm_type: PermType }): Promise<BaseResponse> {
+    async putShareAuthority(params: { share_id: string; perm_type: PermType }): Promise<BaseResponse> {
         const result = await this.http.request({
             url: '/documents/shares',
             method: 'put',
@@ -313,7 +278,7 @@ export class ShareAPI {
     }
 
     //移除分享权限
-    async delShareAuthorityAPI(params: { share_id: string }): Promise<BaseResponse> {
+    async delShareAuthority(params: { share_id: string }): Promise<BaseResponse> {
         const result = await this.http.request({
             url: `/documents/shares`,
             method: 'delete',
@@ -328,7 +293,7 @@ export class ShareAPI {
     }
 
     // 申请文档权限
-    async postDocumentAuthorityAPI(params: ShareApply): Promise<BaseResponse> {
+    async postDocumentAuthority(params: ShareApply): Promise<BaseResponse> {
         const result = await this.http.request({
             url: '/documents/shares/apply',
             method: 'post',
@@ -343,7 +308,7 @@ export class ShareAPI {
     }
 
     // 获取申请列表
-    async getApplyListAPI(params: { start_time?: number, page?: number; page_size?: number }): Promise<DocShareListResponse> {
+    async getApplyList(params: { start_time?: number, page?: number; page_size?: number }): Promise<DocShareListResponse> {
         const result = await this.http.request({
             url: `/documents/shares/apply`,
             method: 'get',
@@ -358,7 +323,7 @@ export class ShareAPI {
     }
 
     // 权限申请审核
-    async promissionApplyAuditAPI(params: ShareApplyAudit): Promise<BaseResponse> {
+    async permissionApplyAudit(params: ShareApplyAudit): Promise<BaseResponse> {
         const result = await this.http.request({
             url: '/documents/shares/apply/audit',
             method: 'post',
@@ -371,4 +336,16 @@ export class ShareAPI {
             throw error;
         }
     }
+
+    //退出共享
+    async exitSharing(params: {
+        share_id: string;
+    }): Promise<BaseResponse> {
+        return this.http.request({
+            url: 'documents/share',
+            method: 'delete',
+            params: params,
+        })
+    }
+
 }

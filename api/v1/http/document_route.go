@@ -3,7 +3,7 @@ package http
 import (
 	"github.com/gin-gonic/gin"
 
-	controllers "kcaitech.com/kcserver/controllers/document"
+	controllers "kcaitech.com/kcserver/handlers/document"
 )
 
 func loadDocumentRoutes(api *gin.RouterGroup) {

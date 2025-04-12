@@ -6,7 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"kcaitech.com/kcserver/common/response"
 	"kcaitech.com/kcserver/services"
-	// controllers "kcaitech.com/kcserver/controllers/auth"
+	// controllers "kcaitech.com/kcserver/handlers/auth"
 )
 
 func loadLoginRoutes(api *gin.RouterGroup) {

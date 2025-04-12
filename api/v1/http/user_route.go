@@ -13,7 +13,7 @@ import (
 
 	// "kcaitech.com/kcserver/common"
 	// . "kcaitech.com/kcserver/common/gin/reverse_proxy"
-	controllers "kcaitech.com/kcserver/controllers/user"
+	controllers "kcaitech.com/kcserver/handlers/user"
 )
 
 func loadUserRoutes(api *gin.RouterGroup) {

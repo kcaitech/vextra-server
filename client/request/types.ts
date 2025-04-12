@@ -20,33 +20,18 @@ export const UserInfoSchema = z.object({
 export type UserInfo = z.infer<typeof UserInfoSchema>;
 
 // 文档类型
-export const DocumentSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  type: z.string(),
-  created_at: z.string(),
-  updated_at: z.string(),
-  size: z.number(),
-  owner_id: z.string(),
-  parent_id: z.string().optional(),
-  is_favorite: z.boolean(),
-  is_deleted: z.boolean(),
-});
+// export const DocumentSchema = z.object({
+//   id: z.string(),
+//   name: z.string(),
+//   type: z.string(),
+//   created_at: z.string(),
+//   updated_at: z.string(),
+//   size: z.number(),
+//   owner_id: z.string(),
+//   parent_id: z.string().optional(),
+//   is_favorite: z.boolean(),
+//   is_deleted: z.boolean(),
+// });
 
-export type Document = z.infer<typeof DocumentSchema>;
+// export type Document = z.infer<typeof DocumentSchema>;
 
-// 文档列表响应类型
-export const DocumentListResponseSchema = BaseResponseSchema.extend({
-  data: z.object({
-    total: z.number(),
-    items: z.array(DocumentSchema),
-  }),
-});
-
-export type DocumentListResponse = z.infer<typeof DocumentListResponseSchema>;
-
-const KVSSchema = z.object({
-  key: z.enum(['Preferences', 'FontList']),
-  value: z.union([z.string(), z.object({})]).optional()
-})
-export type KVS = z.infer<typeof KVSSchema>

@@ -11,7 +11,7 @@ const shareAPI = new ShareAPI(httpManager);
 // 测试获取分享列表
 async function testGetShareList() {
     try {
-        const response = await shareAPI.getShareListAPI({
+        const response = await shareAPI.getShareList({
             doc_id: '1'
         });
         console.log('获取分享列表:', response);
@@ -23,7 +23,7 @@ async function testGetShareList() {
 // 测试获取文档权限
 async function testGetDocumentAuthority() {
     try {
-        const response = await shareAPI.getDocumentAuthorityAPI({
+        const response = await shareAPI.getDocumentAuthority({
             doc_id: '1', // 替换为实际的文档ID
         });
         console.log('获取文档权限:', response);
@@ -35,7 +35,7 @@ async function testGetDocumentAuthority() {
 // 测试获取文档密钥
 async function testGetDocumentKey() {
     try {
-        const response = await shareAPI.getDocumentKeyAPI({
+        const response = await shareAPI.getDocumentKey({
             doc_id: '1', // 替换为实际的文档ID
         });
         console.log('获取文档密钥:', response);
@@ -47,7 +47,7 @@ async function testGetDocumentKey() {
 // 测试获取文档信息
 async function testGetDocumentInfo() {
     try {
-        const response = await shareAPI.getDocumentInfoAPI({
+        const response = await shareAPI.getDocumentInfo({
             doc_id: '1', // 替换为实际的文档ID
         });
         console.log('获取文档信息:', response);
@@ -59,7 +59,7 @@ async function testGetDocumentInfo() {
 // 测试设置分享类型
 async function testSetShareType() {
     try {
-        const response = await shareAPI.setShateTypeAPI({
+        const response = await shareAPI.setShateType({
             doc_id: '1', // 替换为实际的文档ID
             doc_type: DocType.PublicCommentable, // public表示公开分享
         });
@@ -72,7 +72,7 @@ async function testSetShareType() {
 // 测试更新分享权限
 async function testPutShareAuthority() {
     try {
-        const response = await shareAPI.putShareAuthorityAPI({
+        const response = await shareAPI.putShareAuthority({
             share_id: '1', // 替换为实际的分享ID
             perm_type: PermType.ReadOnly, // 只读权限
         });
@@ -85,7 +85,7 @@ async function testPutShareAuthority() {
 // 测试删除分享权限
 async function testDelShareAuthority() {
     try {
-        const response = await shareAPI.delShareAuthorityAPI({
+        const response = await shareAPI.delShareAuthority({
             share_id: '1', // 替换为实际的文档ID
         });
         console.log('删除分享权限:', response);
@@ -97,7 +97,7 @@ async function testDelShareAuthority() {
 // 测试申请文档权限
 async function testPostDocumentAuthority() {
     try {
-        const response = await shareAPI.postDocumentAuthorityAPI({
+        const response = await shareAPI.postDocumentAuthority({
             doc_id: '2', // 替换为实际的文档ID
             perm_type: PermType.Commentable, // 申请只读权限
             applicant_notes: '需要查看文档内容',
@@ -111,7 +111,7 @@ async function testPostDocumentAuthority() {
 // 测试获取申请列表
 async function testGetApplyList() {
     try {
-        const response = await shareAPI.getApplyListAPI({
+        const response = await shareAPI.getApplyList({
             page: 1,
             page_size: 10,
         });
@@ -124,7 +124,7 @@ async function testGetApplyList() {
 // 测试权限申请审核
 async function testPromissionApplyAudit() {
     try {
-        const response = await shareAPI.promissionApplyAuditAPI({
+        const response = await shareAPI.permissionApplyAudit({
             apply_id: '1', // 替换为实际的申请ID
             approval_code: 1, // 通过申请
         });

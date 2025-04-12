@@ -2,7 +2,7 @@ package http
 
 import (
 	"github.com/gin-gonic/gin"
-	communication "kcaitech.com/kcserver/controllers/ws"
+	communication "kcaitech.com/kcserver/handlers/ws"
 )
 
 func loadApiGatewayRoutes(api *gin.RouterGroup) {

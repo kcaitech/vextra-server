@@ -6,7 +6,7 @@ import (
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/contrib/gzip"
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/controllers"
+	controllers "kcaitech.com/kcserver/handlers"
 	"kcaitech.com/kcserver/middlewares"
 	"kcaitech.com/kcserver/services"
 )

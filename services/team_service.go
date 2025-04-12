@@ -149,12 +149,12 @@ func (s *TeamService) GetTeamPermTypeByForUser(teamId string, userId string) (*m
 // }
 
 type TeamQueryResItem struct {
-	Team              models.Team         `gorm:"embedded;embeddedPrefix:t__" json:"team" table:"t"`
-	SelfTeamMember    models.TeamMember   `gorm:"embedded;embeddedPrefix:tm__" json:"-" join:"team_member,tm;inner;team_id,id"`
-	SelfUser          string              `gorm:"embedded;embeddedPrefix:u__" json:"-" join:"user,u;inner;id,tm.user_id"`
-	CreatorTeamMember models.TeamMember   `gorm:"embedded;embeddedPrefix:tm1__" json:"-" join:"team_member,tm1;inner;team_id,id;perm_type,?creator_perm_type"`
-	CreatorUser       string              `gorm:"embedded;embeddedPrefix:u1__" json:"creator" join:"user,u1;inner;id,tm1.user_id"`
-	SelfPermType      models.TeamPermType `gorm:"-" json:"self_perm_type"`
+	Team           models.Team       `gorm:"embedded;embeddedPrefix:t__" json:"team" table:"t"`
+	SelfTeamMember models.TeamMember `gorm:"embedded;embeddedPrefix:tm__" json:"-" join:"team_member,tm;inner;team_id,id"`
+	// SelfUser          string              `gorm:"embedded;embeddedPrefix:u__" json:"-" join:"user,u;inner;id,tm.user_id"`
+	CreatorTeamMember models.TeamMember `gorm:"embedded;embeddedPrefix:tm1__" json:"-" join:"team_member,tm1;inner;team_id,id;perm_type,?creator_perm_type"`
+	// CreatorUser       string              `gorm:"embedded;embeddedPrefix:u1__" json:"creator" join:"user,u1;inner;id,tm1.user_id"`
+	SelfPermType models.TeamPermType `gorm:"-" json:"self_perm_type"`
 }
 
 // FindTeamByUserId 查询某个用户所在的所有团队列表

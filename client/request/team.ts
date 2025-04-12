@@ -1,5 +1,5 @@
 import { HttpMgr } from './http'
-import { BaseResponseSchema, BaseResponse } from './types'
+import { BaseResponseSchema, BaseResponse, UserInfoSchema } from './types'
 import { z } from 'zod'
 
 // 团队权限类型枚举
@@ -24,7 +24,7 @@ const TeamSchema = z.object({
         created_at: z.string(),
         updated_at: z.string()
     }),
-    creator: z.string(),
+    creator: UserInfoSchema,
     self_perm_type: z.nativeEnum(TeamPermType)
 })
 
@@ -43,20 +43,11 @@ const TeamMemberSchema = z.object({
 
 export type TeamMember = z.infer<typeof TeamMemberSchema>
 
-// 用户信息模型
-const UserSchema = z.object({
-    id: z.string(),
-    nickname: z.string(),
-    avatar: z.string()
-})
-
-export type User = z.infer<typeof UserSchema>
-
 // 团队成员带用户信息模型
 const TeamMemberWithUserSchema = z.object({
     team: TeamSchema,
     team_member: TeamMemberSchema,
-    user: UserSchema
+    user: UserInfoSchema
 })
 
 export type TeamMemberWithUser = z.infer<typeof TeamMemberWithUserSchema>
@@ -164,7 +155,7 @@ const TeamProjectListResponseSchema = BaseResponseSchema.extend({
             created_at: z.string(),
             updated_at: z.string()
         }),
-        creator: z.string(),
+        creator: UserInfoSchema,
         creator_team_nickname: z.string().optional(),
         self_perm_type: z.nativeEnum(TeamPermType),
         is_in_team: z.boolean(),
@@ -173,7 +164,7 @@ const TeamProjectListResponseSchema = BaseResponseSchema.extend({
 })
 
 export type TeamProjectListResponse = z.infer<typeof TeamProjectListResponseSchema>
-
+export type TeamProjectListItem = z.infer<typeof TeamProjectListResponseSchema.shape.data.element>
 // 项目成员列表响应类型
 const ProjectMemberListResponseSchema = BaseResponseSchema.extend({
     data: z.array(z.object({
@@ -206,53 +197,6 @@ const ProjectMemberListResponseSchema = BaseResponseSchema.extend({
 
 export type ProjectMemberListResponse = z.infer<typeof ProjectMemberListResponseSchema>
 export type ProjectMemberListResponseData = z.infer<typeof ProjectMemberListResponseSchema.shape.data>
-// 文档列表响应类型
-const DocumentListResponseSchema = BaseResponseSchema.extend({
-    data: z.array(z.object({
-        document: z.object({
-            id: z.string(),
-            user_id: z.string(),
-            path: z.string(),
-            doc_type: z.number(),
-            name: z.string(),
-            size: z.number(),
-            version_id: z.string(),
-            team_id: z.string().nullable(),
-            project_id: z.string().nullable(),
-            created_at: z.string(),
-            updated_at: z.string(),
-            deleted_at: z.string().nullable()
-        }),
-        team: z.object({
-            id: z.string(),
-            name: z.string(),
-            description: z.string().optional(),
-            avatar: z.string().optional()
-        }).nullable(),
-        project: z.object({
-            id: z.string(),
-            name: z.string(),
-            description: z.string().optional()
-        }).nullable(),
-        document_favorites: z.object({
-            id: z.string(),
-            user_id: z.string(),
-            document_id: z.string(),
-            created_at: z.string(),
-            updated_at: z.string()
-        }).nullable(),
-        document_access_record: z.object({
-            id: z.string(),
-            user_id: z.string(),
-            document_id: z.string(),
-            last_access_time: z.string(),
-            created_at: z.string(),
-            updated_at: z.string()
-        }).nullable()
-    }))
-})
-
-export type DocumentListResponse = z.infer<typeof DocumentListResponseSchema>
 
 // 项目收藏列表响应类型
 const ProjectFavoriteListResponseSchema = BaseResponseSchema.extend({
@@ -324,7 +268,7 @@ export class TeamAPI {
     }
 
     // 创建项目
-    async CreateProject(params: {
+    async createProject(params: {
         team_id: string;
         name: string;
         description?: string;
@@ -343,7 +287,7 @@ export class TeamAPI {
     }
 
     //获取项目申请列表
-    async getTeamProjectApplyAPI(params: {
+    async getTeamProjectApply(params: {
         team_id?: string;
         project_id?: string;
         status?: number;
@@ -365,7 +309,7 @@ export class TeamAPI {
     }
 
     //项目加入审核
-    async postTeamProjectAuditAPI(params: {
+    async postTeamProjectAudit(params: {
         apply_id: string;
         approval_code: number;
     }): Promise<BaseResponse> {
@@ -383,7 +327,7 @@ export class TeamAPI {
     }
 
     //获取团队申请列表
-    async getTeamApplyAPI(params: {
+    async getTeamApply(params: {
         team_id?: string;
         status?: number;
         page?: number;
@@ -404,7 +348,7 @@ export class TeamAPI {
     }
 
     //团队加入审核
-    async postTeamAuditAPI(params: {
+    async postTeamAudit(params: {
         apply_id: string;
         approval_code: number;
     }): Promise<BaseResponse> {
@@ -421,48 +365,8 @@ export class TeamAPI {
         }
     }
 
-    //获取项目文件列表
-    async getDoucmentListAPI(params: {
-        team_id?: string;
-        project_id?: string;
-        page?: number;
-        page_size?: number;
-    }): Promise<DocumentListResponse> {
-        const result = await this.http.request({
-            url: '/documents/',
-            method: 'get',
-            params: params,
-        });
-        try {
-            return DocumentListResponseSchema.parse(result);
-        } catch (error) {
-            console.error('项目文件列表数据校验失败:', error);
-            throw error;
-        }
-    }
-
-    //获取项目回收站列表
-    async GetrecycleList(params: {
-        team_id?: string;
-        project_id?: string;
-        page?: number;
-        page_size?: number;
-    }): Promise<DocumentListResponse> {
-        const result = await this.http.request({
-            url: 'documents/recycle_bin',
-            method: 'get',
-            params: params,
-        });
-        try {
-            return DocumentListResponseSchema.parse(result);
-        } catch (error) {
-            console.error('项目回收站列表数据校验失败:', error);
-            throw error;
-        }
-    }
-
     //获取项目收藏列表
-    async getProjectFavoriteListsAPI(params: {
+    async getProjectFavoriteLists(params: {
         team_id?: string;
         page?: number;
         page_size?: number;
@@ -481,7 +385,7 @@ export class TeamAPI {
     }
 
     //是否收藏
-    async setProjectIsFavoriteAPI(params: {
+    async setProjectIsFavorite(params: {
         project_id: string;
         is_favor: boolean;
     }): Promise<BaseResponse> {
@@ -499,7 +403,7 @@ export class TeamAPI {
     }
 
     //设置项目信息
-    async setProjectInfoAPI(params: {
+    async setProjectInfo(params: {
         project_id: string;
         name?: string;
         description?: string;
@@ -518,7 +422,7 @@ export class TeamAPI {
     }
 
     //设置项目邀请信息
-    async setProjectInvitedInfoAPI(params: {
+    async setProjectInvitedInfo(params: {
         project_id: string;
         invited_perm_type?: number;
         invited_switch?: boolean;
@@ -537,7 +441,7 @@ export class TeamAPI {
     }
 
     // 获取项目邀请信息
-    async getProjectInvitedInfoAPI(params: {
+    async getProjectInvitedInfo(params: {
         project_id: string;
     }): Promise<ProjectInvitedInfoResponse> {
         const result = await this.http.request({
@@ -554,7 +458,7 @@ export class TeamAPI {
     }
 
     //申请加入项目
-    async applyJoinProjectAPI(params: {
+    async applyJoinProject(params: {
         project_id: string;
         applicant_notes?: string;
     }): Promise<BaseResponse> {
@@ -572,7 +476,7 @@ export class TeamAPI {
     }
 
     //获取项目列表
-    async GetProjectLists(params: {
+    async getProjectLists(params: {
         team_id?: string;
         page?: number;
         page_size?: number;
@@ -591,7 +495,7 @@ export class TeamAPI {
     }
 
     //获取项目成员列表
-    async getProjectMemberListAPI(params: {
+    async getProjectMemberList(params: {
         project_id: string;
         page?: number;
         page_size?: number;
@@ -610,7 +514,7 @@ export class TeamAPI {
     }
 
     //退出项目
-    async exitProjectAPI(params: {
+    async exitProject(params: {
         project_id: string;
     }): Promise<BaseResponse> {
         const result = await this.http.request({
@@ -627,7 +531,7 @@ export class TeamAPI {
     }
 
     //设置项目成员权限
-    async setProjectmemberPermAPI(params: {
+    async setProjectMemberPerm(params: {
         project_id: string;
         user_id: string;
         perm_type: number;
@@ -646,7 +550,7 @@ export class TeamAPI {
     }
 
     //将成员移出项目组
-    async delProjectmemberAPI(params: {
+    async delProjectMember(params: {
         project_id: string;
         user_id: string;
     }): Promise<BaseResponse> {
@@ -664,7 +568,7 @@ export class TeamAPI {
     }
 
     //转让项目创建者
-    async transferProjectCreatorAPI(params: {
+    async transferProjectCreator(params: {
         project_id: string;
         user_id: string;
     }): Promise<BaseResponse> {
@@ -682,7 +586,7 @@ export class TeamAPI {
     }
 
     //删除项目
-    async delProjectAPI(params: {
+    async delProject(params: {
         project_id: string;
     }): Promise<BaseResponse> {
         const result = await this.http.request({
@@ -699,7 +603,7 @@ export class TeamAPI {
     }
 
     //移动文档
-    async moveDocumentAPI(params: {
+    async moveDocument(params: {
         document_id: string;
         target_team_id?: string;
         target_project_id?: string;
@@ -718,7 +622,7 @@ export class TeamAPI {
     }
 
     // 获取项目的申请通知信息
-    async getProjectNoticeAPI(params: {
+    async getProjectNotice(params: {
         team_id?: string;
         page?: number;
         page_size?: number;
@@ -737,7 +641,7 @@ export class TeamAPI {
     }
 
     //获取团队的申请通知信息
-    async getTeamNoticeAPI(params: {
+    async getTeamNotice(params: {
         team_id?: string;
         page?: number;
         page_size?: number;
@@ -756,7 +660,7 @@ export class TeamAPI {
     }
 
     //设置团队成员昵称
-    async setTeamMemberNicknameAPI(params: {
+    async setTeamMemberNickname(params: {
         team_id: string;
         user_id: string;
         nickname: string;
@@ -829,23 +733,6 @@ export class TeamAPI {
         }
     }
 
-    // 获取团队信息
-    // async getTeamInfo(params: {
-    //     team_id: string;
-    // }): Promise<TeamInfoResponse> {
-    //     const result = await this.http.request({
-    //         url: '/documents/team/info',
-    //         method: 'get',
-    //         params,
-    //     });
-    //     try {
-    //         return TeamInfoResponseSchema.parse(result);
-    //     } catch (error) {
-    //         console.error('团队信息数据校验失败:', error);
-    //         throw error;
-    //     }
-    // }
-
     // 设置团队信息
     async setTeamInfo(params: {
         team_id: string;
@@ -878,7 +765,7 @@ export class TeamAPI {
     }
 
     //设置团队邀请选项
-    async Setteaminviteinfo(params: {
+    async setTeamInviteInfo(params: {
         team_id: string;
         open_invite?: boolean;
         invited_perm_type?: number;
@@ -890,21 +777,8 @@ export class TeamAPI {
         })
     }
 
-    //设置团队成员权限
-    async Setteammemberperm(params: {
-        team_id: string;
-        user_id: string;
-        perm_type: number;
-    }): Promise<BaseResponse> {
-        return this.http.request({
-            url: '/documents/team/member/perm',
-            method: 'put',
-            data: params,
-        })
-    }
-
     //转移团队创建者
-    async Setteamcreator(params: {
+    async setTeamCreator(params: {
         team_id: string;
         user_id: string;
     }): Promise<BaseResponse> {
@@ -916,7 +790,7 @@ export class TeamAPI {
     }
 
     //获取团队信息
-    async Getteaminfo(params: {
+    async getTeamInfo(params: {
         team_id: string;
     }): Promise<BaseResponse> {
         return this.http.request({
@@ -927,7 +801,7 @@ export class TeamAPI {
     }
 
     //申请加入团队
-    async JoinTeam(params: {
+    async joinTeam(params: {
         team_id: string;
         applicant_notes?: string
     }): Promise<BaseResponse> {
@@ -939,7 +813,7 @@ export class TeamAPI {
     }
 
     //获取申请列表
-    async Getjoinlist(params: {
+    async getJoinList(params: {
         team_id: string;
         page?: number;
         page_size?: number;
@@ -951,19 +825,8 @@ export class TeamAPI {
         })
     }
 
-    //退出团队
-    async Leaveteam(params: {
-        team_id: string;
-    }): Promise<BaseResponse> {
-        return this.http.request({
-            url: '/documents/team/leave',
-            method: 'post',
-            data: params,
-        })
-    }
-
     //删除团队成员
-    async Deletteamemember(params: {
+    async deletTeamMember(params: {
         team_id: string;
         user_id: string;
     }): Promise<BaseResponse> {
@@ -974,17 +837,6 @@ export class TeamAPI {
         })
     }
 
-    //解散团队
-    async Disbandteam(params: {
-        team_id: string;
-    }): Promise<BaseResponse> {
-        return this.http.request({
-            url: '/documents/team',
-            method: 'delete',
-            params: params,
-        })
-    }
-    
     // 设置团队成员权限
     async setTeamMemberPermission(params: {
         team_id: string;
@@ -1000,25 +852,6 @@ export class TeamAPI {
             return BaseResponseSchema.parse(result);
         } catch (error) {
             console.error('设置团队成员权限响应数据校验失败:', error);
-            throw error;
-        }
-    }
-
-    // 设置团队成员昵称
-    async setTeamMemberNickname(params: {
-        team_id: string;
-        user_id: string;
-        nickname: string;
-    }): Promise<BaseResponse> {
-        const result = await this.http.request({
-            url: '/documents/team/member/nickname',
-            method: 'put',
-            data: params,
-        });
-        try {
-            return BaseResponseSchema.parse(result);
-        } catch (error) {
-            console.error('设置团队成员昵称响应数据校验失败:', error);
             throw error;
         }
     }

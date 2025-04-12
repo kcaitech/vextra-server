@@ -116,7 +116,7 @@ export class CommentAPI {
     }
 
     //获取文档评论
-    async getDocumentCommentAPI(params: {
+    async getDocumentComment(params: {
         doc_id: string,
         page_id?: string,
         target_shape_id?: string,
@@ -139,7 +139,7 @@ export class CommentAPI {
     }
 
     // 创建评论
-    async createCommentAPI(params: CreateComment): Promise<SingleCommentResponse> {
+    async createComment(params: CreateComment): Promise<SingleCommentResponse> {
         const validatedParams = CreateCommentSchema.parse(params);
         const result = await this.http.request({
             url: `/documents/comment`,
@@ -155,7 +155,7 @@ export class CommentAPI {
     }
 
     //设置评论状态
-    async setCommentStatusAPI(params: SetCommentStatus): Promise<SingleCommentResponse> {
+    async setCommentStatus(params: SetCommentStatus): Promise<SingleCommentResponse> {
         const validatedParams = SetCommentStatusSchema.parse(params);
         const result = await this.http.request({
             url: `/documents/comment/status`,
@@ -172,7 +172,7 @@ export class CommentAPI {
     }
 
     //编辑评论
-    async editCommentAPI(params: CommentCommon): Promise<SingleCommentResponse> {
+    async editComment(params: CommentCommon): Promise<SingleCommentResponse> {
         const validatedParams = CommentCommonSchema.parse(params);
         const result = await this.http.request({
             url: `/documents/comment`,
@@ -188,7 +188,7 @@ export class CommentAPI {
     }
 
     //删除评论
-    async deleteCommentAPI(params: { comment_id: string, doc_id: string }): Promise<BaseResponse> {
+    async deleteComment(params: { comment_id: string, doc_id: string }): Promise<BaseResponse> {
         const result = await this.http.request({
             url: `/documents/comment`,
             method: 'delete',

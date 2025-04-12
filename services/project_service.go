@@ -141,14 +141,14 @@ func (s *ProjectService) GetProjectPermTypeByForUser(projectId string, userId st
 }
 
 type ProjectQuery struct {
-	Project              models.Project         `gorm:"embedded;embeddedPrefix:p__" json:"project" table:"p"`
-	CreatorProjectMember models.ProjectMember   `gorm:"embedded;embeddedPrefix:pm__" json:"-" join:"project_member,pm;inner;project_id,id;perm_type,?creator_perm_type"`
-	CreatorUser          string                 `gorm:"embedded;embeddedPrefix:u__" json:"creator"`
-	CreatorTeamMember    models.TeamMember      `gorm:"embedded;embeddedPrefix:ctm__" json:"-" join:"team_member,ctm;left;team_id;user_id,pm.user_id"`
-	CreatorTeamNickname  string                 `gorm:"-" json:"creator_team_nickname"`
-	SelfPermType         models.ProjectPermType `gorm:"-" json:"self_perm_type"`
-	IsInTeam             bool                   `gorm:"-" json:"is_in_team"`
-	IsInvited            bool                   `gorm:"-" json:"is_invited"`
+	Project              models.Project       `gorm:"embedded;embeddedPrefix:p__" json:"project" table:"p"`
+	CreatorProjectMember models.ProjectMember `gorm:"embedded;embeddedPrefix:pm__" json:"-" join:"project_member,pm;inner;project_id,id;perm_type,?creator_perm_type"`
+	// CreatorUser          string                 `gorm:"embedded;embeddedPrefix:u__" json:"creator"`
+	CreatorTeamMember   models.TeamMember      `gorm:"embedded;embeddedPrefix:ctm__" json:"-" join:"team_member,ctm;left;team_id;user_id,pm.user_id"`
+	CreatorTeamNickname string                 `gorm:"-" json:"creator_team_nickname"`
+	SelfPermType        models.ProjectPermType `gorm:"-" json:"self_perm_type"`
+	IsInTeam            bool                   `gorm:"-" json:"is_in_team"`
+	IsInvited           bool                   `gorm:"-" json:"is_invited"`
 }
 
 type SelfProjectQuery struct { // 通过邀请进入的项目

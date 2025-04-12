@@ -155,7 +155,7 @@ async function runAllTests() {
   
   await testExitTeam();
   await testDeleteTeam();
-  await testGetDoucmentListAPI();
+  // await testGetDoucmentListAPI();
   
   console.log('测试完成');
 }
@@ -163,13 +163,13 @@ async function runAllTests() {
 // 执行测试
 runAllTests().catch(console.error); 
 
-async function testGetDoucmentListAPI() {
-  try {
-    const response = await teamAPI.getDoucmentListAPI({
-      team_id: '3', // 替换为实际的团队ID
-    });
-    console.log('获取文档列表:', response);
-  } catch (error) {
-    console.error('获取文档列表失败:', error);
-  }
-}
+// async function testGetDoucmentListAPI() {
+//   try {
+//     const response = await teamAPI.getDoucmentListAPI({
+//       team_id: '3', // 替换为实际的团队ID
+//     });
+//     console.log('获取文档列表:', response);
+//   } catch (error) {
+//     console.error('获取文档列表失败:', error);
+//   }
+// }
