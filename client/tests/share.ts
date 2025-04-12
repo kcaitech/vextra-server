@@ -13,7 +13,7 @@ const documentAPI = new DocumentAPI(httpManager);
 // 测试获取分享列表
 async function testGetShareList() {
     try {
-        const response = await shareAPI.getShareList({
+        const response = await shareAPI.getShareGranteesList({
             doc_id: '1'
         });
         console.log('获取分享列表:', response);

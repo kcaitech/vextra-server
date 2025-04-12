@@ -110,19 +110,6 @@ const DocumentAccessRecordListResponseSchema = BaseResponseSchema.extend({
 
 export type DocumentAccessRecordListResponse = z.infer<typeof DocumentAccessRecordListResponseSchema>
 
-// 共享文件列表响应类型
-const ShareListResponseSchema = BaseResponseSchema.extend({
-    data: z.array(z.object({
-        id: z.number(),
-        name: z.string(),
-        type: z.string(),
-        parent_id: z.string(),
-        created_at: z.string(),
-        shared_by: z.string()
-    }))
-})
-
-export type ShareListResponse = z.infer<typeof ShareListResponseSchema>
 
 // 文档权限类型
 export const DocumentPermissionSchema = BaseResponseSchema.extend({
@@ -372,24 +359,6 @@ export class DocumentAPI {
         })
     }
 
-
-    //收到的共享文件列表
-    async shareLists(params: {
-        page?: number;
-        page_size?: number;
-    }): Promise<ShareListResponse> {
-        const result = await this.http.request({
-            url: 'documents/shares',
-            method: 'get',
-            params: params,
-        })
-        try {
-            return ShareListResponseSchema.parse(result)
-        } catch (error) {
-            console.error('共享文件列表数据校验失败:', error)
-            throw error
-        }
-    }
 
 
     //移动文件到回收站

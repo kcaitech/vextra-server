@@ -121,6 +121,19 @@ export enum DocType {
     PublicCommentable = 3,// 公共可评论
     PublicEditable = 4,// 公共可编辑
 }
+// 共享文件列表响应类型
+const ShareListResponseSchema = BaseResponseSchema.extend({
+    data: z.array(z.object({
+        id: z.number(),
+        name: z.string(),
+        type: z.string(),
+        parent_id: z.string(),
+        created_at: z.string(),
+        shared_by: z.string()
+    }))
+})
+
+export type ShareListResponse = z.infer<typeof ShareListResponseSchema>
 
 export class ShareAPI {
     private http: HttpMgr
@@ -129,10 +142,10 @@ export class ShareAPI {
         this.http = http
     }
 
-    //获取分享列表
-    async getShareList(params: { doc_id: string }): Promise<ShareListResponse1> {
+    //查询某个文档对所有用户的分享列表
+    async getShareGranteesList(params: { doc_id: string }): Promise<ShareListResponse1> {
         const result = await this.http.request({
-            url: `/documents/shares/all`,
+            url: `/documents/shares/grantees`,
             method: 'get',
             params: params,
         });
@@ -143,6 +156,26 @@ export class ShareAPI {
             throw error;
         }
     }
+
+    //查询某个文档对所有用户的分享列表
+    async getShareReceivesLists(params: {
+        page?: number;
+        page_size?: number;
+    }): Promise<ShareListResponse> {
+        const result = await this.http.request({
+            url: 'documents/shares/receives',
+            method: 'get',
+            params: params,
+        })
+        try {
+            return ShareListResponseSchema.parse(result)
+        } catch (error) {
+            console.error('共享文件列表数据校验失败:', error)
+            throw error
+        }
+    }
+
+
 
     //设置分享类型
     async setShateType(params: { doc_id: string; doc_type: DocType }): Promise<BaseResponse> {

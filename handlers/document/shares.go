@@ -22,8 +22,8 @@ import (
 	myTime "kcaitech.com/kcserver/utils/time"
 )
 
-// GetUserDocumentSharesList 获取用户的共享文档列表
-func GetUserDocumentSharesList(c *gin.Context) {
+// GetUserReceiveSharesList 获取用户的共享文档列表
+func GetUserReceiveSharesList(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
