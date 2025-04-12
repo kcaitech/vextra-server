@@ -1,4 +1,4 @@
-package communication
+package ws
 
 import (
 	"encoding/json"

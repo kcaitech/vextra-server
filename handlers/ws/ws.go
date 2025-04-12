@@ -1,4 +1,4 @@
-package communication
+package ws
 
 import (
 	"encoding/binary"
@@ -265,12 +265,12 @@ func (c *ACommuncation) serve() {
 	}
 }
 
-// Communication websocket连接
-func Communication(c *gin.Context) {
+// Ws websocket连接
+func Ws(c *gin.Context) {
 	// get token
 	token := c.Query("token")
 	if token == "" {
-		log.Println("communication-未登录")
+		log.Println("ws-未登录")
 		response.Unauthorized(c)
 		return
 	}
@@ -278,14 +278,14 @@ func Communication(c *gin.Context) {
 	jwtClient := services.GetKCAuthClient()
 	claims, err := jwtClient.ValidateToken(token)
 	if err != nil {
-		log.Println("communication-Token错误", err)
+		log.Println("ws-Token错误", err)
 		response.Unauthorized(c)
 		return
 	}
 
 	userId := claims.UserID
 	if userId == "" {
-		log.Println("communication-UserId错误", userId)
+		log.Println("ws-UserId错误", userId)
 		response.BadRequest(c, "UserId错误")
 		return
 	}
@@ -293,7 +293,7 @@ func Communication(c *gin.Context) {
 	// 建立ws连接
 	ws, err := websocket.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		log.Println("communication-建立ws连接失败：", userId, err)
+		log.Println("ws-建立ws连接失败：", userId, err)
 		response.ServerError(c, "建立ws连接失败")
 		return
 	}

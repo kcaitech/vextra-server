@@ -13,7 +13,7 @@ import (
 
 	// "kcaitech.com/kcserver/common"
 	// . "kcaitech.com/kcserver/common/gin/reverse_proxy"
-	controllers "kcaitech.com/kcserver/handlers/user"
+	handlers "kcaitech.com/kcserver/handlers/user"
 )
 
 func loadUserRoutes(api *gin.RouterGroup) {
@@ -25,8 +25,8 @@ func loadUserRoutes(api *gin.RouterGroup) {
 		authorized.GET("/info", GetUserInfo)
 		authorized.PUT("/info/nickname", SetNickname)
 		authorized.PUT("/info/avatar", SetAvatar)
-		authorized.GET("/kv_storage", controllers.GetUserKVStorage)
-		authorized.POST("/kv_storage", controllers.SetUserKVStorage)
+		authorized.GET("/kv_storage", handlers.GetUserKVStorage)
+		authorized.POST("/kv_storage", handlers.SetUserKVStorage)
 	}
 }
 

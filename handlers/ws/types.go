@@ -1,4 +1,4 @@
-package communication
+package ws
 
 // type Header struct {
 // 	Token string `json:"token"`
