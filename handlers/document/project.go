@@ -391,10 +391,10 @@ func GetProjectJoinRequestList(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	projectId := str.DefaultToInt(c.Query("project_id"), 0)
-	if projectId <= 0 {
-		projectId = 0
-	}
+	projectId := c.Query("project_id")
+	// if projectId <= 0 {
+	// 	projectId = 0
+	// }
 	startTimeStr := ""
 	startTimeInt := str.DefaultToInt(c.Query("start_time"), 0)
 	if startTimeInt > 0 {
@@ -444,10 +444,10 @@ func GetSelfProjectJoinRequestList(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	projectId := str.DefaultToInt(c.Query("project_id"), 0)
-	if projectId <= 0 {
-		projectId = 0
-	}
+	projectId := c.Query("project_id")
+	// if projectId <= 0 {
+	// 	projectId = 0
+	// }
 	startTimeStr := ""
 	startTimeInt := str.DefaultToInt(c.Query("start_time"), 0)
 	if startTimeInt > 0 {
@@ -979,8 +979,8 @@ func MoveDocument(c *gin.Context) {
 		return
 	}
 
-	documentId := str.DefaultToInt(req.DocumentId, 0)
-	if documentId <= 0 {
+	documentId := (req.DocumentId)
+	if documentId == "" {
 		response.BadRequest(c, "参数错误：document_id")
 		return
 	}

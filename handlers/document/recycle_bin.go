@@ -9,7 +9,6 @@ import (
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils"
-	"kcaitech.com/kcserver/utils/str"
 	myTime "kcaitech.com/kcserver/utils/time"
 )
 
@@ -20,7 +19,7 @@ func GetUserRecycleBinDocumentList(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	projectId := str.DefaultToInt(c.Query("project_id"), 0)
+	projectId := c.Query("project_id")
 	response.Success(c, services.NewDocumentService().FindRecycleBinByUserId(userId, projectId))
 }
 
@@ -40,8 +39,8 @@ func RestoreUserRecycleBinDocument(c *gin.Context) {
 		response.BadRequest(c, "")
 		return
 	}
-	documentId := str.DefaultToInt(req.DocId, 0)
-	if documentId <= 0 {
+	documentId := (req.DocId)
+	if documentId == "" {
 		response.BadRequest(c, "参数错误：doc_id")
 		return
 	}
@@ -83,8 +82,8 @@ func DeleteUserRecycleBinDocument(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	documentId := str.DefaultToInt(c.Query("doc_id"), 0)
-	if documentId <= 0 {
+	documentId := c.Query("doc_id")
+	if documentId == "" {
 		response.BadRequest(c, "参数错误：doc_id")
 		return
 	}

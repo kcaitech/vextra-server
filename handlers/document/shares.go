@@ -70,8 +70,8 @@ func SetDocumentShareType(c *gin.Context) {
 		response.BadRequest(c, "")
 		return
 	}
-	documentId := str.DefaultToInt(req.DocId, 0)
-	if documentId <= 0 {
+	documentId := req.DocId
+	if documentId == "" {
 		response.BadRequest(c, "参数错误：doc_id")
 		return
 	}
@@ -144,8 +144,8 @@ func GetDocumentSharesList(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	documentId := str.DefaultToInt(c.Query("doc_id"), 0)
-	if documentId <= 0 {
+	documentId := (c.Query("doc_id"))
+	if documentId == "" {
 		response.BadRequest(c, "参数错误：doc_id")
 		return
 	}
@@ -352,10 +352,10 @@ func GetDocumentPermissionRequestsList(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	documentId := str.DefaultToInt(c.Query("doc_id"), 0)
-	if documentId <= 0 {
-		documentId = 0
-	}
+	documentId := c.Query("doc_id")
+	// if documentId <= 0 {
+	// 	documentId = 0
+	// }
 	startTimeStr := ""
 	startTimeInt := str.DefaultToInt(c.Query("start_time"), 0)
 	if startTimeInt > 0 {

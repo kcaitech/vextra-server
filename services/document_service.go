@@ -142,12 +142,12 @@ type RecycleBinQueryResItem struct {
 }
 
 // FindRecycleBinByUserId 查询用户的回收站列表
-func (s *DocumentService) FindRecycleBinByUserId(userId string, projectId int64) *[]RecycleBinQueryResItem {
+func (s *DocumentService) FindRecycleBinByUserId(userId string, projectId string) *[]RecycleBinQueryResItem {
 	var result []RecycleBinQueryResItem
 	whereArgsList := []WhereArgs{
 		{"document.deleted_at is not null and document.purged_at is null", nil},
 	}
-	if projectId > 0 {
+	if projectId != "" {
 		whereArgsList = append(whereArgsList, WhereArgs{"document.project_id = ?", []any{projectId}})
 	} else {
 		whereArgsList = append(whereArgsList, WhereArgs{"document.user_id = ? and (document.project_id is null or document.project_id = 0)", []any{userId}})
@@ -180,7 +180,7 @@ func (s *DocumentService) FindDocumentByUserId(userId string) *[]AccessRecordAnd
 }
 
 // FindDocumentByProjectId 查询项目的文档列表
-func (s *DocumentService) FindDocumentByProjectId(projectId int64, userId string) *[]AccessRecordAndFavoritesQueryResItem {
+func (s *DocumentService) FindDocumentByProjectId(projectId string, userId string) *[]AccessRecordAndFavoritesQueryResItem {
 	var result []AccessRecordAndFavoritesQueryResItem
 	_ = s.Find(
 		&result,
@@ -213,12 +213,12 @@ func (s *DocumentService) FindAccessRecordsByUserId(userId string) *[]AccessReco
 }
 
 // FindFavoritesByUserId 查询用户的收藏列表
-func (s *DocumentService) FindFavoritesByUserId(userId string, projectId int64) *[]AccessRecordAndFavoritesQueryResItem {
+func (s *DocumentService) FindFavoritesByUserId(userId string, projectId string) *[]AccessRecordAndFavoritesQueryResItem {
 	var result []AccessRecordAndFavoritesQueryResItem
 	whereArgsList := []WhereArgs{
 		{"document_favorites.user_id = ? and document_favorites.is_favorite = 1 and document.deleted_at is null", []any{userId}},
 	}
-	if projectId > 0 {
+	if projectId != "" {
 		whereArgsList = append(whereArgsList, WhereArgs{"document.project_id = ?", []any{projectId}})
 	}
 	_ = s.DocumentFavoritesService.Find(
@@ -304,7 +304,7 @@ type DocumentSharesQueryRes struct {
 }
 
 // FindSharesByDocumentId 查询某个文档对所有用户的分享列表
-func (s *DocumentService) FindSharesByDocumentId(documentId int64) *[]DocumentSharesQueryRes {
+func (s *DocumentService) FindSharesByDocumentId(documentId string) *[]DocumentSharesQueryRes {
 	var result []DocumentSharesQueryRes
 	_ = s.DocumentPermissionService.Find(
 		&result,
@@ -451,10 +451,10 @@ type PermissionRequestsQueryResItem struct {
 }
 
 // FindPermissionRequests 获取用户所创建文档的权限申请列表
-func (s *DocumentService) FindPermissionRequests(userId string, documentId int64, startTime string) *[]PermissionRequestsQueryResItem {
+func (s *DocumentService) FindPermissionRequests(userId string, documentId string, startTime string) *[]PermissionRequestsQueryResItem {
 	var result []PermissionRequestsQueryResItem
 	whereArgsList := []WhereArgs{{Query: "document.user_id = ?", Args: []any{userId}}}
-	if documentId != 0 {
+	if documentId != "" {
 		whereArgsList = append(whereArgsList, WhereArgs{Query: "document.id = ?", Args: []any{documentId}})
 	}
 	if startTime != "" {

@@ -296,7 +296,7 @@ type ProjectJoinRequestQuery struct {
 }
 
 // FindProjectJoinRequest 获取用户所创建或担任管理员的项目的加入申请列表
-func (s *ProjectService) FindProjectJoinRequest(userId string, projectId int64, startTime string) []ProjectJoinRequestQuery {
+func (s *ProjectService) FindProjectJoinRequest(userId string, projectId string, startTime string) []ProjectJoinRequestQuery {
 	var result = make([]ProjectJoinRequestQuery, 0)
 	whereArgsList := []WhereArgs{
 		{
@@ -307,7 +307,7 @@ func (s *ProjectService) FindProjectJoinRequest(userId string, projectId int64, 
 			Args:  []any{models.ProjectPermTypeAdmin, models.ProjectPermTypeCreator},
 		},
 	}
-	if projectId != 0 {
+	if projectId != "" {
 		whereArgsList = append(whereArgsList, WhereArgs{Query: "project_join_request.project_id = ?", Args: []any{projectId}})
 	}
 	if startTime != "" {
@@ -326,7 +326,7 @@ func (s *ProjectService) FindProjectJoinRequest(userId string, projectId int64, 
 }
 
 // FindSelfProjectJoinRequest 获取用户自身的项目加入申请列表
-func (s *ProjectService) FindSelfProjectJoinRequest(userId string, projectId int64, startTime string) []SelfProjectJoinRequestQuery {
+func (s *ProjectService) FindSelfProjectJoinRequest(userId string, projectId string, startTime string) []SelfProjectJoinRequestQuery {
 	var result []SelfProjectJoinRequestQuery
 	whereArgsList := []WhereArgs{
 		{
@@ -337,7 +337,7 @@ func (s *ProjectService) FindSelfProjectJoinRequest(userId string, projectId int
 			Args:  []any{userId, models.ProjectJoinRequestStatusPending},
 		},
 	}
-	if projectId != 0 {
+	if projectId != "" {
 		whereArgsList = append(whereArgsList, WhereArgs{Query: "project_join_request.project_id = ?", Args: []any{projectId}})
 	}
 	if startTime != "" {

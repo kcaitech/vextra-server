@@ -8,7 +8,6 @@ import (
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils"
-	"kcaitech.com/kcserver/utils/str"
 )
 
 // GetUserDocumentFavoritesList 获取用户收藏的文档列表
@@ -18,7 +17,7 @@ func GetUserDocumentFavoritesList(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	projectId := str.DefaultToInt(c.Query("project_id"), 0)
+	projectId := c.Query("project_id")
 	response.Success(c, services.NewDocumentService().FindFavoritesByUserId(userId, projectId))
 }
 
@@ -39,8 +38,8 @@ func SetUserDocumentFavoriteStatus(c *gin.Context) {
 		response.BadRequest(c, "")
 		return
 	}
-	documentId := str.DefaultToInt(req.DocId, 0)
-	if documentId <= 0 {
+	documentId := (req.DocId)
+	if documentId == "" {
 		response.BadRequest(c, "参数错误：doc_id")
 		return
 	}

@@ -117,7 +117,7 @@ type TeamJoinRequestMessageShow struct {
 	BaseModelStruct
 	TeamJoinRequestId int64     `json:"team_join_request_id"`
 	UserId            string    `json:"user_id"`
-	TeamId            int64     `json:"team_id"`
+	TeamId            string    `json:"team_id"`
 	FirstDisplayedAt  time.Time `json:"first_displayed_at"`
 }
 

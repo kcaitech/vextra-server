@@ -26,9 +26,9 @@ func GetUserDocumentList(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	projectId := str.DefaultToInt(c.Query("project_id"), 0)
+	projectId := c.Query("project_id")
 	var result *[]services.AccessRecordAndFavoritesQueryResItem
-	if projectId > 0 {
+	if projectId != "" {
 		result = services.NewDocumentService().FindDocumentByProjectId(projectId, userId)
 	} else {
 		result = services.NewDocumentService().FindDocumentByUserId(userId)
@@ -64,8 +64,8 @@ func DeleteUserDocument(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	documentId := str.DefaultToInt(c.Query("doc_id"), 0)
-	if documentId <= 0 {
+	documentId := (c.Query("doc_id"))
+	if documentId == "" {
 		response.BadRequest(c, "参数错误：doc_id")
 		return
 	}
@@ -191,8 +191,8 @@ func SetDocumentName(c *gin.Context) {
 		response.BadRequest(c, "")
 		return
 	}
-	documentId := str.DefaultToInt(req.DocId, 0)
-	if documentId <= 0 {
+	documentId := (req.DocId)
+	if documentId == "" {
 		response.BadRequest(c, "参数错误：doc_id")
 		return
 	}

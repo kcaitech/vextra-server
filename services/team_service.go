@@ -230,7 +230,7 @@ type TeamJoinRequestQuery struct {
 }
 
 // FindTeamJoinRequest 获取用户所创建或担任管理员的团队的加入申请列表
-func (s *TeamService) FindTeamJoinRequest(userId string, teamId int64, startTime string) []TeamJoinRequestQuery {
+func (s *TeamService) FindTeamJoinRequest(userId string, teamId string, startTime string) []TeamJoinRequestQuery {
 	var result []TeamJoinRequestQuery
 	whereArgsList := []WhereArgs{
 		{
@@ -241,7 +241,7 @@ func (s *TeamService) FindTeamJoinRequest(userId string, teamId int64, startTime
 			Args:  []any{models.TeamPermTypeAdmin, models.TeamPermTypeCreator},
 		},
 	}
-	if teamId != 0 {
+	if teamId != "" {
 		whereArgsList = append(whereArgsList, WhereArgs{Query: "team_join_request.team_id = ?", Args: []any{teamId}})
 	}
 	if startTime != "" {
@@ -260,7 +260,7 @@ func (s *TeamService) FindTeamJoinRequest(userId string, teamId int64, startTime
 }
 
 // FindSelfTeamJoinRequest 获取用户自身的团队加入申请列表
-func (s *TeamService) FindSelfTeamJoinRequest(userId string, teamId int64, startTime string) []SelfTeamJoinRequestsQueryResItem {
+func (s *TeamService) FindSelfTeamJoinRequest(userId string, teamId string, startTime string) []SelfTeamJoinRequestsQueryResItem {
 	var result []SelfTeamJoinRequestsQueryResItem
 	whereArgsList := []WhereArgs{
 		{
@@ -271,7 +271,7 @@ func (s *TeamService) FindSelfTeamJoinRequest(userId string, teamId int64, start
 			Args:  []any{userId, models.TeamJoinRequestStatusPending},
 		},
 	}
-	if teamId != 0 {
+	if teamId != "" {
 		whereArgsList = append(whereArgsList, WhereArgs{Query: "team_join_request.team_id = ?", Args: []any{teamId}})
 	}
 	if startTime != "" {

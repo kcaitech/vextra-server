@@ -137,7 +137,7 @@ type ProjectJoinRequestMessageShow struct {
 	BaseModelStruct
 	ProjectJoinRequestId int64     `json:"project_join_request_id"`
 	UserId               string    `json:"user_id"`
-	ProjectId            int64     `json:"project_id"`
+	ProjectId            string    `json:"project_id"`
 	FirstDisplayedAt     time.Time `json:"first_displayed_at"`
 }
 

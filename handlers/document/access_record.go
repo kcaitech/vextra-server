@@ -7,7 +7,6 @@ import (
 	"kcaitech.com/kcserver/common/response"
 	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils"
-	"kcaitech.com/kcserver/utils/str"
 )
 
 // GetUserDocumentAccessRecordsList 获取用户的文档访问记录列表
@@ -27,8 +26,8 @@ func DeleteUserDocumentAccessRecord(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	accessRecordId := str.DefaultToInt(c.Query("access_record_id"), 0)
-	if accessRecordId <= 0 {
+	accessRecordId := c.Query("access_record_id")
+	if accessRecordId == "" {
 		response.BadRequest(c, "参数错误：access_record_id")
 		return
 	}

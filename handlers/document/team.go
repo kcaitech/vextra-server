@@ -253,8 +253,8 @@ func DeleteTeam(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	teamId := str.DefaultToInt(c.Query("team_id"), 0)
-	if teamId <= 0 {
+	teamId := (c.Query("team_id"))
+	if teamId == "" {
 		response.BadRequest(c, "参数错误：team_id")
 		return
 	}
@@ -400,10 +400,10 @@ func GetTeamJoinRequestList(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	teamId := str.DefaultToInt(c.Query("team_id"), 0)
-	if teamId <= 0 {
-		teamId = 0
-	}
+	teamId := (c.Query("team_id"))
+	// if teamId <= 0 {
+	// 	teamId = 0
+	// }
 	startTimeStr := ""
 	startTimeInt := str.DefaultToInt(c.Query("start_time"), 0)
 	if startTimeInt > 0 {
@@ -453,10 +453,10 @@ func GetSelfTeamJoinRequestList(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	teamId := str.DefaultToInt(c.Query("team_id"), 0)
-	if teamId <= 0 {
-		teamId = 0
-	}
+	teamId := (c.Query("team_id"))
+	// if teamId <= 0 {
+	// 	teamId = 0
+	// }
 	startTimeStr := ""
 	startTimeInt := str.DefaultToInt(c.Query("start_time"), 0)
 	if startTimeInt > 0 {
