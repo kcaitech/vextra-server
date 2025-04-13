@@ -47,5 +47,6 @@ func LoadRoutes(router *gin.Engine) {
 	apiGroup.Use(services.GetKCAuthClient().AuthRequired())
 	loadUserRoutes(apiGroup)
 	loadDocumentRoutes(apiGroup)
+	loadFeedbackRoutes(apiGroup)
 	apiGroup.POST("/batch_request", handlers.BatchRequestHandler(router))
 }

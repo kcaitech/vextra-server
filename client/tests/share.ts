@@ -37,7 +37,7 @@ async function testGetDocumentAuthority() {
 // 测试获取文档密钥
 async function testGetDocumentKey() {
     try {
-        const response = await documentAPI.getDocumentKey({
+        const response = await documentAPI.getDocumentAccessKey({
             doc_id: '1', // 替换为实际的文档ID
         });
         console.log('获取文档密钥:', response);

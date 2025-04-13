@@ -140,7 +140,7 @@ export class UsersAPI {
             }
         }
         return this.http.request({
-            url: '/documents/feedback',
+            url: '/feedback',
             method: 'post',
             data: formData,
         })

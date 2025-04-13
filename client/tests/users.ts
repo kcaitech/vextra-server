@@ -29,23 +29,23 @@ async function testGetKVStorage() {
 }
 
 // 测试用户文档访问记录
-async function testUserDocumentAccessRecords() {
-  try {
-    // 获取用户文档访问记录列表
-    const listResponse = await documentAPI.getUserDocumentAccessRecordsList();
-    console.log('获取用户文档访问记录列表:', listResponse);
+// async function testUserDocumentAccessRecords() {
+//   try {
+//     // 获取用户文档访问记录列表
+//     const listResponse = await documentAPI.getUserDocumentAccessRecordsList();
+//     console.log('获取用户文档访问记录列表:', listResponse);
 
-    if (listResponse.data && listResponse.data.length > 0) {
-      // 删除第一条访问记录
-      const deleteResponse = await documentAPI.deleteUserDocumentAccessRecord({
-        access_record_id: listResponse.data[0].document_access_record.id,
-      });
-      console.log('删除用户文档访问记录:', deleteResponse);
-    }
-  } catch (error) {
-    console.error('测试用户文档访问记录失败:', error);
-  }
-}
+//     if (listResponse.data && listResponse.data.length > 0) {
+//       // 删除第一条访问记录
+//       const deleteResponse = await documentAPI.deleteUserDocumentAccessRecord({
+//         access_record_id: listResponse.data[0].document_access_record.id,
+//       });
+//       console.log('删除用户文档访问记录:', deleteResponse);
+//     }
+//   } catch (error) {
+//     console.error('测试用户文档访问记录失败:', error);
+//   }
+// }
 
 // 测试用户反馈
 async function testSubmitFeedback() {

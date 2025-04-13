@@ -9,7 +9,6 @@
 // copyFile
 // getDocumentList
 // getUserDocumentAccessRecordsList
-// deleteUserDocumentAccessRecord
 // moveFileToRecycleBin
 // getDocumentAuthority
 // getDocumentKey

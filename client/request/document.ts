@@ -349,15 +349,15 @@ export class DocumentAPI {
     }
 
     // 删除用户文档访问记录
-    async deleteUserDocumentAccessRecord(params: {
-        access_record_id: string;
-    }): Promise<BaseResponse> {
-        return this.http.request({
-            url: '/documents/access_record',
-            method: 'delete',
-            params: params,
-        })
-    }
+    // async deleteUserDocumentAccessRecord(params: {
+    //     access_record_id: string;
+    // }): Promise<BaseResponse> {
+    //     return this.http.request({
+    //         url: '/documents/access_record',
+    //         method: 'delete',
+    //         params: params,
+    //     })
+    // }
 
     //移动文件到回收站
     async moveFileToRecycleBin(params: {
@@ -386,7 +386,7 @@ export class DocumentAPI {
     }
 
     //获取文档密钥
-    async getDocumentKey(params: { doc_id: string }): Promise<DocumentKeyResponse> {
+    async getDocumentAccessKey(params: { doc_id: string }): Promise<DocumentKeyResponse> {
         const result = await this.http.request({
             url: `/documents/access_key`,
             method: 'get',

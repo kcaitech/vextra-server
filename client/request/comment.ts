@@ -116,7 +116,7 @@ export class CommentAPI {
     }
 
     //获取文档评论
-    async getDocumentComment(params: {
+    async getDocumentComments(params: {
         doc_id: string,
         page_id?: string,
         target_shape_id?: string,

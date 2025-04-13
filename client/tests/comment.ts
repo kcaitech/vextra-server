@@ -9,9 +9,9 @@ const httpManager = new HttpMgr(TEST_API_URL, TEST_UNAUTHORIZED, TEST_TOKEN);
 const commentAPI = new CommentAPI(httpManager);
 
 // 测试获取文档评论
-async function testGetDocumentComment() {
+async function testGetDocumentComments() {
     try {
-        const response = await commentAPI.getDocumentComment({
+        const response = await commentAPI.getDocumentComments({
             doc_id: '1', // 替换为实际的文档ID
         });
         console.log('获取文档评论:', response);
@@ -92,7 +92,7 @@ async function runAllTests() {
     console.log('开始测试评论相关API...');
     
     await testCreateComment();
-    await testGetDocumentComment();
+    await testGetDocumentComments();
     await testEditComment();
     await testSetCommentStatus();
     await testDeleteComment();

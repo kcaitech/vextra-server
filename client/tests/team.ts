@@ -128,9 +128,9 @@ async function testGetTeamMemberList() {
 }
 
 // 测试转移团队创建者
-async function testTransferTeamCreator() {
+async function testTransferTeamOwner() {
   try {
-    const response = await teamAPI.transferTeamCreator({
+    const response = await teamAPI.transferTeamOwner({
       team_id: '3', // 替换为实际的团队ID
       user_id: 'kcai1', // 替换为实际的用户ID
     });
@@ -164,8 +164,8 @@ async function runAllTests() {
   //transferProjectCreator
   //delProject
   //moveFileToProject
-  //getProjectNotice
-  //getTeamNotice
+  //getSelfProjectApplyInfo
+  //getSelfTeamApplyInfo
   await testSetTeamMemberNickname();
 
   await testGetTeamList();
@@ -174,7 +174,7 @@ async function runAllTests() {
   await testSetTeamInfo();
   //setTeamInviteInfo
   //setTeamCreator
-  await testTransferTeamCreator();
+  await testTransferTeamOwner();
 
   // await testGetTeamInfo();
   //applyJoinTeam

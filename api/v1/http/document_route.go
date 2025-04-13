@@ -10,12 +10,6 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 
 	router := api.Group("/documents")
 
-	// 不验证登录
-	// router.GET("/shares/wx_mp_code", handlers.GetWxMpCode)
-
-	// 登陆验证
-	// router.Use(services.GetKCAuthClient().AuthRequired())
-
 	router.GET("/access_records", handlers.GetUserDocumentAccessRecordsList)
 	router.DELETE("/access_record", handlers.DeleteUserDocumentAccessRecord)
 	router.GET("/favorites", handlers.GetUserDocumentFavoritesList)
@@ -29,7 +23,6 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 	router.GET("/info", handlers.GetUserDocumentInfo)
 	router.GET("/permission", handlers.GetUserDocumentPerm)
 	router.GET("/access_key", handlers.GetDocumentAccessKey)
-	// 复制文档
 	router.POST("/copy", handlers.CopyDocument)
 	// 分享
 	router.GET("/shares/receives", handlers.GetUserReceiveSharesList) // 查询用户加入的文档分享列表
@@ -57,11 +50,11 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 	router.GET("/team/self_apply", handlers.GetSelfTeamJoinRequestList)
 	router.POST("/team/apply/audit", handlers.ReviewTeamJoinRequest)
 	router.PUT("/team/info", handlers.SetTeamInfo)
-	router.PUT("/team/invited", handlers.SetTeamInvited)
-	router.GET("/team/info/invited", handlers.GetTeamInvitedInfo)
+	router.PUT("/team/invite", handlers.SetTeamInvited)
+	router.GET("/team/info/invite", handlers.GetTeamInvitedInfo)
 	router.POST("/team/exit", handlers.ExitTeam)
 	router.PUT("/team/member/perm", handlers.SetTeamMemberPermission)
-	router.PUT("/team/creator", handlers.ChangeTeamCreator)
+	router.PUT("/team/owner", handlers.ChangeTeamCreator)
 	router.DELETE("/team/member", handlers.RemoveTeamMember)
 	router.PUT("/team/member/nickname", handlers.SetTeamMemberNickname)
 	// team/project
@@ -74,17 +67,13 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 	router.GET("/team/project/self_apply", handlers.GetSelfProjectJoinRequestList)
 	router.POST("/team/project/apply/audit", handlers.ReviewProjectJoinRequest)
 	router.PUT("/team/project/info", handlers.SetProjectInfo)
-	router.PUT("/team/project/invited", handlers.SetProjectInvited)
-	router.GET("/team/project/info/invited", handlers.GetProjectInvitedInfo)
+	router.PUT("/team/project/invite", handlers.SetProjectInvited)
+	router.GET("/team/project/info/invite", handlers.GetProjectInvitedInfo)
 	router.POST("/team/project/exit", handlers.ExitProject)
 	router.PUT("/team/project/member/perm", handlers.SetProjectMemberPermission)
-	router.PUT("/team/project/creator", handlers.ChangeProjectCreator)
+	router.PUT("/team/project/owner", handlers.ChangeProjectCreator)
 	router.DELETE("/team/project/member", handlers.RemoveProjectMember)
 	router.PUT("/team/project/favorite", handlers.SetProjectFavorite)
 	router.GET("/team/project/favorite/list", handlers.GetFavorProjectList)
 	router.POST("/team/project/document/move", handlers.MoveDocument)
-	// 反馈
-	router.POST("/feedback", handlers.PostFeedback)
-	// router.POST("/test/001", handlers.CreateTest)
-	// router.GET("/storage_auth", handlers.CheckStorageAuth)
 }
