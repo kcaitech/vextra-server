@@ -33,6 +33,27 @@ func GetUserDocumentList(c *gin.Context) {
 	} else {
 		result = services.NewDocumentService().FindDocumentByUserId(userId)
 	}
+	// 获取文档相关用户信息
+	userIds := make([]string, 0)
+	for _, item := range *result {
+		userIds = append(userIds, item.Document.UserId)
+	}
+	userMap, err := GetUsersInfo(c, userIds)
+	if err != nil {
+		response.ServerError(c, err.Error())
+		return
+	}
+	for i := range *result {
+		item := &(*result)[i]
+		userInfo, ok := userMap[item.Document.UserId]
+		if ok {
+			item.User = &models.UserProfile{
+				Id:       userInfo.UserID,
+				Nickname: userInfo.Profile.Nickname,
+				Avatar:   userInfo.Profile.Avatar,
+			}
+		}
+	}
 	response.Success(c, result)
 }
 

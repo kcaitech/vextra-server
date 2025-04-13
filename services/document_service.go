@@ -131,6 +131,7 @@ type DocumentQueryResItem struct {
 
 type AccessRecordAndFavoritesQueryResItem struct {
 	DocumentQueryResItem
+	User                 *models.UserProfile         `gorm:"-" json:"user"`
 	DocumentFavorites    models.DocumentFavorites    `gorm:"embedded;embeddedPrefix:document_favorites__" json:"document_favorites" join:";left;document_id,document.id;user_id,?user_id"`
 	DocumentAccessRecord models.DocumentAccessRecord `gorm:"embedded;embeddedPrefix:document_access_record__" json:"document_access_record" join:";left;user_id,?user_id;document_id,document.id"`
 }

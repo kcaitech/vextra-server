@@ -19,6 +19,7 @@ export const DocumentListResponseSchema = BaseResponseSchema.extend({
             updated_at: z.string(),
             deleted_at: z.string().nullable()
         }),
+        user: UserInfoSchema,
         team: z.object({
             id: z.string(),
             name: z.string(),
@@ -49,6 +50,7 @@ export const DocumentListResponseSchema = BaseResponseSchema.extend({
 })
 
 export type DocumentListResponse = z.infer<typeof DocumentListResponseSchema>
+export type DocumentListItem = z.infer<typeof DocumentListResponseSchema.shape.data.element>
 
 // 收藏列表响应类型
 const FavoriteListResponseSchema = BaseResponseSchema.extend({
