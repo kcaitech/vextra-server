@@ -203,6 +203,7 @@ export const DocumentInfoResponseSchema = BaseResponseSchema.extend({
 });
 
 export type DocumentInfoResponse = z.infer<typeof DocumentInfoResponseSchema>;
+export type DocumentInfoResponseData = z.infer<typeof DocumentInfoResponseSchema.shape.data>;
 
 export class DocumentAPI {
     private http: HttpMgr
