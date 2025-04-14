@@ -52,19 +52,6 @@ export const DocumentListResponseSchema = BaseResponseSchema.extend({
 export type DocumentListResponse = z.infer<typeof DocumentListResponseSchema>
 export type DocumentListItem = z.infer<typeof DocumentListResponseSchema.shape.data.element>
 
-// 收藏列表响应类型
-const FavoriteListResponseSchema = BaseResponseSchema.extend({
-    data: z.array(z.object({
-        id: z.number(),
-        name: z.string(),
-        type: z.string(),
-        parent_id: z.string(),
-        created_at: z.string(),
-        updated_at: z.string()
-    }))
-})
-
-export type FavoriteListResponse = z.infer<typeof FavoriteListResponseSchema>
 // 用户文档访问记录模型
 const DocumentAccessRecordSchema = z.object({
     document: z.object({
@@ -104,6 +91,21 @@ const DocumentAccessRecordSchema = z.object({
 })
 
 export type DocumentAccessRecord = z.infer<typeof DocumentAccessRecordSchema>
+
+// 收藏列表响应类型
+const FavoriteListResponseSchema = BaseResponseSchema.extend({
+    // data: z.array(z.object({
+    //     id: z.number(),
+    //     name: z.string(),
+    //     type: z.string(),
+    //     parent_id: z.string(),
+    //     created_at: z.string(),
+    //     updated_at: z.string()
+    // }))
+    data: z.array(DocumentAccessRecordSchema)
+})
+
+export type FavoriteListResponse = z.infer<typeof FavoriteListResponseSchema>
 
 // 用户文档访问记录列表响应类型
 const DocumentAccessRecordListResponseSchema = BaseResponseSchema.extend({

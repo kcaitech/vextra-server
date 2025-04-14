@@ -202,11 +202,21 @@ export type ProjectMemberListResponseData = z.infer<typeof ProjectMemberListResp
 // 项目收藏列表响应类型
 const ProjectFavoriteListResponseSchema = BaseResponseSchema.extend({
     data: z.array(z.object({
-        id: z.string(),
-        user_id: z.string(),
-        project_id: z.string(),
-        created_at: z.string(),
-        updated_at: z.string()
+        creator_team_nickname: z.string().optional(),
+        self_perm_type: z.nativeEnum(TeamPermType),
+        is_in_team: z.boolean(),
+        is_invited: z.boolean(),
+        project: z.object({
+            id: z.string(),
+            name: z.string(),
+            description: z.string().optional(),
+            is_public: z.boolean(),
+            perm_type: z.number(),
+            open_invite: z.boolean(),
+            need_approval: z.boolean(),
+            created_at: z.string(),
+            updated_at: z.string()
+        }),
     }))
 })
 

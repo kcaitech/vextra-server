@@ -20,8 +20,8 @@ export enum CommentStatus {
 // 评论项类型
 const CommentItemSchema = z.object({
     id: z.string(),
-    parent_id: z.string(),
-    root_id: z.string(),
+    parent_id: z.string().optional(),
+    root_id: z.string().optional(),
     doc_id: z.string(),
     page_id: z.string(),
     shape_id: z.string(),
@@ -59,7 +59,8 @@ const CreateCommentSchema = z.object({
         y1: z.number(),
         y2: z.number()
     }),
-    content: z.string()
+    content: z.string(),
+    record_created_at: z.string()
 })
 
 export type CreateComment = z.infer<typeof CreateCommentSchema>

@@ -12,7 +12,7 @@
     "registry": "https://packages.aliyun.com/6393d698d690c872dceedcc0/npm/npm-registry/"
   },
   "scripts": {
-    "dev": "vite",
+    "dev": "npx tsc --watch",
     "build": "vite build",
     "preview": "vite preview"
   },
