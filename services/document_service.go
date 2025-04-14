@@ -143,7 +143,7 @@ type RecycleBinQueryResItem struct {
 
 // FindRecycleBinByUserId 查询用户的回收站列表
 func (s *DocumentService) FindRecycleBinByUserId(userId string, projectId string) *[]RecycleBinQueryResItem {
-	var result []RecycleBinQueryResItem
+	var result = make([]RecycleBinQueryResItem, 0)
 	whereArgsList := []WhereArgs{
 		{"document.deleted_at is not null and document.purged_at is null", nil},
 	}
