@@ -95,6 +95,18 @@ func StructToMap(structData any, mapData map[string]any) {
 		name := typeField.Name
 		if jsonNameSplitRes := strings.Split(typeField.Tag.Get("json"), ","); len(jsonNameSplitRes) > 0 {
 			name = strings.TrimSpace(jsonNameSplitRes[0])
+			// 检查是否有 inline 标签
+			isInline := false
+			for _, tag := range jsonNameSplitRes[1:] {
+				if strings.TrimSpace(tag) == "inline" {
+					isInline = true
+					break
+				}
+			}
+			if isInline && field.Kind() == reflect.Struct {
+				StructToMap(field.Interface(), mapData)
+				continue
+			}
 		}
 		anonymous := typeField.Tag.Get("anonymous")
 		if (typeField.Anonymous || anonymous == "true") && field.Kind() == reflect.Struct {

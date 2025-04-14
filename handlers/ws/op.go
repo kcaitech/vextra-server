@@ -24,11 +24,7 @@ type ReceiveData struct {
 }
 type Cmd = models.Cmd
 type CmdItem = models.CmdItem
-
-type ReceiveCmd struct {
-	Cmd `json:",inline" bson:",inline"`
-	Id  string `json:"id" bson:"id"`
-}
+type ReceiveCmd = models.Cmd
 
 type SendData struct {
 	Type       string   `json:"type"`                  // pullCmdsResult update errorInvalidParams errorNoPermission errorInsertFailed errorPullCmdsFailed
@@ -274,42 +270,20 @@ func (serv *opServe) handleCommit(data *TransData, receiveData *ReceiveData) {
 		return
 	}
 
+	batchStartId := previousId + 1
+	batchLength := len(cmds)
+
 	cmdItemList := sliceutil.MapT(func(cmd ReceiveCmd) CmdItem {
-		cmdItem := CmdItem{
-			// CmdItemExtra: models.CmdItemExtra{
-			VerId: previousId + 1, // 有redis锁 todo 不对，不能保证唯一
-			// PreviousId:   previousId,
-			BatchStartId: previousId + 1,
-			// BatchEndId:   0,
-			BatchLength: 1,
-			DocumentId:  serv.documentId,
-			UserId:      serv.userId,
-			// Cmd: models.Cmd{
-			// 	Id:         cmd.Id,
-			// }
-			// },
-			Cmd: cmd.Cmd,
+		previousId += 1
+		return CmdItem{
+			VerId:        previousId, // 有redis锁 todo 不对，不能保证唯一
+			BatchStartId: batchStartId,
+			BatchLength:  uint(batchLength),
+			DocumentId:   serv.documentId,
+			UserId:       serv.userId,
+			Cmd:          cmd,
 		}
-		previousId = cmdItem.VerId
-		return cmdItem
 	}, cmds...)
-
-	// cmdItem0List := sliceutil.MapT(func(cmdItem CmdItem) CmdItem0 {
-	// 	return cmdItem.CmdItem0
-	// }, cmdItemList...)
-	// cmdItem0ListString := ""
-	// if cmdItem0ListStringByte, err := json.Marshal(cmdItem0List); err != nil {
-	// 	cmdItem0ListString = string(cmdItem0ListStringByte)
-	// }
-
-	batchStartId := cmdItemList[0].VerId
-	// batchEndId := cmdItemList[len(cmdItemList)-1].VerId
-	batchLength := len(cmdItemList)
-	for i := range cmdItemList { // todo batchid?
-		cmdItemList[i].BatchStartId = batchStartId
-		// cmdItemList[i].BatchEndId = batchEndId
-		cmdItemList[i].BatchLength = uint(batchLength)
-	}
 
 	cmdItemListData, err := json.Marshal(cmdItemList)
 	if err != nil {
@@ -327,12 +301,12 @@ func (serv *opServe) handleCommit(data *TransData, receiveData *ReceiveData) {
 	cmdServices := services.GetCmdService()
 	insertRes, err := cmdServices.SaveCmdItems(cmdItemList)
 
-	// insertRes, err := documentCollection.InsertMany(context.Background(), sliceutil.ConvertToAnySlice(cmdItemList)) // 这是个原子性操作
 	if err != nil && mongo.IsDuplicateKeyError(err) {
-		index := len(insertRes.InsertedIDs) + 1
+		log.Println("重复数据插入失败1", err)
+
+		index := len(insertRes.InsertedIDs)
 		duplicateCmdCmdId := cmdItemList[index].Cmd.Id
 		duplicateCmdDocumentId := cmdItemList[index].DocumentId
-		// duplicateCmd := &CmdItem{}
 		duplicateCmd, err := cmdServices.GetCmd(duplicateCmdDocumentId, duplicateCmdCmdId)
 		if err != nil {
 			log.Println("重复数据查询失败", duplicateCmdDocumentId, duplicateCmdCmdId, err)
@@ -363,6 +337,7 @@ func (serv *opServe) handleCommit(data *TransData, receiveData *ReceiveData) {
 			log.Println("Document lastCmdVerId[DocumentId:"+documentId+"]"+"设置失败", err)
 			// return errors.New("数据插入失败")
 		}
+		log.Println("广播", string(cmdItemListData))
 		serv.redis.Client.Publish(context.Background(), "Document Op[DocumentId:"+documentId+"]", cmdItemListData) // 通知客户端是通过redis订阅来触发的
 		// return nil
 		// debug
