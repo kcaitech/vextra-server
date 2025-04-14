@@ -15,32 +15,24 @@ import (
 
 // for mongo
 type Cmd struct {
-	Id          string   `json:"id" bson:"cmd_id"`         // 前端过来的uuid，在文档内保证唯一就行
-	BaseVer     uint     `json:"base_ver" bson:"base_ver"` // 引用的是VerId
-	BatchId     string   `json:"batch_id" bson:"batch_id"` // 引用的是Id，uuid
+	Id          string   `json:"id" bson:"cmd_id"`        // 前端过来的uuid，在文档内保证唯一就行
+	BaseVer     uint     `json:"baseVer" bson:"base_ver"` // 引用的是VerId
+	BatchId     string   `json:"batchId" bson:"batch_id"` // 引用的是Id，uuid
 	Ops         []bson.M `json:"ops" bson:"ops"`
-	IsRecovery  bool     `json:"recovery" bson:"recovery"`
+	IsRecovery  bool     `json:"isRecovery" bson:"recovery"`
 	Description string   `json:"description" bson:"description"`
-	Time        int64    `json:"time" bson:"time"`                           // 编辑时间
-	Posttime    int64    `json:"posttime" bson:"posttime"`                   // 上传时间
-	DataFmtVer  string   `json:"fmt_ver,omitempty" bson:"fmt_ver,omitempty"` // int | string
+	Time        int64    `json:"time" bson:"time"`                              // 编辑时间
+	Posttime    int64    `json:"posttime" bson:"posttime"`                      // 上传时间
+	DataFmtVer  string   `json:"dataFmtVer,omitempty" bson:"fmt_ver,omitempty"` // int | string
 }
 
-// type CmdItemExtra struct {
-// 	// CmdId       string `json:"cmd_id" bson:"cmd_id"`
-// }
-
 type CmdItem struct {
-	// UnionId struct { // 联合id
-	// 	DocumentId string `json:"document_id" bson:"document_id"`
-	// 	CmdId      string `json:"cmd_id" bson:"cmd_id"`
-	// } `json:"union_id" bson:"_id"`
-	DocumentId   string `json:"document_id" bson:"document_id"`
+	DocumentId   string `json:"documentId" bson:"document_id"`
 	Cmd          Cmd    `json:",inline" bson:",inline"`
-	UserId       string `json:"user_id" bson:"user_id"`
-	VerId        uint   `json:"ver_id" bson:"ver_id"`           // version id
-	BatchStartId uint   `json:"batch_start" bson:"batch_start"` // 引用的是VerId
-	BatchLength  uint   `json:"batch_length" bson:"batch_length"`
+	UserId       string `json:"userId" bson:"user_id"`
+	VerId        uint   `json:"version" bson:"ver_id"`         // version id
+	BatchStartId uint   `json:"batchStart" bson:"batch_start"` // 引用的是VerId
+	BatchLength  uint   `json:"batchLength" bson:"batch_length"`
 }
 
 func (cmdItem CmdItem) MarshalJSON() ([]byte, error) {

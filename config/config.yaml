@@ -34,9 +34,9 @@ redis:
   url: redis:6380
   password: kcserver
   db: 0
-  sentinel: true
-  sentinelAddrs:
-  masterName:
+  # sentinel: true
+  # sentinelAddrs:
+  # masterName:
 
 storage:
   provider: minio

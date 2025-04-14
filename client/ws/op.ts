@@ -106,16 +106,10 @@ export class CoopNet extends ConnectClient {
     onMessage(data: any): void {
         const cmdsData = JSON.parse(data.cmds_data ?? '""') as any[]
         let cmds: Cmd[] | undefined
-        let cmds1: Cmd[] | undefined
+        // let cmds1: Cmd[] | undefined
         if (Array.isArray(cmdsData)) {
-            const data = cmdsData.map(item => {
-                // item.cmd.id = item.cmd_id
-                // item.cmd.version = this.radixRevert.from(item.id)
-                // item.cmd.previousVersion = this.radixRevert.from(item.previous_id)
-                return item.cmd
-            })
-            cmds = this.parseCmds(data)
-            cmds1 = this.parseCmds(data)
+            cmds = this.parseCmds(cmdsData)
+            // cmds1 = this.parseCmds(cmdsData)
         }
         // pullCmdsResult update errorInvalidParams errorNoPermission errorInsertFailed errorPullCmdsFailed
         if (data.type === "pullCmdsResult" || data.type === "errorPullCmdsFailed") {
@@ -132,7 +126,7 @@ export class CoopNet extends ConnectClient {
                     console.log("返回数据格式错误")
                     for (const item of this.pullCmdsPromiseList[key]) item.reject(new Error("返回数据格式错误"));
                 } else {
-                    console.log("pullCmdsResult", cmds1)
+                    console.log("pullCmdsResult", JSON.stringify(cmds))
                     for (const item of this.pullCmdsPromiseList[key]) item.resolve(cmds);
                 }
                 // 有什么用？
@@ -149,7 +143,7 @@ export class CoopNet extends ConnectClient {
                 console.log("返回数据格式错误")
                 return
             }
-            console.log("update", cmds1)
+            console.log("update", JSON.stringify(cmds))
             // for (const watcher of this.watcherList) watcher(convert(cmds));
             this.watcherList.slice(0).forEach(watcher => watcher(convert(cmds)));
         } else if (data.type === "errorInvalidParams") {

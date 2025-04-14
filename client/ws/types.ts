@@ -100,7 +100,6 @@ export interface Cmd {
     posttime: number;
     dataFmtVer: string;
     version: number;
-    // preVersion: number;
 }
 export interface OpItem {
     op: Op;
