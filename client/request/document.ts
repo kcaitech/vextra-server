@@ -235,7 +235,6 @@ export class DocumentAPI {
             method: 'get',
             params: params,
         })
-        console.log('收藏列表数据校验失败---------:', result)
         try {
             return FavoriteListResponseSchema.parse(result)
         } catch (error) {
