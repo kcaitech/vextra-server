@@ -126,7 +126,7 @@ func (s *CmdService) GetCmdItemsFromStart(documentId string, verStart uint) ([]C
 	filter := bson.M{"document_id": documentId, "ver_id": bson.M{"$gte": verStart}}
 	options := options.Find()
 	options.SetSort(bson.D{{Key: "ver_id", Value: 1}})
-	cursor, err := s.MongoDB.DB.Collection("cmd_items").Find(context.Background(), filter, options)
+	cursor, err := s.Collection.Find(context.Background(), filter, options)
 	if err != nil {
 		return nil, err
 	}

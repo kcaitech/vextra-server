@@ -40,14 +40,18 @@ func NewRedisStore(addr, password string, db int) (*RedisStore, error) {
 
 // IncrRateLimit Increment rate limit counter and return current value
 func (rs *RedisStore) IncrRateLimit(key string, window time.Duration) (int, error) {
-	pipe := rs.Client.Pipeline()
-	incr := pipe.Incr(rs.Ctx, key)
-	pipe.Expire(rs.Ctx, key, window)
-	_, err := pipe.Exec(rs.Ctx)
+	// 使用 Redis 的 INCR 命令增加计数
+	count, err := rs.Client.Incr(rs.Ctx, key).Result()
 	if err != nil {
 		return 0, err
 	}
-	return int(incr.Val()), nil
+
+	// 如果是第一次设置或者没有设置过期时间，则设置过期时间
+	if count == 1 || rs.Client.TTL(rs.Ctx, key).Val() == -1 {
+		rs.Client.Expire(rs.Ctx, key, window)
+	}
+
+	return int(count), nil
 }
 
 // StoreRateLimit Store rate limit information
@@ -103,7 +107,7 @@ func DefaultRateLimiterConfig() RateLimiterConfig {
 		EnableIPRateLimit:     true,
 		EnableUserRateLimit:   true,
 		EnableGlobalRateLimit: false,
-		GlobalMaxRequests:     1000,
+		GlobalMaxRequests:     10000,
 		GlobalWindow:          time.Minute,
 	}
 }
