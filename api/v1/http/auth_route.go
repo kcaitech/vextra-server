@@ -2,18 +2,19 @@ package http
 
 import (
 	"log"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"kcaitech.com/kcserver/common/response"
 	"kcaitech.com/kcserver/services"
-	// controllers "kcaitech.com/kcserver/handlers/auth"
+	// handlers "kcaitech.com/kcserver/handlers/auth"
 )
 
 func loadLoginRoutes(api *gin.RouterGroup) {
 	router := api.Group("/auth")
 
-	// router.POST("/login/wx", controllers.WxOpenWebLogin)
-	// router.POST("/login/wx_mp", controllers.WxMpLogin)
+	// router.POST("/login/wx", handlers.WxOpenWebLogin)
+	// router.POST("/login/wx_mp", handlers.WxMpLogin)
 	router.POST("/refresh_token", RefreshToken)
 }
 
@@ -31,10 +32,14 @@ func RefreshToken(c *gin.Context) {
 		response.BadRequest(c, "Refresh token not provided")
 		return
 	}
-	token, err := client.RefreshToken(refreshToken, c)
+	token, statusCode, err := client.RefreshToken(refreshToken, c)
 	if err != nil {
 		log.Printf("Refresh token failed: %s", err.Error())
-		response.BadRequest(c, err.Error())
+		if statusCode == http.StatusUnauthorized {
+			response.Unauthorized(c)
+		} else {
+			response.BadRequest(c, err.Error())
+		}
 		return
 	}
 	response.Success(c, map[string]any{
