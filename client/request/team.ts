@@ -215,7 +215,8 @@ const ProjectFavoriteListResponseSchema = BaseResponseSchema.extend({
             open_invite: z.boolean(),
             need_approval: z.boolean(),
             created_at: z.string(),
-            updated_at: z.string()
+            updated_at: z.string(),
+            team_id: z.string()
         }),
     }))
 })

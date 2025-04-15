@@ -2,14 +2,12 @@ package document
 
 import (
 	"errors"
-	"time"
 
 	"github.com/gin-gonic/gin"
 	"kcaitech.com/kcserver/common/response"
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils"
-	myTime "kcaitech.com/kcserver/utils/time"
 )
 
 // GetUserRecycleBinDocumentList 获取用户回收站文档列表
@@ -20,7 +18,33 @@ func GetUserRecycleBinDocumentList(c *gin.Context) {
 		return
 	}
 	projectId := c.Query("project_id")
-	response.Success(c, services.NewDocumentService().FindRecycleBinByUserId(userId, projectId))
+	recycleBinList := services.NewDocumentService().FindRecycleBinByUserId(userId, projectId)
+	// 获取用户信息
+	userIds := make([]string, 0)
+	for _, item := range *recycleBinList {
+		userIds = append(userIds, item.Document.UserId)
+	}
+
+	userMap, err := GetUsersInfo(c, userIds)
+	if err != nil {
+		response.ServerError(c, err.Error())
+		return
+	}
+
+	result := make([]services.RecycleBinQueryResItem, 0)
+	for _, item := range *recycleBinList {
+		userId := item.Document.UserId
+		userInfo, exists := userMap[userId]
+		if exists {
+			item.User = &models.UserProfile{
+				Id:       userInfo.UserID,
+				Nickname: userInfo.Profile.Nickname,
+				Avatar:   userInfo.Profile.Avatar,
+			}
+			result = append(result, item)
+		}
+	}
+	response.Success(c, result)
 }
 
 type RestoreUserRecycleBinDocumentReq struct {
@@ -66,7 +90,7 @@ func RestoreUserRecycleBinDocument(c *gin.Context) {
 	}
 	if _, err := documentService.UpdateColumns(
 		map[string]any{"deleted_at": nil},
-		"id = ? and deleted_at is not null and purged_at is null", documentId,
+		"id = ? and deleted_at is not null", documentId,
 		&services.Unscoped{},
 	); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
 		response.ServerError(c, "更新错误")
@@ -107,13 +131,11 @@ func DeleteUserRecycleBinDocument(c *gin.Context) {
 			return
 		}
 	}
-	if _, err := documentService.UpdateColumns(
-		map[string]any{"purged_at": myTime.Time(time.Now())},
-		"id = ? and deleted_at is not null", documentId,
-		&services.Unscoped{},
-	); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
+	_, err = documentService.HardDelete("id = ? and deleted_at is not null", documentId)
+	if err != nil && !errors.Is(err, services.ErrRecordNotFound) {
 		response.ServerError(c, "更新错误")
 		return
 	}
+	// todo 删除oss文件
 	response.Success(c, "")
 }

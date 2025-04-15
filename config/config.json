@@ -8,7 +8,7 @@
     },
     "storage_url": {
         "document": "http://localhost:9000",
-        "attatch": "http://localhost:9000/files"
+        "attatch": "http://localhost:9000/attatch"
     },
     "wx": {
         "appid": "xxx",

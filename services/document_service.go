@@ -145,7 +145,7 @@ type RecycleBinQueryResItem struct {
 func (s *DocumentService) FindRecycleBinByUserId(userId string, projectId string) *[]RecycleBinQueryResItem {
 	var result = make([]RecycleBinQueryResItem, 0)
 	whereArgsList := []WhereArgs{
-		{"document.deleted_at is not null and document.purged_at is null", nil},
+		{"document.deleted_at is not null", nil},
 	}
 	if projectId != "" {
 		whereArgsList = append(whereArgsList, WhereArgs{"document.project_id = ?", []any{projectId}})

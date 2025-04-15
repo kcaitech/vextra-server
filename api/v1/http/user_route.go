@@ -47,6 +47,7 @@ func GetUserInfo(c *gin.Context) {
 	// userId := c.Query("user_id")
 	user, err := get_user_info(c)
 	if err != nil {
+		log.Println("获取用户信息失败", err)
 		response.ServerError(c, "操作失败")
 		return
 	}
@@ -144,10 +145,12 @@ func SetAvatar(c *gin.Context) {
 		return
 	}
 	client := services.GetKCAuthClient()
-	err = client.UpdateAvatar(token, fileBytes, fileHeader.Filename)
+	url, err := client.UpdateAvatar(token, fileBytes, fileHeader.Filename)
 	if err != nil {
-		response.ServerError(c, "操作失败")
+		response.ServerError(c, err.Error())
 		return
 	}
-	response.Success(c, "")
+	response.Success(c, map[string]any{
+		"avatar": url,
+	})
 }
