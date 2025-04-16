@@ -1,5 +1,5 @@
 import { HttpMgr } from "./http"
-import { BaseResponse, BaseResponseSchema, PermType, UserInfoSchema } from "./types"
+import { BaseResponse, BaseResponseSchema, PermType, ProjectInfoSchema, TeamInfoSchema, UserInfoSchema } from "./types"
 import { z } from 'zod';
 
 // 文档列表响应类型
@@ -20,17 +20,8 @@ export const DocumentListResponseSchema = BaseResponseSchema.extend({
             deleted_at: z.string().nullable()
         }),
         user: UserInfoSchema,
-        team: z.object({
-            id: z.string(),
-            name: z.string(),
-            description: z.string().optional(),
-            avatar: z.string().optional()
-        }).nullable(),
-        project: z.object({
-            id: z.string(),
-            name: z.string(),
-            description: z.string().optional()
-        }).nullable(),
+        team: TeamInfoSchema.nullable(),
+        project: ProjectInfoSchema.nullable(),
         document_favorites: z.object({
             id: z.string(),
             user_id: z.string(),

@@ -26,3 +26,5 @@ export * from "./team"
 export * from "./share"
 export * from "./comment"
 export * from "./document"
+
+export type { UserInfo, TeamInfo, ProjectInfo } from "./types"
