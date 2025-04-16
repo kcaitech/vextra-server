@@ -30,11 +30,21 @@ func GetUserRecycleBinDocumentList(c *gin.Context) {
 		response.ServerError(c, err.Error())
 		return
 	}
-
 	result := make([]services.RecycleBinQueryResItem, 0)
 	for _, item := range *recycleBinList {
 		userId := item.Document.UserId
 		userInfo, exists := userMap[userId]
+		deleteById := item.Document.DeleteBy
+		if deleteById != "" {
+			deleteUserInfo, deleteExists := userMap[deleteById]
+			if deleteExists {
+				item.DeleteUser = &models.UserProfile{
+					Id:       deleteUserInfo.UserID,
+					Nickname: deleteUserInfo.Profile.Nickname,
+					Avatar:   deleteUserInfo.Profile.Avatar,
+				}
+			}
+		}
 		if exists {
 			item.User = &models.UserProfile{
 				Id:       userInfo.UserID,
