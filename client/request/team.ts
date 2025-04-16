@@ -81,11 +81,7 @@ const TeamMemberListResponseSchema = BaseResponseSchema.extend({
             created_at: z.string(),
             updated_at: z.string()
         }),
-        user: z.object({
-            id: z.string(),
-            nickname: z.string(),
-            avatar: z.string()
-        })
+        user: UserInfoSchema
     }))
 })
 
@@ -125,16 +121,28 @@ export type ProjectApplyListItem = z.infer<typeof ProjectApplyListResponseSchema
 // 团队申请列表响应类型
 const TeamApplyListResponseSchema = BaseResponseSchema.extend({
     data: z.array(z.object({
-        id: z.string(),
-        user_id: z.string(),
-        team_id: z.string(),
-        perm_type: z.nativeEnum(TeamPermType),
-        status: z.number(),
-        first_displayed_at: z.string().nullable(),
-        processed_at: z.string().nullable(),
-        processed_by: z.string().nullable(),
-        applicant_notes: z.string().nullable(),
-        processor_notes: z.string().nullable()
+        request: z.object({
+            id: z.string(),
+            user_id: z.string(),
+            team_id: z.string(),
+            perm_type: z.nativeEnum(TeamPermType),
+            status: z.number(),
+            first_displayed_at: z.string().nullable(),
+            processed_at: z.string().nullable(),
+            processed_by: z.string().nullable(),
+            applicant_notes: z.string().nullable(),
+            processor_notes: z.string().nullable(),
+        }),
+        team: z.object({
+            id: z.string(),
+            name: z.string(),
+            description: z.string().optional(),
+            avatar: z.string().optional(),
+            invited_perm_type: z.nativeEnum(TeamPermType),
+            open_invite: z.boolean(),
+            created_at: z.string(),
+        }),
+        user: UserInfoSchema
     }))
 })
 
@@ -163,6 +171,16 @@ const TeamProjectListResponseSchema = BaseResponseSchema.extend({
         is_invited: z.boolean()
     }))
 })
+
+const CreateTeamResponseSchema = BaseResponseSchema.extend({
+    data: z.object({
+        description: z.string(),
+        id: z.string(),
+        name: z.string(),
+    })
+})
+
+export type CreateTeamResponse = z.infer<typeof CreateTeamResponseSchema>
 
 export type TeamProjectListResponse = z.infer<typeof TeamProjectListResponseSchema>
 export type TeamProjectListItem = z.infer<typeof TeamProjectListResponseSchema.shape.data.element>
@@ -284,14 +302,23 @@ export class TeamAPI {
     async createTeam(params: {
         name: string;
         description?: string;
-    }): Promise<BaseResponse> {
+        avatar?: File;
+    }): Promise<CreateTeamResponse> {
+        const formData = new FormData();
+        formData.append('name', params.name);
+        if (params.description) {
+            formData.append('description', params.description);
+        }
+        if (params.avatar) {
+            formData.append('avatar', params.avatar);
+        }
         const result = await this.http.request({
             url: '/documents/team',
             method: 'post',
-            data: params,
+            data: formData,
         });
         try {
-            return BaseResponseSchema.parse(result);
+            return CreateTeamResponseSchema.parse(result);
         } catch (error) {
             console.error('创建团队响应数据校验失败:', error);
             throw error;
@@ -304,7 +331,7 @@ export class TeamAPI {
         status?: number;
         page?: number;
         page_size?: number;
-        start_time? : number;
+        start_time?: number;
     }): Promise<TeamApplyListResponse> {
         const result = await this.http.request({
             url: `/documents/team/apply`,

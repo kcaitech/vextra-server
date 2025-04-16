@@ -57,20 +57,12 @@ export const DocumentRecycleListResponseSchema = BaseResponseSchema.extend({
             deleted_at: z.string().nullable()
         }),
         user: UserInfoSchema,
-        team: z.object({
-            id: z.string(),
-            name: z.string(),
-            description: z.string().optional(),
-            avatar: z.string().optional()
-        }).nullable(),
-        project: z.object({
-            id: z.string(),
-            name: z.string(),
-            description: z.string().optional()
-        }).nullable(),
+        team: TeamInfoSchema.nullable(),
+        project: ProjectInfoSchema.nullable(),
         document_favorites: z.object({
             id: z.string(),
             user_id: z.string(),
+            is_favorite: z.boolean(),
             document_id: z.string(),
             created_at: z.string(),
             updated_at: z.string()
@@ -83,7 +75,7 @@ export const DocumentRecycleListResponseSchema = BaseResponseSchema.extend({
             created_at: z.string(),
             updated_at: z.string()
         }).nullable(),
-        delete_user: UserInfoSchema
+        delete_user: UserInfoSchema.nullable()
     }))
 })
 export type DocumentRecycleListResponse = z.infer<typeof DocumentRecycleListResponseSchema>
@@ -305,8 +297,6 @@ export class DocumentAPI {
             method: 'get',
             params: params,
         });
-        console.log('获取回收站列表:', result);
-        
         try {
             return DocumentRecycleListResponseSchema.parse(result);
         } catch (error) {
