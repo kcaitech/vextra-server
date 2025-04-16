@@ -138,7 +138,7 @@ type AccessRecordAndFavoritesQueryResItem struct {
 
 type RecycleBinQueryResItem struct {
 	AccessRecordAndFavoritesQueryResItem
-	DeleteUser string `gorm:"embedded;embeddedPrefix:delete_user__" json:"delete_user" join:"user,delete_user;left;id,document.delete_by"`
+	DeleteUser *models.UserProfile `gorm:"-" json:"delete_user"`
 }
 
 // FindRecycleBinByUserId 查询用户的回收站列表
