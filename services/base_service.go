@@ -74,7 +74,7 @@ func NewDefaultService(model models.BaseModel) *DefaultService {
 	db := dbModule.DB.Model(model)
 	_ = db.Statement.Parse(&model)
 	s.TableName = db.Statement.Table
-	s.TableName = s.TableName
+	// s.TableName = s.TableName
 	for _, field := range db.Statement.Schema.Fields {
 		s.FieldNames = append(s.FieldNames, field.DBName)
 		s.TableFieldNames = append(s.TableFieldNames, fmt.Sprintf("%s.%s", s.TableName, field.DBName))

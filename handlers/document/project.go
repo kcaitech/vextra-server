@@ -621,11 +621,11 @@ func SetProjectInvited(c *gin.Context) {
 		return
 	}
 	var req struct {
-		ProjectId    string                  `json:"project_id" binding:"required"`
-		PublicSwitch *bool                   `json:"public_switch"` // 是否在团队内部公开
-		PermType     *models.ProjectPermType `json:"perm_type"`     // 团队内的公开权限类型、或邀请权限类型
-		OpenInvite   *bool                   `json:"open_invite"`   // 邀请开关
-		NeedApproval *bool                   `json:"need_approval"` // 申请是否需要审批
+		ProjectId     string                  `json:"project_id" binding:"required"`
+		PublicSwitch  *bool                   `json:"public_switch"`  // 是否在团队内部公开
+		PermType      *models.ProjectPermType `json:"perm_type"`      // 团队内的公开权限类型、或邀请权限类型
+		InvitedSwitch *bool                   `json:"invited_switch"` // 邀请开关
+		NeedApproval  *bool                   `json:"need_approval"`  // 申请是否需要审批
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, err.Error())
@@ -636,7 +636,7 @@ func SetProjectInvited(c *gin.Context) {
 		response.BadRequest(c, "参数错误：project_id")
 		return
 	}
-	if req.PublicSwitch == nil && req.PermType == nil && req.OpenInvite == nil && req.NeedApproval == nil {
+	if req.PublicSwitch == nil && req.PermType == nil && req.InvitedSwitch == nil && req.NeedApproval == nil {
 		response.BadRequest(c, "")
 		return
 	}
@@ -654,13 +654,13 @@ func SetProjectInvited(c *gin.Context) {
 	}
 	updateColumns := map[string]any{}
 	if req.PublicSwitch != nil {
-		updateColumns["public_switch"] = *req.PublicSwitch
+		updateColumns["open_invite"] = *req.PublicSwitch
 	}
 	if req.PermType != nil {
 		updateColumns["perm_type"] = *req.PermType
 	}
-	if req.OpenInvite != nil {
-		updateColumns["open_invite"] = *req.OpenInvite
+	if req.InvitedSwitch != nil {
+		updateColumns["invited_switch"] = *req.InvitedSwitch
 	}
 	if req.NeedApproval != nil {
 		updateColumns["need_approval"] = *req.NeedApproval
@@ -687,15 +687,17 @@ func GetProjectInvitedInfo(c *gin.Context) {
 	projectService := services.NewProjectService()
 	var project models.Project
 	if err := projectService.GetById(projectId, &project); err != nil {
+		log.Println("GetProjectInvitedInfo查询错误", err)
 		response.ServerError(c, "查询错误")
 		return
 	}
-	if !project.OpenInvite {
-		response.BadRequest(c, "项目邀请已关闭")
-		return
-	}
+	// if !project.OpenInvite {
+	// 	response.BadRequest(c, "项目邀请已关闭")
+	// 	return
+	// }
 	selfPermType, err := projectService.GetProjectPermTypeByForUser(projectId, userId)
 	if err != nil {
+		log.Println("GetProjectInvitedInfo查询错误1", err)
 		response.ServerError(c, "查询错误")
 		return
 	}
