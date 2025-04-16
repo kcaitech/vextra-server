@@ -30,3 +30,4 @@
 ./kcserver.*
 kcserver.*
 **/*.log
+package-lock.json
