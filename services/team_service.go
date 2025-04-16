@@ -92,12 +92,14 @@ func (s *TeamService) UploadTeamAvatar(team *models.Team, fileBytes []byte, cont
 	fileName := fmt.Sprintf("%s.%s", id, suffix)
 	avatarPath := fmt.Sprintf("/teams/%s/avatar/%s", team.Id, fileName)
 	if _, err := s.storage.AttatchBucket.PutObjectByte(avatarPath, fileBytes); err != nil {
+		log.Println("上传文件失败", err)
 		return "", errors.New("上传文件失败")
 	}
 	team.Avatar = avatarPath
 	if _, err := s.UpdateColumnsById(team.Id, map[string]any{
 		"avatar": avatarPath,
 	}); err != nil {
+		log.Println("更新团队头像失败", err)
 		return "", errors.New("更新错误")
 	}
 	return avatarPath, nil

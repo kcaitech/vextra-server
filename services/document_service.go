@@ -138,14 +138,14 @@ type AccessRecordAndFavoritesQueryResItem struct {
 
 type RecycleBinQueryResItem struct {
 	AccessRecordAndFavoritesQueryResItem
-	DeleteUser string `gorm:"embedded;embeddedPrefix:delete_user__" json:"delete_user" join:"user,delete_user;left;id,document.delete_by"`
+	DeleteUser *models.UserProfile `gorm:"-" json:"delete_user"`
 }
 
 // FindRecycleBinByUserId 查询用户的回收站列表
 func (s *DocumentService) FindRecycleBinByUserId(userId string, projectId string) *[]RecycleBinQueryResItem {
 	var result = make([]RecycleBinQueryResItem, 0)
 	whereArgsList := []WhereArgs{
-		{"document.deleted_at is not null and document.purged_at is null", nil},
+		{"document.deleted_at is not null", nil},
 	}
 	if projectId != "" {
 		whereArgsList = append(whereArgsList, WhereArgs{"document.project_id = ?", []any{projectId}})

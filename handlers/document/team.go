@@ -162,7 +162,14 @@ func GetTeamList(c *gin.Context) {
 			continue
 		}
 		resultWithCreator = append(resultWithCreator, TeamQueryResItemWithCreator{
-			Team:         item.Team,
+			Team: models.Team{
+				Id:              item.Team.Id,
+				Name:            item.Team.Name,
+				Description:     item.Team.Description,
+				Avatar:          services.GetConfig().StorageUrl.Attatch + item.Team.Avatar,
+				InvitedPermType: item.Team.InvitedPermType,
+				OpenInvite:      item.Team.OpenInvite,
+			},
 			SelfPermType: item.SelfPermType,
 			CreatorUser: models.UserProfile{
 				Id:       user.UserID,
@@ -650,9 +657,12 @@ func SetTeamInfo(c *gin.Context) {
 				return
 			}
 		}
-		if avatarPath, err := teamService.UploadTeamAvatarById(teamId, fileBytes, contentType); err == nil {
-			// result["avatar"] = config.Config.StorageUrl.Attatch + avatarPath
-			result["avatar"] = avatarPath
+		avatarPath, err := teamService.UploadTeamAvatarById(teamId, fileBytes, contentType)
+		if err == nil {
+			result["avatar"] = services.GetConfig().StorageUrl.Attatch + avatarPath
+			// result["avatar"] = avatarPath
+		} else {
+			log.Println("上传头像失败", err)
 		}
 	}
 	response.Success(c, result)
