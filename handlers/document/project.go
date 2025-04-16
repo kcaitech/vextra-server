@@ -691,10 +691,10 @@ func GetProjectInvitedInfo(c *gin.Context) {
 		response.ServerError(c, "查询错误")
 		return
 	}
-	// if !project.OpenInvite {
-	// 	response.BadRequest(c, "项目邀请已关闭")
-	// 	return
-	// }
+	if !project.OpenInvite {
+		response.BadRequest(c, "项目邀请已关闭")
+		return
+	}
 	selfPermType, err := projectService.GetProjectPermTypeByForUser(projectId, userId)
 	if err != nil {
 		log.Println("GetProjectInvitedInfo查询错误1", err)
