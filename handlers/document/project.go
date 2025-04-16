@@ -621,11 +621,11 @@ func SetProjectInvited(c *gin.Context) {
 		return
 	}
 	var req struct {
-		ProjectId     string                  `json:"project_id" binding:"required"`
-		PublicSwitch  *bool                   `json:"public_switch"`  // 是否在团队内部公开
-		PermType      *models.ProjectPermType `json:"perm_type"`      // 团队内的公开权限类型、或邀请权限类型
-		InvitedSwitch *bool                   `json:"invited_switch"` // 邀请开关
-		NeedApproval  *bool                   `json:"need_approval"`  // 申请是否需要审批
+		ProjectId    string                  `json:"project_id" binding:"required"`
+		PublicSwitch *bool                   `json:"public_switch"` // 是否在团队内部公开
+		PermType     *models.ProjectPermType `json:"perm_type"`     // 团队内的公开权限类型、或邀请权限类型
+		OpenInvite   *bool                   `json:"open_invite"`   // 邀请开关
+		NeedApproval *bool                   `json:"need_approval"` // 申请是否需要审批
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, err.Error())
@@ -636,7 +636,7 @@ func SetProjectInvited(c *gin.Context) {
 		response.BadRequest(c, "参数错误：project_id")
 		return
 	}
-	if req.PublicSwitch == nil && req.PermType == nil && req.InvitedSwitch == nil && req.NeedApproval == nil {
+	if req.PublicSwitch == nil && req.PermType == nil && req.OpenInvite == nil && req.NeedApproval == nil {
 		response.BadRequest(c, "")
 		return
 	}
@@ -659,8 +659,8 @@ func SetProjectInvited(c *gin.Context) {
 	if req.PermType != nil {
 		updateColumns["perm_type"] = *req.PermType
 	}
-	if req.InvitedSwitch != nil {
-		updateColumns["invited_switch"] = *req.InvitedSwitch
+	if req.OpenInvite != nil {
+		updateColumns["open_invite"] = *req.OpenInvite
 	}
 	if req.NeedApproval != nil {
 		updateColumns["need_approval"] = *req.NeedApproval
