@@ -49,6 +49,53 @@ export const DocumentListResponseSchema = BaseResponseSchema.extend({
     }))
 })
 
+export const DocumentRecycleListResponseSchema = BaseResponseSchema.extend({
+    data: z.array(z.object({
+        document: z.object({
+            id: z.string(),
+            user_id: z.string(),
+            path: z.string(),
+            doc_type: z.number(),
+            name: z.string(),
+            size: z.number(),
+            version_id: z.string(),
+            team_id: z.string().nullable(),
+            project_id: z.string().nullable(),
+            created_at: z.string(),
+            updated_at: z.string(),
+            deleted_at: z.string().nullable()
+        }),
+        user: UserInfoSchema,
+        team: z.object({
+            id: z.string(),
+            name: z.string(),
+            description: z.string().optional(),
+            avatar: z.string().optional()
+        }).nullable(),
+        project: z.object({
+            id: z.string(),
+            name: z.string(),
+            description: z.string().optional()
+        }).nullable(),
+        document_favorites: z.object({
+            id: z.string(),
+            user_id: z.string(),
+            document_id: z.string(),
+            created_at: z.string(),
+            updated_at: z.string()
+        }).nullable(),
+        document_access_record: z.object({
+            id: z.string(),
+            user_id: z.string(),
+            document_id: z.string(),
+            last_access_time: z.string(),
+            created_at: z.string(),
+            updated_at: z.string()
+        }).nullable(),
+        delete_user: UserInfoSchema
+    }))
+})
+export type DocumentRecycleListResponse = z.infer<typeof DocumentRecycleListResponseSchema>
 export type DocumentListResponse = z.infer<typeof DocumentListResponseSchema>
 export type DocumentListItem = z.infer<typeof DocumentListResponseSchema.shape.data.element>
 
@@ -261,14 +308,14 @@ export class DocumentAPI {
         project_id?: string;
         page?: number;
         page_size?: number;
-    }): Promise<DocumentListResponse> {
+    }): Promise<DocumentRecycleListResponse> {
         const result = await this.http.request({
             url: 'documents/recycle_bin',
             method: 'get',
             params: params,
         });
         try {
-            return DocumentListResponseSchema.parse(result);
+            return DocumentRecycleListResponseSchema.parse(result);
         } catch (error) {
             console.error('项目回收站列表数据校验失败:', error);
             throw error;
