@@ -1,3 +1,5 @@
+import { CommentItem } from "../request/comment";
+
 export enum DataTypes {
     Op = "op",
     Comment = "comment",
@@ -22,23 +24,9 @@ export enum DocCommentOpType {
     Update,
 }
 
-export interface Comment {
-    id: string;
-    content: string;
-    user_id: string;
-    create_time: number;
-    update_time: number;
-    page_id: string;
-    shape_id?: string;
-    position?: {
-        x: number;
-        y: number;
-    };
-}
-
 export interface DocCommentOpData {
     type: DocCommentOpType;
-    comment: Comment;
+    comment: CommentItem;
 }
 
 export type ResourceHeader = {

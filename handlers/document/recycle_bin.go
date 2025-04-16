@@ -136,5 +136,6 @@ func DeleteUserRecycleBinDocument(c *gin.Context) {
 		response.ServerError(c, "更新错误")
 		return
 	}
+	// todo 删除oss文件
 	response.Success(c, "")
 }

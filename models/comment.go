@@ -24,12 +24,12 @@ type UserCommentCommon struct {
 	CommentId     string            `json:"id" bson:"comment_id,omitempty" binding:"required"` // 前端生成,uuid
 	ParentId      string            `json:"parent_id" bson:"parent_id"`
 	RootId        string            `json:"root_id" bson:"root_id"`
-	DocumentId    string            `json:"doc_id,string" bson:"document_id" binding:"required"`
+	DocumentId    string            `json:"doc_id" bson:"document_id" binding:"required"`
 	PageId        string            `json:"page_id" bson:"page_id" binding:"required"`
 	ShapeId       string            `json:"shape_id" bson:"shape_id" binding:"required"`
 	TargetShapeId string            `json:"target_shape_id" bson:"target_shape_id" binding:"required"`
 	ShapeFrame    map[string]any    `json:"shape_frame" bson:"shape_frame"`
-	Content       string            `json:"content" bson:"content" binding:"required"`
+	Content       string            `json:"content" bson:"content"`
 	Status        UserCommentStatus `json:"status" bson:"status"`
 }
 
@@ -46,7 +46,7 @@ type UserCommentCommon struct {
 // }
 
 type UserComment struct {
-	Id                primitive.ObjectID `json:"-" bson:"_id"`
+	Id                primitive.ObjectID `json:"-" bson:"_id,omitempty"`
 	UserCommentCommon `json:",inline" bson:",inline"`
 	// UnionId           struct {
 	// 	DocumentId string `json:"document_id" bson:"document_id"`

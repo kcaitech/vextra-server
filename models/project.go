@@ -29,7 +29,7 @@ func (projectPermType ProjectPermType) ToPermType() PermType {
 // Project 项目
 type Project struct {
 	// BaseModelStruct
-	Id        string    `gorm:"primaryKey" json:"id,string"` // 主键，自增
+	Id        string    `gorm:"primaryKey" json:"id"` // 主键，自增
 	CreatedAt time.Time `gorm:"autoCreateTime;type:datetime(6)" json:"created_at"`
 	UpdatedAt time.Time `gorm:"autoUpdateTime;type:datetime(6)" json:"updated_at"`
 	DeletedAt DeletedAt `gorm:"index" json:"deleted_at"`

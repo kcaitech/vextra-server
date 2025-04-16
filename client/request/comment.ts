@@ -31,7 +31,7 @@ const CommentItemSchema = z.object({
         x2: z.number(),
         y1: z.number(),
         y2: z.number()
-    }),
+    }).nullable().optional(),
     user: UserInfoSchema,
     created_at: z.string(),
     record_created_at: z.string(),
@@ -58,7 +58,7 @@ const CreateCommentSchema = z.object({
         x2: z.number(),
         y1: z.number(),
         y2: z.number()
-    }),
+    }).nullable().optional(),
     content: z.string(),
     record_created_at: z.string()
 })
@@ -80,7 +80,7 @@ const CommentCommonSchema = z.object({
         y1: z.number(),
         y2: z.number()
     }).nullable().optional(),
-    content: z.string(),
+    content: z.string().optional(),
     status: z.nativeEnum(CommentStatus).optional()
 })
 
@@ -131,6 +131,7 @@ export class CommentAPI {
             method: 'get',
             params: params,
         })
+        console.log('获取评论列表响应数据:', result);
         try {
             return CommentListResponseSchema.parse(result);
         } catch (error) {
