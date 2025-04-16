@@ -62,6 +62,7 @@ export const DocumentRecycleListResponseSchema = BaseResponseSchema.extend({
         document_favorites: z.object({
             id: z.string(),
             user_id: z.string(),
+            is_favorite: z.boolean(),
             document_id: z.string(),
             created_at: z.string(),
             updated_at: z.string()
@@ -74,7 +75,7 @@ export const DocumentRecycleListResponseSchema = BaseResponseSchema.extend({
             created_at: z.string(),
             updated_at: z.string()
         }).nullable(),
-        delete_user: UserInfoSchema
+        delete_user: UserInfoSchema.nullable()
     }))
 })
 export type DocumentRecycleListResponse = z.infer<typeof DocumentRecycleListResponseSchema>

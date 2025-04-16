@@ -68,7 +68,6 @@ export const ShareApplyListResponseSchema = BaseResponseSchema.extend({
             team_id: z.string().nullable(),
             project_id: z.string().nullable(),
             created_at: z.string(),
-            updated_at: z.string(),
             deleted_at: z.string().nullable()
         }),
         team: z.object({
@@ -87,8 +86,10 @@ export const ShareApplyListResponseSchema = BaseResponseSchema.extend({
             status: z.number(),
             created_at: z.string(),
             updated_at: z.string(),
+            deleted_at: z.string().nullable(),
             first_displayed_at: z.string().nullable()
-        })
+        }),
+        user_team_nickname: z.string().optional()
     }))
 });
 
