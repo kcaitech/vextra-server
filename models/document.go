@@ -56,7 +56,7 @@ type Document struct {
 	Name    string  `gorm:"size:64" json:"name"`
 	Size    uint64  `gorm:"" json:"size"`
 	// PurgedAt  *time.Time `gorm:"" json:"purged_at"` // 文档被彻底清除
-	DeleteBy  string `gorm:"" json:"delete_by"` // 删除人ID
+	DeleteBy  string `gorm:"index" json:"delete_by"` // 删除人ID
 	VersionId string `gorm:"size:64" json:"version_id"`
 	TeamId    string `gorm:"index" json:"team_id"`
 	ProjectId string `gorm:"index" json:"project_id"`
