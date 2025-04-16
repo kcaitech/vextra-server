@@ -164,6 +164,16 @@ const TeamProjectListResponseSchema = BaseResponseSchema.extend({
     }))
 })
 
+const CreateTeamResponseSchema = BaseResponseSchema.extend({
+    data: z.object({
+        description: z.string(),
+        id: z.string(),
+        name: z.string(),
+    })
+})
+
+export type CreateTeamResponse = z.infer<typeof CreateTeamResponseSchema>
+
 export type TeamProjectListResponse = z.infer<typeof TeamProjectListResponseSchema>
 export type TeamProjectListItem = z.infer<typeof TeamProjectListResponseSchema.shape.data.element>
 // 项目成员列表响应类型
@@ -284,14 +294,23 @@ export class TeamAPI {
     async createTeam(params: {
         name: string;
         description?: string;
-    }): Promise<BaseResponse> {
+        avatar?: File;
+    }): Promise<CreateTeamResponse> {
+        const formData = new FormData();
+        formData.append('name', params.name);
+        if (params.description) {
+            formData.append('description', params.description);
+        }
+        if (params.avatar) {
+            formData.append('avatar', params.avatar);
+        }
         const result = await this.http.request({
             url: '/documents/team',
             method: 'post',
-            data: params,
+            data: formData,
         });
         try {
-            return BaseResponseSchema.parse(result);
+            return CreateTeamResponseSchema.parse(result);
         } catch (error) {
             console.error('创建团队响应数据校验失败:', error);
             throw error;
@@ -304,7 +323,7 @@ export class TeamAPI {
         status?: number;
         page?: number;
         page_size?: number;
-        start_time? : number;
+        start_time?: number;
     }): Promise<TeamApplyListResponse> {
         const result = await this.http.request({
             url: `/documents/team/apply`,
