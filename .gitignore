@@ -27,5 +27,6 @@
 
 
 ./kcserver
-
+./kcserver.*
+kcserver.*
 **/*.log
