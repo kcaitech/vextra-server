@@ -27,5 +27,7 @@
 
 
 ./kcserver
-
+./kcserver.*
+kcserver.*
 **/*.log
+package-lock.json

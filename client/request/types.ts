@@ -25,3 +25,20 @@ export enum PermType {
   Commentable = 2,
   Editable = 3,
 }
+
+export const TeamInfoSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().optional(),
+  avatar: z.string().optional()
+})
+
+export type TeamInfo = z.infer<typeof TeamInfoSchema>;
+
+export const ProjectInfoSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().optional()
+})
+
+export type ProjectInfo = z.infer<typeof ProjectInfoSchema>;
