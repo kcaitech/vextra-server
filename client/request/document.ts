@@ -57,8 +57,17 @@ export const DocumentRecycleListResponseSchema = BaseResponseSchema.extend({
             deleted_at: z.string().nullable()
         }),
         user: UserInfoSchema,
-        team: TeamInfoSchema.nullable(),
-        project: ProjectInfoSchema.nullable(),
+        team: z.object({
+            id: z.string(),
+            name: z.string(),
+            description: z.string().optional(),
+            avatar: z.string().optional()
+        }).nullable(),
+        project: z.object({
+            id: z.string(),
+            name: z.string(),
+            description: z.string().optional()
+        }).nullable(),
         document_favorites: z.object({
             id: z.string(),
             user_id: z.string(),

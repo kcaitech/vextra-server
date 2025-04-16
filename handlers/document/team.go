@@ -101,12 +101,7 @@ func CreateTeam(c *gin.Context) {
 				return
 			}
 		}
-		_, err = services.NewTeamService().UploadTeamAvatar(&team, fileBytes, contentType)
-		if err != nil {
-			log.Println("头像上传失败", err)
-			response.BadRequest(c, "头像上传失败")
-			return
-		}
+		_, _ = services.NewTeamService().UploadTeamAvatar(&team, fileBytes, contentType)
 	}
 
 	teamMemberService := services.NewTeamMemberService()
