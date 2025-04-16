@@ -82,10 +82,7 @@ func DeleteUserDocument(c *gin.Context) {
 			response.ServerError(c, "删除错误")
 			return
 		}
-		_, err = documentService.UpdateColumns(map[string]any{"delete_by": userId}, "deleted_at is not null and id = ?", documentId, &services.Unscoped{})
-		if err != nil {
-			log.Println("更新文档删除者失败", err.Error())
-		}
+		_, _ = documentService.UpdateColumns(map[string]any{"delete_by": userId}, "deleted_at is not null and id = ?", documentId, &services.Unscoped{})
 	} else {
 		projectService := services.NewProjectService()
 		projectPermType, err := projectService.GetProjectPermTypeByForUser(document.ProjectId, userId)
@@ -99,10 +96,7 @@ func DeleteUserDocument(c *gin.Context) {
 			response.ServerError(c, "删除错误")
 			return
 		}
-		_, err = documentService.UpdateColumns(map[string]any{"delete_by": userId}, "deleted_at is not null and id = ?", documentId, &services.Unscoped{})
-		if err != nil {
-			log.Println("更新文档删除者失败", err.Error())
-		}
+		_, _ = documentService.UpdateColumns(map[string]any{"delete_by": userId}, "deleted_at is not null and id = ?", documentId, &services.Unscoped{})
 	}
 	response.Success(c, "")
 }

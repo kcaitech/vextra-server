@@ -267,6 +267,8 @@ export class DocumentAPI {
             method: 'get',
             params: params,
         });
+        console.log('获取回收站列表:', result);
+        
         try {
             return DocumentListResponseSchema.parse(result);
         } catch (error) {
