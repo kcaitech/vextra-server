@@ -132,6 +132,8 @@ const TeamApplyListResponseSchema = BaseResponseSchema.extend({
             processed_by: z.string().nullable(),
             applicant_notes: z.string().nullable(),
             processor_notes: z.string().nullable(),
+            created_at: z.string(),
+            deleted_at: z.string().nullable()
         }),
         team: z.object({
             id: z.string(),
@@ -287,6 +289,8 @@ const TeamNoticeResponseSchema = BaseResponseSchema.extend({
             processed_by: z.string().nullable(),
             applicant_notes: z.string().nullable(),
             processor_notes: z.string().nullable(),
+            created_at: z.string(),
+            deleted_at: z.string().nullable()
         }),
         team: z.object({
             id: z.string(),
@@ -643,6 +647,8 @@ export class TeamAPI {
             method: 'get',
             params: params,
         });
+        console.log('获取项目申请列表:', result);
+        
         try {
             return ProjectApplyListResponseSchema.parse(result);
         } catch (error) {
