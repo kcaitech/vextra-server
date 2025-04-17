@@ -222,7 +222,7 @@ type BsseTeamJoinRequestsQueryResItem struct {
 
 type SelfTeamJoinRequestsQueryResItem struct {
 	BsseTeamJoinRequestsQueryResItem
-	User       *models.UserProfile `gorm:"-" json:"user"`
+	User       *models.UserProfile `gorm:"-" json:"approver"`
 }
 
 type TeamJoinRequestQuery struct {

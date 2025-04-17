@@ -501,7 +501,7 @@ func GetSelfTeamJoinRequestList(c *gin.Context) {
 	// 获取用户信息
 	userIds := make([]string, 0)
 	for _, item := range result {
-		userIds = append(userIds, item.TeamJoinRequest.UserId)
+		userIds = append(userIds, item.TeamJoinRequest.ProcessedBy)
 	}
 
 	userMap, err := GetUsersInfo(c, userIds)
@@ -510,7 +510,7 @@ func GetSelfTeamJoinRequestList(c *gin.Context) {
 		return
 	}
 	for i := range result {
-		userId := result[i].TeamJoinRequest.UserId
+		userId := result[i].TeamJoinRequest.ProcessedBy
 		userInfo, exists := userMap[userId]
 		if exists {
 			result[i].User = &models.UserProfile{
