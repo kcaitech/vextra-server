@@ -425,23 +425,18 @@ func GetTeamJoinRequestList(c *gin.Context) {
 	teamJoinRequestMessageShowService := teamService.TeamJoinRequestMessageShowService
 	now := myTime.Time(time.Now())
 	result := teamService.FindTeamJoinRequest(userId, teamId, startTimeStr)
-	if startTimeStr == "" {
-		response.Success(c, result)
-		return
-	}
 	// 获取用户信息
 	userIds := make([]string, 0)
 	for _, item := range result {
-		userIds = append(userIds, item.TeamMember.UserId)
+		userIds = append(userIds, item.TeamJoinRequest.UserId)
 	}
-
 	userMap, err := GetUsersInfo(c, userIds)
 	if err != nil {
 		response.ServerError(c, err.Error())
 		return
 	}
 	for i := range result {
-		userId := result[i].TeamMember.UserId
+		userId := result[i].TeamJoinRequest.UserId
 		userInfo, exists := userMap[userId]
 		if exists {
 			result[i].User = &models.UserProfile{
@@ -451,6 +446,11 @@ func GetTeamJoinRequestList(c *gin.Context) {
 			}
 		}
 	}
+	if startTimeStr == "" {
+		response.Success(c, result)
+		return
+	}
+
 	var messageShowList []models.TeamJoinRequestMessageShow
 	if err := teamJoinRequestMessageShowService.Find(&messageShowList, "user_id = ? and team_id = ?", userId, teamId); err != nil {
 		log.Println("TeamJoinRequestMessageShow查询错误", err)
