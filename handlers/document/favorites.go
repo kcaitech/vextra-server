@@ -18,7 +18,32 @@ func GetUserDocumentFavoritesList(c *gin.Context) {
 		return
 	}
 	projectId := c.Query("project_id")
-	response.Success(c, services.NewDocumentService().FindFavoritesByUserId(userId, projectId))
+	favoritesList := services.NewDocumentService().FindFavoritesByUserId(userId, projectId)
+	// 获取用户信息
+	userIds := make([]string, 0)
+	for _, item := range *favoritesList {
+		userIds = append(userIds, item.Document.UserId)
+	}
+
+	userMap, err := GetUsersInfo(c, userIds)
+	if err != nil {
+		response.ServerError(c, err.Error())
+		return
+	}
+	result := make([]services.AccessRecordAndFavoritesQueryResItem, 0)
+	for _, item := range *favoritesList {
+		userId := item.Document.UserId
+		userInfo, exists := userMap[userId]
+		if exists {
+			item.User = &models.UserProfile{
+				Id:       userInfo.UserID,
+				Nickname: userInfo.Profile.Nickname,
+				Avatar:   userInfo.Profile.Avatar,
+			}
+			result = append(result, item)
+		}
+	}
+	response.Success(c, result)
 }
 
 type SetUserDocumentFavoriteStatusReq struct {

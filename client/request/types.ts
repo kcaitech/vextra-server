@@ -1,6 +1,16 @@
 // 在 client/request/types.ts 中定义通用类型
 import { z } from 'zod';
 
+// 团队权限类型枚举
+export enum TeamPermType {
+  None = 0,     // 无权限
+  ReadOnly = 1,  // 只读
+  Commentable = 2,
+  Editable = 3,  // 可编辑
+  Admin = 4,     // 管理员
+  Creator = 5,   // 创建者
+}
+
 // 通用响应类型
 export const BaseResponseSchema = z.object({
   code: z.number(),
@@ -30,7 +40,12 @@ export const TeamInfoSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string().optional(),
-  avatar: z.string().optional()
+  avatar: z.string().optional(),
+  invited_perm_type: z.nativeEnum(TeamPermType),
+  open_invite: z.boolean(),
+  created_at: z.string(),
+  updated_at: z.string(),
+  deleted_at: z.string().nullable()
 })
 
 export type TeamInfo = z.infer<typeof TeamInfoSchema>;
@@ -38,7 +53,15 @@ export type TeamInfo = z.infer<typeof TeamInfoSchema>;
 export const ProjectInfoSchema = z.object({
   id: z.string(),
   name: z.string(),
-  description: z.string().optional()
+  description: z.string().optional(),
+  team_id: z.string(),
+  need_approval: z.boolean(),
+  perm_type: z.nativeEnum(TeamPermType),
+  is_public: z.boolean(),
+  open_invite: z.boolean(),
+  created_at: z.string(),
+  updated_at: z.string(),
+  deleted_at: z.string().nullable()
 })
 
 export type ProjectInfo = z.infer<typeof ProjectInfoSchema>;
