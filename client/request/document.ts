@@ -26,9 +26,10 @@ export const DocumentListResponseSchema = BaseResponseSchema.extend({
             id: z.string(),
             user_id: z.string(),
             document_id: z.string(),
+            is_favorite: z.boolean(),
             created_at: z.string(),
             updated_at: z.string()
-        }).nullable(),
+        }),
         document_access_record: z.object({
             id: z.string(),
             user_id: z.string(),
@@ -36,7 +37,7 @@ export const DocumentListResponseSchema = BaseResponseSchema.extend({
             last_access_time: z.string(),
             created_at: z.string(),
             updated_at: z.string()
-        }).nullable()
+        })
     }))
 })
 
@@ -98,14 +99,8 @@ const DocumentAccessRecordSchema = z.object({
         updated_at: z.string(),
         deleted_at: z.string().nullable()
     }),
-    team: z.object({
-        id: z.string(),
-        name: z.string()
-    }).nullable(),
-    project: z.object({
-        id: z.string(),
-        name: z.string()
-    }).nullable(),
+    team: TeamInfoSchema.nullable(),
+    project: ProjectInfoSchema.nullable(),
     document_favorites: z.object({
         id: z.string(),
         user_id: z.string(),
@@ -123,19 +118,8 @@ const DocumentAccessRecordSchema = z.object({
 export type DocumentAccessRecord = z.infer<typeof DocumentAccessRecordSchema>
 
 // 收藏列表响应类型
-const FavoriteListResponseSchema = BaseResponseSchema.extend({
-    // data: z.array(z.object({
-    //     id: z.number(),
-    //     name: z.string(),
-    //     type: z.string(),
-    //     parent_id: z.string(),
-    //     created_at: z.string(),
-    //     updated_at: z.string()
-    // }))
-    data: z.array(DocumentAccessRecordSchema)
-})
-
-export type FavoriteListResponse = z.infer<typeof FavoriteListResponseSchema>
+export type FavoriteListResponse = z.infer<typeof DocumentListResponseSchema>
+export type FavoriteListItem = z.infer<typeof DocumentListResponseSchema.shape.data.element>
 
 // 用户文档访问记录列表响应类型
 const DocumentAccessRecordListResponseSchema = BaseResponseSchema.extend({
@@ -191,14 +175,8 @@ export const DocumentInfoSchema = z.object({
         updated_at: z.string(),
         deleted_at: z.string().nullable()
     }),
-    team: z.object({
-        id: z.string(),
-        name: z.string()
-    }).nullable(),
-    project: z.object({
-        id: z.string(),
-        name: z.string()
-    }).nullable(),
+    team: TeamInfoSchema.nullable(),
+    project: ProjectInfoSchema.nullable(),
     document_favorites: z.object({
         id: z.string(),
         is_favorite: z.boolean()
@@ -265,8 +243,9 @@ export class DocumentAPI {
             method: 'get',
             params: params,
         })
+        console.log("result", result)
         try {
-            return FavoriteListResponseSchema.parse(result)
+            return DocumentListResponseSchema.parse(result)
         } catch (error) {
             console.error('收藏列表数据校验失败:', error)
             throw error

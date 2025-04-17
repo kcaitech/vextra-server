@@ -1,29 +1,10 @@
 import { HttpMgr } from './http'
-import { BaseResponseSchema, BaseResponse, UserInfoSchema } from './types'
+import { BaseResponseSchema, BaseResponse, UserInfoSchema, ProjectInfoSchema, TeamInfoSchema, TeamPermType } from './types'
 import { z } from 'zod'
-
-// 团队权限类型枚举
-export enum TeamPermType {
-    None = 0,     // 无权限
-    ReadOnly = 1,  // 只读
-    Commentable = 2,
-    Editable = 3,  // 可编辑
-    Admin = 4,     // 管理员
-    Creator = 5,   // 创建者
-}
 
 // 团队模型
 const TeamSchema = z.object({
-    team: z.object({
-        id: z.string(),
-        name: z.string(),
-        description: z.string().optional(),
-        avatar: z.string().optional(),
-        invited_perm_type: z.nativeEnum(TeamPermType),
-        open_invite: z.boolean(),
-        created_at: z.string(),
-        updated_at: z.string()
-    }),
+    team: TeamInfoSchema,
     creator: UserInfoSchema,
     self_perm_type: z.nativeEnum(TeamPermType)
 })
@@ -62,16 +43,7 @@ export type TeamListResponse = z.infer<typeof TeamListResponseSchema>
 // 团队成员列表响应类型
 const TeamMemberListResponseSchema = BaseResponseSchema.extend({
     data: z.array(z.object({
-        team: z.object({
-            id: z.string(),
-            name: z.string(),
-            description: z.string().optional(),
-            avatar: z.string().optional(),
-            invited_perm_type: z.nativeEnum(TeamPermType),
-            open_invite: z.boolean(),
-            created_at: z.string(),
-            updated_at: z.string()
-        }),
+        team: TeamInfoSchema,
         team_member: z.object({
             id: z.string(),
             team_id: z.string(),
@@ -135,15 +107,7 @@ const TeamApplyListResponseSchema = BaseResponseSchema.extend({
             created_at: z.string(),
             deleted_at: z.string().nullable()
         }),
-        team: z.object({
-            id: z.string(),
-            name: z.string(),
-            description: z.string().optional(),
-            avatar: z.string().optional(),
-            invited_perm_type: z.nativeEnum(TeamPermType),
-            open_invite: z.boolean(),
-            created_at: z.string(),
-        }),
+        team: TeamInfoSchema,
         user: UserInfoSchema
     }))
 })
@@ -154,18 +118,7 @@ export type TeamApplyListItem = z.infer<typeof TeamApplyListResponseSchema.shape
 // 项目列表响应类型
 const TeamProjectListResponseSchema = BaseResponseSchema.extend({
     data: z.array(z.object({
-        project: z.object({
-            id: z.string(),
-            team_id: z.string(),
-            name: z.string(),
-            description: z.string().optional(),
-            is_public: z.boolean(),
-            perm_type: z.nativeEnum(TeamPermType),
-            open_invite: z.boolean(),
-            need_approval: z.boolean(),
-            created_at: z.string(),
-            updated_at: z.string()
-        }),
+        project: ProjectInfoSchema,
         creator: UserInfoSchema,
         creator_team_nickname: z.string().optional(),
         self_perm_type: z.nativeEnum(TeamPermType),
@@ -189,17 +142,7 @@ export type TeamProjectListItem = z.infer<typeof TeamProjectListResponseSchema.s
 // 项目成员列表响应类型
 const ProjectMemberListResponseSchema = BaseResponseSchema.extend({
     data: z.array(z.object({
-        project: z.object({
-            id: z.string(),
-            name: z.string(),
-            description: z.string().optional(),
-            is_public: z.boolean(),
-            perm_type: z.number(),
-            open_invite: z.boolean(),
-            need_approval: z.boolean(),
-            created_at: z.string(),
-            updated_at: z.string()
-        }),
+        project: ProjectInfoSchema,
         project_member: z.object({
             id: z.string(),
             project_id: z.string(),
@@ -208,11 +151,7 @@ const ProjectMemberListResponseSchema = BaseResponseSchema.extend({
             created_at: z.string(),
             updated_at: z.string()
         }),
-        user: z.object({
-            id: z.string(),
-            nickname: z.string(),
-            avatar: z.string()
-        })
+        user: UserInfoSchema
     }))
 })
 
@@ -226,18 +165,7 @@ const ProjectFavoriteListResponseSchema = BaseResponseSchema.extend({
         self_perm_type: z.nativeEnum(TeamPermType),
         is_in_team: z.boolean(),
         is_invited: z.boolean(),
-        project: z.object({
-            id: z.string(),
-            name: z.string(),
-            description: z.string().optional(),
-            is_public: z.boolean(),
-            perm_type: z.number(),
-            open_invite: z.boolean(),
-            need_approval: z.boolean(),
-            created_at: z.string(),
-            updated_at: z.string(),
-            team_id: z.string()
-        }),
+        project: ProjectInfoSchema,
     }))
 })
 
@@ -292,15 +220,7 @@ const TeamNoticeResponseSchema = BaseResponseSchema.extend({
             created_at: z.string(),
             deleted_at: z.string().nullable()
         }),
-        team: z.object({
-            id: z.string(),
-            name: z.string(),
-            description: z.string().optional(),
-            avatar: z.string().optional(),
-            invited_perm_type: z.nativeEnum(TeamPermType),
-            open_invite: z.boolean(),
-            created_at: z.string(),
-        }),
+        team: TeamInfoSchema,
         approver: UserInfoSchema
     }))
 })

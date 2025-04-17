@@ -20,6 +20,8 @@ export class Request {
     }
 }
 
+export type { UserInfo, TeamInfo, ProjectInfo, TeamPermType } from "./types"
+
 export { HttpCode } from "./httpcode"
 export * from "./users"
 export * from "./team"
@@ -27,4 +29,3 @@ export * from "./share"
 export * from "./comment"
 export * from "./document"
 
-export type { UserInfo, TeamInfo, ProjectInfo } from "./types"
