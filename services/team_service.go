@@ -233,7 +233,7 @@ type TeamJoinRequestQuery struct {
 
 // FindTeamJoinRequest 获取用户所创建或担任管理员的团队的加入申请列表
 func (s *TeamService) FindTeamJoinRequest(userId string, teamId string, startTime string) []TeamJoinRequestQuery {
-	var result []TeamJoinRequestQuery
+	var result = make([]TeamJoinRequestQuery, 0)
 	whereArgsList := []WhereArgs{
 		{
 			Query: "team_member.deleted_at is null and team.deleted_at is null",
@@ -263,7 +263,7 @@ func (s *TeamService) FindTeamJoinRequest(userId string, teamId string, startTim
 
 // FindSelfTeamJoinRequest 获取用户自身的团队加入申请列表
 func (s *TeamService) FindSelfTeamJoinRequest(userId string, teamId string, startTime string) []SelfTeamJoinRequestsQueryResItem {
-	var result []SelfTeamJoinRequestsQueryResItem
+	var result = make([]SelfTeamJoinRequestsQueryResItem, 0)
 	whereArgsList := []WhereArgs{
 		{
 			Query: "team.deleted_at is null",
