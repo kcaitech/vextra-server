@@ -276,16 +276,28 @@ export type ProjectNoticeListItem = z.infer<typeof ProjectNoticeResponseSchema.s
 // 团队申请通知响应类型
 const TeamNoticeResponseSchema = BaseResponseSchema.extend({
     data: z.array(z.object({
-        id: z.string(),
-        user_id: z.string(),
-        team_id: z.string(),
-        perm_type: z.nativeEnum(TeamPermType),
-        status: z.number(),
-        first_displayed_at: z.string().nullable(),
-        processed_at: z.string().nullable(),
-        processed_by: z.string().nullable(),
-        applicant_notes: z.string().nullable(),
-        processor_notes: z.string().nullable()
+        request: z.object({
+            id: z.string(),
+            user_id: z.string(),
+            team_id: z.string(),
+            perm_type: z.nativeEnum(TeamPermType),
+            status: z.number(),
+            first_displayed_at: z.string().nullable(),
+            processed_at: z.string().nullable(),
+            processed_by: z.string().nullable(),
+            applicant_notes: z.string().nullable(),
+            processor_notes: z.string().nullable(),
+        }),
+        team: z.object({
+            id: z.string(),
+            name: z.string(),
+            description: z.string().optional(),
+            avatar: z.string().optional(),
+            invited_perm_type: z.nativeEnum(TeamPermType),
+            open_invite: z.boolean(),
+            created_at: z.string(),
+        }),
+        approver: UserInfoSchema
     }))
 })
 
