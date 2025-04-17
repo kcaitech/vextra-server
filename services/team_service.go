@@ -222,13 +222,13 @@ type BsseTeamJoinRequestsQueryResItem struct {
 
 type SelfTeamJoinRequestsQueryResItem struct {
 	BsseTeamJoinRequestsQueryResItem
-	// User string `gorm:"embedded;embeddedPrefix:user__" json:"approver" join:";inner;id,processed_by"`
+	User       *models.UserProfile `gorm:"-" json:"user"`
 }
 
 type TeamJoinRequestQuery struct {
 	BsseTeamJoinRequestsQueryResItem
-	TeamMember models.TeamMember `gorm:"-" json:"-" join:";inner;team_id,team_id;user_id,?user_id"` // 自己的（非申请人的）权限
-	// User       string            `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,user_id"`
+	TeamMember models.TeamMember   `gorm:"-" json:"-" join:";inner;team_id,team_id;user_id,?user_id"` // 自己的（非申请人的）权限
+	User       *models.UserProfile `gorm:"-" json:"user"`
 }
 
 // FindTeamJoinRequest 获取用户所创建或担任管理员的团队的加入申请列表

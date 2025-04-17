@@ -429,6 +429,28 @@ func GetTeamJoinRequestList(c *gin.Context) {
 		response.Success(c, result)
 		return
 	}
+	// 获取用户信息
+	userIds := make([]string, 0)
+	for _, item := range result {
+		userIds = append(userIds, item.TeamMember.UserId)
+	}
+
+	userMap, err := GetUsersInfo(c, userIds)
+	if err != nil {
+		response.ServerError(c, err.Error())
+		return
+	}
+	for i := range result {
+		userId := result[i].TeamMember.UserId
+		userInfo, exists := userMap[userId]
+		if exists {
+			result[i].User = &models.UserProfile{
+				Id:       userInfo.UserID,
+				Nickname: userInfo.Profile.Nickname,
+				Avatar:   userInfo.Profile.Avatar,
+			}
+		}
+	}
 	var messageShowList []models.TeamJoinRequestMessageShow
 	if err := teamJoinRequestMessageShowService.Find(&messageShowList, "user_id = ? and team_id = ?", userId, teamId); err != nil {
 		log.Println("TeamJoinRequestMessageShow查询错误", err)
@@ -476,6 +498,28 @@ func GetSelfTeamJoinRequestList(c *gin.Context) {
 	}
 	teamService := services.NewTeamService()
 	result := teamService.FindSelfTeamJoinRequest(userId, teamId, startTimeStr)
+	// 获取用户信息
+	userIds := make([]string, 0)
+	for _, item := range result {
+		userIds = append(userIds, item.TeamJoinRequest.UserId)
+	}
+
+	userMap, err := GetUsersInfo(c, userIds)
+	if err != nil {
+		response.ServerError(c, err.Error())
+		return
+	}
+	for i := range result {
+		userId := result[i].TeamJoinRequest.UserId
+		userInfo, exists := userMap[userId]
+		if exists {
+			result[i].User = &models.UserProfile{
+				Id:       userInfo.UserID,
+				Nickname: userInfo.Profile.Nickname,
+				Avatar:   userInfo.Profile.Avatar,
+			}
+		}
+	}
 	response.Success(c, result)
 }
 
