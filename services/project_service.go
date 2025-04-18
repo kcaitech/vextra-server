@@ -286,7 +286,6 @@ type BaseProjectJoinRequestQuery struct {
 
 type SelfProjectJoinRequestQuery struct {
 	BaseProjectJoinRequestQuery
-	// User string `gorm:"embedded;embeddedPrefix:user__" json:"approver" join:";inner;id,processed_by"`
 	User *models.UserProfile `gorm:"-" json:"approver"`
 }
 
@@ -328,7 +327,7 @@ func (s *ProjectService) FindProjectJoinRequest(userId string, projectId string,
 
 // FindSelfProjectJoinRequest 获取用户自身的项目加入申请列表
 func (s *ProjectService) FindSelfProjectJoinRequest(userId string, projectId string, startTime string) []SelfProjectJoinRequestQuery {
-	var result []SelfProjectJoinRequestQuery
+	var result = make([]SelfProjectJoinRequestQuery, 0)
 	whereArgsList := []WhereArgs{
 		{
 			Query: "project.deleted_at is null",

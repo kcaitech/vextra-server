@@ -9,6 +9,36 @@ const TeamSchema = z.object({
     self_perm_type: z.nativeEnum(TeamPermType)
 })
 
+const TeamRequestSchema = z.object({
+    id: z.string(),
+    user_id: z.string(),
+    team_id: z.string(),
+    perm_type: z.nativeEnum(TeamPermType),
+    status: z.number(),
+    first_displayed_at: z.string().nullable(),
+    processed_at: z.string().nullable(),
+    processed_by: z.string().nullable(),
+    applicant_notes: z.string().nullable(),
+    processor_notes: z.string().nullable(),
+    created_at: z.string(),
+    deleted_at: z.string().nullable()
+})
+
+const ProjectRequestSchema = z.object({
+    id: z.string(),
+    user_id: z.string(),
+    project_id: z.string(),
+    perm_type: z.nativeEnum(TeamPermType),
+    status: z.number(),
+    first_displayed_at: z.string().nullable(),
+    processed_at: z.string().nullable(),
+    processed_by: z.string().nullable(),
+    applicant_notes: z.string().nullable(),
+    processor_notes: z.string().nullable(),
+    created_at: z.string(),
+    deleted_at: z.string().nullable()
+})
+
 export type Team = z.infer<typeof TeamSchema>
 
 // 团队成员模型
@@ -75,20 +105,7 @@ export type TeamInfoResponse = z.infer<typeof TeamInfoResponseSchema>
 // 项目申请列表响应类型
 const ProjectApplyListResponseSchema = BaseResponseSchema.extend({
     data: z.array(z.object({
-        request: z.object({
-            id: z.string(),
-            user_id: z.string(),
-            project_id: z.string(),
-            perm_type: z.nativeEnum(TeamPermType),
-            status: z.number(),
-            first_displayed_at: z.string().nullable(),
-            processed_at: z.string().nullable(),
-            processed_by: z.string().nullable(),
-            applicant_notes: z.string().nullable(),
-            processor_notes: z.string().nullable(),
-            created_at: z.string(),
-            deleted_at: z.string().nullable()
-        }),
+        request: ProjectRequestSchema,
         project: ProjectInfoSchema,
         user: UserInfoSchema
     }))
@@ -99,20 +116,7 @@ export type ProjectApplyListItem = z.infer<typeof ProjectApplyListResponseSchema
 // 团队申请列表响应类型
 const TeamApplyListResponseSchema = BaseResponseSchema.extend({
     data: z.array(z.object({
-        request: z.object({
-            id: z.string(),
-            user_id: z.string(),
-            team_id: z.string(),
-            perm_type: z.nativeEnum(TeamPermType),
-            status: z.number(),
-            first_displayed_at: z.string().nullable(),
-            processed_at: z.string().nullable(),
-            processed_by: z.string().nullable(),
-            applicant_notes: z.string().nullable(),
-            processor_notes: z.string().nullable(),
-            created_at: z.string(),
-            deleted_at: z.string().nullable()
-        }),
+        request: TeamRequestSchema,
         team: TeamInfoSchema,
         user: UserInfoSchema
     }))
@@ -193,16 +197,9 @@ export type ProjectInvitedInfoResponse = z.infer<typeof ProjectInvitedInfoRespon
 // 项目申请通知响应类型
 const ProjectNoticeResponseSchema = BaseResponseSchema.extend({
     data: z.array(z.object({
-        id: z.string(),
-        user_id: z.string(),
-        project_id: z.string(),
-        perm_type: z.number(),
-        status: z.number(),
-        first_displayed_at: z.string().nullable(),
-        processed_at: z.string().nullable(),
-        processed_by: z.string().nullable(),
-        applicant_notes: z.string().nullable(),
-        processor_notes: z.string().nullable()
+        request: ProjectRequestSchema,
+        project: ProjectInfoSchema,
+        approver: UserInfoSchema
     }))
 })
 
@@ -212,20 +209,7 @@ export type ProjectNoticeListItem = z.infer<typeof ProjectNoticeResponseSchema.s
 // 团队申请通知响应类型
 const TeamNoticeResponseSchema = BaseResponseSchema.extend({
     data: z.array(z.object({
-        request: z.object({
-            id: z.string(),
-            user_id: z.string(),
-            team_id: z.string(),
-            perm_type: z.nativeEnum(TeamPermType),
-            status: z.number(),
-            first_displayed_at: z.string().nullable(),
-            processed_at: z.string().nullable(),
-            processed_by: z.string().nullable(),
-            applicant_notes: z.string().nullable(),
-            processor_notes: z.string().nullable(),
-            created_at: z.string(),
-            deleted_at: z.string().nullable()
-        }),
+        request: TeamRequestSchema,
         team: TeamInfoSchema,
         approver: UserInfoSchema
     }))

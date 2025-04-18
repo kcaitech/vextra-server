@@ -484,9 +484,7 @@ func GetSelfProjectJoinRequestList(c *gin.Context) {
 	// 获取用户信息
 	userIds := make([]string, 0)
 	for _, item := range result {
-		if item.ProjectJoinRequest.ProcessedBy != "" {
-			userIds = append(userIds, item.ProjectJoinRequest.ProcessedBy)
-		}
+		userIds = append(userIds, item.ProjectJoinRequest.ProcessedBy)
 	}
 
 	if len(userIds) > 0 {
@@ -497,14 +495,12 @@ func GetSelfProjectJoinRequestList(c *gin.Context) {
 		}
 
 		for i := range result {
-			if result[i].ProjectJoinRequest.ProcessedBy != "" {
-				userInfo, exists := userMap[result[i].ProjectJoinRequest.ProcessedBy]
-				if exists {
-					result[i].User = &models.UserProfile{
-						Id:       userInfo.UserID,
-						Nickname: userInfo.Profile.Nickname,
-						Avatar:   userInfo.Profile.Avatar,
-					}
+			userInfo, exists := userMap[result[i].ProjectJoinRequest.ProcessedBy]
+			if exists {
+				result[i].User = &models.UserProfile{
+					Id:       userInfo.UserID,
+					Nickname: userInfo.Profile.Nickname,
+					Avatar:   userInfo.Profile.Avatar,
 				}
 			}
 		}
