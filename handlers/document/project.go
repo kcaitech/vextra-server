@@ -654,7 +654,7 @@ func SetProjectInvited(c *gin.Context) {
 	}
 	updateColumns := map[string]any{}
 	if req.PublicSwitch != nil {
-		updateColumns["open_invite"] = *req.PublicSwitch
+		updateColumns["public_switch"] = *req.PublicSwitch
 	}
 	if req.PermType != nil {
 		updateColumns["perm_type"] = *req.PermType
