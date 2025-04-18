@@ -5,6 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"kcaitech.com/kcserver/common/response"
+	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils"
 )
@@ -16,7 +17,32 @@ func GetUserDocumentAccessRecordsList(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	response.Success(c, services.NewDocumentService().FindAccessRecordsByUserId(userId))
+	accessRecordsList := services.NewDocumentService().FindAccessRecordsByUserId(userId)
+	// 获取用户信息
+	userIds := make([]string, 0)
+	for _, item := range *accessRecordsList {
+		userIds = append(userIds, item.Document.UserId)
+	}
+
+	userMap, err := GetUsersInfo(c, userIds)
+	if err != nil {
+		response.ServerError(c, err.Error())
+		return
+	}
+	result := make([]services.AccessRecordAndFavoritesQueryResItem, 0)
+	for _, item := range *accessRecordsList {
+		userId := item.Document.UserId
+		userInfo, exists := userMap[userId]
+		if exists {
+			item.User = &models.UserProfile{
+				Id:       userInfo.UserID,
+				Nickname: userInfo.Profile.Nickname,
+				Avatar:   userInfo.Profile.Avatar,
+			}
+			result = append(result, item)
+		}
+	}
+	response.Success(c, result)
 }
 
 // DeleteUserDocumentAccessRecord 删除用户的某条文档访问记录

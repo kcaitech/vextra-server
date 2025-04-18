@@ -349,13 +349,13 @@ export class DocumentAPI {
         }
     }
     // 获取用户文档访问记录列表
-    async getUserDocumentAccessRecordsList(): Promise<DocumentAccessRecordListResponse> {
+    async getUserDocumentAccessRecordsList(): Promise<DocumentListResponse> {
         const result = await this.http.request({
             url: '/documents/access_records',
             method: 'get',
         });
         try {
-            return DocumentAccessRecordListResponseSchema.parse(result);
+            return DocumentListResponseSchema.parse(result);
         } catch (error) {
             console.error('用户文档访问记录列表数据校验失败:', error);
             throw error;
