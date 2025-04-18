@@ -656,6 +656,7 @@ export class TeamAPI {
         project_id: string;
         invited_perm_type?: number;
         invited_switch?: boolean;
+        is_public?: boolean;
     }): Promise<BaseResponse> {
         const result = await this.http.request({
             url: '/documents/team/project/invite',

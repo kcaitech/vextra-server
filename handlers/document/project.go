@@ -622,7 +622,7 @@ func SetProjectInvited(c *gin.Context) {
 	}
 	var req struct {
 		ProjectId    string                  `json:"project_id" binding:"required"`
-		PublicSwitch *bool                   `json:"public_switch"` // 是否在团队内部公开
+		IsPublic     *bool                   `json:"is_public"` // 是否在团队内部公开
 		PermType     *models.ProjectPermType `json:"perm_type"`     // 团队内的公开权限类型、或邀请权限类型
 		OpenInvite   *bool                   `json:"open_invite"`   // 邀请开关
 		NeedApproval *bool                   `json:"need_approval"` // 申请是否需要审批
@@ -636,7 +636,7 @@ func SetProjectInvited(c *gin.Context) {
 		response.BadRequest(c, "参数错误：project_id")
 		return
 	}
-	if req.PublicSwitch == nil && req.PermType == nil && req.OpenInvite == nil && req.NeedApproval == nil {
+	if req.IsPublic == nil && req.PermType == nil && req.OpenInvite == nil && req.NeedApproval == nil {
 		response.BadRequest(c, "")
 		return
 	}
@@ -653,8 +653,8 @@ func SetProjectInvited(c *gin.Context) {
 		return
 	}
 	updateColumns := map[string]any{}
-	if req.PublicSwitch != nil {
-		updateColumns["public_switch"] = *req.PublicSwitch
+	if req.IsPublic != nil {
+		updateColumns["is_public"] = *req.IsPublic
 	}
 	if req.PermType != nil {
 		updateColumns["perm_type"] = *req.PermType
