@@ -75,16 +75,22 @@ export type TeamInfoResponse = z.infer<typeof TeamInfoResponseSchema>
 // 项目申请列表响应类型
 const ProjectApplyListResponseSchema = BaseResponseSchema.extend({
     data: z.array(z.object({
-        id: z.string(),
-        user_id: z.string(),
-        project_id: z.string(),
-        perm_type: z.number(),
-        status: z.number(),
-        first_displayed_at: z.string().nullable(),
-        processed_at: z.string().nullable(),
-        processed_by: z.string().nullable(),
-        applicant_notes: z.string().nullable(),
-        processor_notes: z.string().nullable()
+        request: z.object({
+            id: z.string(),
+            user_id: z.string(),
+            project_id: z.string(),
+            perm_type: z.nativeEnum(TeamPermType),
+            status: z.number(),
+            first_displayed_at: z.string().nullable(),
+            processed_at: z.string().nullable(),
+            processed_by: z.string().nullable(),
+            applicant_notes: z.string().nullable(),
+            processor_notes: z.string().nullable(),
+            created_at: z.string(),
+            deleted_at: z.string().nullable()
+        }),
+        project: ProjectInfoSchema,
+        user: UserInfoSchema
     }))
 })
 
@@ -567,8 +573,6 @@ export class TeamAPI {
             method: 'get',
             params: params,
         });
-        console.log('获取项目申请列表:', result);
-        
         try {
             return ProjectApplyListResponseSchema.parse(result);
         } catch (error) {

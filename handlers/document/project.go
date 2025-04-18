@@ -404,10 +404,35 @@ func GetProjectJoinRequestList(c *gin.Context) {
 	projectJoinRequestMessageShowService := projectService.ProjectJoinRequestMessageShowService
 	now := myTime.Time(time.Now())
 	result := projectService.FindProjectJoinRequest(userId, projectId, startTimeStr)
+	// 获取用户信息
+	userIds := make([]string, 0)
+	for _, item := range result {
+		userIds = append(userIds, item.ProjectJoinRequest.UserId)
+	}
+
+	userMap, err := GetUsersInfo(c, userIds)
+	if err != nil {
+		response.ServerError(c, "获取用户信息失败")
+		return
+	}
+
+	for i := range result {
+		userId := result[i].ProjectJoinRequest.UserId
+		userInfo, exists := userMap[userId]
+		if exists {
+			result[i].User = &models.UserProfile{
+				Id:       userInfo.UserID,
+				Nickname: userInfo.Profile.Nickname,
+				Avatar:   userInfo.Profile.Avatar,
+			}
+		}
+	}
+
 	if startTimeStr == "" {
 		response.Success(c, result)
 		return
 	}
+
 	var messageShowList []models.ProjectJoinRequestMessageShow
 	if err := projectJoinRequestMessageShowService.Find(&messageShowList, "user_id = ? and project_id = ?", userId, projectId); err != nil {
 		log.Println("ProjectJoinRequestMessageShow查询错误", err)
@@ -437,7 +462,7 @@ func GetProjectJoinRequestList(c *gin.Context) {
 	response.Success(c, result)
 }
 
-// GetSelfProjectJoinRequestList 获取自身的申请列表
+// GetSelfProjectJoinRequestList 获取自身的项目加入申请列表
 func GetSelfProjectJoinRequestList(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
@@ -455,6 +480,36 @@ func GetSelfProjectJoinRequestList(c *gin.Context) {
 	}
 	projectService := services.NewProjectService()
 	result := projectService.FindSelfProjectJoinRequest(userId, projectId, startTimeStr)
+
+	// 获取用户信息
+	userIds := make([]string, 0)
+	for _, item := range result {
+		if item.ProjectJoinRequest.ProcessedBy != "" {
+			userIds = append(userIds, item.ProjectJoinRequest.ProcessedBy)
+		}
+	}
+
+	if len(userIds) > 0 {
+		userMap, err := GetUsersInfo(c, userIds)
+		if err != nil {
+			response.ServerError(c, "获取用户信息失败")
+			return
+		}
+
+		for i := range result {
+			if result[i].ProjectJoinRequest.ProcessedBy != "" {
+				userInfo, exists := userMap[result[i].ProjectJoinRequest.ProcessedBy]
+				if exists {
+					result[i].User = &models.UserProfile{
+						Id:       userInfo.UserID,
+						Nickname: userInfo.Profile.Nickname,
+						Avatar:   userInfo.Profile.Avatar,
+					}
+				}
+			}
+		}
+	}
+
 	response.Success(c, result)
 }
 
@@ -622,7 +677,7 @@ func SetProjectInvited(c *gin.Context) {
 	}
 	var req struct {
 		ProjectId    string                  `json:"project_id" binding:"required"`
-		IsPublic     *bool                   `json:"is_public"` // 是否在团队内部公开
+		IsPublic     *bool                   `json:"is_public"`     // 是否在团队内部公开
 		PermType     *models.ProjectPermType `json:"perm_type"`     // 团队内的公开权限类型、或邀请权限类型
 		OpenInvite   *bool                   `json:"open_invite"`   // 邀请开关
 		NeedApproval *bool                   `json:"need_approval"` // 申请是否需要审批

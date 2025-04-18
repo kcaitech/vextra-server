@@ -287,12 +287,13 @@ type BaseProjectJoinRequestQuery struct {
 type SelfProjectJoinRequestQuery struct {
 	BaseProjectJoinRequestQuery
 	// User string `gorm:"embedded;embeddedPrefix:user__" json:"approver" join:";inner;id,processed_by"`
+	User *models.UserProfile `gorm:"-" json:"approver"`
 }
 
 type ProjectJoinRequestQuery struct {
 	BaseProjectJoinRequestQuery
 	ProjectMember models.ProjectMember `gorm:"-" json:"-" join:";inner;project_id,project_id;user_id,?user_id"` // 自己的（非申请人的）权限
-	// User          string               `gorm:"embedded;embeddedPrefix:user__" json:"user"`
+	User          *models.UserProfile  `gorm:"-" json:"user"`
 }
 
 // FindProjectJoinRequest 获取用户所创建或担任管理员的项目的加入申请列表
@@ -300,7 +301,7 @@ func (s *ProjectService) FindProjectJoinRequest(userId string, projectId string,
 	var result = make([]ProjectJoinRequestQuery, 0)
 	whereArgsList := []WhereArgs{
 		{
-			Query: "project_member.deleted_at is null and project.deleted_at is null and user.deleted_at is null",
+			Query: "project_member.deleted_at is null and project.deleted_at is null",
 		},
 		{
 			Query: "project_member.perm_type >= ? and project_member.perm_type <= ?",
