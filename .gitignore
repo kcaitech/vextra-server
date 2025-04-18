@@ -25,10 +25,6 @@
 /deployment/app/config/storage-config.yaml
 /deployment/app/config/safereview-config.yaml
 
-
-./kcserver
-./kcserver.*
-kcserver.*
-**/kcserver
+**/kcserver.exe
 **/*.log
 package-lock.json
