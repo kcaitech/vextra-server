@@ -29,7 +29,32 @@ func GetUserReceiveSharesList(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	response.Success(c, services.NewDocumentService().FindSharesByUserId(userId))
+	receiveSharesList := services.NewDocumentService().FindSharesByUserId(userId)
+	// 获取用户信息
+	userIds := make([]string, 0)
+	for _, item := range *receiveSharesList {
+		userIds = append(userIds, item.Document.UserId)
+	}
+
+	userMap, err := GetUsersInfo(c, userIds)
+	if err != nil {
+		response.ServerError(c, err.Error())
+		return
+	}
+	result := make([]services.DocumentSharesAndFavoritesQueryRes, 0)
+	for _, item := range *receiveSharesList {
+		userId := item.Document.UserId
+		userInfo, exists := userMap[userId]
+		if exists {
+			item.User = &models.UserProfile{
+				Id:       userInfo.UserID,
+				Nickname: userInfo.Profile.Nickname,
+				Avatar:   userInfo.Profile.Avatar,
+			}
+			result = append(result, item)
+		}
+	}
+	response.Success(c, result)
 }
 
 // DeleteUserShare 退出共享

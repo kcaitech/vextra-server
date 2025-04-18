@@ -1,5 +1,5 @@
 import { HttpMgr } from './http'
-import { BaseResponseSchema, BaseResponse, PermType } from './types';
+import { BaseResponseSchema, BaseResponse, PermType, UserInfoSchema, TeamInfoSchema, ProjectInfoSchema } from './types';
 import { z } from 'zod';
 
 // 分享相关类型定义
@@ -32,21 +32,15 @@ export const ShareListResponseSchema1 = BaseResponseSchema.extend({
                 updated_at: z.string(),
                 deleted_at: z.string().nullable()
             }),
-            team: z.object({
-                id: z.string(),
-                name: z.string()
-            }).nullable(),
-            project: z.object({
-                id: z.string(),
-                name: z.string()
-            }).nullable(),
+            team: TeamInfoSchema.nullable(),
+            project: ProjectInfoSchema.nullable(),
             document_permission: z.object({
                 id: z.string(),
                 resource_type: z.number(),
                 resource_id: z.string(),
                 grantee_type: z.number(),
                 grantee_id: z.string(),
-                perm_type: z.number(),
+                perm_type: z.nativeEnum(PermType),
                 perm_source_type: z.number()
             })
         }))
@@ -70,19 +64,13 @@ export const ShareApplyListResponseSchema = BaseResponseSchema.extend({
             created_at: z.string(),
             deleted_at: z.string().nullable()
         }),
-        team: z.object({
-            id: z.string(),
-            name: z.string()
-        }).nullable(),
-        project: z.object({
-            id: z.string(),
-            name: z.string()
-        }).nullable(),
+        team: TeamInfoSchema.nullable(),
+        project: ProjectInfoSchema.nullable(),
         apply: z.object({
             id: z.string(),
             user_id: z.string(),
             document_id: z.string(),
-            perm_type: z.number(),
+            perm_type: z.nativeEnum(PermType),
             status: z.number(),
             created_at: z.string(),
             updated_at: z.string(),
@@ -125,12 +113,45 @@ export enum DocType {
 // 共享文件列表响应类型
 const ShareListResponseSchema = BaseResponseSchema.extend({
     data: z.array(z.object({
-        id: z.number(),
-        name: z.string(),
-        type: z.string(),
-        parent_id: z.string(),
-        created_at: z.string(),
-        shared_by: z.string()
+        document: z.object({
+            id: z.string(),
+            user_id: z.string(),
+            path: z.string(),
+            doc_type: z.number(),
+            name: z.string(),
+            size: z.number(),
+            version_id: z.string(),
+            team_id: z.string().nullable(),
+            project_id: z.string().nullable(),
+            created_at: z.string(),
+            updated_at: z.string(),
+            deleted_at: z.string().nullable()
+        }),
+        user: UserInfoSchema,
+        team: TeamInfoSchema.nullable(),
+        project: ProjectInfoSchema.nullable(),
+        document_favorites: z.object({
+            id: z.string(),
+            user_id: z.string(),
+            document_id: z.string(),
+            is_favorite: z.boolean(),
+            created_at: z.string(),
+            updated_at: z.string()
+        }),
+        document_access_record: z.object({
+            id: z.string(),
+            user_id: z.string(),
+            document_id: z.string(),
+            last_access_time: z.string(),
+            created_at: z.string(),
+            updated_at: z.string()
+        }),
+        document_permission: z.object({
+            id: z.string(),
+            perm_type: z.nativeEnum(PermType),
+            perm_source_type: z.number()
+        }),
+        user_team_nickname: z.string()
     }))
 })
 
@@ -164,7 +185,7 @@ export class ShareAPI {
         page_size?: number;
     }): Promise<ShareListResponse> {
         const result = await this.http.request({
-            url: 'documents/shares/receives',
+            url: '/documents/shares/receives',
             method: 'get',
             params: params,
         })
