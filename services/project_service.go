@@ -122,7 +122,7 @@ func (s *ProjectService) GetProjectPermTypeByForUser(projectId string, userId st
 	var projectQueryResult ProjectQuery
 	whereArgsList := []WhereArgs{
 		{"tm.deleted_at is null", nil},
-		{"p.id = ? and p.open_invite = ?", []any{projectId, true}},
+		{"p.id = ? and p.is_public = ?", []any{projectId, true}},
 	}
 	err = s.Get(
 		&projectQueryResult,
@@ -193,7 +193,7 @@ func (s *ProjectService) findProject(teamId string, userId string, projectIdList
 	whereArgsList2 := append(
 		whereArgsList,
 		WhereArgs{"pm.deleted_at is null and tm.deleted_at is null", nil},
-		WhereArgs{"p.open_invite = ?", []any{true}},
+		WhereArgs{"p.is_public = ?", []any{true}},
 	)
 	if len(selfProjectIdList) > 0 {
 		whereArgsList2 = append(whereArgsList2, WhereArgs{"p.id not in ?", []any{selfProjectIdList}})
