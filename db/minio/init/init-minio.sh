@@ -25,7 +25,7 @@ else
     echo "attatch bucket already exists"
 fi
 
-设置 attatch bucket 的自定义策略
+# 设置 attatch bucket 的自定义策略
 cat > /tmp/policy.json << EOF
 {
     "Version": "2012-10-17",
