@@ -1,5 +1,5 @@
 import { HttpMgr } from './http'
-import { BaseResponseSchema, BaseResponse, PermType, UserInfoSchema, TeamInfoSchema, ProjectInfoSchema } from './types';
+import { BaseResponseSchema, BaseResponse, PermType, UserInfoSchema, TeamInfoSchema, ProjectInfoSchema, DocumentInfoSchema } from './types';
 import { z } from 'zod';
 
 // 分享相关类型定义
@@ -14,24 +14,12 @@ import { z } from 'zod';
 
 // export type Share = z.infer<typeof ShareSchema>;
 
+
 export const ShareListResponseSchema1 = BaseResponseSchema.extend({
     data: z.array(z.object({
         total: z.number(),
         items: z.array(z.object({
-            document: z.object({
-                id: z.string(),
-                user_id: z.string(),
-                path: z.string(),
-                doc_type: z.number(),
-                name: z.string(),
-                size: z.number(),
-                version_id: z.string(),
-                team_id: z.string().nullable(),
-                project_id: z.string().nullable(),
-                created_at: z.string(),
-                updated_at: z.string(),
-                deleted_at: z.string().nullable()
-            }),
+            document: DocumentInfoSchema,
             team: TeamInfoSchema.nullable(),
             project: ProjectInfoSchema.nullable(),
             document_permission: z.object({
@@ -51,19 +39,7 @@ export type ShareListResponse1 = z.infer<typeof ShareListResponseSchema1>;
 
 export const ShareApplyListResponseSchema = BaseResponseSchema.extend({
     data: z.array(z.object({
-        document: z.object({
-            id: z.string(),
-            user_id: z.string(),
-            path: z.string(),
-            doc_type: z.number(),
-            name: z.string(),
-            size: z.number(),
-            version_id: z.string(),
-            team_id: z.string().nullable(),
-            project_id: z.string().nullable(),
-            created_at: z.string(),
-            deleted_at: z.string().nullable()
-        }),
+        document: DocumentInfoSchema,
         team: TeamInfoSchema.nullable(),
         project: ProjectInfoSchema.nullable(),
         apply: z.object({
@@ -113,20 +89,7 @@ export enum DocType {
 // 共享文件列表响应类型
 const ShareListResponseSchema = BaseResponseSchema.extend({
     data: z.array(z.object({
-        document: z.object({
-            id: z.string(),
-            user_id: z.string(),
-            path: z.string(),
-            doc_type: z.number(),
-            name: z.string(),
-            size: z.number(),
-            version_id: z.string(),
-            team_id: z.string().nullable(),
-            project_id: z.string().nullable(),
-            created_at: z.string(),
-            updated_at: z.string(),
-            deleted_at: z.string().nullable()
-        }),
+        document: DocumentInfoSchema,
         user: UserInfoSchema,
         team: TeamInfoSchema.nullable(),
         project: ProjectInfoSchema.nullable(),
@@ -148,10 +111,13 @@ const ShareListResponseSchema = BaseResponseSchema.extend({
         }),
         document_permission: z.object({
             id: z.string(),
+            resource_type: z.number(),
+            resource_id: z.string(),
+            grantee_type: z.number(),
+            grantee_id: z.string(),
             perm_type: z.nativeEnum(PermType),
             perm_source_type: z.number()
-        }),
-        user_team_nickname: z.string()
+        })
     }))
 })
 
