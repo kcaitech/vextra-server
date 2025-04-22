@@ -62,7 +62,7 @@ func (serv *resourceServe) handle(data *TransData, binaryData *([]byte)) {
 	serverData.Type = data.Type
 	serverData.DataId = data.DataId
 	msgErr := func(msg string, serverData *TransData, err *error) {
-		serverData.Err = msg
+		serverData.Msg = msg
 		if err != nil {
 			log.Println(msg, *err)
 		} else {

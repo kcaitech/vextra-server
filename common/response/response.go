@@ -8,6 +8,7 @@ import (
 
 const (
 	StatusContentReviewFail = 494 // 审核失败
+	StatusDocumentNotFound  = 495 // 文档不存在
 )
 
 type Response struct {

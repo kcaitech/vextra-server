@@ -54,7 +54,8 @@ export enum HttpCode {
 	StatusTooManyRequests              = 429, // RFC 6585, 4
 	StatusRequestHeaderFieldsTooLarge  = 431, // RFC 6585, 5
 	StatusUnavailableForLegalReasons   = 451, // RFC 7725, 3
-	StatusContentReviewFail            = 494,
+	StatusContentReviewFail            = 494, // 审核失败
+	StatusDocumentNotFound             = 495, // 文档不存在
 
 	StatusInternalServerError           = 500, // RFC 9110, 15.6.1
 	StatusNotImplemented                = 501, // RFC 9110, 15.6.2
