@@ -65,3 +65,22 @@ export const ProjectInfoSchema = z.object({
 })
 
 export type ProjectInfo = z.infer<typeof ProjectInfoSchema>;
+
+
+export const DocumentInfoSchema = z.object({
+  id: z.string(),
+  user_id: z.string(),
+  path: z.string(),
+  doc_type: z.number(),
+  name: z.string(),
+  size: z.number(),
+  version_id: z.string(),
+  delete_by: z.string(),
+  team_id: z.string().nullable(),
+  project_id: z.string().nullable(),
+  created_at: z.string(),
+  updated_at: z.string(),
+  deleted_at: z.string().nullable()
+})
+
+export type DocumentInfo = z.infer<typeof DocumentInfoSchema>;

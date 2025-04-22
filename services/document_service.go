@@ -150,7 +150,7 @@ func (s *DocumentService) FindRecycleBinByUserId(userId string, projectId string
 	if projectId != "" {
 		whereArgsList = append(whereArgsList, WhereArgs{"document.project_id = ?", []any{projectId}})
 	} else {
-		whereArgsList = append(whereArgsList, WhereArgs{"document.user_id = ? and (document.project_id is null or document.project_id = 0)", []any{userId}})
+		whereArgsList = append(whereArgsList, WhereArgs{"document.user_id = ? and (document.project_id is null or document.project_id = '')", []any{userId}})
 	}
 	_ = s.Find(
 		&result,

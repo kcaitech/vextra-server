@@ -50,8 +50,8 @@ type TransData struct {
 	Type   string `json:"type"`
 	DataId string `json:"data_id"`
 	Data   string `json:"data,omitempty"`
-	Err    string `json:"err,omitempty"`
-	// ErrCode int32           `json:"err_code,omitempty"`
+	Msg    string `json:"msg,omitempty"`
+	Code   int32  `json:"code,omitempty"`
 }
 
 // type TunnelDataType uint8

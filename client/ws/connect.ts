@@ -1,4 +1,5 @@
 
+import { HttpCode } from "../request/httpcode";
 import { DataTypes, NetworkStatusType, TransData } from "./types";
 
 
@@ -7,8 +8,7 @@ interface LocalData {
     data_id: string,
     data: string | ArrayBuffer,
     retryCount: number
-    resolve?: (value: { data?: any, buffer?: ArrayBuffer, err?: string }) => void
-    // reject?: () => void
+    resolve?: (value: { code: number, data?: any, buffer?: ArrayBuffer, msg?: string }) => void
     timer?: ReturnType<typeof setTimeout>
 }
 
@@ -113,10 +113,6 @@ export class Connect {
         else delete this.dataHandler[type]
     }
 
-    // onBinary(handler: (data: ArrayBuffer) => boolean) {
-    //     this.binaryHandler.push(handler)
-    // }
-
     start(delay: number = 0) {
         if (this.ws) return;
         if (this.connectTimer) {
@@ -146,25 +142,22 @@ export class Connect {
         }
     }
 
-    private async asyncSend(data: LocalData, timeout: number): Promise<{ data?: any, buffer?: ArrayBuffer, err?: string }> {
+    private async asyncSend(data: LocalData, timeout: number): Promise<{ code: number, data?: any, buffer?: ArrayBuffer, msg?: string }> {
 
-        const promise = new Promise<{ data?: any, buffer?: ArrayBuffer, err?: string }>((resolve, reject) => {
-            // data.reject = reject
+        const promise = new Promise<{ code: number, data?: any, buffer?: ArrayBuffer, msg?: string }>((resolve, reject) => {
             data.resolve = resolve
         })
 
         this.promises.set(data.data_id, data);
         const sendpack = () => {
-            // console.log("ws send ", typeof data.data)
             this.ws?.send(data.data)
         }
 
         if (timeout) {
             const timeoutf = () => {
-                // 超时
                 data.timer = undefined
                 if (data.retryCount <= 0) {
-                    data.resolve?.({ err: "time out" });
+                    data.resolve?.({ code: HttpCode.StatusRequestTimeout, msg: "time out" });
                 } else {
                     sendpack();
                     --data.retryCount
@@ -179,8 +172,8 @@ export class Connect {
         return promise
     }
 
-    async send(type: DataTypes, data: Object, timeout: number = 500, retryCount: number = 3) {
-        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return { err: 'ws not ready' };
+    async send(type: DataTypes, data: Object, timeout: number = 500, retryCount: number = 3): Promise<{ code: number, data?: any, buffer?: ArrayBuffer, msg?: string }> {
+        if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return { code: HttpCode.StatusInternalServerError, msg: 'ws not ready' };
         const data_id = "c" + (++this.data_id)
         const pack: LocalData = {
             type,
@@ -215,7 +208,7 @@ export class Connect {
     }
 
     private receiveMessage(ev: MessageEvent) {
-        let json;
+        let json: TransData | undefined;
         let _buffer;
         if (typeof ev.data === 'string') {
             try {
@@ -237,17 +230,13 @@ export class Connect {
         if (!json) return;
 
         const json_data = json.data && JSON.parse(json.data)
-        if (json.type === DataTypes.Heartbeat) {
-            return; // 无需处理
-        }
+        if (json.type === DataTypes.Heartbeat) return; // 无需处理
         if (json.data_id.startsWith("c")) {
             const promise = this.promises.get(json.data_id)
-            const err = json.err;
-            if (err) console.log(err)
             if (promise) {
                 this.promises.delete(json.data_id)
                 if (promise.timer) clearTimeout(promise.timer)
-                promise.resolve?.({ data: json_data, buffer: _buffer, err: json.err });
+                promise.resolve?.({ code: json.code, data: json_data, buffer: _buffer, msg: json.msg });
             }
         } else {
             const h = this.dataHandler[json.type];

@@ -53,10 +53,10 @@ export class DocUpload extends ConnectClient {
             }
         }
         const confirm = await this.send({ document_id, commit: true }, 60000) // 一分钟超时
-        if (confirm.err !== undefined) {
-            console.log("upload confirm fail", confirm.err)
+        if (confirm.msg !== undefined) {
+            console.log("upload confirm fail", confirm.msg)
             return;
         }
-        return (confirm.data as { document_id: string, version_id: string });
+        if (confirm.data) return (confirm.data as { document_id: string, version_id: string });
     }
 }

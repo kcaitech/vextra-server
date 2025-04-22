@@ -1,24 +1,11 @@
 import { HttpMgr } from "./http"
-import { BaseResponse, BaseResponseSchema, PermType, ProjectInfoSchema, TeamInfoSchema, UserInfoSchema } from "./types"
+import { BaseResponse, BaseResponseSchema, PermType, ProjectInfoSchema, TeamInfoSchema, UserInfoSchema, DocumentInfoSchema as DocumentSchema } from "./types"
 import { z } from 'zod';
 
 // 文档列表响应类型
 export const DocumentListResponseSchema = BaseResponseSchema.extend({
     data: z.array(z.object({
-        document: z.object({
-            id: z.string(),
-            user_id: z.string(),
-            path: z.string(),
-            doc_type: z.number(),
-            name: z.string(),
-            size: z.number(),
-            version_id: z.string(),
-            team_id: z.string().nullable(),
-            project_id: z.string().nullable(),
-            created_at: z.string(),
-            updated_at: z.string(),
-            deleted_at: z.string().nullable()
-        }),
+        document: DocumentSchema,
         user: UserInfoSchema,
         team: TeamInfoSchema.nullable(),
         project: ProjectInfoSchema.nullable(),
@@ -85,20 +72,7 @@ export type DocumentListItem = z.infer<typeof DocumentListResponseSchema.shape.d
 
 // 用户文档访问记录模型
 const DocumentAccessRecordSchema = z.object({
-    document: z.object({
-        id: z.string(),
-        user_id: z.string(),
-        path: z.string(),
-        doc_type: z.number(),
-        name: z.string(),
-        size: z.number(),
-        version_id: z.string(),
-        team_id: z.string(),
-        project_id: z.string(),
-        created_at: z.string(),
-        updated_at: z.string(),
-        deleted_at: z.string().nullable()
-    }),
+    document: DocumentSchema,
     team: TeamInfoSchema.nullable(),
     project: ProjectInfoSchema.nullable(),
     document_favorites: z.object({
@@ -161,20 +135,7 @@ export type DocumentKeyResponse = z.infer<typeof DocumentKeyResponseSchema>;
 
 // 文档信息类型
 export const DocumentInfoSchema = z.object({
-    document: z.object({
-        id: z.string(),
-        user_id: z.string(),
-        path: z.string(),
-        doc_type: z.number(),
-        name: z.string(),
-        size: z.number(),
-        version_id: z.string(),
-        team_id: z.string().nullable(),
-        project_id: z.string().nullable(),
-        created_at: z.string(),
-        updated_at: z.string(),
-        deleted_at: z.string().nullable()
-    }),
+    document: DocumentSchema,
     team: TeamInfoSchema.nullable(),
     project: ProjectInfoSchema.nullable(),
     document_favorites: z.object({

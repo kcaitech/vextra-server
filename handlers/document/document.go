@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"math"
+	"net/http"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -124,9 +125,9 @@ func GetUserDocumentInfo(c *gin.Context) {
 	if permType < models.PermTypeReadOnly || permType > models.PermTypeEditable {
 		permType = models.PermTypeNone
 	}
-	result, errmsg := GetUserDocumentInfo1(userId, documentId, permType)
-	if errmsg != "" {
-		response.BadRequest(c, errmsg)
+	result, msg, code := GetUserDocumentInfo1(userId, documentId, permType)
+	if msg != "" {
+		response.Resp(c, code, msg, nil)
 		return
 	}
 	// 获取文档对应的user信息
@@ -163,7 +164,7 @@ func GetUserDocumentInfo(c *gin.Context) {
 	})
 }
 
-func GetUserDocumentInfo1(userId string, documentId string, permType models.PermType) (*services.DocumentInfoQueryRes, string) {
+func GetUserDocumentInfo1(userId string, documentId string, permType models.PermType) (*services.DocumentInfoQueryRes, string, int) {
 
 	// permType := models.PermType(str.DefaultToInt(c.Query("perm_type"), 0))
 	// if permType < models.PermTypeReadOnly || permType > models.PermTypeEditable {
@@ -172,11 +173,11 @@ func GetUserDocumentInfo1(userId string, documentId string, permType models.Perm
 
 	result := services.NewDocumentService().GetDocumentInfoByDocumentAndUserId(documentId, userId, permType)
 	if result == nil {
-		return nil, "文档不存在"
+		return nil, "文档不存在", http.StatusNotFound
 	} else if result.LockedInfo != nil && !result.LockedInfo.LockedAt.IsZero() && result.Document.UserId != userId {
-		return nil, "审核不通过"
+		return nil, "审核不通过", response.StatusDocumentNotFound
 	} else {
-		return result, ""
+		return result, "", http.StatusOK
 	}
 }
 

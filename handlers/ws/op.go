@@ -219,7 +219,7 @@ func (serv *opServe) handleCommit(data *TransData, receiveData *ReceiveData) {
 	serverData.DataId = data.DataId
 
 	msgErr := func(msg string, serverData *TransData, err *error) {
-		serverData.Err = msg
+		serverData.Msg = msg
 		if err != nil {
 			log.Println(msg, *err)
 		} else {
@@ -353,7 +353,7 @@ func (serv *opServe) handlePullCmds(data *TransData, receiveData *ReceiveData) {
 	serverData.DataId = data.DataId
 
 	msgErr := func(msg string, serverData *TransData, err *error) {
-		serverData.Err = msg
+		serverData.Msg = msg
 		log.Println(msg, err)
 		_ = serv.ws.WriteJSON(serverData)
 	}
@@ -406,7 +406,7 @@ func (serv *opServe) handle(data *TransData, binaryData *([]byte)) {
 	serverData.DataId = data.DataId
 
 	msgErr := func(msg string, serverData *TransData, err *error) {
-		serverData.Err = msg
+		serverData.Msg = msg
 		log.Println(msg, err)
 		_ = serv.ws.WriteJSON(serverData)
 	}

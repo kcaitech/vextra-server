@@ -60,7 +60,7 @@
         _ = s.Find(
             &result,
             &ParamArgs{"?user_id": userId},
-            &WhereArgs{"document.user_id = ? and (document.project_id is null or document.project_id = 0)", []any{userId}},
+            &WhereArgs{"document.user_id = ? and (document.project_id is null or document.project_id = '')", []any{userId}},
             &OrderLimitArgs{"document_access_record.last_access_time desc", 0},
         )
         return &result

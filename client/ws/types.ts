@@ -12,10 +12,11 @@ export enum DataTypes {
 }
 
 export interface TransData {
-    type: DataTypes,
-    data_id: string,
-    data: string,
-    err?: string
+    type: DataTypes;
+    data_id: string;
+    data: string;
+    msg: string;
+    code: number;
 }
 
 export enum DocCommentOpType {
