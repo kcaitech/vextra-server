@@ -78,7 +78,18 @@ type ACommuncation struct {
 }
 
 func (c *ACommuncation) msgErr(msg string, serverData *TransData, err *error) {
-	serverData.Err = msg
+	serverData.Msg = msg
+	if err != nil {
+		log.Println(msg, *err)
+	} else {
+		log.Println(msg)
+	}
+	_ = c.ws.WriteJSON(serverData)
+}
+
+func (c *ACommuncation) msgErrWithCode(msg string, serverData *TransData, err *error, errCode int) {
+	serverData.Msg = msg
+	serverData.Code = int32(errCode)
 	if err != nil {
 		log.Println(msg, *err)
 	} else {
@@ -118,15 +129,15 @@ func (c *ACommuncation) handleBind(clientData *TransData) {
 		permType = models.PermTypeNone
 	}
 
-	docInfo, errmsg := document.GetUserDocumentInfo1(c.userId, documentId, permType)
+	docInfo, errmsg, errCode := document.GetUserDocumentInfo1(c.userId, documentId, permType)
 	if nil == docInfo {
-		c.msgErr(errmsg, &serverData, nil)
+		c.msgErrWithCode(errmsg, &serverData, nil, errCode)
 		return
 	}
 
-	accessKey, _ := document.GetDocumentAccessKey1(c.userId, documentId)
-	if nil == accessKey {
-		c.msgErr(errmsg, &serverData, nil)
+	accessKey, err, err_code := document.GetDocumentAccessKey1(c.userId, documentId)
+	if err != nil {
+		c.msgErrWithCode(err.Error(), &serverData, nil, err_code)
 		return
 	}
 
