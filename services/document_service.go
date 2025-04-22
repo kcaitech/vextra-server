@@ -448,6 +448,7 @@ func (s *DocumentService) GetPermTypeByDocumentAndUserId(permType *models.PermTy
 type PermissionRequestsQueryResItem struct {
 	DocumentQueryResItem
 	DocumentPermissionRequests DocumentPermissionRequests `gorm:"embedded;embeddedPrefix:document_permission_requests__" json:"apply" table:""`
+	RequestUser                *models.UserProfile        `gorm:"-" json:"request_user"`
 }
 
 // FindPermissionRequests 获取用户所创建文档的权限申请列表
