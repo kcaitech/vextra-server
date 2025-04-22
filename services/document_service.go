@@ -150,7 +150,7 @@ func (s *DocumentService) FindRecycleBinByUserId(userId string, projectId string
 	if projectId != "" {
 		whereArgsList = append(whereArgsList, WhereArgs{"document.project_id = ?", []any{projectId}})
 	} else {
-		whereArgsList = append(whereArgsList, WhereArgs{"document.user_id = ? and (document.project_id is null or document.project_id = 0)", []any{userId}})
+		whereArgsList = append(whereArgsList, WhereArgs{"document.user_id = ? and (document.project_id is null or document.project_id = '')", []any{userId}})
 	}
 	_ = s.Find(
 		&result,
@@ -173,7 +173,7 @@ func (s *DocumentService) FindDocumentByUserId(userId string) *[]AccessRecordAnd
 	_ = s.Find(
 		&result,
 		&ParamArgs{"?user_id": userId},
-		&WhereArgs{"document.user_id = ? and (document.project_id is null or document.project_id = 0)", []any{userId}},
+		&WhereArgs{"document.user_id = ? and (document.project_id is null or document.project_id = '')", []any{userId}},
 		&OrderLimitArgs{"document_access_record.last_access_time desc", 0},
 	)
 	return &result
