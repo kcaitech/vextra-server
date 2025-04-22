@@ -388,6 +388,28 @@ func GetDocumentPermissionRequestsList(c *gin.Context) {
 	}
 	documentService := services.NewDocumentService()
 	result := documentService.FindPermissionRequests(userId, documentId, startTimeStr)
+
+	userIds := make([]string, 0)
+	for _, item := range *result {
+		userIds = append(userIds, item.DocumentPermissionRequests.UserId)
+	}
+	userMap, err := GetUsersInfo(c, userIds)
+	if err != nil {
+		response.ServerError(c, err.Error())
+		return
+	}
+	for i := range *result {
+		userId := (*result)[i].DocumentPermissionRequests.UserId
+		userInfo, exists := userMap[userId]
+		if exists {
+			(*result)[i].User = &models.UserProfile{
+				Id:       userInfo.UserID,
+				Nickname: userInfo.Profile.Nickname,
+				Avatar:   userInfo.Profile.Avatar,
+			}
+		}
+	}
+
 	if len(*result) > 0 {
 		permissionRequestsIdList := sliceutil.MapT(func(item services.PermissionRequestsQueryResItem) int64 {
 			return item.DocumentPermissionRequests.Id

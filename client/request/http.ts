@@ -93,27 +93,27 @@ export class HttpMgr {
         const dataAxios = response?.data || {}
         if (dataAxios.code === HttpCode.StatusOK) {
             return Promise.resolve(dataAxios)
-        } else if (dataAxios.code === HttpCode.StatusBadRequest) {
-            return Promise.resolve(dataAxios)
-        } else if (dataAxios.code === HttpCode.StatusForbidden) {
-            return Promise.resolve(dataAxios)
-        } else if (dataAxios.code === HttpCode.StatusUnauthorized) {
-            this.handle401()
-            return Promise.reject(response)
-        } else if (dataAxios.code === HttpCode.StatusInternalServerError) {
-            return Promise.resolve(response)
-        } else if (dataAxios.code === HttpCode.StatusContentReviewFail) {
-            return Promise.resolve(response)
         } else {
             return Promise.reject(response)
         }
     }
 
     private handle_response_err(error: any) {
-        if (error?.status === 401) {
-            this.handle401()
+        const dataAxios = error?.response?.data || {}
+        if (error?.status === HttpCode.StatusUnauthorized) {
+            this.handle401();
+            return Promise.reject(error?.response)
+        } else if (dataAxios.code === HttpCode.StatusBadRequest) {
+            return Promise.resolve(dataAxios)
+        } else if (dataAxios.code === HttpCode.StatusForbidden) {
+            return Promise.resolve(dataAxios)
+        } else if (dataAxios.code === HttpCode.StatusInternalServerError) {
+            return Promise.resolve(error?.response)
+        } else if (dataAxios.code === HttpCode.StatusContentReviewFail) {
+            return Promise.resolve(error?.response)
+        } else {
+            return Promise.reject(error);
         }
-        return Promise.reject(error);
     }
 
     constructor(apiUrl: string, onUnauthorized: () => void, token?: string) {
