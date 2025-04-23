@@ -67,6 +67,7 @@ export const DocumentRecycleListResponseSchema = BaseResponseSchema.extend({
     }))
 })
 export type DocumentRecycleListResponse = z.infer<typeof DocumentRecycleListResponseSchema>
+export type DocumentRecycleListItem = z.infer<typeof DocumentRecycleListResponseSchema.shape.data.element>
 export type DocumentListResponse = z.infer<typeof DocumentListResponseSchema>
 export type DocumentListItem = z.infer<typeof DocumentListResponseSchema.shape.data.element>
 

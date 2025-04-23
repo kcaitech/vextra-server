@@ -299,6 +299,15 @@ func DeleteProject(c *gin.Context) {
 
 // ApplyJoinProject 申请加入项目
 func ApplyJoinProject(c *gin.Context) {
+	type FailCode int
+	const (
+		FailCodeTeamNotExist FailCode = iota + 1
+		FailCodeInvitedNotOpen
+		FailCodeAlreadyJoined
+		FailCodeAlreadyApplied
+	)
+	failResponseData := map[string]any{}
+
 	userId, err := utils.GetUserId(c)
 	if err != nil {
 		response.Unauthorized(c)
@@ -321,14 +330,16 @@ func ApplyJoinProject(c *gin.Context) {
 	var project models.Project
 	if err := projectService.GetById(projectId, &project); err != nil {
 		if errors.Is(err, services.ErrRecordNotFound) {
-			response.BadRequest(c, "项目不存在")
+			failResponseData["code"] = FailCodeTeamNotExist
+			response.BadRequestData(c, "项目不存在", failResponseData)
 		} else {
 			response.ServerError(c, "项目查询错误")
 		}
 		return
 	}
 	if !project.OpenInvite {
-		response.BadRequest(c, "项目未开启邀请")
+		failResponseData["code"] = FailCodeInvitedNotOpen
+		response.BadRequestData(c, "项目未开启邀请", failResponseData)
 		return
 	}
 	permType, err := projectService.GetProjectPermTypeByForUser(projectId, userId)
@@ -337,7 +348,8 @@ func ApplyJoinProject(c *gin.Context) {
 		return
 	}
 	if *permType != models.ProjectPermTypeNone {
-		response.BadRequest(c, "已加入项目")
+		failResponseData["code"] = FailCodeAlreadyJoined
+		response.BadRequestData(c, "已加入项目", failResponseData)
 		return
 	}
 	projectJoinRequestService := projectService.ProjectJoinRequestService
@@ -345,7 +357,8 @@ func ApplyJoinProject(c *gin.Context) {
 		response.ServerError(c, "申请查询错误")
 		return
 	} else if ok {
-		response.BadRequest(c, "不能重复申请")
+		failResponseData["code"] = FailCodeAlreadyApplied
+		response.BadRequestData(c, "不能重复申请", failResponseData)
 		return
 	}
 	var projectJoinRequest models.ProjectJoinRequest
