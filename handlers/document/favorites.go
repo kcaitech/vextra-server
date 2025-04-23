@@ -37,8 +37,8 @@ func GetUserDocumentFavoritesList(c *gin.Context) {
 		if exists {
 			item.User = &models.UserProfile{
 				Id:       userInfo.UserID,
-				Nickname: userInfo.Profile.Nickname,
-				Avatar:   userInfo.Profile.Avatar,
+				Nickname: userInfo.Nickname,
+				Avatar:   userInfo.Avatar,
 			}
 			result = append(result, item)
 		}

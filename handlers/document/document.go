@@ -50,8 +50,8 @@ func GetUserDocumentList(c *gin.Context) {
 		if ok {
 			item.User = &models.UserProfile{
 				Id:       userInfo.UserID,
-				Nickname: userInfo.Profile.Nickname,
-				Avatar:   userInfo.Profile.Avatar,
+				Nickname: userInfo.Nickname,
+				Avatar:   userInfo.Avatar,
 			}
 		}
 	}
@@ -148,8 +148,8 @@ func GetUserDocumentInfo(c *gin.Context) {
 	response.Success(c, gin.H{
 		"user": models.UserProfile{
 			Id:       userInfo.UserID,
-			Nickname: userInfo.Profile.Nickname,
-			Avatar:   userInfo.Profile.Avatar,
+			Nickname: userInfo.Nickname,
+			Avatar:   userInfo.Avatar,
 		},
 		"document":                     result.Document,
 		"team":                         result.Team,

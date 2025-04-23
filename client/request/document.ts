@@ -388,8 +388,6 @@ export class DocumentAPI {
             method: 'get',
             params: params,
         });
-        console.log("result:", result);
-        
         try {
             return DocumentInfoResponseSchema.parse(result);
         } catch (error) {

@@ -17,21 +17,22 @@ import { z } from 'zod';
 
 export const ShareListResponseSchema1 = BaseResponseSchema.extend({
     data: z.array(z.object({
-        total: z.number(),
-        items: z.array(z.object({
-            document: DocumentInfoSchema,
-            team: TeamInfoSchema.nullable(),
-            project: ProjectInfoSchema.nullable(),
-            document_permission: z.object({
-                id: z.string(),
-                resource_type: z.number(),
-                resource_id: z.string(),
-                grantee_type: z.number(),
-                grantee_id: z.string(),
-                perm_type: z.nativeEnum(PermType),
-                perm_source_type: z.number()
-            })
-        }))
+        document: DocumentInfoSchema,
+        team: TeamInfoSchema.nullable(),
+        project: ProjectInfoSchema.nullable(),
+        user: UserInfoSchema,
+        document_permission: z.object({
+            id: z.string(),
+            resource_type: z.number(),
+            resource_id: z.string(),
+            grantee_type: z.number(),
+            grantee_id: z.string(),
+            created_at: z.string(),
+            updated_at: z.string(),
+            deleted_at: z.string().nullable(),
+            perm_type: z.nativeEnum(PermType),
+            perm_source_type: z.number()
+        })
     })),
 });
 
