@@ -422,8 +422,8 @@ func GetProjectJoinRequestList(c *gin.Context) {
 		if exists {
 			result[i].User = &models.UserProfile{
 				Id:       userInfo.UserID,
-				Nickname: userInfo.Profile.Nickname,
-				Avatar:   userInfo.Profile.Avatar,
+				Nickname: userInfo.Nickname,
+				Avatar:   userInfo.Avatar,
 			}
 		}
 	}
@@ -499,8 +499,8 @@ func GetSelfProjectJoinRequestList(c *gin.Context) {
 			if exists {
 				result[i].User = &models.UserProfile{
 					Id:       userInfo.UserID,
-					Nickname: userInfo.Profile.Nickname,
-					Avatar:   userInfo.Profile.Avatar,
+					Nickname: userInfo.Nickname,
+					Avatar:   userInfo.Avatar,
 				}
 			}
 		}
