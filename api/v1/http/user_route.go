@@ -54,8 +54,8 @@ func GetUserInfo(c *gin.Context) {
 
 	response.Success(c, map[string]any{
 		"id":       user.UserID,
-		"nickname": user.Profile.Nickname,
-		"avatar":   user.Profile.Avatar,
+		"nickname": user.Nickname,
+		"avatar":   user.Avatar,
 	})
 }
 func SetNickname(c *gin.Context) {
@@ -82,7 +82,7 @@ func SetNickname(c *gin.Context) {
 		response.ServerError(c, "操作失败")
 		return
 	}
-	user.Profile.Nickname = req.Nickname
+	user.Nickname = req.Nickname
 	client := services.GetKCAuthClient()
 	token, err := utils.GetAccessToken(c)
 	if err != nil {

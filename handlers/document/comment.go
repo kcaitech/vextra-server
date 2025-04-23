@@ -101,9 +101,9 @@ func GetDocumentComment(c *gin.Context) {
 				Id:                comment.Id,
 				UserCommentCommon: comment.UserCommentCommon,
 				User: models.UserProfile{
-					Nickname: user.Profile.Nickname,
+					Nickname: user.Nickname,
 					Id:       user.UserID,
-					Avatar:   user.Profile.Avatar,
+					Avatar:   user.Avatar,
 				},
 				CreatedAt:       comment.CreatedAt,
 				RecordCreatedAt: comment.RecordCreatedAt,

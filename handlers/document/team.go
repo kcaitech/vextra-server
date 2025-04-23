@@ -178,8 +178,8 @@ func GetTeamList(c *gin.Context) {
 			SelfPermType: item.SelfPermType,
 			CreatorUser: models.UserProfile{
 				Id:       user.UserID,
-				Nickname: user.Profile.Nickname,
-				Avatar:   user.Profile.Avatar,
+				Nickname: user.Nickname,
+				Avatar:   user.Avatar,
 			},
 		})
 	}
@@ -247,8 +247,8 @@ func GetTeamMemberList(c *gin.Context) {
 				TeamMember: member.TeamMember,
 				User: User{
 					Id:       user.UserID,
-					Nickname: user.Profile.Nickname,
-					Avatar:   user.Profile.Avatar,
+					Nickname: user.Nickname,
+					Avatar:   user.Avatar,
 				},
 			}
 			mergedResult = append(mergedResult, mergedMember)
