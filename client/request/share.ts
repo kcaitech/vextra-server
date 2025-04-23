@@ -52,9 +52,13 @@ export const ShareApplyListResponseSchema = BaseResponseSchema.extend({
             updated_at: z.string(),
             deleted_at: z.string().nullable(),
             first_displayed_at: z.string().nullable(),
-            applicant_notes:z.string()
+            applicant_notes: z.string(),
+            processed_at: z.string(),
+            processed_by: z.string(),
+            processor_notes: z.string(),
         }),
-        request_user: UserInfoSchema
+        user: UserInfoSchema,
+        user_team_nickname: z.string().optional()
     }))
 });
 

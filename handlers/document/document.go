@@ -300,6 +300,7 @@ func copyDocument(userId string, documentId string, c *gin.Context, documentName
 	cmdServices := services.GetCmdService()
 	documentCmdList, err := cmdServices.GetCmdItemsFromStart(documentId, documentVersion.LastCmdVerId)
 	if err != nil {
+		log.Println("获取文档cmd失败:", err, "documentId:", documentId, "LastCmdVerId:", documentVersion.LastCmdVerId)
 		response.ServerError(c, "获取文档cmd失败")
 		return
 	}
@@ -314,7 +315,8 @@ func copyDocument(userId string, documentId string, c *gin.Context, documentName
 	// 获取minBaseVer到documentVersion.lastCmdVerId之间的cmd
 	baseVerCmdList, err := cmdServices.GetCmdItems(documentId, minBaseVer, documentVersion.LastCmdVerId)
 	if err != nil {
-		response.ServerError(c, "获取文档cmd失败")
+		log.Println("获取基础版本cmd失败:", err, "documentId:", documentId, "minBaseVer:", minBaseVer, "LastCmdVerId:", documentVersion.LastCmdVerId)
+		response.ServerError(c, "获取基础版本cmd失败")
 		return
 	}
 
@@ -337,6 +339,7 @@ func copyDocument(userId string, documentId string, c *gin.Context, documentName
 		response.ServerError(c, "复制失败")
 		return
 	}
+
 	documentMeta := map[string]any{}
 	if err := json.Unmarshal(documentMetaBytes, &documentMeta); err != nil {
 		log.Println("documentMetaBytes转json失败：", err)
@@ -361,7 +364,6 @@ func copyDocument(userId string, documentId string, c *gin.Context, documentName
 	}
 
 	documentMeta["lastCmdVerId"] = (lastCmdVerId)
-
 	documentMetaBytes, err = json.Marshal(documentMeta)
 	if err != nil {
 		log.Println("documentMeta转json失败：", err)

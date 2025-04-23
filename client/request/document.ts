@@ -155,6 +155,13 @@ export const DocumentInfoSchema = z.object({
         perm_type: z.number(),
         perm_source_type: z.number()
     }),
+    document_permission_requests: z.array(z.object({
+        id: z.string(),
+        user_id: z.string(),
+        document_id: z.string(),
+        perm_type: z.number(),
+        status: z.number()
+    })),
     shares_count: z.number(),
     application_count: z.number(),
     locked_info: z.object({
@@ -204,7 +211,6 @@ export class DocumentAPI {
             method: 'get',
             params: params,
         })
-        console.log("result", result)
         try {
             return DocumentListResponseSchema.parse(result)
         } catch (error) {
@@ -382,6 +388,8 @@ export class DocumentAPI {
             method: 'get',
             params: params,
         });
+        console.log("result:", result);
+        
         try {
             return DocumentInfoResponseSchema.parse(result);
         } catch (error) {

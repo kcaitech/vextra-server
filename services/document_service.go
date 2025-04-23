@@ -121,17 +121,16 @@ func (model DocumentPermissionRequests) MarshalJSON() ([]byte, error) {
 
 // 这得联合好几个表，唉
 type DocumentQueryResItem struct {
-	Document models.Document `gorm:"embedded;embeddedPrefix:document__" json:"document" join:";inner;id,[#document_id document_id]"`
-	// User             string             `gorm:"embedded;embeddedPrefix:user__" json:"user" join:";inner;id,[#user_id document.user_id]"`
-	Team           *models.Team       `gorm:"embedded;embeddedPrefix:team__" json:"team" join:";left;id,document.team_id"`
-	Project        *models.Project    `gorm:"embedded;embeddedPrefix:project__" json:"project" join:";left;id,document.project_id"`
-	UserTeamMember *models.TeamMember `gorm:"embedded;embeddedPrefix:tm__" json:"-" join:"team_member,tm;left;team_id,document.team_id;user_id,document.user_id;deleted_at,##is null"`
+	Document       models.Document     `gorm:"embedded;embeddedPrefix:document__" json:"document" join:";inner;id,[#document_id document_id]"`
+	User           *models.UserProfile `gorm:"-" json:"user"`
+	Team           *models.Team        `gorm:"embedded;embeddedPrefix:team__" json:"team" join:";left;id,document.team_id"`
+	Project        *models.Project     `gorm:"embedded;embeddedPrefix:project__" json:"project" join:";left;id,document.project_id"`
+	UserTeamMember *models.TeamMember  `gorm:"embedded;embeddedPrefix:tm__" json:"-" join:"team_member,tm;left;team_id,document.team_id;user_id,document.user_id;deleted_at,##is null"`
 	// UserTeamNickname string             `gorm:"-" json:"user_team_nickname"`
 }
 
 type AccessRecordAndFavoritesQueryResItem struct {
 	DocumentQueryResItem
-	User                 *models.UserProfile         `gorm:"-" json:"user"`
 	DocumentFavorites    models.DocumentFavorites    `gorm:"embedded;embeddedPrefix:document_favorites__" json:"document_favorites" join:";left;document_id,document.id;user_id,?user_id"`
 	DocumentAccessRecord models.DocumentAccessRecord `gorm:"embedded;embeddedPrefix:document_access_record__" json:"document_access_record" join:";left;user_id,?user_id;document_id,document.id"`
 }
@@ -324,7 +323,7 @@ func (s *DocumentService) FindSharesByDocumentId(documentId string) *[]DocumentS
 type DocumentInfoQueryRes struct {
 	models.BaseModelStruct
 	DocumentSharesAndFavoritesQueryRes
-	DocumentPermissionRequests []DocumentPermissionRequests `gorm:"-" json:"apply_list"`
+	DocumentPermissionRequests []DocumentPermissionRequests `gorm:"-" json:"document_permission_requests"`
 	SharesCount                int64                        `gorm:"-" json:"shares_count"`
 	ApplicationCount           int64                        `gorm:"-" json:"application_count"`
 	LockedInfo                 *models.DocumentLock         `gorm:"-" json:"locked_info"`
@@ -448,7 +447,6 @@ func (s *DocumentService) GetPermTypeByDocumentAndUserId(permType *models.PermTy
 type PermissionRequestsQueryResItem struct {
 	DocumentQueryResItem
 	DocumentPermissionRequests DocumentPermissionRequests `gorm:"embedded;embeddedPrefix:document_permission_requests__" json:"apply" table:""`
-	RequestUser                *models.UserProfile        `gorm:"-" json:"request_user"`
 }
 
 // FindPermissionRequests 获取用户所创建文档的权限申请列表
