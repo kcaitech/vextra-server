@@ -40,16 +40,16 @@ func GetUserRecycleBinDocumentList(c *gin.Context) {
 			if deleteExists {
 				item.DeleteUser = &models.UserProfile{
 					Id:       deleteUserInfo.UserID,
-					Nickname: deleteUserInfo.Profile.Nickname,
-					Avatar:   deleteUserInfo.Profile.Avatar,
+					Nickname: deleteUserInfo.Nickname,
+					Avatar:   deleteUserInfo.Avatar,
 				}
 			}
 		}
 		if exists {
 			item.User = &models.UserProfile{
 				Id:       userInfo.UserID,
-				Nickname: userInfo.Profile.Nickname,
-				Avatar:   userInfo.Profile.Avatar,
+				Nickname: userInfo.Nickname,
+				Avatar:   userInfo.Avatar,
 			}
 			result = append(result, item)
 		}
