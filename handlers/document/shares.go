@@ -201,7 +201,30 @@ func GetDocumentSharesList(c *gin.Context) {
 			return
 		}
 	}
-	response.Success(c, documentService.FindSharesByDocumentId(documentId))
+	sharesList := documentService.FindSharesByDocumentId(documentId)
+	userIds := make([]string, 0)
+	for _, item := range *sharesList {
+		userIds = append(userIds, item.DocumentPermission.GranteeId)
+	}
+	userMap, err := GetUsersInfo(c, userIds)
+	if err != nil {
+		response.ServerError(c, err.Error())
+		return
+	}
+	result := make([]services.DocumentSharesQueryRes, 0)
+	for _, item := range *sharesList {
+		userId := item.DocumentPermission.GranteeId
+		userInfo, exists := userMap[userId]
+		if exists {
+			item.User = &models.UserProfile{
+				Id:       userInfo.UserID,
+				Nickname: userInfo.Profile.Nickname,
+				Avatar:   userInfo.Profile.Avatar,
+			}
+			result = append(result, item)
+		}
+	}
+	response.Success(c, result)
 }
 
 type SetDocumentSharePermissionReq struct {
