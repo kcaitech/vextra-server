@@ -1,4 +1,5 @@
 import { CommentItem } from "../request/comment";
+import { UserInfo } from "../request/types";
 
 export enum DataTypes {
     Op = "op",
@@ -51,6 +52,7 @@ export type DocSelectionData = {
     permission?: number,
     // avatar?: string,
     // nickname?: string,
+    user?: UserInfo,
     enter_time?: number,
 }
 

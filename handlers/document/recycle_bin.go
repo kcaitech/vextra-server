@@ -21,8 +21,10 @@ func GetUserRecycleBinDocumentList(c *gin.Context) {
 	recycleBinList := services.NewDocumentService().FindRecycleBinByUserId(userId, projectId)
 	// 获取用户信息
 	userIds := make([]string, 0)
+	deleteUserIds := make([]string, 0)
 	for _, item := range *recycleBinList {
 		userIds = append(userIds, item.Document.UserId)
+		deleteUserIds = append(deleteUserIds, item.Document.DeleteBy)
 	}
 
 	userMap, err := GetUsersInfo(c, userIds)
@@ -30,13 +32,20 @@ func GetUserRecycleBinDocumentList(c *gin.Context) {
 		response.ServerError(c, err.Error())
 		return
 	}
+
+	deleteUserMap, err := GetUsersInfo(c, deleteUserIds)
+	if err != nil {
+		response.ServerError(c, err.Error())
+		return
+	}
+
 	result := make([]services.RecycleBinQueryResItem, 0)
 	for _, item := range *recycleBinList {
 		userId := item.Document.UserId
 		userInfo, exists := userMap[userId]
 		deleteById := item.Document.DeleteBy
 		if deleteById != "" {
-			deleteUserInfo, deleteExists := userMap[deleteById]
+			deleteUserInfo, deleteExists := deleteUserMap[deleteById]
 			if deleteExists {
 				item.DeleteUser = &models.UserProfile{
 					Id:       deleteUserInfo.UserID,

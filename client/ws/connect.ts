@@ -185,7 +185,6 @@ export class Connect {
             data_id,
             retryCount,
         }
-
         return this.asyncSend(pack, timeout)
     }
     async sendBinary(type: DataTypes, header: Object, data: ArrayBufferLike, timeout: number, retryCount: number) {

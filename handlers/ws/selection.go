@@ -23,7 +23,8 @@ type DocSelectionData struct {
 	Permission        models.PermType `json:"permission,omitempty"`
 	// Avatar            string          `json:"avatar,omitempty"`
 	// Nickname          string          `json:"nickname,omitempty"`
-	EnterTime int64 `json:"enter_time,omitempty"`
+	User              *models.UserProfile `json:"user,omitempty"`
+	EnterTime 		  int64				  `json:"enter_time,omitempty"`
 }
 
 type DocSelectionOpType uint8
@@ -45,7 +46,7 @@ type selectionServe struct {
 	genSId     func() string
 	documentId string
 	userId     string
-	// user       *models.UserProfile
+	user       *models.UserProfile
 	enterTime int64
 	permType  models.PermType
 	redis     *redis.RedisDB
@@ -76,18 +77,23 @@ func NewSelectionServe(ws *websocket.Ws, token, userId string, documentId string
 	// 	log.Println("document comment ws建立失败，用户不存在", err, userId)
 	// 	return nil
 	// }
-	// userProfile := models.UserProfile{
-	// 	UserId:   userInfo.UserID,
-	// 	Nickname: userInfo.Profile.Nickname,
-	// 	Avatar:   userInfo.Profile.Avatar,
-	// }
+	userInfo, err := services.GetKCAuthClient().GetUserInfoById(token, userId)
+	if err != nil {
+		log.Println("document selection ws建立失败，用户不存在", err, userId)
+		return nil
+	}
+	userProfile := models.UserProfile{
+		Id:       userInfo.UserID,
+		Nickname: userInfo.Nickname,
+		Avatar:   userInfo.Avatar,
+	}
 
 	serv := selectionServe{
 		ws:         ws,
 		genSId:     genSId,
 		documentId: documentId,
 		userId:     userId,
-		// user:       &userProfile,
+		user:       &userProfile,
 		enterTime: time.Now().UnixNano() / 1000000,
 		permType:  permType,
 		quit:      make(chan struct{}),
@@ -163,6 +169,8 @@ func (serv *selectionServe) handle(data *TransData, binaryData *([]byte)) {
 	// selectionData.Avatar = config.Config.StorageUrl.Attatch + serv.user.Avatar
 	// selectionData.Avatar = serv.user.Avatar
 	// selectionData.Nickname = serv.user.Nickname
+
+	selectionData.User = serv.user
 	selectionData.EnterTime = serv.enterTime
 	selectionDataJson, _ := json.Marshal(selectionData)
 	docSelectionOpData := &DocSelectionOpData{
