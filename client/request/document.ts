@@ -5,26 +5,26 @@ import { z } from 'zod';
 // 文档列表响应类型
 export const DocumentListResponseSchema = BaseResponseSchema.extend({
     data: z.array(z.object({
-        document: DocumentSchema,
-        user: UserInfoSchema,
-        team: TeamInfoSchema.nullable(),
-        project: ProjectInfoSchema.nullable(),
-        document_favorites: z.object({
-            id: z.string(),
-            user_id: z.string(),
-            document_id: z.string(),
-            is_favorite: z.boolean(),
-            created_at: z.string(),
-            updated_at: z.string()
-        }),
-        document_access_record: z.object({
-            id: z.string(),
-            user_id: z.string(),
-            document_id: z.string(),
-            last_access_time: z.string(),
-            created_at: z.string(),
-            updated_at: z.string()
-        })
+            document: DocumentSchema,
+            user: UserInfoSchema,
+            team: TeamInfoSchema.nullable(),
+            project: ProjectInfoSchema.nullable(),
+            document_favorites: z.object({
+                id: z.string(),
+                user_id: z.string(),
+                document_id: z.string(),
+                is_favorite: z.boolean(),
+                created_at: z.string(),
+                updated_at: z.string()
+            }),
+            document_access_record: z.object({
+                id: z.string(),
+                user_id: z.string(),
+                document_id: z.string(),
+                last_access_time: z.string(),
+                created_at: z.string(),
+                updated_at: z.string()
+            })
     }))
 })
 
@@ -301,8 +301,8 @@ export class DocumentAPI {
     async getDocumentList(params: {
         team_id?: string;
         project_id?: string;
-        page?: number;
-        page_size?: number;
+        cursor?: string;
+        limit?: number;
     }): Promise<DocumentListResponse> {
         const result = await this.http.request({
             url: '/documents/',

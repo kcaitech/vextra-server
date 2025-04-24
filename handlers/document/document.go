@@ -1,10 +1,12 @@
 package document
 
 import (
+	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"errors"
+	"io"
 	"log"
-	"math"
 	"net/http"
 	"strings"
 
@@ -287,16 +289,14 @@ func copyDocument(userId string, documentId string, c *gin.Context, documentName
 		documentName = "%s_副本"
 	}
 	documentName = strings.ReplaceAll(documentName, "%s", sourceDocument.Name)
-
+	log.Println("=========sourceDocument========:", sourceDocument.VersionId)
 	documentVersion := models.DocumentVersion{}
 	if err := documentService.DocumentVersionService.Get(&documentVersion, "document_id = ? and version_id = ?", documentId, sourceDocument.VersionId); err != nil {
 		response.ServerError(c, "获取文档版本失败")
 		return
 	}
-
+	log.Println("=========documentVersion========:", documentVersion.LastCmdVerId)
 	// 获取文档cmd
-	type DocumentCmd = models.CmdItem
-
 	cmdServices := services.GetCmdService()
 	documentCmdList, err := cmdServices.GetCmdItemsFromStart(documentId, documentVersion.LastCmdVerId)
 	if err != nil {
@@ -305,12 +305,24 @@ func copyDocument(userId string, documentId string, c *gin.Context, documentName
 		return
 	}
 
-	minBaseVer := utils.Reduce(documentCmdList, func(acc uint, item DocumentCmd) uint {
-		if item.Cmd.BaseVer < acc {
-			return item.Cmd.BaseVer
+	log.Println("=========documentCmdList========:", documentCmdList)
+
+	// minBaseVer := utils.Reduce(documentCmdList, func(acc uint, item DocumentCmd) uint {
+	// 	if item.Cmd.BaseVer < acc {
+	// 		return item.Cmd.BaseVer
+	// 	}
+	// 	return acc
+	// }, math.MaxUint)
+
+	minBaseVer := uint(0)
+	if len(documentCmdList) >= 0 {
+		minBaseVer = documentCmdList[0].Cmd.BaseVer
+		for _, item := range documentCmdList {
+			if item.Cmd.BaseVer < minBaseVer {
+				minBaseVer = item.Cmd.BaseVer
+			}
 		}
-		return acc
-	}, math.MaxUint)
+	}
 
 	// 获取minBaseVer到documentVersion.lastCmdVerId之间的cmd
 	baseVerCmdList, err := cmdServices.GetCmdItems(documentId, minBaseVer, documentVersion.LastCmdVerId)
@@ -319,6 +331,8 @@ func copyDocument(userId string, documentId string, c *gin.Context, documentName
 		response.ServerError(c, "获取基础版本cmd失败")
 		return
 	}
+
+	log.Println("=========baseVerCmdList========:", baseVerCmdList)
 
 	lastCmdVerId := uint(0)
 	if len(baseVerCmdList) > 0 {
@@ -340,24 +354,71 @@ func copyDocument(userId string, documentId string, c *gin.Context, documentName
 		return
 	}
 
-	documentMeta := map[string]any{}
-	if err := json.Unmarshal(documentMetaBytes, &documentMeta); err != nil {
-		log.Println("documentMetaBytes转json失败：", err)
-		response.ServerError(c, "复制失败")
-		return
+	// 检查数据是否被压缩
+	isCompressed := false
+	if len(documentMetaBytes) > 2 &&
+		documentMetaBytes[0] == 0x1f &&
+		documentMetaBytes[1] == 0x8b {
+		isCompressed = true
+		log.Println("检测到压缩的JSON数据，正在解压...")
+		// 尝试解压缩 gzip 数据
+		reader, err := gzip.NewReader(bytes.NewReader(documentMetaBytes))
+		if err != nil {
+			log.Println("创建gzip解压缩reader失败:", err)
+			// 尝试从源文档路径获取
+			originalMetaBytes, originalErr := _storage.Bucket.GetObject(sourceDocument.Path + "/document-meta.json")
+			if originalErr == nil {
+				documentMetaBytes = originalMetaBytes
+				// 检查从源文档获取的数据是否也是压缩格式
+				if len(documentMetaBytes) > 2 && documentMetaBytes[0] == 0x1f && documentMetaBytes[1] == 0x8b {
+					reader, err = gzip.NewReader(bytes.NewReader(documentMetaBytes))
+					if err != nil {
+						response.ServerError(c, "创建源文档gzip解压缩reader失败：文档元数据解压缩错误")
+						return
+					}
+					decompressed, err := io.ReadAll(reader)
+					if err != nil {
+						response.ServerError(c, "读取解压缩数据失败：文档元数据解压缩错误")
+						return
+					}
+					reader.Close()
+					documentMetaBytes = decompressed
+					log.Println("成功解压源文档的document-meta.json")
+				}
+			} else {
+				log.Println("从源文档获取document-meta.json失败:", originalErr)
+				response.ServerError(c, "复制失败：文档元数据格式错误")
+				return
+			}
+		} else {
+			// 读取解压缩后的数据
+			decompressed, err := io.ReadAll(reader)
+			if err != nil {
+				log.Println("读取解压缩数据失败:", err)
+				response.ServerError(c, "复制失败：文档元数据解压缩错误")
+				return
+			}
+			reader.Close()
+			documentMetaBytes = decompressed
+		}
 	}
 
+	documentMeta := map[string]any{}
+	if err := json.Unmarshal(documentMetaBytes, &documentMeta); err != nil {
+		log.Println("documentMetaBytes转json失败：", err, "数据长度:", len(documentMetaBytes), "是否压缩:", isCompressed)
+		response.ServerError(c, "复制失败：文档元数据解析错误")
+		return
+	}
 	for _, page := range documentMeta["pagesList"].([]any) {
 		pageItem, ok := page.(map[string]any)
 		if !ok {
-			log.Println("pageItem转map失败：", err)
-			response.ServerError(c, "复制失败")
+			response.ServerError(c, "pageItem转map失败：复制失败")
 			return
 		}
 		pageObjectInfo, err := _storage.Bucket.GetObjectInfo(targetDocumentPath + "/pages/" + pageItem["id"].(string) + ".json")
 		if err != nil {
 			log.Println("获取pageObjectInfo失败：", err)
-			response.ServerError(c, "复制失败")
+			response.ServerError(c, "获取pageObjectInfo失败：复制失败")
 			return
 		}
 		pageItem["versionId"] = pageObjectInfo.VersionID
@@ -388,8 +449,13 @@ func copyDocument(userId string, documentId string, c *gin.Context, documentName
 		ProjectId: sourceDocument.ProjectId,
 		VersionId: documentMetaUploadInfo.VersionID,
 	}
+
+	// 确保设置文档ID
+	targetDocument.Id = uuid.New().String()
+
 	if err := documentService.Create(&targetDocument); err != nil {
-		response.ServerError(c, "创建失败")
+		log.Println("创建文档记录失败:", err, "userId:", userId, "documentName:", documentName)
+		response.ServerError(c, "创建失败: "+err.Error())
 		return
 	}
 

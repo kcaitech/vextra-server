@@ -178,6 +178,45 @@ func (s *DocumentService) FindDocumentByUserId(userId string) *[]AccessRecordAnd
 	return &result
 }
 
+// FindDocumentByUserIdWithCursor 使用游标分页查询用户的文档列表
+func (s *DocumentService) FindDocumentByUserIdWithCursor(userId string, cursor string, limit int) (*[]AccessRecordAndFavoritesQueryResItem, bool) {
+	var result []AccessRecordAndFavoritesQueryResItem
+
+	// 基础查询条件
+	whereArgs := WhereArgs{"document.user_id = ? and (document.project_id is null or document.project_id = '')", []any{userId}}
+
+	// 如果有游标，添加游标条件
+	if cursor != "" {
+		// 解析游标（时间格式字符串）
+		cursorTime, err := time.Parse(time.RFC3339, cursor)
+		if err == nil {
+			whereArgs = WhereArgs{
+				"document.user_id = ? and (document.project_id is null or document.project_id = '') and document_access_record.last_access_time < ?",
+				[]any{userId, cursorTime},
+			}
+		}
+	}
+
+	// 添加限制数量 +1，用于判断是否还有更多数据
+	orderLimit := &OrderLimitArgs{"document_access_record.last_access_time desc", limit + 1}
+
+	_ = s.Find(
+		&result,
+		&ParamArgs{"?user_id": userId},
+		&whereArgs,
+		orderLimit,
+	)
+
+	// 判断是否有更多数据
+	hasMore := false
+	if len(result) > limit {
+		hasMore = true
+		result = result[:limit] // 截取限制数量的数据
+	}
+
+	return &result, hasMore
+}
+
 // FindDocumentByProjectId 查询项目的文档列表
 func (s *DocumentService) FindDocumentByProjectId(projectId string, userId string) *[]AccessRecordAndFavoritesQueryResItem {
 	var result []AccessRecordAndFavoritesQueryResItem
@@ -193,6 +232,45 @@ func (s *DocumentService) FindDocumentByProjectId(projectId string, userId strin
 	// 	}
 	// }
 	return &result
+}
+
+// FindDocumentByProjectIdWithCursor 使用游标分页查询项目的文档列表
+func (s *DocumentService) FindDocumentByProjectIdWithCursor(projectId string, userId string, cursor string, limit int) (*[]AccessRecordAndFavoritesQueryResItem, bool) {
+	var result []AccessRecordAndFavoritesQueryResItem
+
+	// 基础查询条件
+	whereArgs := WhereArgs{"document.project_id = ?", []any{projectId}}
+
+	// 如果有游标，添加游标条件
+	if cursor != "" {
+		// 解析游标（时间格式字符串）
+		cursorTime, err := time.Parse(time.RFC3339, cursor)
+		if err == nil {
+			whereArgs = WhereArgs{
+				"document.project_id = ? and document_access_record.last_access_time < ?",
+				[]any{projectId, cursorTime},
+			}
+		}
+	}
+
+	// 添加限制数量 +1，用于判断是否还有更多数据
+	orderLimit := &OrderLimitArgs{"document_access_record.last_access_time desc", limit + 1}
+
+	_ = s.Find(
+		&result,
+		&ParamArgs{"?user_id": userId},
+		&whereArgs,
+		orderLimit,
+	)
+
+	// 判断是否有更多数据
+	hasMore := false
+	if len(result) > limit {
+		hasMore = true
+		result = result[:limit] // 截取限制数量的数据
+	}
+
+	return &result, hasMore
 }
 
 // FindAccessRecordsByUserId 查询用户的访问记录
