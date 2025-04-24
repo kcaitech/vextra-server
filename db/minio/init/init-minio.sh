@@ -13,8 +13,14 @@ mc alias set myminio http://localhost:9000 $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD
 if ! mc ls myminio/document > /dev/null 2>&1; then
     mc mb myminio/document
     echo "Created document bucket"
+    # 启用 document bucket 的版本控制
+    mc version enable myminio/document
+    echo "Enabled versioning for document bucket"
 else
     echo "document bucket already exists"
+    # 确保版本控制已启用
+    mc version enable myminio/document
+    echo "Ensured versioning is enabled for document bucket"
 fi
 
 # 创建 attatch bucket（如果不存在）
