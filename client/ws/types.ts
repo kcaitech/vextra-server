@@ -29,6 +29,8 @@ export enum DocCommentOpType {
 export interface DocCommentOpData {
     type: DocCommentOpType;
     comment: CommentItem;
+    user?: UserInfo;
+    create_at?: string;
 }
 
 export type ResourceHeader = {

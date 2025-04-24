@@ -454,10 +454,9 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 
 	// 创建文档版本记录
 	if err := documentService.DocumentVersionService.Create(&models.DocumentVersion{
-		DocumentId: documentId,
-		VersionId:  documentVersionId,
-
-		LastCmdVerId: 0,
+		DocumentId:   documentId,
+		VersionId:    documentVersionId,
+		LastCmdVerId: uint(str.DefaultToInt(lastCmdVerId, 0)),
 	}); err != nil {
 		resp.Message = "对象上传错误"
 		log.Println("对象上传错误5", err)

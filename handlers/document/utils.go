@@ -22,3 +22,12 @@ func GetUsersInfo(c *gin.Context, userIds []string) (map[string]*auth.UserInfo, 
 	}
 	return userMap, nil
 }
+
+func GetUserInfo(c *gin.Context) (*auth.UserInfo, error) {
+	token, _ := utils.GetAccessToken(c)
+	users, err := services.GetKCAuthClient().GetUserInfo(token)
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}

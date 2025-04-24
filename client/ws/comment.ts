@@ -9,11 +9,11 @@ export class Comment extends ConnectClient {
     }
 
     onMessage(data: any): void {
-        // throw new Error("Method not implemented.");
         this._onUpdated(data as DocCommentOpData)
     }
     
     private _onUpdated(docCommentOpData: DocCommentOpData) {
+        // @ts-ignore
         for (const handler of this.updateHandlerSet) handler(docCommentOpData);
     }
 
