@@ -15,23 +15,8 @@ import (
 	safereviewBase "kcaitech.com/kcserver/providers/safereview"
 	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils"
-	"kcaitech.com/kcserver/utils/str"
 	myTime "kcaitech.com/kcserver/utils/time"
 )
-
-// type UserType struct {
-// 	models.DefaultModelData
-// 	Id       string `json:"id" bson:"id,omitempty"`
-// 	Nickname string `json:"nickname" bson:"nickname,omitempty"`
-// 	Avatar   string `json:"avatar" bson:"avatar,omitempty"`
-// }
-
-// func (user UserType) MarshalJSON() ([]byte, error) {
-// 	if strings.HasPrefix(user.Avatar, "/") {
-// 		user.Avatar = config.Config.StorageUrl.Attatch + user.Avatar
-// 	}
-// 	return models.MarshalJSON(user)
-// }
 
 func GetDocumentComment(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
@@ -40,7 +25,6 @@ func GetDocumentComment(c *gin.Context) {
 		return
 	}
 	documentId := c.Query("doc_id")
-	// documentIdInt := str.DefaultToInt(documentId, 0)
 	if documentId == "" {
 		response.BadRequest(c, "参数错误：doc_id")
 		return
@@ -54,30 +38,14 @@ func GetDocumentComment(c *gin.Context) {
 	reqParams := bson.M{
 		"document_id": documentId,
 	}
-	if pageId := c.Query("page_id"); pageId != "" {
-		reqParams["page_id"] = pageId
-	}
-	if targetShapeId := c.Query("target_shape_id"); targetShapeId != "" {
-		reqParams["target_shape_id"] = targetShapeId
-	}
-	if rootId := c.Query("root_id"); rootId != "" {
-		reqParams["root_id"] = rootId
-	}
-	if parentId := c.Query("parent_id"); parentId != "" {
-		reqParams["parent_id"] = parentId
-	}
-	if userId := c.Query("user_id"); userId != "" {
-		reqParams["user"] = userId
-	}
-	if status := c.Query("status"); status != "" {
-		reqParams["status"] = models.UserCommentStatus(str.DefaultToInt(c.Query("status"), 0))
-	}
+
 	commentSrv := services.GetUserCommentService()
 	documentCommentList, err := commentSrv.FindComments(reqParams)
 	if err != nil {
 		response.ServerError(c, err.Error())
 		return
 	}
+
 	// 获取用户信息
 	userIds := make([]string, 0)
 	for _, comment := range documentCommentList {
@@ -111,6 +79,7 @@ func GetDocumentComment(c *gin.Context) {
 			result = append(result, commentWithUser)
 		}
 	}
+
 	response.Success(c, &result)
 }
 
@@ -132,48 +101,35 @@ func PostUserComment(c *gin.Context) {
 		return
 	}
 	var permType models.PermType
+
 	if err := services.NewDocumentService().GetPermTypeByDocumentAndUserId(&permType, documentId, userId); err != nil || permType < models.PermTypeCommentable {
 		response.Forbidden(c, "")
 		return
 	}
-	// 使用mongo的_id
-	// userComment.Id = str.IntToString(snowflake.NextId())
 
-	accessToken, err := utils.GetAccessToken(c)
+	userInfo, err := GetUserInfo(c)
 	if err != nil {
 		response.Unauthorized(c)
 		return
 	}
-	jwtClient := services.GetKCAuthClient()
-	userInfo, err := jwtClient.GetUserInfo(accessToken)
-	if err != nil {
-		response.Unauthorized(c)
-		return
-	}
-	// userComment.User = models.UserProfile{
-	// 	UserId:   userInfo.UserID,
-	// 	Nickname: userInfo.Profile.Nickname,
-	// 	Avatar:   userInfo.Profile.Avatar,
-	// }
 
 	_userComment := models.UserComment{
 		UserCommentCommon: models.UserCommentCommon{
-			CommentId:     userComment.CommentId,
-			ParentId:      userComment.ParentId,
-			RootId:        userComment.RootId,
-			DocumentId:    userComment.DocumentId,
-			PageId:        userComment.PageId,
-			ShapeId:       userComment.ShapeId,
-			TargetShapeId: userComment.TargetShapeId,
-			ShapeFrame:    userComment.ShapeFrame,
-			Content:       userComment.Content,
-			Status:        models.UserCommentStatusCreated,
+			CommentId:  userComment.CommentId,
+			ParentId:   userComment.ParentId,
+			DocumentId: userComment.DocumentId,
+			PageId:     userComment.PageId,
+			ShapeId:    userComment.ShapeId,
+			Content:    userComment.Content,
+			OffsetX:    userComment.OffsetX,
+			OffsetY:    userComment.OffsetY,
+			RootX:      userComment.RootX,
+			RootY:      userComment.OffsetY,
+			Status:     models.UserCommentStatusCreated,
 		},
 		User:      userInfo.UserID,
 		CreatedAt: myTime.Time(time.Now()).String(),
 	}
-	// _userComment.UnionId.DocumentId = documentId
-	// _userComment.UnionId.CommentId = userComment.Id
 
 	if _, err := myTime.Parse(_userComment.CreatedAt); err != nil {
 		_userComment.RecordCreatedAt = _userComment.CreatedAt
@@ -202,15 +158,22 @@ func PostUserComment(c *gin.Context) {
 	}
 
 	commentSrv := services.GetUserCommentService()
-	// 设置
+
 	if err := commentSrv.InsertOne(&_userComment); err != nil {
 		log.Println("mongo插入失败", err)
 		response.ServerError(c, "评论失败")
 		return
 	}
+
 	if publishData, err := json.Marshal(&models.UserCommentPublishData{
 		Type:    models.UserCommentPublishTypeAdd,
 		Comment: _userComment.UserCommentCommon,
+		User: models.UserProfile{
+			Nickname: userInfo.Nickname,
+			Id:       userInfo.UserID,
+			Avatar:   userInfo.Avatar,
+		},
+		CreateAt: _userComment.CreatedAt,
 	}); err == nil {
 		redisClient := services.GetRedisDB()
 		redisClient.Client.Publish(context.Background(), "Document Comment[DocumentId:"+(documentId)+"]", publishData)
@@ -366,6 +329,7 @@ func DeleteUserComment(c *gin.Context) {
 		Type: models.UserCommentPublishTypeDel,
 		Comment: models.UserCommentCommon{
 			CommentId: commentId,
+			ParentId:  comment.ParentId,
 		},
 	}); err == nil {
 		redisClient := services.GetRedisDB()
