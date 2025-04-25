@@ -6,12 +6,24 @@ import (
 	"gorm.io/gorm"
 )
 
+type DocLockedType uint8
+
+const (
+	LockedTypeMedia   DocLockedType = iota // 图片审核不通过
+	LockedTypeText                         // 文本审核不通过
+	LockedTypePage                         // 页面审核不通过
+	LockedTypeComment                      // 评论审核不通过
+)
+
 type DocumentLock struct {
 	BaseModelStruct
-	DocumentId   string    `gorm:"index" json:"document_id"`
-	LockedAt     time.Time `gorm:"" json:"locked_at"`
-	LockedReason string    `gorm:"size:255" json:"locked_reason"`
-	LockedWords  string    `gorm:"size:255" json:"locked_words"`
+	DocumentId string `gorm:"index" json:"document_id"`
+	// LockedAt     time.Time     `gorm:"" json:"locked_at"`
+	LockedReason string        `gorm:"size:255" json:"locked_reason"`
+	LockedType   DocLockedType `gorm:"" json:"lock_type"`
+	LockedTarget string        `gorm:"" json:"lock_target"`          // page id, comment id, media id
+	LockedWords  string        `gorm:"size:255" json:"locked_words"` // 文本
+	// LockedMedia    string        `gorm:"" json:"locked_media"`
 }
 
 func (model DocumentLock) GetId() int64 {

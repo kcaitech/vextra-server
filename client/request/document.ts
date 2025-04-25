@@ -5,26 +5,26 @@ import { z } from 'zod';
 // 文档列表响应类型
 export const DocumentListResponseSchema = BaseResponseSchema.extend({
     data: z.array(z.object({
-            document: DocumentSchema,
-            user: UserInfoSchema,
-            team: TeamInfoSchema.nullable(),
-            project: ProjectInfoSchema.nullable(),
-            document_favorites: z.object({
-                id: z.string(),
-                user_id: z.string(),
-                document_id: z.string(),
-                is_favorite: z.boolean(),
-                created_at: z.string(),
-                updated_at: z.string()
-            }),
-            document_access_record: z.object({
-                id: z.string(),
-                user_id: z.string(),
-                document_id: z.string(),
-                last_access_time: z.string(),
-                created_at: z.string(),
-                updated_at: z.string()
-            })
+        document: DocumentSchema,
+        user: UserInfoSchema,
+        team: TeamInfoSchema.nullable(),
+        project: ProjectInfoSchema.nullable(),
+        document_favorites: z.object({
+            id: z.string(),
+            user_id: z.string(),
+            document_id: z.string(),
+            is_favorite: z.boolean(),
+            created_at: z.string(),
+            updated_at: z.string()
+        }),
+        document_access_record: z.object({
+            id: z.string(),
+            user_id: z.string(),
+            document_id: z.string(),
+            last_access_time: z.string(),
+            created_at: z.string(),
+            updated_at: z.string()
+        })
     }))
 })
 
@@ -134,6 +134,13 @@ export const DocumentKeyResponseSchema = BaseResponseSchema.extend({
 
 export type DocumentKeyResponse = z.infer<typeof DocumentKeyResponseSchema>;
 
+export enum LocketType {
+    LockedTypeMedia = 0, // 图片审核不通过
+    LockedTypeText = 1, // 文本审核不通过
+    LockedTypePage = 2, // 页面审核不通过
+    LockedTypeComment = 3, // 评论审核不通过
+}
+
 // 文档信息类型
 export const DocumentInfoSchema = z.object({
     document: DocumentSchema,
@@ -165,13 +172,15 @@ export const DocumentInfoSchema = z.object({
     })),
     shares_count: z.number(),
     application_count: z.number(),
-    locked_info: z.object({
+    locked_info: z.array(z.object({
         id: z.string(),
         document_id: z.string(),
-        locked_at: z.string(),
+        created_at: z.string(),
         locked_reason: z.string(),
-        locked_words: z.string()
-    }).nullable(),
+        locked_words: z.string(),
+        locked_type: z.nativeEnum(LocketType),
+        lock_target: z.string(),
+    })).nullable(),
     user: UserInfoSchema
 });
 

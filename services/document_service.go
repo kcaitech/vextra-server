@@ -5,7 +5,6 @@ import (
 	"log"
 	"time"
 
-	"gorm.io/gorm"
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/utils/math"
 	"kcaitech.com/kcserver/utils/sliceutil"
@@ -307,50 +306,64 @@ func (s *DocumentService) FindFavoritesByUserId(userId string, projectId string)
 	return &result
 }
 
-// update locked
-func (s *DocumentService) UpdateLocked(documentId string, lockedAt time.Time, lockedReason string, lockedWords string) error {
-	// 查找documentId对应的Locked
-	var locked models.DocumentLock
-	lockdb := s.DBModule.DB.Where("document_id = ?", documentId).First(&locked)
-	if lockdb.Error != nil && !errors.Is(lockdb.Error, gorm.ErrRecordNotFound) { // 找不到会是Error吗？
-		return lockdb.Error
+func (s *DefaultService) AddLocked(info *models.DocumentLock) error {
+	return s.DBModule.DB.Create(info).Error
+}
+
+func (s *DefaultService) AddLockedArr(info []models.DocumentLock) error {
+	// 如果没有记录需要添加，直接返回
+	if len(info) == 0 {
+		return nil
 	}
-	if locked.Id == 0 {
-		locked = models.DocumentLock{
-			DocumentId:   documentId,
-			LockedAt:     (lockedAt),
-			LockedReason: lockedReason,
-			LockedWords:  lockedWords,
-		}
-		if lockdb = lockdb.Create(&locked); lockdb.Error != nil {
-			return lockdb.Error
-		}
-	} else {
-		locked.LockedAt = (lockedAt)
-		locked.LockedReason = lockedReason
-		locked.LockedWords = lockedWords
-		if lockdb = lockdb.UpdateColumns(&locked); lockdb.Error != nil {
-			return lockdb.Error
-		}
+
+	// 使用事务来确保批量添加的原子性
+	tx := s.DBModule.DB.Begin()
+	if tx.Error != nil {
+		return tx.Error
 	}
-	return nil
+
+	// 批量添加记录
+	if err := tx.Create(&info).Error; err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	// 提交事务
+	return tx.Commit().Error
 }
 
 // get locked
-func (s *DocumentService) GetLocked(documentId string) (*models.DocumentLock, error) {
-	var locked models.DocumentLock
-	if err := s.DBModule.DB.Where("document_id = ?", documentId).First(&locked).Error; err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil
-		}
+func (s *DocumentService) GetLocked(documentId string) ([]models.DocumentLock, error) {
+	var locked []models.DocumentLock
+	if err := s.DBModule.DB.Where("document_id = ?", documentId).Find(&locked).Error; err != nil {
 		return nil, err
 	}
-	return &locked, nil
+	return locked, nil
+}
+
+func (s *DocumentService) DeleteAllLocked(documentId string) error {
+	return s.DBModule.DB.Where("document_id = ?", documentId).Delete(&models.DocumentLock{}).Error
 }
 
 // delete locked
-func (s *DocumentService) DeleteLocked(documentId string) error {
-	return s.DBModule.DB.Where("document_id = ?", documentId).Delete(&models.DocumentLock{}).Error
+func (s *DocumentService) DeleteLocked(info *models.DocumentLock) error {
+	return s.DBModule.DB.Delete(info).Error
+}
+
+func (s *DocumentService) DeleteAllLockedExcept(documentId string, except []models.DocumentLock) error {
+	// 如果没有需要排除的记录，直接删除所有记录
+	if len(except) == 0 {
+		return s.DeleteAllLocked(documentId)
+	}
+
+	// 获取需要排除的记录ID
+	var exceptIds []int64
+	for _, lock := range except {
+		exceptIds = append(exceptIds, lock.Id)
+	}
+
+	// 删除除了exceptIds之外的所有记录
+	return s.DBModule.DB.Where("document_id = ? AND id NOT IN ?", documentId, exceptIds).Delete(&models.DocumentLock{}).Error
 }
 
 type DocumentSharesAndFavoritesQueryRes struct {
@@ -404,7 +417,7 @@ type DocumentInfoQueryRes struct {
 	DocumentPermissionRequests []DocumentPermissionRequests `gorm:"-" json:"document_permission_requests"`
 	SharesCount                int64                        `gorm:"-" json:"shares_count"`
 	ApplicationCount           int64                        `gorm:"-" json:"application_count"`
-	LockedInfo                 *models.DocumentLock         `gorm:"-" json:"locked_info"`
+	// LockedInfo                 []models.DocumentLock        `gorm:"-" json:"locked_info"`
 }
 
 // GetDocumentInfoByDocumentAndUserId 查询某个文档对某个用户的信息

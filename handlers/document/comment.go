@@ -140,20 +140,17 @@ func PostUserComment(c *gin.Context) {
 		reviewResponse, err := (reviewClient).ReviewText(userComment.Content)
 		if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
 			log.Println("评论审核不通过", userComment.Content, err, reviewResponse)
-			documentService := services.NewDocumentService()
-			var document models.Document
-			if documentService.GetById(documentId, &document) != nil {
-				log.Println("文档不存在", documentId)
-				response.ReviewFail(c, "文档不存在")
-				return
-			}
-			LockedAt := (time.Now())
-			LockedReason := "文本审核不通过：" + reviewResponse.Reason
 			var LockedWords string
 			if wordsBytes, err := json.Marshal(reviewResponse.Words); err == nil {
 				LockedWords = string(wordsBytes)
 			}
-			documentService.UpdateLocked(documentId, LockedAt, LockedReason, LockedWords)
+			services.NewDocumentService().AddLocked(&models.DocumentLock{
+				DocumentId:   documentId,
+				LockedType:   models.LockedTypeComment,
+				LockedReason: reviewResponse.Reason,
+				LockedWords:  LockedWords,
+				LockedTarget: userComment.CommentId,
+			})
 		}
 	}
 

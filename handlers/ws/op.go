@@ -110,7 +110,7 @@ func NewOpServe(ws *websocket.Ws, userId string, documentId string, versionId st
 		log.Println("document ws建立失败，获取审核信息失败", documentId)
 		return nil
 	}
-	if lockedInfo != nil && !lockedInfo.LockedAt.IsZero() && document.UserId != userId {
+	if len(lockedInfo) > 0 && document.UserId != userId {
 		// serverCmd.Message = "通道建立失败，审核不通过"
 		// _ = clientWs.WriteJSON(&serverCmd)
 		log.Println("document ws建立失败，审核不通过", documentId)
