@@ -387,6 +387,9 @@ func SetUserCommentStatus(c *gin.Context) {
 		log.Println("mongo更新失败", err)
 		response.ServerError(c, "更新失败")
 	}
+
+	comment.Status = userComment.Status
+
 	if publishData, err := json.Marshal(&models.UserCommentPublishData{
 		Type:    models.UserCommentPublishTypeUpdate,
 		Comment: comment.UserCommentCommon,
