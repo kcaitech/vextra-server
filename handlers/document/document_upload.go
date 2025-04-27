@@ -210,7 +210,7 @@ func review(newDocument *models.Document, text string, PageImageList *[]Media, d
 	if reviewClient == nil {
 		return
 	}
-	if (PageImageList == nil || len(*PageImageList) == 0 || reviewClient == nil) && text == "" && (medias == nil || len(*medias) == 0) {
+	if (PageImageList == nil || len(*PageImageList) == 0) && text == "" && (medias == nil || len(*medias) == 0) {
 		return
 	}
 	go reviewgo(newDocument, text, PageImageList, docPath, medias)
@@ -375,8 +375,8 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 
 	// 将uploadData.PageImageList 与 uploadData.Pages 合成
 	pageImageList := make([]Media, 0)
-	if len(*uploadData.PageImageList) > 0 {
-		for i := 0; i < len(pages); i++ {
+	if uploadData.PageImageList != nil && len(*uploadData.PageImageList) > 0 {
+		for i := range pages {
 			pageId := pages[i].Id
 			pageImageList = append(pageImageList, Media{
 				Name:    pageId,
