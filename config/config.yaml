@@ -19,9 +19,9 @@ wxMp:
   secret: xxx
 
 version_server:
-  url: http://kcversion:10040/generate
+  url: http://localhost:30000/generate
   min_update_interval: 600
-  min_cmd_count: 100
+  min_cmd_count: 1
 
 svg2png:
   url: http://kcsvg2png:10050/svg_to_png

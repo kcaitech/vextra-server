@@ -100,6 +100,7 @@ type Configuration struct {
 	VersionServer struct {
 		Url               string `yaml:"url" json:"url"`
 		MinUpdateInterval int    `yaml:"min_update_interval" json:"min_update_interval"`
+		MinCmdCount    int    `yaml:"min_cmd_count" json:"min_cmd_count"`
 	} `yaml:"version_server" json:"version_server"`
 	Svg2Png struct {
 		Url string `yaml:"url" json:"url"`

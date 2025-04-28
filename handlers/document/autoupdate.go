@@ -9,6 +9,7 @@ import (
 	"log"
 	"mime/multipart"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -215,8 +216,49 @@ func AutoUpdate(documentId string, config *config.Configuration) {
 	log.Println("auto update document:", documentId)
 	var generateApiUrl = config.VersionServer.Url
 
+	documentInfo, err := GetDocumentBasicInfoById(documentId)
+
+	if err != nil {
+		log.Println("获取文档信息失败: " + err.Error())
+		return
+	}
+
+	cmdService := services.GetCmdService()
+	lastCmdId := uint(0)
+	if documentInfo.LastCmdVerId != "" {
+		if id, err := strconv.ParseUint(documentInfo.LastCmdVerId, 10, 64); err == nil {
+			lastCmdId = uint(id + 1)
+		}
+	}
+	cmdItemList, err := cmdService.GetCmdItemsFromStart(documentId, lastCmdId)
+
+	if err != nil {
+		log.Println("获取命令列表失败: " + err.Error())
+		return
+	}
+
+	if len(cmdItemList) == 0 {
+		log.Println("没有命令需要更新版本")
+		return
+	}
+
+	if len(cmdItemList) < config.VersionServer.MinCmdCount {
+		log.Println("命令数量小于", config.VersionServer.MinCmdCount, "不更新版本")
+		return
+	}
+	
 	// 构建请求
-	resp, err := http.Get(generateApiUrl + "?documentId=" + documentId)
+	reqBody := map[string]interface{}{
+		"documentInfo": documentInfo,
+		"cmdItemList":  cmdItemList,
+	}
+	jsonData, err := json.Marshal(reqBody)
+	if err != nil {
+		log.Println("Failed to marshal request body:", err)
+		return
+	}
+
+	resp, err := http.Post(generateApiUrl, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		log.Println(generateApiUrl, "http.NewRequest err", err)
 		return
@@ -233,7 +275,6 @@ func AutoUpdate(documentId string, config *config.Configuration) {
 		log.Println(generateApiUrl, "请求失败", resp.StatusCode, string(body))
 		return
 	}
-
 	version := VersionResp{}
 	err = json.Unmarshal(body, &version)
 	if err != nil {
