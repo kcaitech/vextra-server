@@ -142,7 +142,7 @@ func (c *ACommuncation) handleBind(clientData *TransData) {
 		return
 	}
 
-	accessKey, err, err_code := document.GetDocumentAccessKey1(c.userId, documentId)
+	accessKey, err_code, err := document.GetDocumentAccessKey1(c.userId, documentId)
 	if err != nil {
 		c.msgErrWithCode(err.Error(), &serverData, nil, err_code)
 		return
