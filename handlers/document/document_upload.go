@@ -3,14 +3,12 @@ package document
 import (
 	"bytes"
 	"compress/gzip"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"log"
 	"sync"
 	"time"
 
-	"kcaitech.com/kcserver/providers/safereview"
 	"kcaitech.com/kcserver/utils"
 	"kcaitech.com/kcserver/utils/my_map"
 
@@ -42,178 +40,25 @@ type Response struct {
 	Data    Data               `json:"data,omitempty"`
 }
 
+type PageSvg struct {
+	Name    string
+	Content string
+}
+
 type UploadData struct {
 	DocumentMeta Data            `json:"document_meta"`
 	Pages        json.RawMessage `json:"pages"`
 	// FreeSymbols         json.RawMessage `json:"freesymbols"` // 这个现在在document meta里
-	MediaNames    []string  `json:"media_names"`
-	MediasSize    uint64    `json:"medias_size"`
-	DocumentText  string    `json:"document_text"`
-	PageImageList *[][]byte `json:"page_image_list"`
+	MediaNames   []string `json:"media_names"`
+	MediasSize   uint64   `json:"medias_size"`
+	DocumentText string   `json:"document_text"`
+	// PageImageList *[][]byte `json:"page_image_list"`
+	PageSvgs []string `json:"pageSvgs"`
 }
 
 type Media struct {
 	Name    string
 	Content *[]byte
-}
-
-// @deplecated
-// func UploadDocument(c *gin.Context) {
-// 	ws, err := websocket.Upgrade(c.Writer, c.Request, nil)
-// 	if err != nil {
-// 		response.Fail(c, "建立ws连接失败："+err.Error())
-// 		return
-// 	}
-// 	resp := Response{
-// 		Status: ResponseStatusFail,
-// 	}
-// 	defer func() {
-// 		ws.WriteJSON(&resp)
-// 		ws.Close()
-// 	}()
-
-// 	header := Header{}
-// 	if err := ws.ReadJSON(&header); err != nil {
-// 		resp.Message = "Header结构错误"
-// 		log.Println("Header结构错误", err)
-// 		return
-// 	}
-
-// 	uploadData := UploadData{}
-// 	if err := ws.ReadJSON(&uploadData); err != nil {
-// 		resp.Message = "UploadData结构错误"
-// 		log.Println("UploadData结构错误", err)
-// 		return
-// 	}
-
-// 	documentId := str.DefaultToInt(header.DocumentId, 0)
-// 	isFirstUpload := documentId <= 0
-
-// 	medias := []Media{}
-// 	if isFirstUpload {
-// 		uploadData.MediasSize = 0
-// 		nextMedia := func() []byte {
-// 			messageType, data, err := ws.ReadMessage()
-// 			if err != nil {
-// 				resp.Message = "ws连接异常"
-// 				log.Println("ws连接异常", err)
-// 				return nil
-// 			}
-// 			if messageType != websocket.MessageTypeBinary {
-// 				resp.Message = "media格式错误"
-// 				log.Println("media格式错误")
-// 				return nil
-// 			}
-// 			return data
-// 		}
-
-// 		for _, name := range uploadData.MediaNames {
-// 			m := nextMedia()
-// 			if nil == m {
-// 				return
-// 			}
-// 			medias = append(medias, Media{
-// 				Name:    name,
-// 				Content: &m,
-// 			})
-// 			uploadData.MediasSize += uint64(len(m))
-// 		}
-// 	}
-
-// 	UploadDocumentData(&header, &uploadData, &medias, &resp)
-// }
-
-func reviewgo(newDocument *models.Document, text string, pageImageList *[]Media, docPath string, medias *[]Media) {
-	reviewClient := services.GetSafereviewClient()
-	if reviewClient == nil {
-		return
-	}
-	_storage := services.GetStorageClient()
-
-	locked := make([]models.DocumentLock, 0)
-	if text != "" {
-		reviewResponse, err := reviewClient.ReviewText(text)
-		if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
-			var lockedWords string
-			if wordsBytes, err := json.Marshal(reviewResponse.Words); err == nil {
-				lockedWords = string(wordsBytes)
-			}
-			locked = append(locked, models.DocumentLock{
-				DocumentId:   newDocument.Id,
-				LockedReason: reviewResponse.Reason,
-				LockedWords:  lockedWords,
-				LockedType:   models.LockedTypeText,
-			})
-		}
-	}
-	// review pages
-	if pageImageList != nil && len(*pageImageList) > 0 {
-		for i, image := range *pageImageList {
-			path := docPath + "/page_image/" + str.IntToString(int64(i)) + ".png"
-			if _, err := _storage.Bucket.PutObjectByte(path, *image.Content); err != nil {
-				log.Println("图片上传错误", err)
-			}
-			if len(*image.Content) == 0 {
-				continue
-			}
-			base64Str := base64.StdEncoding.EncodeToString(*image.Content)
-			reviewResponse, err := (reviewClient).ReviewPictureFromBase64(base64Str)
-			if err != nil {
-				log.Println("图片审核失败", err)
-				continue
-			} else if reviewResponse.Status != safereview.ReviewImageResultPass {
-				locked = append(locked, models.DocumentLock{
-					DocumentId:   newDocument.Id,
-					LockedReason: reviewResponse.Reason,
-					LockedType:   models.LockedTypePage,
-					LockedTarget: image.Name,
-				})
-			}
-		}
-	}
-
-	// medias
-	if medias != nil && len(*medias) > 0 {
-		for _, mediaInfo := range *medias {
-			base64Str := base64.StdEncoding.EncodeToString(*mediaInfo.Content)
-			if len(*mediaInfo.Content) == 0 || len(base64Str) == 0 {
-				continue
-			}
-			reviewResponse, err := (reviewClient).ReviewPictureFromBase64(base64Str)
-			if err != nil {
-				log.Println("图片审核失败", err)
-				continue
-			} else if reviewResponse.Status != safereview.ReviewImageResultPass {
-				locked = append(locked, models.DocumentLock{
-					DocumentId:   newDocument.Id,
-					LockedReason: reviewResponse.Reason,
-					LockedType:   models.LockedTypeMedia,
-					LockedTarget: mediaInfo.Name,
-				})
-			}
-		}
-	}
-
-	documentService := services.NewDocumentService()
-	err := documentService.AddLockedArr(locked)
-	if err != nil {
-		log.Println(err)
-	}
-	err = documentService.DeleteAllLockedExcept(newDocument.Id, locked)
-	if err != nil {
-		log.Println(err)
-	}
-}
-
-func review(newDocument *models.Document, text string, PageImageList *[]Media, docPath string, medias *[]Media) {
-	reviewClient := services.GetSafereviewClient()
-	if reviewClient == nil {
-		return
-	}
-	if (PageImageList == nil || len(*PageImageList) == 0) && text == "" && (medias == nil || len(*medias) == 0) {
-		return
-	}
-	go reviewgo(newDocument, text, PageImageList, docPath, medias)
 }
 
 func compress(data []byte) ([]byte, error) {
@@ -373,18 +218,7 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 	}
 	documentSize += uploadData.MediasSize
 
-	// 将uploadData.PageImageList 与 uploadData.Pages 合成
-	pageImageList := make([]Media, 0)
-	if uploadData.PageImageList != nil && len(*uploadData.PageImageList) > 0 {
-		for i := range pages {
-			pageId := pages[i].Id
-			pageImageList = append(pageImageList, Media{
-				Name:    pageId,
-				Content: &(*uploadData.PageImageList)[i],
-			})
-		}
-	}
-	review(&newDocument, uploadData.DocumentText, &pageImageList, docPath, medias)
+	review(&newDocument, uploadData, docPath, pages, medias)
 
 	uploadWaitGroup.Wait()
 

@@ -1,15 +1,11 @@
 package document
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"fmt"
 	"io"
 	"log"
-	"mime/multipart"
 	"net/http"
-	"sync"
 	"time"
 
 	"github.com/go-redsync/redsync/v4"
@@ -65,110 +61,6 @@ type VersionResp struct {
 	DocumentText string     `json:"documentText"`
 	MediasSize   uint64     `json:"mediasSize"`
 	PageSvgs     []string   `json:"pageSvgs"`
-}
-
-func _svgToPng(svgContent string, svg2pngUrl string) ([]byte, error) {
-	// 将SVG内容转换为字节切片
-	svgBuffer := []byte(svgContent)
-
-	// 创建FormData
-	formData := new(bytes.Buffer)
-	writer := multipart.NewWriter(formData)
-
-	// 添加SVG文件到表单
-	part, err := writer.CreateFormFile("svg", "image.svg")
-	if err != nil {
-		return nil, err
-	}
-	_, err = io.Copy(part, bytes.NewReader(svgBuffer))
-	if err != nil {
-		return nil, err
-	}
-	err = writer.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	// 设置请求头
-	headers := map[string]string{
-		"Content-Type": writer.FormDataContentType(),
-	}
-
-	// 创建请求
-	req, err := http.NewRequest("POST", svg2pngUrl, formData)
-	if err != nil {
-		return nil, err
-	}
-
-	// 添加请求头
-	for key, value := range headers {
-		req.Header.Set(key, value)
-	}
-
-	// 设置响应类型为 arraybuffer
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	// 检查响应状态
-	if resp.StatusCode != 200 {
-		body, _ := io.ReadAll(resp.Body)
-		log.Printf("SVG to PNG conversion failed with status: %d, message: %s", resp.StatusCode, body)
-		return nil, fmt.Errorf("svgToPng错误")
-	}
-
-	// 读取响应体
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	return body, nil
-}
-
-func svg2png(svgs []string, svg2pngUrl string) *[][]byte {
-
-	// 创建一个 WaitGroup 并设置初始计数器值
-	var wg sync.WaitGroup
-
-	count := len(svgs)
-	wg.Add(count) // 假设我们要发起5个请求
-
-	pngs := make([][]byte, count)
-
-	// 创建一个有界通道，用于限制并发请求的数量
-	const maxConcurrentRequests = 5
-	requestCh := make(chan struct{}, maxConcurrentRequests)
-
-	// 循环发起请求
-	for i, svg := range svgs {
-		go func(i int, svg string) {
-			defer wg.Done() // 每个 goroutine 结束时调用 Done()
-
-			// 获取一个并发请求的许可
-			requestCh <- struct{}{}
-
-			// 在请求结束后释放许可
-			defer func() {
-				<-requestCh
-			}()
-
-			png, err := _svgToPng(svg, svg2pngUrl)
-			if err != nil {
-				log.Println("svg2png fail", err)
-			} else {
-				pngs[i] = png
-			}
-		}(i, svg)
-	}
-
-	// 等待所有请求完成
-	wg.Wait()
-	// fmt.Println("All requests have been processed.")
-	return &pngs
 }
 
 func AutoUpdate(documentId string, config *config.Configuration) {
@@ -243,7 +135,7 @@ func AutoUpdate(documentId string, config *config.Configuration) {
 
 	log.Println("auto update document, start svg2png")
 	// svg2png
-	pagePngs := svg2png(version.PageSvgs, config.Svg2Png.Url)
+	// pagePngs := svg2png(version.PageSvgs, config.Svg2Png.Url)
 
 	log.Println("auto update document, start upload data", documentId)
 	// upload document data
@@ -256,10 +148,10 @@ func AutoUpdate(documentId string, config *config.Configuration) {
 		DocumentMeta: Data(version.DocumentData.DocumentMeta),
 		Pages:        version.DocumentData.Pages,
 		// FreeSymbols        : version.DocumentData.DocumentMeta.
-		MediaNames:    version.DocumentData.MediaNames,
-		MediasSize:    version.MediasSize,
-		DocumentText:  version.DocumentText,
-		PageImageList: pagePngs,
+		MediaNames:   version.DocumentData.MediaNames,
+		MediasSize:   version.MediasSize,
+		DocumentText: version.DocumentText,
+		PageSvgs:     version.PageSvgs,
 	}
 	UploadDocumentData(&header, &data, nil, &response)
 
