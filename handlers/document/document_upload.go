@@ -123,53 +123,53 @@ type Media struct {
 // 	UploadDocumentData(&header, &uploadData, &medias, &resp)
 // }
 
-func reviewgo(newDocument *models.Document, text string, PageImageList *[][]byte, docPath string, medias *[]Media) {
+func reviewgo(newDocument *models.Document, text string, pageImageList *[]Media, docPath string, medias *[]Media) {
 	reviewClient := services.GetSafereviewClient()
 	if reviewClient == nil {
 		return
 	}
 	_storage := services.GetStorageClient()
-	// needUpdateDocument := false
-	// var LockedAt time.Time = time.Now()
-	var LockedReason string
-	var LockedWords string
-	// review text
+
+	locked := make([]models.DocumentLock, 0)
 	if text != "" {
 		reviewResponse, err := reviewClient.ReviewText(text)
 		if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
-			// LockedAt = (time.Now())
-			LockedReason = "文本审核不通过：" + reviewResponse.Reason
-			// var LockedWords string
+			var lockedWords string
 			if wordsBytes, err := json.Marshal(reviewResponse.Words); err == nil {
-				LockedWords = string(wordsBytes)
+				lockedWords = string(wordsBytes)
 			}
-			// documentService.UpdateLocked(newDocument.Id, LockedAt, LockedReason, LockedWords)
+			locked = append(locked, models.DocumentLock{
+				DocumentId:   newDocument.Id,
+				LockedReason: reviewResponse.Reason,
+				LockedWords:  lockedWords,
+				LockedType:   models.LockedTypeText,
+			})
 		}
 	}
 	// review pages
-	if PageImageList != nil && len(*PageImageList) > 0 {
-		for i, image := range *PageImageList {
+	if pageImageList != nil && len(*pageImageList) > 0 {
+		for i, image := range *pageImageList {
 			path := docPath + "/page_image/" + str.IntToString(int64(i)) + ".png"
-			if _, err := _storage.Bucket.PutObjectByte(path, image); err != nil {
+			if _, err := _storage.Bucket.PutObjectByte(path, *image.Content); err != nil {
 				log.Println("图片上传错误", err)
 			}
-			if len(image) == 0 {
+			if len(*image.Content) == 0 {
 				continue
 			}
-			base64Str := base64.StdEncoding.EncodeToString(image)
+			base64Str := base64.StdEncoding.EncodeToString(*image.Content)
 			reviewResponse, err := (reviewClient).ReviewPictureFromBase64(base64Str)
 			if err != nil {
 				log.Println("图片审核失败", err)
 				continue
 			} else if reviewResponse.Status != safereview.ReviewImageResultPass {
-				// LockedAt = (time.Now())
-				LockedReason += "{图片审核不通过[page:" + str.IntToString(int64(i)) + "]：" + reviewResponse.Reason + "}"
-				// needUpdateDocument = true
+				locked = append(locked, models.DocumentLock{
+					DocumentId:   newDocument.Id,
+					LockedReason: reviewResponse.Reason,
+					LockedType:   models.LockedTypePage,
+					LockedTarget: image.Name,
+				})
 			}
 		}
-		// if needUpdateDocument {
-		// 	documentService.UpdateLocked(newDocument.Id, LockedAt, LockedReason, LockedWords)
-		// }
 	}
 
 	// medias
@@ -184,27 +184,33 @@ func reviewgo(newDocument *models.Document, text string, PageImageList *[][]byte
 				log.Println("图片审核失败", err)
 				continue
 			} else if reviewResponse.Status != safereview.ReviewImageResultPass {
-				// LockedAt = (time.Now())
-				LockedReason += "{图片审核不通过[media:" + mediaInfo.Name + "]：" + reviewResponse.Reason + "}"
-				// needUpdateDocument = true
+				locked = append(locked, models.DocumentLock{
+					DocumentId:   newDocument.Id,
+					LockedReason: reviewResponse.Reason,
+					LockedType:   models.LockedTypeMedia,
+					LockedTarget: mediaInfo.Name,
+				})
 			}
 		}
 	}
 
 	documentService := services.NewDocumentService()
-	if LockedReason != "" {
-		documentService.UpdateLocked(newDocument.Id, time.Now(), LockedReason, LockedWords)
-	} else {
-		documentService.DeleteLocked(newDocument.Id)
+	err := documentService.AddLockedArr(locked)
+	if err != nil {
+		log.Println(err)
+	}
+	err = documentService.DeleteAllLockedExcept(newDocument.Id, locked)
+	if err != nil {
+		log.Println(err)
 	}
 }
 
-func review(newDocument *models.Document, text string, PageImageList *[][]byte, docPath string, medias *[]Media) {
+func review(newDocument *models.Document, text string, PageImageList *[]Media, docPath string, medias *[]Media) {
 	reviewClient := services.GetSafereviewClient()
 	if reviewClient == nil {
 		return
 	}
-	if (PageImageList == nil || len(*PageImageList) == 0 || reviewClient == nil) && text == "" && (medias == nil || len(*medias) == 0) {
+	if (PageImageList == nil || len(*PageImageList) == 0) && text == "" && (medias == nil || len(*medias) == 0) {
 		return
 	}
 	go reviewgo(newDocument, text, PageImageList, docPath, medias)
@@ -367,8 +373,18 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 	}
 	documentSize += uploadData.MediasSize
 
-	// 审核
-	review(&newDocument, uploadData.DocumentText, uploadData.PageImageList, docPath, medias)
+	// 将uploadData.PageImageList 与 uploadData.Pages 合成
+	pageImageList := make([]Media, 0)
+	if uploadData.PageImageList != nil && len(*uploadData.PageImageList) > 0 {
+		for i := range pages {
+			pageId := pages[i].Id
+			pageImageList = append(pageImageList, Media{
+				Name:    pageId,
+				Content: &(*uploadData.PageImageList)[i],
+			})
+		}
+	}
+	review(&newDocument, uploadData.DocumentText, &pageImageList, docPath, medias)
 
 	uploadWaitGroup.Wait()
 

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"sync/atomic"
 
 	"github.com/gin-gonic/gin"
@@ -129,9 +130,15 @@ func (c *ACommuncation) handleBind(clientData *TransData) {
 		permType = models.PermTypeNone
 	}
 
-	docInfo, errmsg, errCode := document.GetUserDocumentInfo1(c.userId, documentId, permType)
-	if nil == docInfo {
-		c.msgErrWithCode(errmsg, &serverData, nil, errCode)
+	docService := services.NewDocumentService()
+	docInfo := docService.GetDocumentInfoByDocumentAndUserId(documentId, c.userId, permType)
+	if docInfo == nil {
+		c.msgErrWithCode("文档不存在", &serverData, nil, http.StatusNotFound)
+		return
+	}
+	locked, _ := docService.GetLocked(documentId)
+	if len(locked) > 0 && docInfo.Document.UserId != c.userId {
+		c.msgErrWithCode("审核不通过", &serverData, nil, response.StatusDocumentNotFound)
 		return
 	}
 

@@ -62,7 +62,7 @@ func GetDocumentAccessKey1(userId string, documentId string) (*map[string]any, e
 		return nil, fmt.Errorf("Forbidden"), http.StatusForbidden
 	}
 	locked, _ := documentService.GetLocked(documentId)
-	if locked != nil && !locked.LockedAt.IsZero() && document.UserId != userId {
+	if len(locked) > 0 && document.UserId != userId {
 		// response.Forbidden(c, "审核不通过")
 		return nil, fmt.Errorf("审核不通过"), response.StatusContentReviewFail
 	}

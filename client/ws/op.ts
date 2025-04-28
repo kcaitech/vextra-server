@@ -39,22 +39,22 @@ export class CoopNet extends ConnectClient {
     //     }));
     // }
 
-    private parseCmds(data: any[]): Cmd[] {
-        return data.map(item => ({
-            ...item,
-            id: item.id || "",
-            baseVer: Number(item.baseVer) || 0,
-            batchId: item.batchId || "",
-            ops: item.ops || [],
-            isRecovery: Boolean(item.isRecovery),
-            description: item.description || "",
-            time: Number(item.time) || 0,
-            posttime: Number(item.posttime) || 0,
-            dataFmtVer: item.dataFmtVer || "",
-            version: item.version || undefined,
-            preVersion: item.preVersion || undefined
-        }));
-    }
+    // private parseCmds(data: any[]): Cmd[] {
+    //     return data.map(item => ({
+    //         ...item,
+    //         id: item.id || "",
+    //         baseVer: Number(item.baseVer) || 0,
+    //         batchId: item.batchId || "",
+    //         ops: item.ops || [],
+    //         isRecovery: Boolean(item.isRecovery),
+    //         description: item.description || "",
+    //         time: Number(item.time) || 0,
+    //         posttime: Number(item.posttime) || 0,
+    //         dataFmtVer: item.dataFmtVer || "",
+    //         version: item.version || undefined,
+    //         preVersion: item.preVersion || undefined
+    //     }));
+    // }
 
     async _pullCmds(from?: number, to?: number): Promise<Cmd[]> {
         const ready = await this.waitReady()
@@ -108,7 +108,7 @@ export class CoopNet extends ConnectClient {
         let cmds: Cmd[] | undefined
         // let cmds1: Cmd[] | undefined
         if (Array.isArray(cmdsData)) {
-            cmds = this.parseCmds(cmdsData)
+            cmds = cmdsData; // this.parseCmds(cmdsData)
             // cmds1 = this.parseCmds(cmdsData)
         }
         // pullCmdsResult update errorInvalidParams errorNoPermission errorInsertFailed errorPullCmdsFailed
@@ -167,7 +167,7 @@ export class CoopNet extends ConnectClient {
                 // duplicateCmd.cmd.version = this.radixRevert.from(duplicateCmd.id)
                 // duplicateCmd.cmd.previousVersion = this.radixRevert.from(duplicateCmd.previous_id)
                 if (!duplicateCmd.cmd.ops) duplicateCmd.cmd.ops = [];
-                const duplicateCmd1 = this.parseCmds([duplicateCmd.cmd])[0]
+                const duplicateCmd1 = duplicateCmd.cmd
                 for (const watcher of this.errorWatcherList) {
                     watcher({
                         type: "duplicate",

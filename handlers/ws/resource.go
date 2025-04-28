@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"log"
-	"time"
 
 	"gorm.io/gorm"
 	"kcaitech.com/kcserver/models"
@@ -111,12 +110,12 @@ func (serv *resourceServe) handle(data *TransData, binaryData *([]byte)) {
 	serv.dbModule.DB.Model(&document).Where("id = ?", serv.documentId).UpdateColumn("size", gorm.Expr("size + ?", len(*binaryData)))
 
 	if serv.review != nil {
-		go reviewResGo(serv.documentId, *binaryData)
+		go reviewResGo(serv.documentId, resourceHeader.Name, *binaryData)
 	}
 
 }
 
-func reviewResGo(documentId string, resourceData []byte) {
+func reviewResGo(documentId string, resourceId string, resourceData []byte) {
 	reviewClient := services.GetSafereviewClient()
 	if reviewClient == nil {
 		return
@@ -128,23 +127,11 @@ func reviewResGo(documentId string, resourceData []byte) {
 		return
 	} else if reviewResponse.Status != safereview.ReviewImageResultPass {
 		log.Println("图片审核不通过", err, reviewResponse)
-		documentService := services.NewDocumentService()
-		// 审核不通过，锁定文档
-		lockedInfo, err := documentService.GetLocked(documentId)
-		if err != nil {
-			log.Println("获取锁定信息失败", err)
-			return
-		}
-		if lockedInfo == nil {
-			lockedInfo = &models.DocumentLock{
-				DocumentId: documentId,
-				// LockedAt:   myTime.Time(time.Now()),
-				LockedReason: "[图片审核不通过：" + reviewResponse.Reason + "]",
-			}
-		} else {
-			lockedInfo.LockedAt = (time.Now())
-			lockedInfo.LockedReason += "[图片审核不通过：" + reviewResponse.Reason + "]"
-		}
-		documentService.UpdateLocked(documentId, time.Now(), lockedInfo.LockedReason, lockedInfo.LockedWords)
+		services.NewDocumentService().AddLocked(&models.DocumentLock{
+			DocumentId:   documentId,
+			LockedReason: reviewResponse.Reason,
+			LockedType:   models.LockedTypeMedia,
+			LockedTarget: resourceId,
+		})
 	}
 }

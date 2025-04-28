@@ -125,11 +125,18 @@ func GetUserDocumentInfo(c *gin.Context) {
 	if permType < models.PermTypeReadOnly || permType > models.PermTypeEditable {
 		permType = models.PermTypeNone
 	}
-	result, msg, code := GetUserDocumentInfo1(userId, documentId, permType)
-	if msg != "" {
-		response.Resp(c, code, msg, nil)
+	docService := services.NewDocumentService()
+	result := docService.GetDocumentInfoByDocumentAndUserId(documentId, userId, permType)
+	if result == nil {
+		response.Resp(c, http.StatusNotFound, "文档不存在", nil)
 		return
 	}
+	locked, _ := docService.GetLocked(documentId)
+	if len(locked) > 0 && result.Document.UserId != userId {
+		response.Resp(c, response.StatusDocumentNotFound, "审核不通过", nil)
+		return
+	}
+
 	// 获取文档对应的user信息
 	docUserId := result.Document.UserId
 	authClient := services.GetKCAuthClient()
@@ -160,25 +167,8 @@ func GetUserDocumentInfo(c *gin.Context) {
 		"document_permission_requests": result.DocumentPermissionRequests,
 		"shares_count":                 result.SharesCount,
 		"application_count":            result.ApplicationCount,
-		"locked_info":                  result.LockedInfo,
+		"locked_info":                  locked,
 	})
-}
-
-func GetUserDocumentInfo1(userId string, documentId string, permType models.PermType) (*services.DocumentInfoQueryRes, string, int) {
-
-	// permType := models.PermType(str.DefaultToInt(c.Query("perm_type"), 0))
-	// if permType < models.PermTypeReadOnly || permType > models.PermTypeEditable {
-	// 	permType = models.PermTypeNone
-	// }
-
-	result := services.NewDocumentService().GetDocumentInfoByDocumentAndUserId(documentId, userId, permType)
-	if result == nil {
-		return nil, "文档不存在", http.StatusNotFound
-	} else if result.LockedInfo != nil && !result.LockedInfo.LockedAt.IsZero() && result.Document.UserId != userId {
-		return nil, "审核不通过", response.StatusDocumentNotFound
-	} else {
-		return result, "", http.StatusOK
-	}
 }
 
 // GetDocumentBasicInfoById 通过文档ID获取文档的基本信息
@@ -295,7 +285,7 @@ func copyDocument(userId string, documentId string, c *gin.Context, documentName
 		response.Forbidden(c, "")
 		return
 	}
-	if lockedInfo != nil && !lockedInfo.LockedAt.IsZero() {
+	if len(lockedInfo) > 0 {
 		response.Forbidden(c, "审核不通过")
 		return
 	}
