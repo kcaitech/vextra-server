@@ -235,7 +235,7 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 		}
 		pageItem["versionId"] = versionId
 	}
-	uploadData.DocumentMeta["lastCmdVerId"] = lastCmdVerId
+	uploadData.DocumentMeta["lastCmdVer"] = str.DefaultToInt(lastCmdVerId, 0)
 
 	documentMetaStr, err := json.Marshal(uploadData.DocumentMeta)
 	if err != nil {

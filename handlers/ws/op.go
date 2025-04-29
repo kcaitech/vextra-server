@@ -33,7 +33,7 @@ type SendData struct {
 	To         int      `json:"to,omitempty"`          // pullCmdsResult errorPullCmdsFailed
 	PreviousId string   `json:"previous_id,omitempty"` // pullCmdsResult
 	CmdIdList  []string `json:"cmd_id_list,omitempty"` // errorInsertFailed
-	Data       any      `json:"data,omitempty"`        // errorInsertFailed
+	// Data       any      `json:"data,omitempty"`        // errorInsertFailed
 }
 
 type opServe struct {
@@ -157,7 +157,7 @@ func (serv *opServe) start(documentId string, lastCmdVersion uint) {
 			log.Println("json编码错误 cmdItemsData", err)
 			return
 		}
-
+		log.Println("Document Op[DocumentId:"+documentId+"]"+"获取成功", len(cmdItemList), cmdItemList, lastCmdVersion)
 		serv.send(string(cmdItemListData))
 
 		// documentIdStr := str.IntToString(documentId)
@@ -351,7 +351,6 @@ func (serv *opServe) handlePullCmds(data *TransData, receiveData *ReceiveData) {
 	serverData := TransData{}
 	serverData.Type = data.Type
 	serverData.DataId = data.DataId
-
 	msgErr := func(msg string, serverData *TransData, err *error) {
 		serverData.Msg = msg
 		log.Println(msg, err)
@@ -359,11 +358,17 @@ func (serv *opServe) handlePullCmds(data *TransData, receiveData *ReceiveData) {
 	}
 
 	var cmdItemList []CmdItem
+	var err error
 	fromId := (receiveData.From)
 	toId := (receiveData.To)
+	log.Println("handlePullCmds", receiveData)
 
 	cmdsService := services.GetCmdService()
-	cmdItemList, err := cmdsService.GetCmdItems(serv.documentId, uint(fromId), uint(toId))
+	if toId == 0 {
+		cmdItemList, err = cmdsService.GetCmdItemsFromStart(serv.documentId, uint(fromId))
+	} else {
+		cmdItemList, err = cmdsService.GetCmdItems(serv.documentId, uint(fromId), uint(toId))
+	}
 	if err != nil {
 		msgErr("数据查询失败", &serverData, &err)
 		return
@@ -394,9 +399,16 @@ func (serv *opServe) handlePullCmds(data *TransData, receiveData *ReceiveData) {
 		msgErr("json编码错误", &serverData, &err)
 		return
 	}
-
-	sendData.Data = sendDataStr
-	_ = serv.ws.WriteJSON(serverData)
+	log.Println("pullCmdsEnd", string(sendDataStr))
+	serverData.Data = string(sendDataStr)
+	err = serv.ws.WriteJSON(serverData)
+	if err != nil {
+		log.Println("数据发送失败", err)
+		// msgErr("数据发送失败", &serverData, &err)
+		return
+	} else {
+		log.Println("pullCmdsEnd 数据发送成功", sendData)
+	}
 
 }
 

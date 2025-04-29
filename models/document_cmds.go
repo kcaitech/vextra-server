@@ -114,7 +114,7 @@ func (s *CmdService) GetCmdItems(documentId string, verStart uint, verEnd uint) 
 	if err != nil {
 		return nil, err
 	}
-	var cmdItems []CmdItem
+	var cmdItems []CmdItem = make([]CmdItem, 0)
 	if err := cursor.All(context.Background(), &cmdItems); err != nil {
 		return nil, err
 	}
