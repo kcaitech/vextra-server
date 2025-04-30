@@ -172,7 +172,7 @@ export class Connect {
         return promise
     }
 
-    async send(type: DataTypes, data: Object, timeout: number = 500, retryCount: number = 3): Promise<{ code: number, data?: any, buffer?: ArrayBuffer, msg?: string }> {
+    async send(type: DataTypes, data: Object, timeout: number = 5000, retryCount: number = 3): Promise<{ code: number, data?: any, buffer?: ArrayBuffer, msg?: string }> {
         if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return { code: HttpCode.StatusInternalServerError, msg: 'ws not ready' };
         const data_id = "c" + (++this.data_id)
         const pack: LocalData = {
@@ -230,7 +230,7 @@ export class Connect {
 
         const json_data = json.data && JSON.parse(json.data)
         if (json.type === DataTypes.Heartbeat) return; // 无需处理
-        if (json.data_id.startsWith("c")) {
+        if (json.data_id.startsWith("c")) { // 由前端请求的数据返回
             const promise = this.promises.get(json.data_id)
             if (promise) {
                 this.promises.delete(json.data_id)
