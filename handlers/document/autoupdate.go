@@ -1,6 +1,7 @@
 package document
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"io"

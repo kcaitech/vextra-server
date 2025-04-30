@@ -101,7 +101,7 @@ const TeamInfoResponseSchema = BaseResponseSchema.extend({
 })
 
 export type TeamInfoResponse = z.infer<typeof TeamInfoResponseSchema>
-
+export type TeamInfoItem = z.infer<typeof TeamInfoResponseSchema.shape.data>
 // 项目申请列表响应类型
 const ProjectApplyListResponseSchema = BaseResponseSchema.extend({
     data: z.array(z.object({
@@ -424,7 +424,7 @@ export class TeamAPI {
     //获取团队信息
     async getTeamInviteInfo(params: {
         team_id: string;
-    }): Promise<BaseResponse> {
+    }): Promise<TeamInfoResponse> {
         return this.http.request({
             url: '/documents/team/info/invite',
             method: 'get',
