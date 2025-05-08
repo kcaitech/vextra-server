@@ -42,7 +42,7 @@ type BaseConfiguration struct {
 // 	Config = conf
 // }
 
-func LoadConfig(filePath string, config any) error {
+func loadYamlConfig(filePath string, config any) error {
 
 	content, err := os.ReadFile(filePath)
 	if err != nil {
@@ -57,7 +57,7 @@ func LoadConfig(filePath string, config any) error {
 	}
 	return nil
 }
-func LoadJsonConfig(filePath string, config any) error {
+func loadJsonConfig(filePath string, config any) error {
 
 	content, err := os.ReadFile(filePath)
 	if err != nil {
@@ -72,7 +72,7 @@ func LoadJsonConfig(filePath string, config any) error {
 	}
 	return nil
 }
-func LoadJsonContent(content string, config any) error {
+func loadJsonContent(content string, config any) error {
 
 	// content, err := os.ReadFile(filePath)
 	// if err != nil {
@@ -124,7 +124,13 @@ type Configuration struct {
 
 func LoadYamlFile(filePath string) (*Configuration, error) {
 	var Config Configuration
-	err := LoadConfig(filePath, &Config)
+	err := loadYamlConfig(filePath, &Config)
+	return &Config, err
+}
+
+func LoadJsonFile(filePath string) (*Configuration, error) {
+	var Config Configuration
+	err := loadJsonConfig(filePath, &Config)
 	return &Config, err
 }
 
@@ -134,6 +140,6 @@ func LoadJsonEnv(env string) (*Configuration, error) {
 	if content == "" {
 		return &Config, errors.New("no " + env)
 	}
-	LoadJsonContent(content, &Config)
+	loadJsonContent(content, &Config)
 	return &Config, nil
 }
