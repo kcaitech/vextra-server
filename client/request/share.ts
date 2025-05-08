@@ -92,39 +92,46 @@ export enum DocType {
     PublicCommentable = 3,// 公共可评论
     PublicEditable = 4,// 公共可编辑
 }
+
+const ShareListItemSchema = z.object({
+    document: DocumentInfoSchema,
+    user: UserInfoSchema,
+    team: TeamInfoSchema.nullable(),
+    project: ProjectInfoSchema.nullable(),
+    document_favorites: z.object({
+        id: z.string(),
+        user_id: z.string(),
+        document_id: z.string(),
+        is_favorite: z.boolean(),
+        created_at: z.string(),
+        updated_at: z.string()
+    }),
+    document_access_record: z.object({
+        id: z.string(),
+        user_id: z.string(),
+        document_id: z.string(),
+        last_access_time: z.string(),
+        created_at: z.string(),
+        updated_at: z.string()
+    }),
+    document_permission: z.object({
+        id: z.string(),
+        resource_type: z.number(),
+        resource_id: z.string(),
+        grantee_type: z.number(),
+        grantee_id: z.string(),
+        perm_type: z.nativeEnum(PermType),
+        perm_source_type: z.number()
+    })
+})
+
 // 共享文件列表响应类型
 const ShareListResponseSchema = BaseResponseSchema.extend({
-    data: z.array(z.object({
-        document: DocumentInfoSchema,
-        user: UserInfoSchema,
-        team: TeamInfoSchema.nullable(),
-        project: ProjectInfoSchema.nullable(),
-        document_favorites: z.object({
-            id: z.string(),
-            user_id: z.string(),
-            document_id: z.string(),
-            is_favorite: z.boolean(),
-            created_at: z.string(),
-            updated_at: z.string()
-        }),
-        document_access_record: z.object({
-            id: z.string(),
-            user_id: z.string(),
-            document_id: z.string(),
-            last_access_time: z.string(),
-            created_at: z.string(),
-            updated_at: z.string()
-        }),
-        document_permission: z.object({
-            id: z.string(),
-            resource_type: z.number(),
-            resource_id: z.string(),
-            grantee_type: z.number(),
-            grantee_id: z.string(),
-            perm_type: z.nativeEnum(PermType),
-            perm_source_type: z.number()
-        })
-    }))
+    data: z.object({
+        list: z.array(ShareListItemSchema),
+        has_more: z.boolean(),
+        next_cursor: z.string().optional(),
+    })
 })
 
 export type ShareListResponse = z.infer<typeof ShareListResponseSchema>
@@ -153,8 +160,8 @@ export class ShareAPI {
 
     //查询某个文档对所有用户的分享列表
     async getShareReceivesLists(params: {
-        page?: number;
-        page_size?: number;
+        cursor?: string;
+        limit?: number;
     }): Promise<ShareListResponse> {
         const result = await this.http.request({
             url: '/documents/shares/receives',

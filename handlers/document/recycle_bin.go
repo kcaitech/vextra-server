@@ -2,6 +2,7 @@ package document
 
 import (
 	"errors"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"kcaitech.com/kcserver/common/response"
@@ -18,7 +19,11 @@ func GetUserRecycleBinDocumentList(c *gin.Context) {
 		return
 	}
 	projectId := c.Query("project_id")
-	recycleBinList := services.NewDocumentService().FindRecycleBinByUserId(userId, projectId)
+	cursor := c.Query("cursor")
+	limit := utils.QueryInt(c, "limit", 20) // 默认每页20条
+
+	var hasMore bool
+	recycleBinList, hasMore := services.NewDocumentService().FindRecycleBinByUserIdWithCursor(userId, projectId, cursor, limit)
 	// 获取用户信息
 	userIds := make([]string, 0)
 	deleteUserIds := make([]string, 0)
@@ -63,7 +68,17 @@ func GetUserRecycleBinDocumentList(c *gin.Context) {
 			result = append(result, item)
 		}
 	}
-	response.Success(c, result)
+	var nextCursor string
+	if hasMore && len(*recycleBinList) > 0 {
+		lastItem := (*recycleBinList)[len(*recycleBinList)-1]
+		nextCursor = lastItem.DocumentAccessRecord.LastAccessTime.Format(time.RFC3339)
+	}
+
+	response.Success(c, gin.H{
+		"list":        result,
+		"has_more":    hasMore,
+		"next_cursor": nextCursor,
+	})
 }
 
 type RestoreUserRecycleBinDocumentReq struct {

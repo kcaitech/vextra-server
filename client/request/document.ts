@@ -2,74 +2,74 @@ import { HttpMgr } from "./http"
 import { BaseResponse, BaseResponseSchema, PermType, ProjectInfoSchema, TeamInfoSchema, UserInfoSchema, DocumentInfoSchema as DocumentSchema } from "./types"
 import { z } from 'zod';
 
+// 首先定义 DocumentListItemSchema
+export const DocumentListItemSchema = z.object({
+    document: DocumentSchema,
+    user: UserInfoSchema,
+    team: TeamInfoSchema.nullable(),
+    project: ProjectInfoSchema.nullable(),
+    document_favorites: z.object({
+        id: z.string(),
+        user_id: z.string(),
+        document_id: z.string(),
+        is_favorite: z.boolean(),
+        created_at: z.string(),
+        updated_at: z.string()
+    }),
+    document_access_record: z.object({
+        id: z.string(),
+        user_id: z.string(),
+        document_id: z.string(),
+        last_access_time: z.string(),
+        created_at: z.string(),
+        updated_at: z.string()
+    })
+});
+
 // 文档列表响应类型
 export const DocumentListResponseSchema = BaseResponseSchema.extend({
-    data: z.array(z.object({
-        document: DocumentSchema,
-        user: UserInfoSchema,
-        team: TeamInfoSchema.nullable(),
-        project: ProjectInfoSchema.nullable(),
-        document_favorites: z.object({
-            id: z.string(),
-            user_id: z.string(),
-            document_id: z.string(),
-            is_favorite: z.boolean(),
-            created_at: z.string(),
-            updated_at: z.string()
-        }),
-        document_access_record: z.object({
-            id: z.string(),
-            user_id: z.string(),
-            document_id: z.string(),
-            last_access_time: z.string(),
-            created_at: z.string(),
-            updated_at: z.string()
-        })
-    }))
+    data: z.object({
+        list: z.array(DocumentListItemSchema),
+        has_more: z.boolean(),
+        next_cursor: z.string().optional(),
+    })
+});
+
+export const DocumentRecycleListItemSchema = z.object({
+    document: DocumentSchema,
+    user: UserInfoSchema,
+    team: TeamInfoSchema.nullable(),
+    project: ProjectInfoSchema.nullable(),
+    document_favorites: z.object({
+        id: z.string(),
+        user_id: z.string(),
+        is_favorite: z.boolean(),
+        document_id: z.string(),
+        created_at: z.string(),
+        updated_at: z.string()
+    }).nullable(),
+    document_access_record: z.object({
+        id: z.string(),
+        user_id: z.string(),
+        document_id: z.string(),
+        last_access_time: z.string(),
+        created_at: z.string(),
+        updated_at: z.string()
+    }).nullable(),
+    delete_user: UserInfoSchema.nullable()
 })
 
 export const DocumentRecycleListResponseSchema = BaseResponseSchema.extend({
-    data: z.array(z.object({
-        document: z.object({
-            id: z.string(),
-            user_id: z.string(),
-            path: z.string(),
-            doc_type: z.number(),
-            name: z.string(),
-            size: z.number(),
-            version_id: z.string(),
-            team_id: z.string().nullable(),
-            project_id: z.string().nullable(),
-            created_at: z.string(),
-            updated_at: z.string(),
-            deleted_at: z.string().nullable()
-        }),
-        user: UserInfoSchema,
-        team: TeamInfoSchema.nullable(),
-        project: ProjectInfoSchema.nullable(),
-        document_favorites: z.object({
-            id: z.string(),
-            user_id: z.string(),
-            is_favorite: z.boolean(),
-            document_id: z.string(),
-            created_at: z.string(),
-            updated_at: z.string()
-        }).nullable(),
-        document_access_record: z.object({
-            id: z.string(),
-            user_id: z.string(),
-            document_id: z.string(),
-            last_access_time: z.string(),
-            created_at: z.string(),
-            updated_at: z.string()
-        }).nullable(),
-        delete_user: UserInfoSchema.nullable()
-    }))
+    data: z.object({
+        list: z.array(DocumentRecycleListItemSchema),
+        has_more: z.boolean(),
+        next_cursor: z.string().optional(),
+    })
 })
 export type DocumentRecycleListResponse = z.infer<typeof DocumentRecycleListResponseSchema>
-export type DocumentRecycleListItem = z.infer<typeof DocumentRecycleListResponseSchema.shape.data.element>
+export type DocumentRecycleListItem = z.infer<typeof DocumentRecycleListItemSchema>
 export type DocumentListResponse = z.infer<typeof DocumentListResponseSchema>
-export type DocumentListItem = z.infer<typeof DocumentListResponseSchema.shape.data.element>
+export type DocumentListItem = z.infer<typeof DocumentListItemSchema>
 
 // 用户文档访问记录模型
 const DocumentAccessRecordSchema = z.object({
@@ -94,7 +94,7 @@ export type DocumentAccessRecord = z.infer<typeof DocumentAccessRecordSchema>
 
 // 收藏列表响应类型
 export type FavoriteListResponse = z.infer<typeof DocumentListResponseSchema>
-export type FavoriteListItem = z.infer<typeof DocumentListResponseSchema.shape.data.element>
+export type FavoriteListItem = z.infer<typeof DocumentListItemSchema>
 
 // 用户文档访问记录列表响应类型
 const DocumentAccessRecordListResponseSchema = BaseResponseSchema.extend({
@@ -142,7 +142,7 @@ export enum LocketType {
 }
 
 // 文档信息类型
-export const DocumentInfoSchema = z.object({
+export const DocumentInfoSchema1 = z.object({
     document: DocumentSchema,
     team: TeamInfoSchema.nullable(),
     project: ProjectInfoSchema.nullable(),
@@ -184,10 +184,10 @@ export const DocumentInfoSchema = z.object({
     user: UserInfoSchema
 });
 
-export type DocumentInfo = z.infer<typeof DocumentInfoSchema>;
+export type DocumentInfo = z.infer<typeof DocumentInfoSchema1>;
 
 export const DocumentInfoResponseSchema = BaseResponseSchema.extend({
-    data: DocumentInfoSchema,
+    data: DocumentInfoSchema1,
 });
 
 export type DocumentInfoResponse = z.infer<typeof DocumentInfoResponseSchema>;
@@ -213,8 +213,8 @@ export class DocumentAPI {
 
     // 获取收藏列表
     async getFavoritesList(params: {
-        page?: number;
-        page_size?: number;
+        cursor?: string;
+        limit?: number;
     }): Promise<FavoriteListResponse> {
         const result = await this.http.request({
             url: 'documents/favorites',
@@ -245,8 +245,8 @@ export class DocumentAPI {
     async getRecycleList(params: {
         team_id?: string;
         project_id?: string;
-        page?: number;
-        page_size?: number;
+        cursor?: string;
+        limit?: number;
     }): Promise<DocumentRecycleListResponse> {
         const result = await this.http.request({
             url: 'documents/recycle_bin',
@@ -326,10 +326,14 @@ export class DocumentAPI {
         }
     }
     // 获取用户文档访问记录列表
-    async getUserDocumentAccessRecordsList(): Promise<DocumentListResponse> {
+    async getUserDocumentAccessRecordsList(params: {
+        cursor?: string;
+        limit?: number;
+    }): Promise<DocumentListResponse> {
         const result = await this.http.request({
             url: '/documents/access_records',
             method: 'get',
+            params: params,
         });
         try {
             return DocumentListResponseSchema.parse(result);

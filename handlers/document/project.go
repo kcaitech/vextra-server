@@ -131,6 +131,7 @@ func GetProjectList(c *gin.Context) {
 		SelfPermType        models.ProjectPermType `json:"self_perm_type"`
 		IsInTeam            bool                   `json:"is_in_team"`
 		IsInvited           bool                   `json:"is_invited"`
+		IsFavor             bool                   `json:"is_favor"`
 	}
 
 	userIds := make([]string, 0)
@@ -144,12 +145,35 @@ func GetProjectList(c *gin.Context) {
 		response.ServerError(c, "查询错误")
 		return
 	}
+
+	// 获取用户收藏的项目列表
+	projectFavoriteService := projectService.ProjectFavoriteService
+	projectFavorites := make([]models.ProjectFavorite, 0)
+	err = projectFavoriteService.Find(
+		&projectFavorites,
+		&services.WhereArgs{Query: "user_id = ?", Args: []any{userId}},
+	)
+	if err != nil {
+		log.Println("get user favorite projects fail:", err.Error())
+		// 继续执行，不返回错误
+	}
+
+	// 创建收藏项目ID的映射，方便快速查找
+	favoriteProjectMap := make(map[string]bool)
+	for _, favorite := range projectFavorites {
+		favoriteProjectMap[favorite.ProjectId] = favorite.IsFavor
+	}
+
 	resultWithCreator := make([]ProjectQueryWithCreator, 0)
 	for _, item := range result {
 		user, ok := userMap[item.CreatorTeamMember.UserId]
 		if !ok {
 			continue
 		}
+
+		// 检查项目是否被收藏
+		isFavor := favoriteProjectMap[item.Project.Id]
+
 		resultWithCreator = append(resultWithCreator, ProjectQueryWithCreator{
 			Project: item.Project,
 			CreatorUser: models.UserProfile{
@@ -161,6 +185,7 @@ func GetProjectList(c *gin.Context) {
 			SelfPermType:        item.SelfPermType,
 			IsInTeam:            item.IsInTeam,
 			IsInvited:           item.IsInvited,
+			IsFavor:             isFavor,
 		})
 	}
 

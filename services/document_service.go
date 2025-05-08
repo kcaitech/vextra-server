@@ -165,6 +165,46 @@ func (s *DocumentService) FindRecycleBinByUserId(userId string, projectId string
 	return &result
 }
 
+// FindRecycleBinByUserIdWithCursor 使用游标分页查询用户的回收站列表
+func (s *DocumentService) FindRecycleBinByUserIdWithCursor(userId string, projectId string, cursor string, limit int) (*[]RecycleBinQueryResItem, bool) {
+	var result []RecycleBinQueryResItem
+
+	whereArgsList := []WhereArgs{
+		{"document.deleted_at is not null", nil},
+	}
+	if projectId != "" {
+		whereArgsList = append(whereArgsList, WhereArgs{"document.project_id = ?", []any{projectId}})
+	} else {
+		whereArgsList = append(whereArgsList, WhereArgs{"document.user_id = ? and (document.project_id is null or document.project_id = '')", []any{userId}})
+	}
+
+	if cursor != "" {
+		// 解析游标（时间格式字符串）
+		cursorTime, err := time.Parse(time.RFC3339, cursor)
+		if err == nil {
+			whereArgsList = append(whereArgsList, WhereArgs{"document_access_record.last_access_time < ?", []any{cursorTime}})
+		}
+	}
+
+	orderLimit := &OrderLimitArgs{"document_access_record.last_access_time desc", limit + 1}
+
+	_ = s.Find(
+		&result,
+		&ParamArgs{"?user_id": userId},
+		whereArgsList,
+		orderLimit,
+		&Unscoped{},
+	)
+
+	hasMore := false
+	if len(result) > limit {
+		hasMore = true
+		result = result[:limit] // 截取限制数量的数据
+	}
+
+	return &result, hasMore
+}
+
 // FindDocumentByUserId 查询用户的文档列表
 func (s *DocumentService) FindDocumentByUserId(userId string) *[]AccessRecordAndFavoritesQueryResItem {
 	var result []AccessRecordAndFavoritesQueryResItem
@@ -288,6 +328,49 @@ func (s *DocumentService) FindAccessRecordsByUserId(userId string) *[]AccessReco
 	return &result
 }
 
+// FindAccessRecordsByUserIdWithCursor 使用游标分页查询用户的访问记录
+func (s *DocumentService) FindAccessRecordsByUserIdWithCursor(userId string, cursor string, limit int) (*[]AccessRecordAndFavoritesQueryResItem, bool) {
+	var result []AccessRecordAndFavoritesQueryResItem
+
+	// 基础查询条件
+	whereArgs := WhereArgs{Query: "document_access_record.user_id = ? and document.deleted_at is null", Args: []any{userId}}
+
+	// 如果有游标，添加游标条件
+	if cursor != "" {
+		// 解析游标（时间格式字符串）
+		cursorTime, err := time.Parse(time.RFC3339, cursor)
+		if err == nil {
+			whereArgs = WhereArgs{
+				"document_access_record.user_id = ? and document.deleted_at is null and document_access_record.last_access_time < ?",
+				[]any{userId, cursorTime},
+			}
+		}
+	}
+
+	// 添加限制数量 +1，用于判断是否还有更多数据
+	orderLimit := &OrderLimitArgs{"document_access_record.last_access_time desc", limit + 1}
+
+	err := s.DocumentAccessRecordService.Find(
+		&result,
+		&ParamArgs{"?user_id": userId},
+		&whereArgs,
+		orderLimit,
+	)
+	if nil != err {
+		log.Panicln("find access record err", err)
+		return nil, false
+	}
+
+	// 判断是否有更多数据
+	hasMore := false
+	if len(result) > limit {
+		hasMore = true
+		result = result[:limit] // 截取限制数量的数据
+	}
+
+	return &result, hasMore
+}
+
 // FindFavoritesByUserId 查询用户的收藏列表
 func (s *DocumentService) FindFavoritesByUserId(userId string, projectId string) *[]AccessRecordAndFavoritesQueryResItem {
 	var result []AccessRecordAndFavoritesQueryResItem
@@ -304,6 +387,51 @@ func (s *DocumentService) FindFavoritesByUserId(userId string, projectId string)
 		&OrderLimitArgs{"document_access_record.last_access_time desc", 0},
 	)
 	return &result
+}
+
+// FindFavoritesByUserIdWithCursor 使用游标分页查询用户的收藏列表
+func (s *DocumentService) FindFavoritesByUserIdWithCursor(userId string, projectId string, cursor string, limit int) (*[]AccessRecordAndFavoritesQueryResItem, bool) {
+	var result []AccessRecordAndFavoritesQueryResItem
+
+	// 基础查询条件
+	whereArgsList := []WhereArgs{
+		{"document_favorites.user_id = ? and document_favorites.is_favorite = 1 and document.deleted_at is null", []any{userId}},
+	}
+
+	if projectId != "" {
+		whereArgsList = append(whereArgsList, WhereArgs{"document.project_id = ?", []any{projectId}})
+	}
+
+	// 如果有游标，添加游标条件
+	if cursor != "" {
+		// 解析游标（时间格式字符串）
+		cursorTime, err := time.Parse(time.RFC3339, cursor)
+		if err == nil {
+			whereArgsList[0] = WhereArgs{
+				"document_favorites.user_id = ? and document_favorites.is_favorite = 1 and document.deleted_at is null and document_access_record.last_access_time < ?",
+				[]any{userId, cursorTime},
+			}
+		}
+	}
+
+	// 添加限制数量 +1，用于判断是否还有更多数据
+	orderLimit := &OrderLimitArgs{"document_access_record.last_access_time desc", limit + 1}
+
+	_ = s.DocumentFavoritesService.Find(
+		&result,
+		&ParamArgs{"?user_id": userId},
+		whereArgsList,
+		orderLimit,
+	)
+
+	// 判断是否有更多数据
+	hasMore := false
+	if len(result) > limit {
+		hasMore = true
+		result = result[:limit] // 截取限制数量的数据
+	}
+
+	return &result, hasMore
 }
 
 func (s *DefaultService) AddLocked(info *models.DocumentLock) error {
@@ -386,6 +514,41 @@ func (s *DocumentService) FindSharesByUserId(userId string) *[]DocumentSharesAnd
 		&OrderLimitArgs{"document_access_record.last_access_time desc", 0},
 	)
 	return &result
+}
+
+// FindSharesByUserIdWithCursor 使用游标分页查询用户加入的文档分享列表
+func (s *DocumentService) FindSharesByUserIdWithCursor(userId string, cursor string, limit int) (*[]DocumentSharesAndFavoritesQueryRes, bool) {
+	var result []DocumentSharesAndFavoritesQueryRes
+	// 基础查询条件
+	whereArgs := WhereArgs{"document_permission.resource_type = ? and document_permission.grantee_id = ? and document.deleted_at is null", []any{models.ResourceTypeDoc, userId}}
+
+	if cursor != "" {
+		// 解析游标（时间格式字符串）
+		cursorTime, err := time.Parse(time.RFC3339, cursor)
+		if err == nil {
+			whereArgs = WhereArgs{
+				"document_permission.resource_type = ? and document_permission.grantee_id = ? and document.deleted_at is null and document_access_record.last_access_time < ?",
+				[]any{models.ResourceTypeDoc, userId, cursorTime},
+			}
+		}
+	}
+
+	orderLimit := &OrderLimitArgs{"document_access_record.last_access_time desc", limit + 1}
+
+	_ = s.DocumentPermissionService.Find(
+		&result,
+		&ParamArgs{"#user_id": userId},
+		&whereArgs,
+		orderLimit,
+	)
+
+	hasMore := false
+	if len(result) > limit {
+		hasMore = true
+		result = result[:limit] // 截取限制数量的数据
+	}
+
+	return &result, hasMore
 }
 
 type DocumentSharesQueryRes struct {

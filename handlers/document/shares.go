@@ -29,10 +29,13 @@ func GetUserReceiveSharesList(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	receiveSharesList := services.NewDocumentService().FindSharesByUserId(userId)
+	cursor := c.Query("cursor")
+	limit := utils.QueryInt(c, "limit", 20)
+	
+	sharesList, hasMore := services.NewDocumentService().FindSharesByUserIdWithCursor(userId, cursor, limit)
 	// 获取用户信息
 	userIds := make([]string, 0)
-	for _, item := range *receiveSharesList {
+	for _, item := range *sharesList {
 		userIds = append(userIds, item.Document.UserId)
 	}
 
@@ -42,7 +45,7 @@ func GetUserReceiveSharesList(c *gin.Context) {
 		return
 	}
 	result := make([]services.DocumentSharesAndFavoritesQueryRes, 0)
-	for _, item := range *receiveSharesList {
+	for _, item := range *sharesList {
 		userId := item.Document.UserId
 		userInfo, exists := userMap[userId]
 		if exists {
@@ -54,7 +57,17 @@ func GetUserReceiveSharesList(c *gin.Context) {
 			result = append(result, item)
 		}
 	}
-	response.Success(c, result)
+
+	var nextCursor string
+	if hasMore && len(result) > 0 {
+		lastItem := result[len(result)-1]
+		nextCursor = lastItem.DocumentAccessRecord.LastAccessTime.Format(time.RFC3339)
+	}
+	response.Success(c, gin.H{
+		"list":        result,
+		"has_more":    hasMore,
+		"next_cursor": nextCursor,
+	})
 }
 
 // DeleteUserShare 退出共享

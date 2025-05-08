@@ -2,6 +2,7 @@ package document
 
 import (
 	"errors"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"kcaitech.com/kcserver/common/response"
@@ -17,8 +18,14 @@ func GetUserDocumentFavoritesList(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
+
 	projectId := c.Query("project_id")
-	favoritesList := services.NewDocumentService().FindFavoritesByUserId(userId, projectId)
+	cursor := c.Query("cursor")
+	limit := utils.QueryInt(c, "limit", 20) // 默认每页20条
+
+	documentService := services.NewDocumentService()
+	favoritesList, hasMore := documentService.FindFavoritesByUserIdWithCursor(userId, projectId, cursor, limit)
+
 	// 获取用户信息
 	userIds := make([]string, 0)
 	for _, item := range *favoritesList {
@@ -30,6 +37,7 @@ func GetUserDocumentFavoritesList(c *gin.Context) {
 		response.ServerError(c, err.Error())
 		return
 	}
+
 	result := make([]services.AccessRecordAndFavoritesQueryResItem, 0)
 	for _, item := range *favoritesList {
 		userId := item.Document.UserId
@@ -43,7 +51,20 @@ func GetUserDocumentFavoritesList(c *gin.Context) {
 			result = append(result, item)
 		}
 	}
-	response.Success(c, result)
+
+	// 构建包含下一页游标信息的响应
+	var nextCursor string
+	if hasMore && len(result) > 0 {
+		// 使用最后一条记录的访问时间作为下一页的游标
+		lastItem := result[len(result)-1]
+		nextCursor = lastItem.DocumentAccessRecord.LastAccessTime.Format(time.RFC3339)
+	}
+
+	response.Success(c, gin.H{
+		"list":        result,
+		"has_more":    hasMore,
+		"next_cursor": nextCursor,
+	})
 }
 
 type SetUserDocumentFavoriteStatusReq struct {

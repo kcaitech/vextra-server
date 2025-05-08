@@ -2,6 +2,7 @@ package utils
 
 import (
 	"errors"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,4 +21,19 @@ func GetAccessToken(c *gin.Context) (string, error) {
 		return "", errors.New("用户未登录")
 	}
 	return token.(string), nil
+}
+
+// QueryInt 从请求的查询参数中获取整数值，如果参数不存在或无法转换为整数，则返回默认值
+func QueryInt(c *gin.Context, key string, defaultVal int) int {
+	strVal := c.Query(key)
+	if strVal == "" {
+		return defaultVal
+	}
+
+	intVal, err := strconv.Atoi(strVal)
+	if err != nil {
+		return defaultVal
+	}
+
+	return intVal
 }

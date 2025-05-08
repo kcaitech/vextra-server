@@ -2,6 +2,7 @@ package document
 
 import (
 	"errors"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"kcaitech.com/kcserver/common/response"
@@ -17,7 +18,13 @@ func GetUserDocumentAccessRecordsList(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
-	accessRecordsList := services.NewDocumentService().FindAccessRecordsByUserId(userId)
+
+	cursor := c.Query("cursor")
+	limit := utils.QueryInt(c, "limit", 20) // 默认每页20条
+
+	documentService := services.NewDocumentService()
+	accessRecordsList, hasMore := documentService.FindAccessRecordsByUserIdWithCursor(userId, cursor, limit)
+
 	// 获取用户信息
 	userIds := make([]string, 0)
 	for _, item := range *accessRecordsList {
@@ -29,6 +36,7 @@ func GetUserDocumentAccessRecordsList(c *gin.Context) {
 		response.ServerError(c, err.Error())
 		return
 	}
+
 	result := make([]services.AccessRecordAndFavoritesQueryResItem, 0)
 	for _, item := range *accessRecordsList {
 		userId := item.Document.UserId
@@ -42,7 +50,20 @@ func GetUserDocumentAccessRecordsList(c *gin.Context) {
 			result = append(result, item)
 		}
 	}
-	response.Success(c, result)
+
+	// 构建包含下一页游标信息的响应
+	var nextCursor string
+	if hasMore && len(result) > 0 {
+		// 使用最后一条记录的访问时间作为下一页的游标
+		lastItem := result[len(result)-1]
+		nextCursor = lastItem.DocumentAccessRecord.LastAccessTime.Format(time.RFC3339)
+	}
+
+	response.Success(c, gin.H{
+		"list":        result,
+		"has_more":    hasMore,
+		"next_cursor": nextCursor,
+	})
 }
 
 // DeleteUserDocumentAccessRecord 删除用户的某条文档访问记录

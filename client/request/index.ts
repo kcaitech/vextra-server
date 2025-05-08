@@ -20,7 +20,9 @@ export class Request {
     }
 }
 
-export type { UserInfo, TeamInfo, ProjectInfo, TeamPermType } from "./types"
+export type { UserInfo, TeamInfo, ProjectInfo } from "./types"
+
+export { TeamPermType } from "./types"
 
 export { HttpCode } from "./httpcode"
 export * from "./users"

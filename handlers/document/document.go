@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"kcaitech.com/kcserver/common/response"
@@ -27,23 +28,35 @@ func GetUserDocumentList(c *gin.Context) {
 		response.Unauthorized(c)
 		return
 	}
+
 	projectId := c.Query("project_id")
+	cursor := c.Query("cursor")
+	limit := utils.QueryInt(c, "limit", 20) // 默认每页20条
+
 	var result *[]services.AccessRecordAndFavoritesQueryResItem
+	var hasMore bool
+
+	documentService := services.NewDocumentService()
+
+	// 根据是否有项目ID，使用不同的分页查询函数
 	if projectId != "" {
-		result = services.NewDocumentService().FindDocumentByProjectId(projectId, userId)
+		result, hasMore = documentService.FindDocumentByProjectIdWithCursor(projectId, userId, cursor, limit)
 	} else {
-		result = services.NewDocumentService().FindDocumentByUserId(userId)
+		result, hasMore = documentService.FindDocumentByUserIdWithCursor(userId, cursor, limit)
 	}
+
 	// 获取文档相关用户信息
 	userIds := make([]string, 0)
 	for _, item := range *result {
 		userIds = append(userIds, item.Document.UserId)
 	}
+
 	userMap, err := GetUsersInfo(c, userIds)
 	if err != nil {
 		response.ServerError(c, err.Error())
 		return
 	}
+
 	for i := range *result {
 		item := &(*result)[i]
 		userInfo, ok := userMap[item.Document.UserId]
@@ -55,7 +68,20 @@ func GetUserDocumentList(c *gin.Context) {
 			}
 		}
 	}
-	response.Success(c, result)
+
+	// 构建包含下一页游标信息的响应
+	var nextCursor string
+	if hasMore && len(*result) > 0 {
+		// 使用最后一条记录的访问时间作为下一页的游标
+		lastItem := (*result)[len(*result)-1]
+		nextCursor = lastItem.DocumentAccessRecord.LastAccessTime.Format(time.RFC3339)
+	}
+
+	response.Success(c, gin.H{
+		"list":        result,
+		"has_more":    hasMore,
+		"next_cursor": nextCursor,
+	})
 }
 
 // DeleteUserDocument 删除用户的某份文档
@@ -326,8 +352,12 @@ func copyDocument(userId string, documentId string, c *gin.Context, documentName
 		response.ServerError(c, "获取文档cmd失败")
 		return
 	}
-
-	minBaseVer := documentCmdList[0].Cmd.BaseVer
+	var minBaseVer uint
+	if len(documentCmdList) == 0 {
+		minBaseVer = 0
+	} else {
+		minBaseVer = documentCmdList[0].Cmd.BaseVer
+	}
 	for _, item := range documentCmdList {
 		if item.Cmd.BaseVer < minBaseVer {
 			minBaseVer = item.Cmd.BaseVer

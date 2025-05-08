@@ -133,7 +133,8 @@ const TeamProjectListResponseSchema = BaseResponseSchema.extend({
         creator_team_nickname: z.string().optional(),
         self_perm_type: z.nativeEnum(TeamPermType),
         is_in_team: z.boolean(),
-        is_invited: z.boolean()
+        is_invited: z.boolean(),
+        is_favor: z.boolean()
     }))
 })
 
