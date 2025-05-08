@@ -9,6 +9,7 @@ export enum TeamPermType {
   Editable = 3,  // 可编辑
   Admin = 4,     // 管理员
   Creator = 5,   // 创建者
+  Null=255, // 无权限
 }
 
 // 通用响应类型

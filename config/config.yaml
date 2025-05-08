@@ -10,14 +10,6 @@ storage_url:
   document: http://localhost:9000
   attatch: http://localhost:9000/attatch
 
-wx:
-  appid: xxx
-  secret: xxx
-
-wxMp:
-  appid: xxx
-  secret: xxx
-
 version_server:
   url: http://localhost:30000/generate
   min_update_interval: 600
@@ -31,7 +23,7 @@ mongo:
   db: kcserver
 
 redis:
-  url: redis:6380
+  addr: redis:6380
   password: kcserver
   db: 0
   # sentinel: true
