@@ -89,18 +89,18 @@ func LoadJsonContent(content string, config any) error {
 
 type Configuration struct {
 	BaseConfiguration `yaml:",inline" json:",inline"`
-	Wx                struct {
-		Appid  string `yaml:"appid" json:"appid"`
-		Secret string `yaml:"secret" json:"secret"`
-	} `yaml:"wx" json:"wx"`
-	WxMp struct {
-		Appid  string `yaml:"appid" json:"appid"`
-		Secret string `yaml:"secret" json:"secret"`
-	} `yaml:"wxMp" json:"wxMp"`
+	// Wx                struct {
+	// 	Appid  string `yaml:"appid" json:"appid"`
+	// 	Secret string `yaml:"secret" json:"secret"`
+	// } `yaml:"wx" json:"wx"`
+	// WxMp struct {
+	// 	Appid  string `yaml:"appid" json:"appid"`
+	// 	Secret string `yaml:"secret" json:"secret"`
+	// } `yaml:"wxMp" json:"wxMp"`
 	VersionServer struct {
 		Url               string `yaml:"url" json:"url"`
 		MinUpdateInterval int    `yaml:"min_update_interval" json:"min_update_interval"`
-		MinCmdCount    int    `yaml:"min_cmd_count" json:"min_cmd_count"`
+		MinCmdCount       int    `yaml:"min_cmd_count" json:"min_cmd_count"`
 	} `yaml:"version_server" json:"version_server"`
 	Svg2Png struct {
 		Url string `yaml:"url" json:"url"`

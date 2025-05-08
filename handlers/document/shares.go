@@ -1,15 +1,8 @@
 package document
 
 import (
-	"bytes"
-	"encoding/base64"
-	"encoding/json"
 	"errors"
-	"io"
 	"log"
-	"net/http"
-	"net/url"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -574,107 +567,107 @@ func GetUserDocumentPerm(c *gin.Context) {
 }
 
 // GetWxMpCode 获取微信小程序码
-func GetWxMpCode(c *gin.Context) {
-	scene := c.Query("scene")
-	if len(scene) > 32 {
-		response.BadRequest(c, "参数错误：scene")
-		return
-	}
+// func GetWxMpCode(c *gin.Context) {
+// 	scene := c.Query("scene")
+// 	if len(scene) > 32 {
+// 		response.BadRequest(c, "参数错误：scene")
+// 		return
+// 	}
 
-	page := c.Query("page")
+// 	page := c.Query("page")
 
-	// release trial develop
-	envVersion := c.Query("env_version")
-	if envVersion == "" {
-		envVersion = "release"
-	}
-	if envVersion != "release" && envVersion != "trial" && envVersion != "develop" {
-		response.BadRequest(c, "参数错误：env_version")
-		return
-	}
+// 	// release trial develop
+// 	envVersion := c.Query("env_version")
+// 	if envVersion == "" {
+// 		envVersion = "release"
+// 	}
+// 	if envVersion != "release" && envVersion != "trial" && envVersion != "develop" {
+// 		response.BadRequest(c, "参数错误：env_version")
+// 		return
+// 	}
 
-	appid := services.GetConfig().WxMp.Appid
-	secret := services.GetConfig().WxMp.Secret
-	// 发起请求
-	// 获取AccessToken
-	queryParams := url.Values{}
-	queryParams.Set("appid", appid)
-	queryParams.Set("secret", secret)
-	queryParams.Set("grant_type", "client_credential")
-	resp, err := http.Get("https://api.weixin.qq.com/cgi-bin/token" + "?" + queryParams.Encode())
-	if err != nil {
-		log.Println(err)
-		response.ServerError(c, "获取失败")
-		return
-	}
-	defer resp.Body.Close()
-	// 读取响应
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Println(err)
-		response.ServerError(c, "获取失败")
-		return
-	}
-	// json解析
-	var wxAccessTokenResp wxMpAccessTokenResp
-	err = json.Unmarshal(body, &wxAccessTokenResp)
-	if err != nil {
-		log.Println(err)
-		response.ServerError(c, "获取失败")
-		return
-	}
+// 	appid := services.GetConfig().WxMp.Appid
+// 	secret := services.GetConfig().WxMp.Secret
+// 	// 发起请求
+// 	// 获取AccessToken
+// 	queryParams := url.Values{}
+// 	queryParams.Set("appid", appid)
+// 	queryParams.Set("secret", secret)
+// 	queryParams.Set("grant_type", "client_credential")
+// 	resp, err := http.Get("https://api.weixin.qq.com/cgi-bin/token" + "?" + queryParams.Encode())
+// 	if err != nil {
+// 		log.Println(err)
+// 		response.ServerError(c, "获取失败")
+// 		return
+// 	}
+// 	defer resp.Body.Close()
+// 	// 读取响应
+// 	body, err := io.ReadAll(resp.Body)
+// 	if err != nil {
+// 		log.Println(err)
+// 		response.ServerError(c, "获取失败")
+// 		return
+// 	}
+// 	// json解析
+// 	var wxAccessTokenResp wxMpAccessTokenResp
+// 	err = json.Unmarshal(body, &wxAccessTokenResp)
+// 	if err != nil {
+// 		log.Println(err)
+// 		response.ServerError(c, "获取失败")
+// 		return
+// 	}
 
-	// 获取小程序码
-	// 发起请求
-	queryParams = url.Values{}
-	queryParams.Set("access_token", wxAccessTokenResp.AccessToken)
-	requestData := map[string]any{
-		"check_path":  true,
-		"env_version": envVersion,
-		"width":       430,
-		"auto_color":  false,
-		"line_color": map[string]int{
-			"r": 0,
-			"g": 0,
-			"b": 0,
-		},
-		"is_hyaline": true,
-	}
-	if scene != "" {
-		// 前端使用了encodeURIComponent编码，这里要先解码
-		scene, _ = url.QueryUnescape(scene)
-		requestData["scene"] = scene
-	}
-	if page != "" {
-		requestData["page"] = page
-	}
-	requestBodyBytes, _ := json.Marshal(requestData)
-	resp, err = http.Post("https://api.weixin.qq.com/wxa/getwxacodeunlimit"+"?"+queryParams.Encode(), "application/json", bytes.NewBuffer(requestBodyBytes))
-	if err != nil {
-		log.Println(err)
-		response.ServerError(c, "获取失败")
-		return
-	}
-	defer resp.Body.Close()
+// 	// 获取小程序码
+// 	// 发起请求
+// 	queryParams = url.Values{}
+// 	queryParams.Set("access_token", wxAccessTokenResp.AccessToken)
+// 	requestData := map[string]any{
+// 		"check_path":  true,
+// 		"env_version": envVersion,
+// 		"width":       430,
+// 		"auto_color":  false,
+// 		"line_color": map[string]int{
+// 			"r": 0,
+// 			"g": 0,
+// 			"b": 0,
+// 		},
+// 		"is_hyaline": true,
+// 	}
+// 	if scene != "" {
+// 		// 前端使用了encodeURIComponent编码，这里要先解码
+// 		scene, _ = url.QueryUnescape(scene)
+// 		requestData["scene"] = scene
+// 	}
+// 	if page != "" {
+// 		requestData["page"] = page
+// 	}
+// 	requestBodyBytes, _ := json.Marshal(requestData)
+// 	resp, err = http.Post("https://api.weixin.qq.com/wxa/getwxacodeunlimit"+"?"+queryParams.Encode(), "application/json", bytes.NewBuffer(requestBodyBytes))
+// 	if err != nil {
+// 		log.Println(err)
+// 		response.ServerError(c, "获取失败")
+// 		return
+// 	}
+// 	defer resp.Body.Close()
 
-	// 读取响应
-	body, err = io.ReadAll(resp.Body)
+// 	// 读取响应
+// 	body, err = io.ReadAll(resp.Body)
 
-	contentType := resp.Header.Get("Content-Type")
-	if strings.Contains(contentType, "application/json") {
-		if err != nil {
-			log.Println(err)
-			response.ServerError(c, "获取失败")
-			return
-		}
-		log.Println("获取小程序码失败", string(body))
-		response.ServerError(c, "获取失败")
-		return
-	}
+// 	contentType := resp.Header.Get("Content-Type")
+// 	if strings.Contains(contentType, "application/json") {
+// 		if err != nil {
+// 			log.Println(err)
+// 			response.ServerError(c, "获取失败")
+// 			return
+// 		}
+// 		log.Println("获取小程序码失败", string(body))
+// 		response.ServerError(c, "获取失败")
+// 		return
+// 	}
 
-	imageType := "image/png"
-	if contentType != "" {
-		imageType = contentType
-	}
-	response.Success(c, "data:"+imageType+";base64,"+base64.StdEncoding.EncodeToString(body))
-}
+// 	imageType := "image/png"
+// 	if contentType != "" {
+// 		imageType = contentType
+// 	}
+// 	response.Success(c, "data:"+imageType+";base64,"+base64.StdEncoding.EncodeToString(body))
+// }

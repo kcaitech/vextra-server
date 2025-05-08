@@ -10,14 +10,6 @@
         "document": "http://localhost:9000",
         "attatch": "http://localhost:9000/attatch"
     },
-    "wx": {
-        "appid": "xxx",
-        "secret": "xxxx"
-    },
-    "wxMp": {
-        "appid": "xxx",
-        "secret": "xxxx"
-    },
     "version_server": {
         "url": "http://localhost:30000/generate",
         "min_update_interval": 600,
