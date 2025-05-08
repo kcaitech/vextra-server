@@ -84,7 +84,7 @@ func InitKCAuthClient(authServerURL, clientID, clientSecret string) (*auth.KCAut
 		return jwtClient, nil
 	}
 	// var err error
-	jwtClient = auth.NewJWTClient(authServerURL, clientID, clientSecret)
+	jwtClient = auth.NewAuthClient(authServerURL, clientID, clientSecret)
 	return jwtClient, nil
 }
 

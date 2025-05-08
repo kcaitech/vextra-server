@@ -34,6 +34,9 @@ func Init() *config.Configuration {
 	configDir := "config/"
 	conf, err := config.LoadYamlFile(configDir + "config.yaml")
 	if err != nil {
+		conf, err = config.LoadJsonFile(configDir + "config.json")
+	}
+	if err != nil {
 		conf, _ = config.LoadJsonEnv("kcconfig")
 	}
 
