@@ -18,10 +18,6 @@
     "svg2png": {
         "url": "http://kcsvg2png:10050/svg_to_png"
     },
-    "jwt": {
-        "secret": "123456",
-        "expire_hour": 168
-    },
     "mongo": {
         "url": "mongodb://root:jKKsinkjilKKLSW@mongo:27017",
         "db": "kcserver"
@@ -58,7 +54,7 @@
             "stsAccessKeyID": "user",
             "stsSecretAccessKey": "GmwAzetY1L0jU4pUAqpO7RJGIsG7k3gozVH6whoJ",
             "bucketName": "document",
-            "attatchBucketName": "files"
+            "attatchBucketName": "attatch"
         },
         "s3": {
             "endpoint": "192.168.0.18:9000",
@@ -68,7 +64,7 @@
             "accountID": "",
             "roleName": "",
             "bucketName": "document",
-            "attatchBucketName": "files"
+            "attatchBucketName": "attatch"
         },
         "oss": {
             "endpoint": "oss-cn-hangzhou.aliyuncs.com",
@@ -78,8 +74,8 @@
             "secretAccessKey": "0uXxQBqG8nQC7uiyipTX6F4JkEDlcB",
             "accountId": "1382280232399206",
             "roleName": "ramoss",
-            "bucketName": "protodesign-document",
-            "attatchBucketName": "protodesign-files"
+            "bucketName": "document",
+            "attatchBucketName": "attatch"
         }
     },
     "default_route": false,
