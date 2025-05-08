@@ -23,7 +23,7 @@ mongo:
   db: kcserver
 
 redis:
-  addr: redis:6380
+  addr: localhost:6380
   password: kcserver
   db: 0
   # sentinel: true
