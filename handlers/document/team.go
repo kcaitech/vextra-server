@@ -783,7 +783,11 @@ func GetTeamInvitedInfo(c *gin.Context) {
 	teamService := services.NewTeamService()
 	var team models.Team
 	if err := teamService.GetById(teamId, &team); err != nil {
-		response.ServerError(c, "查询错误")
+		if errors.Is(err, services.ErrRecordNotFound) {
+			response.BadRequest(c, "团队不存在")
+		} else {
+			response.ServerError(c, "查询错误")
+		}
 		return
 	}
 	selfPermType, err := teamService.GetTeamPermTypeByForUser(teamId, userId)
