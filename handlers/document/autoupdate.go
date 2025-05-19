@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/go-redsync/redsync/v4"
+	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/providers/redis"
 	"kcaitech.com/kcserver/utils/my_map"
 
@@ -168,7 +169,7 @@ func AutoUpdate(documentId string, config *config.Configuration) {
 		return
 	}
 
-	log.Println("auto update document, start svg2png")
+	// log.Println("auto update document, start svg2png")
 	// svg2png
 	// pagePngs := svg2png(version.PageSvgs, config.Svg2Png.Url)
 
@@ -193,6 +194,15 @@ func AutoUpdate(documentId string, config *config.Configuration) {
 	if response.Status != ResponseStatusSuccess {
 		log.Println("UploadDocumentData fail")
 		return
+	}
+
+	if publishData, err := json.Marshal(&models.DocumentVersionWSData{
+		DocumentId:       documentId,
+		VersionId:        documentInfo.VersionId,
+		VersionStartWith: lastCmdId,
+	}); err == nil {
+		redisClient := services.GetRedisDB()
+		redisClient.Client.Publish(context.Background(), "Document Version[DocumentId:"+(documentId)+"]", publishData)
 	}
 
 	// 更新redis

@@ -30,3 +30,9 @@ func (model DocumentVersion) GetId() interface{} {
 func (model DocumentVersion) TableName() string {
 	return "document_version"
 }
+
+type DocumentVersionWSData struct {
+	DocumentId       string `json:"document_id"`
+	VersionId        string `json:"version_id"`
+	VersionStartWith uint   `json:"version_start_with"`
+}

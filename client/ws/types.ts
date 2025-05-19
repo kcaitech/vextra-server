@@ -9,7 +9,8 @@ export enum DataTypes {
     DocUpload = "docupload",
     Bind = "bind",
     Start = "start",
-    Heartbeat = "heartbeat"
+    Heartbeat = "heartbeat",
+    GenerateVersion = "generateVersion",
 }
 
 export interface TransData {
@@ -148,4 +149,10 @@ export enum SelectionEvents {
     shape_change = "shape_change",
     shape_hover_change = "shape_hover_change",
     text_change = "text_change"
+}
+
+export type VersionData = {
+    document_id: string;
+    version_id: string;
+    version_start_with: number;
 }

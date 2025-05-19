@@ -35,14 +35,15 @@ type Data map[string]any
 type CmdData Data
 
 const (
-	DataTypes_Op        = "op"
-	DataTypes_Comment   = "comment"
-	DataTypes_Resource  = "resource"
-	DataTypes_Selection = "selection"
-	DataTypes_DocUpload = "docupload"
-	DataTypes_Bind      = "bind"
-	DataTypes_Start     = "start"
-	DataTypes_Heartbeat = "heartbeat"
+	DataTypes_Op              = "op"
+	DataTypes_Comment         = "comment"
+	DataTypes_Resource        = "resource"
+	DataTypes_Selection       = "selection"
+	DataTypes_DocUpload       = "docupload"
+	DataTypes_Bind            = "bind"
+	DataTypes_Start           = "start"
+	DataTypes_Heartbeat       = "heartbeat"
+	DataTypes_GenerateVersion = "generateVersion"
 )
 
 // 与前端一致
