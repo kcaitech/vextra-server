@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"kcaitech.com/kcserver/common/response"
 	"kcaitech.com/kcserver/models"
 	safereviewBase "kcaitech.com/kcserver/providers/safereview"
@@ -332,11 +333,7 @@ func copyDocument(userId string, documentId string, c *gin.Context, documentName
 
 	documentName = strings.ReplaceAll(documentName, "%s", sourceDocument.Name)
 
-	path, err := utils.GenerateBase62ID()
-	if err != nil {
-		response.ServerError(c, err.Error())
-		return
-	}
+	path := uuid.NewString()
 	targetDocumentId := path
 
 	documentVersion := models.DocumentVersion{}

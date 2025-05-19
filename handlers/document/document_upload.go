@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	"kcaitech.com/kcserver/utils"
+	"github.com/google/uuid"
 	"kcaitech.com/kcserver/utils/my_map"
 
 	"kcaitech.com/kcserver/models"
@@ -129,13 +129,9 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 		docPath = document.Path
 		docId = document.Id
 	} else {
-		id, err := utils.GenerateBase62ID()
-		if err != nil {
-			resp.Message = err.Error()
-			return
-		}
-		docPath = id
-		docId = id
+		document_id := uuid.NewString()
+		docPath = document_id
+		docId = document_id
 	}
 
 	newDocument := models.Document{
