@@ -425,7 +425,7 @@ export class TeamAPI {
     //获取团队信息
     async getTeamInviteInfo(params: {
         team_id: string;
-    }): Promise<TeamInfoResponse> {
+    }): Promise<TeamInfoResponse|BaseResponse> {
         return this.http.request({
             url: '/documents/team/info/invite',
             method: 'get',
