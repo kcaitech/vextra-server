@@ -7,10 +7,10 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/go-redsync/redsync/v4"
+	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/providers/redis"
 	"kcaitech.com/kcserver/utils/my_map"
 
@@ -39,10 +39,10 @@ func getDocumentLastUpdateTimeFromRedis(documentId string, redis *redis.RedisDB)
 }
 
 type DocumentInfo struct {
-	DocumentId   string `json:"id"` // 可能是int
-	Path         string `json:"path"`
-	VersionId    string `json:"version_id"`
-	LastCmdVerId string `json:"last_cmd_id"`
+	DocumentId string `json:"id"` // 可能是int
+	Path       string `json:"path"`
+	VersionId  string `json:"version_id"`
+	LastCmdId  uint   `json:"last_cmd_id"`
 }
 
 type ExFromJson struct {
@@ -117,12 +117,7 @@ func AutoUpdate(documentId string, config *config.Configuration) {
 	}
 
 	cmdService := services.GetCmdService()
-	lastCmdId := uint(0)
-	if documentInfo.LastCmdVerId != "" {
-		if id, err := strconv.ParseUint(documentInfo.LastCmdVerId, 10, 64); err == nil {
-			lastCmdId = uint(id + 1)
-		}
-	}
+	lastCmdId := documentInfo.LastCmdId + 1
 	cmdItemList, err := cmdService.GetCmdItemsFromStart(documentId, lastCmdId)
 
 	if err != nil {
@@ -139,7 +134,6 @@ func AutoUpdate(documentId string, config *config.Configuration) {
 		log.Println("命令数量小于", config.VersionServer.MinCmdCount, "不更新版本")
 		return
 	}
-	
 	// 构建请求
 	reqBody := map[string]interface{}{
 		"documentInfo": documentInfo,
@@ -175,7 +169,7 @@ func AutoUpdate(documentId string, config *config.Configuration) {
 		return
 	}
 
-	log.Println("auto update document, start svg2png")
+	// log.Println("auto update document, start svg2png")
 	// svg2png
 	// pagePngs := svg2png(version.PageSvgs, config.Svg2Png.Url)
 
@@ -200,6 +194,15 @@ func AutoUpdate(documentId string, config *config.Configuration) {
 	if response.Status != ResponseStatusSuccess {
 		log.Println("UploadDocumentData fail")
 		return
+	}
+
+	if publishData, err := json.Marshal(&models.DocumentVersionWSData{
+		DocumentId:       documentId,
+		VersionId:        documentInfo.VersionId,
+		VersionStartWith: lastCmdId,
+	}); err == nil {
+		redisClient := services.GetRedisDB()
+		redisClient.Client.Publish(context.Background(), "Document Version[DocumentId:"+(documentId)+"]", publishData)
 	}
 
 	// 更新redis

@@ -194,6 +194,8 @@ func (c *ACommuncation) handleStart(clientData *TransData) {
 	c.bindServe(DataTypes_Resource, resourceServe)
 	selectionServe := NewSelectionServe(c.ws, c.token, c.userId, c.documentId, c.genSId)
 	c.bindServe(DataTypes_Selection, selectionServe)
+	versionServe := NewVersionServe(c.ws, c.userId, c.documentId, c.genSId)
+	c.bindServe(DataTypes_GenerateVersion, versionServe)
 
 	c.ws.WriteJSON(serverData)
 }

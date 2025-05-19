@@ -1,5 +1,3 @@
-// import { Cmd, Document, WatchableObject } from "@kcdesign/data";
-// import { IContext, INet } from "@kcdesign/editor";
 import { Connect } from "./connect";
 import { CoopNet } from "./op";
 import { Resource } from "./resource";
@@ -7,6 +5,7 @@ import { Selection } from "./selection"
 import { Comment } from "./comment"
 import { DocUpload, ExportFunc, MediasMgr } from "./upload";
 import { Cmd, DataTypes, IContext, NetworkStatusType } from "./types";
+import { Version } from "./version";
 export { Connect } from "./connect"
 export { Selection as SelectionSync } from "./selection"
 export { DocUpload } from "./upload"
@@ -23,6 +22,7 @@ export class WSClient {
 
     private bind_document_id?: string;
     private _started?: IContext;
+    private version: Version
 
     private async onNetChange(networkStatus: NetworkStatusType) {
         // 如果先走了ready,也没事
@@ -36,13 +36,12 @@ export class WSClient {
     }
 
     constructor(wsUrl: string, token?: string) {
-        // super();
-        // this.context = context;
         this.connect = new Connect(wsUrl, token);
         this.connect.addOnChange(this.onNetChange.bind(this))
         this.op = new CoopNet(this.connect)
         this.resource = new Resource(this.connect)
         this.comment = new Comment(this.connect)
+        this.version = new Version(this.connect)
     }
 
     // 先bind，再start
@@ -95,6 +94,10 @@ export class WSClient {
 
     getCommentSync() {
         return this.comment
+    }
+
+    getVersionSync() {
+        return this.version
     }
 
     uploadDocument(exportExForm: ExportFunc, mediasMgr: MediasMgr, project_id?: string) {
