@@ -1,9 +1,9 @@
 import { Connect, ConnectClient } from "./connect";
 import { DataTypes, ResourceHeader } from "./types";
 
-export class Resource extends ConnectClient {
+export class Thumbnail extends ConnectClient {
     constructor(connect: Connect) {
-        super(connect, DataTypes.Resource)
+        super(connect, DataTypes.Thumbnail)
     }
 
     onMessage(data: any): void {
@@ -11,8 +11,6 @@ export class Resource extends ConnectClient {
 
     public async upload(name: string, data: ArrayBuffer): Promise<boolean> {
         await this.waitReady()
-        return !!this.sendBinary({
-            name: name,
-        } as ResourceHeader, data, 1000, 3);
+        return !!this.sendBinary({ name: name } as ResourceHeader, data, 1000, 3);
     }
 }

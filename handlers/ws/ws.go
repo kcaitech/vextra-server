@@ -192,6 +192,8 @@ func (c *ACommuncation) handleStart(clientData *TransData) {
 	c.bindServe(DataTypes_Op, opServe)
 	resourceServe := NewResourceServe(c.ws, c.userId, c.documentId)
 	c.bindServe(DataTypes_Resource, resourceServe)
+	thumbnailServe := NewThumbnailServe(c.ws, c.userId, c.documentId)
+	c.bindServe(DataTypes_Thumbnail, thumbnailServe)
 	selectionServe := NewSelectionServe(c.ws, c.token, c.userId, c.documentId, c.genSId)
 	c.bindServe(DataTypes_Selection, selectionServe)
 	versionServe := NewVersionServe(c.ws, c.userId, c.documentId, c.genSId)

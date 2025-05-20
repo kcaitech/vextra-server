@@ -5,6 +5,7 @@ export enum DataTypes {
     Op = "op",
     Comment = "comment",
     Resource = "resource",
+    Thumbnail = "thumbnail",
     Selection = "selection",
     DocUpload = "docupload",
     Bind = "bind",
