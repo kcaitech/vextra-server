@@ -87,6 +87,19 @@ func (serv *ThumbnailServe) handle(data *TransData, binaryData *([]byte)) {
 		return
 	}
 
+	// 删除旧的缩略图
+	thumbnailDir := document.Path + "/thumbnail/"
+	objects := serv.storage.Bucket.ListObjects(thumbnailDir)
+	for object := range objects {
+		if object.Err != nil {
+			log.Println("列出缩略图异常：", object.Err)
+			continue
+		}
+		if err := serv.storage.Bucket.DeleteObject(object.Key); err != nil {
+			log.Println("删除旧缩略图异常：", err)
+		}
+	}
+
 	path := document.Path + "/thumbnail/" + thumbnailHeader.Name
 	log.Println("开始上传缩略图", serv.documentId, path)
 	if _, err = serv.storage.Bucket.PutObjectByte(path, *binaryData); err != nil {

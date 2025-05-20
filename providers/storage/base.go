@@ -20,10 +20,10 @@ type Client interface {
 
 type ClientConfig struct {
 	// Provider        Provider `yaml:"provider" json:"provider"`
-	Endpoint        string   `yaml:"endpoint" json:"endpoint"`
-	Region          string   `yaml:"region" json:"region"`
-	AccessKeyID     string   `yaml:"accessKeyID" json:"accessKeyID"`
-	SecretAccessKey string   `yaml:"secretAccessKey" json:"secretAccessKey"`
+	Endpoint        string `yaml:"endpoint" json:"endpoint"`
+	Region          string `yaml:"region" json:"region"`
+	AccessKeyID     string `yaml:"accessKeyID" json:"accessKeyID"`
+	SecretAccessKey string `yaml:"secretAccessKey" json:"secretAccessKey"`
 
 	// minio sts
 	StsAccessKeyID     string `yaml:"stsAccessKeyID" json:"stsAccessKeyID"`
@@ -52,6 +52,8 @@ type Bucket interface {
 	CopyDirectory(srcDirPath string, destDirPath string) (*UploadInfo, error)
 	GetObjectInfo(objectName string) (*ObjectInfo, error)
 	GetObject(objectName string) ([]byte, error)
+	DeleteObject(objectName string) error
+	ListObjects(prefix string) <-chan ObjectInfo
 }
 
 type BucketConfig struct {
@@ -69,7 +71,10 @@ type UploadInfo struct {
 }
 
 type ObjectInfo struct {
-	VersionID string `json:"versionId"`
+	Key       string
+	Err       error
+	Size      int64
+	VersionID string
 }
 
 type DefaultBucket struct {

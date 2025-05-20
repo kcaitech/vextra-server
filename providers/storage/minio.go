@@ -214,3 +214,26 @@ func (that *MinioBucket) CopyDirectory(srcDirPath string, destDirPath string) (*
 	}
 	return &UploadInfo{}, nil
 }
+
+func (that *MinioBucket) DeleteObject(objectName string) error {
+	return that.client.client.RemoveObject(context.Background(), that.config.BucketName, objectName, minio.RemoveObjectOptions{})
+}
+
+func (that *MinioBucket) ListObjects(prefix string) <-chan ObjectInfo {
+	ch := make(chan ObjectInfo)
+	go func() {
+		defer close(ch)
+		for objectInfo := range that.client.client.ListObjects(context.Background(), that.config.BucketName, minio.ListObjectsOptions{
+			Prefix:    prefix,
+			Recursive: true,
+		}) {
+			ch <- ObjectInfo{
+				Key:       objectInfo.Key,
+				Err:       objectInfo.Err,
+				Size:      objectInfo.Size,
+				VersionID: objectInfo.VersionID,
+			}
+		}
+	}()
+	return ch
+}

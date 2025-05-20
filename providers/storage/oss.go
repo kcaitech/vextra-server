@@ -188,3 +188,27 @@ func (that *OSSBucket) CopyDirectory(srcDirPath string, destDirPath string) (*Up
 	}
 	return &UploadInfo{}, nil
 }
+
+func (that *OSSBucket) DeleteObject(objectName string) error {
+	return that.bucket.DeleteObject(objectName)
+}
+
+func (that *OSSBucket) ListObjects(prefix string) <-chan ObjectInfo {
+	ch := make(chan ObjectInfo)
+	go func() {
+		defer close(ch)
+		result, err := that.bucket.ListObjectsV2(oss.Prefix(prefix))
+		if err != nil {
+			ch <- ObjectInfo{Err: err}
+			return
+		}
+		for _, objectInfo := range result.Objects {
+			ch <- ObjectInfo{
+				Key:       objectInfo.Key,
+				Size:      objectInfo.Size,
+				VersionID: "",
+			}
+		}
+	}()
+	return ch
+}

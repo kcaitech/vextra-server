@@ -206,3 +206,36 @@ func (that *S3Bucket) CopyDirectory(srcDirPath string, destDirPath string) (*Upl
 	}
 	return &UploadInfo{}, nil
 }
+
+func (that *S3Bucket) DeleteObject(objectName string) error {
+	_, err := that.client.client.DeleteObject(&s3.DeleteObjectInput{
+		Bucket: aws.String(that.config.BucketName),
+		Key:    aws.String(objectName),
+	})
+	return err
+}
+
+func (that *S3Bucket) ListObjects(prefix string) <-chan ObjectInfo {
+	ch := make(chan ObjectInfo)
+	go func() {
+		defer close(ch)
+		err := that.client.client.ListObjectsV2Pages(&s3.ListObjectsV2Input{
+			Bucket:    aws.String(that.config.BucketName),
+			Prefix:    aws.String(prefix),
+			Delimiter: nil,
+		}, func(result *s3.ListObjectsV2Output, b bool) bool {
+			for _, objectInfo := range result.Contents {
+				ch <- ObjectInfo{
+					Key:       *objectInfo.Key,
+					Size:      *objectInfo.Size,
+					VersionID: "",
+				}
+			}
+			return true
+		})
+		if err != nil {
+			ch <- ObjectInfo{Err: err}
+		}
+	}()
+	return ch
+}
