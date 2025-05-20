@@ -37,6 +37,10 @@ func GetUserDocumentAccessRecordsList(c *gin.Context) {
 		return
 	}
 
+	// 获取存储客户端
+	storage := services.GetStorageClient()
+	documentStorageUrl := services.GetConfig().StorageUrl.Document
+
 	result := make([]services.AccessRecordAndFavoritesQueryResItem, 0)
 	for _, item := range *accessRecordsList {
 		userId := item.Document.UserId
@@ -47,6 +51,20 @@ func GetUserDocumentAccessRecordsList(c *gin.Context) {
 				Nickname: userInfo.Nickname,
 				Avatar:   userInfo.Avatar,
 			}
+
+			// 设置缩略图链接
+			if item.Document.Path != "" {
+				thumbnailPath := item.Document.Path + "/thumbnail/"
+				objects := storage.Bucket.ListObjects(thumbnailPath)
+				for object := range objects {
+					if object.Err == nil {
+						// 使用存储URL
+						item.Document.Thumbnail = documentStorageUrl + "/" + object.Key
+						break
+					}
+				}
+			}
+
 			result = append(result, item)
 		}
 	}

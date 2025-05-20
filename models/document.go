@@ -72,9 +72,7 @@ type Document struct {
 	VersionId string `gorm:"size:64" json:"version_id"`
 	TeamId    string `gorm:"index" json:"team_id"`
 	ProjectId string `gorm:"index" json:"project_id"`
-	// LockedAt     time.Time `gorm:"" json:"locked_at"`
-	// LockedReason string    `gorm:"size:255" json:"locked_reason"`
-	// LockedWords  string    `gorm:"size:255" json:"locked_words"`
+	Thumbnail string `json:"thumbnail"`
 }
 
 func (model Document) GetId() interface{} {
