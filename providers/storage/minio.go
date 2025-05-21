@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -236,4 +238,28 @@ func (that *MinioBucket) ListObjects(prefix string) <-chan ObjectInfo {
 		}
 	}()
 	return ch
+}
+
+func (that *MinioBucket) PresignedGetObject(objectName string, expires time.Duration, reqParams url.Values) (string, error) {
+	// 生成预签名URL
+	presignedURL, err := that.client.client.PresignedGetObject(
+		context.Background(),
+		that.config.BucketName,
+		objectName,
+		expires,
+		reqParams,
+	)
+	if err != nil {
+		return "", err
+	}
+	return presignedURL.String(), nil
+}
+
+func (that *MinioBucket) PutObjectByte(objectName string, content []byte, contentType string) (*UploadInfo, error) {
+	return that.PutObject(&PutObjectInput{
+		ObjectName:  objectName,
+		Reader:      bytes.NewReader(content),
+		ObjectSize:  int64(len(content)),
+		ContentType: contentType,
+	})
 }

@@ -81,7 +81,8 @@ export const DocumentInfoSchema = z.object({
   project_id: z.string().nullable(),
   created_at: z.string(),
   updated_at: z.string(),
-  deleted_at: z.string().nullable()
+  deleted_at: z.string().nullable(),
+  thumbnail: z.string(),
 })
 
 export type DocumentInfo = z.infer<typeof DocumentInfoSchema>;

@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -238,4 +240,18 @@ func (that *S3Bucket) ListObjects(prefix string) <-chan ObjectInfo {
 		}
 	}()
 	return ch
+}
+
+func (that *S3Bucket) PresignedGetObject(objectName string, expires time.Duration, reqParams url.Values) (string, error) {
+	// 生成预签名URL
+	req, _ := that.client.client.GetObjectRequest(&s3.GetObjectInput{
+		Bucket: aws.String(that.config.BucketName),
+		Key:    aws.String(objectName),
+	})
+
+	url, err := req.Presign(expires)
+	if err != nil {
+		return "", err
+	}
+	return url, nil
 }

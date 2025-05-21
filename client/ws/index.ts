@@ -67,8 +67,8 @@ export class WSClient {
     upload(name: string, data: ArrayBuffer): Promise<boolean> {
         return this.resource.upload(name, data)
     }
-    genThumbnail(name: string, data: ArrayBuffer): Promise<boolean> {
-        return this.thumbnail.upload(name, data)
+    genThumbnail(name: string, cotentType: string, data: ArrayBuffer): Promise<boolean> {
+        return this.thumbnail.upload(name, cotentType, data)
     }
     hasConnected(): boolean {
         return this.connect.isReady;

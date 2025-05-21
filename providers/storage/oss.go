@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/sts"
@@ -211,4 +213,13 @@ func (that *OSSBucket) ListObjects(prefix string) <-chan ObjectInfo {
 		}
 	}()
 	return ch
+}
+
+func (that *OSSBucket) PresignedGetObject(objectName string, expires time.Duration, reqParams url.Values) (string, error) {
+	// 生成预签名URL
+	signedURL, err := that.bucket.SignURL(objectName, oss.HTTPGet, int64(expires.Seconds()))
+	if err != nil {
+		return "", err
+	}
+	return signedURL, nil
 }

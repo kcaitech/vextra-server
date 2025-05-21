@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"net/url"
+	"time"
 )
 
 type Provider string
@@ -45,7 +47,7 @@ type PutObjectInput struct {
 type Bucket interface {
 	GetConfig() *Config
 	PutObject(putObjectInput *PutObjectInput) (*UploadInfo, error)
-	PutObjectByte(objectName string, content []byte) (*UploadInfo, error)
+	PutObjectByte(objectName string, content []byte, contentType string) (*UploadInfo, error)
 	// PutObjectList(putObjectInputList []*PutObjectInput) ([]*UploadInfo, []error)
 	GenerateAccessKey(authPath string, authOp int, expires int, roleSessionName string) (*AccessKeyValue, error)
 	CopyObject(srcPath string, destPath string) (*UploadInfo, error)
@@ -54,6 +56,7 @@ type Bucket interface {
 	GetObject(objectName string) ([]byte, error)
 	DeleteObject(objectName string) error
 	ListObjects(prefix string) <-chan ObjectInfo
+	PresignedGetObject(objectName string, expires time.Duration, reqParams url.Values) (string, error)
 }
 
 type BucketConfig struct {
@@ -89,12 +92,12 @@ func (that *DefaultBucket) PubObject(putObjectInput *PutObjectInput) (*UploadInf
 	return nil, errors.New("PubObject方法未实现")
 }
 
-func (that *DefaultBucket) PutObjectByte(objectName string, content []byte) (*UploadInfo, error) {
+func (that *DefaultBucket) PutObjectByte(objectName string, content []byte, contentType string) (*UploadInfo, error) {
 	return that.That.PutObject(&PutObjectInput{
 		ObjectName:  objectName,
 		Reader:      bytes.NewReader(content),
 		ObjectSize:  int64(len(content)),
-		ContentType: "",
+		ContentType: contentType,
 	})
 }
 

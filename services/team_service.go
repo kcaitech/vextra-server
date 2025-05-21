@@ -91,7 +91,7 @@ func (s *TeamService) UploadTeamAvatar(team *models.Team, fileBytes []byte, cont
 	}
 	fileName := fmt.Sprintf("%s.%s", id, suffix)
 	avatarPath := fmt.Sprintf("/teams/%s/avatar/%s", team.Id, fileName)
-	if _, err := s.storage.AttatchBucket.PutObjectByte(avatarPath, fileBytes); err != nil {
+	if _, err := s.storage.AttatchBucket.PutObjectByte(avatarPath, fileBytes, ""); err != nil {
 		log.Println("上传文件失败", err)
 		return "", errors.New("上传文件失败")
 	}
@@ -222,7 +222,7 @@ type BsseTeamJoinRequestsQueryResItem struct {
 
 type SelfTeamJoinRequestsQueryResItem struct {
 	BsseTeamJoinRequestsQueryResItem
-	User       *models.UserProfile `gorm:"-" json:"approver"`
+	User *models.UserProfile `gorm:"-" json:"approver"`
 }
 
 type TeamJoinRequestQuery struct {

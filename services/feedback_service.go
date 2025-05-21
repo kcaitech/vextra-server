@@ -47,7 +47,7 @@ func (s *FeedbackService) UploadImage(userId string, fileBytes []byte, contentTy
 	}
 	fileName := fmt.Sprintf("%s.%s", id, suffix)
 	imagePath := fmt.Sprintf("/feedback/%s/%s", (userId), fileName)
-	if _, err := s.storage.AttatchBucket.PutObjectByte(imagePath, fileBytes); err != nil {
+	if _, err := s.storage.AttatchBucket.PutObjectByte(imagePath, fileBytes, ""); err != nil {
 		return "", errors.New("上传文件失败")
 	}
 	return imagePath, nil

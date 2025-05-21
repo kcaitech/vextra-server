@@ -457,7 +457,7 @@ func copyDocument(userId string, documentId string, c *gin.Context, documentName
 		return
 	}
 
-	documentMetaUploadInfo, err := _storage.Bucket.PutObjectByte(targetDocumentId+"/document-meta.json", documentMetaBytes)
+	documentMetaUploadInfo, err := _storage.Bucket.PutObjectByte(targetDocumentId+"/document-meta.json", documentMetaBytes, "")
 	if err != nil {
 		log.Println("documentMeta上传失败：", err)
 		response.ServerError(c, "复制失败")

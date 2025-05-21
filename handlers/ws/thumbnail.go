@@ -44,7 +44,8 @@ func (serv *ThumbnailServe) close() {
 
 func (serv *ThumbnailServe) handle(data *TransData, binaryData *([]byte)) {
 	type ThumbnailHeader struct {
-		Name string `json:"name"`
+		Name        string `json:"name"`
+		ContentType string `json:"contentType"`
 	}
 
 	serverData := TransData{}
@@ -101,8 +102,8 @@ func (serv *ThumbnailServe) handle(data *TransData, binaryData *([]byte)) {
 	}
 
 	path := document.Path + "/thumbnail/" + thumbnailHeader.Name
-	log.Println("开始上传缩略图", serv.documentId, path)
-	if _, err = serv.storage.Bucket.PutObjectByte(path, *binaryData); err != nil {
+	log.Println("开始上传缩略图", serv.documentId, path, thumbnailHeader.Name)
+	if _, err = serv.storage.Bucket.PutObjectByte(path, *binaryData, thumbnailHeader.ContentType); err != nil {
 		msgErr("上传失败", &serverData, &err)
 		return
 	}

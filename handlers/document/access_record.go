@@ -2,6 +2,7 @@ package document
 
 import (
 	"errors"
+	"net/url"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -39,7 +40,6 @@ func GetUserDocumentAccessRecordsList(c *gin.Context) {
 
 	// 获取存储客户端
 	storage := services.GetStorageClient()
-	documentStorageUrl := services.GetConfig().StorageUrl.Document
 
 	result := make([]services.AccessRecordAndFavoritesQueryResItem, 0)
 	for _, item := range *accessRecordsList {
@@ -58,8 +58,13 @@ func GetUserDocumentAccessRecordsList(c *gin.Context) {
 				objects := storage.Bucket.ListObjects(thumbnailPath)
 				for object := range objects {
 					if object.Err == nil {
-						// 使用存储URL
-						item.Document.Thumbnail = documentStorageUrl + "/" + object.Key
+						// 生成预签名URL，有效期1小时
+						reqParams := make(url.Values)
+						reqParams.Set("response-content-disposition", "inline")
+						presignedURL, err := storage.Bucket.PresignedGetObject(object.Key, time.Hour, nil)
+						if err == nil {
+							item.Document.Thumbnail = presignedURL
+						}
 						break
 					}
 				}
