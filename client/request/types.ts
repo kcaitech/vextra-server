@@ -19,6 +19,12 @@ export const BaseResponseSchema = z.object({
   data: z.any().optional(),
 });
 
+export const CopyDocumentResponseSchema = z.object({
+  copy_id: z.string(),
+});
+
+export type CopyDocumentResponse = z.infer<typeof CopyDocumentResponseSchema>;
+
 export type BaseResponse = z.infer<typeof BaseResponseSchema>;
 
 // 用户信息类型

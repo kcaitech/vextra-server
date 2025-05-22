@@ -2,7 +2,6 @@ package document
 
 import (
 	"errors"
-	"net/url"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -51,27 +50,9 @@ func GetUserDocumentAccessRecordsList(c *gin.Context) {
 				Nickname: userInfo.Nickname,
 				Avatar:   userInfo.Avatar,
 			}
-
-			// 设置缩略图链接
-			if item.Document.Path != "" {
-				thumbnailPath := item.Document.Path + "/thumbnail/"
-				objects := storage.Bucket.ListObjects(thumbnailPath)
-				for object := range objects {
-					if object.Err == nil {
-						// 生成预签名URL，有效期1小时
-						reqParams := make(url.Values)
-						reqParams.Set("response-content-disposition", "inline")
-						presignedURL, err := storage.Bucket.PresignedGetObject(object.Key, time.Hour, nil)
-						if err == nil {
-							item.Document.Thumbnail = presignedURL
-						}
-						break
-					}
-				}
-			}
-
-			result = append(result, item)
 		}
+		item.Document.Thumbnail = GetDocumentThumbnail(c, item.Document.Path, storage)
+		result = append(result, item)
 	}
 
 	// 构建包含下一页游标信息的响应

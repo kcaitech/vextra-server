@@ -299,7 +299,11 @@ type CopyDocumentReq struct {
 	DocId string `json:"doc_id" binding:"required"`
 }
 
-func copyDocument(userId string, documentId string, c *gin.Context, documentName string, _storage *storage.StorageClient) (result *services.AccessRecordAndFavoritesQueryResItem) {
+type CopyDocumentRes struct {
+	CopyId string `json:"copy_id"`
+}
+
+func copyDocument(userId string, documentId string, c *gin.Context, documentName string, _storage *storage.StorageClient, insert bool) (result *CopyDocumentRes) {
 	documentService := services.NewDocumentService()
 	sourceDocument := models.Document{}
 	if err := documentService.Get(&sourceDocument, "id = ?", documentId); err != nil {
@@ -504,29 +508,25 @@ func copyDocument(userId string, documentId string, c *gin.Context, documentName
 		VersionId: documentMetaUploadInfo.VersionID,
 	}
 
-	// 确保设置文档ID
-	if err := documentService.Create(&targetDocument); err != nil {
-		log.Println("创建文档记录失败:", err, "userId:", userId, "documentName:", documentName)
-		response.ServerError(c, "创建失败: "+err.Error())
-		return
+	if insert {
+		// 确保设置文档ID
+		if err := documentService.Create(&targetDocument); err != nil {
+			log.Println("创建文档记录失败:", err, "userId:", userId, "documentName:", documentName)
+			response.ServerError(c, "创建失败: "+err.Error())
+			return
+		}
+		// 添加最近访问
+		documentAccessRecord := models.DocumentAccessRecord{
+			UserId:     userId,
+			DocumentId: targetDocument.Id,
+		}
+		documentService.DocumentAccessRecordService.Create(&documentAccessRecord)
 	}
 
-	// 添加最近访问
-	documentAccessRecord := models.DocumentAccessRecord{
-		UserId:     userId,
-		DocumentId: targetDocument.Id,
+	result = &CopyDocumentRes{
+		CopyId: targetDocumentId,
 	}
-	_ = documentService.DocumentAccessRecordService.Create(&documentAccessRecord)
 
-	var resultList []services.AccessRecordAndFavoritesQueryResItem
-	_ = documentService.DocumentAccessRecordService.Find(
-		&resultList,
-		&services.ParamArgs{"?user_id": userId},
-		&services.WhereArgs{Query: "document_access_record.id = ? and document.deleted_at is null", Args: []any{documentAccessRecord.Id}},
-	)
-	if len(resultList) > 0 {
-		result = &resultList[0]
-	}
 	return
 }
 
@@ -547,7 +547,7 @@ func CopyDocument(c *gin.Context) {
 		response.BadRequest(c, "参数错误：doc_id")
 		return
 	}
-	result := copyDocument(userId, documentId, c, "%s_副本", services.GetStorageClient())
+	result := copyDocument(userId, documentId, c, "%s_副本", services.GetStorageClient(), true)
 	if result != nil {
 		response.Success(c, result)
 	}

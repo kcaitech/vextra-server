@@ -92,6 +92,26 @@ const DocumentAccessRecordSchema = z.object({
 
 export type DocumentAccessRecord = z.infer<typeof DocumentAccessRecordSchema>
 
+const ResourceDocumentSchema = z.object({
+    document: DocumentSchema,
+    team: TeamInfoSchema.nullable(),
+    project: ProjectInfoSchema.nullable(),
+    document_favorites: z.object({
+        id: z.string(),
+        user_id: z.string(),
+        document_id: z.string(),
+        is_favorite: z.boolean()
+    }),
+})
+
+export type ResourceDocument = z.infer<typeof ResourceDocumentSchema>
+
+const ResourceDocumentListResponseSchema = BaseResponseSchema.extend({
+    data: z.array(ResourceDocumentSchema)
+})
+
+export type ResourceDocumentListResponse = z.infer<typeof ResourceDocumentListResponseSchema>
+
 // 收藏列表响应类型
 export type FavoriteListResponse = z.infer<typeof DocumentListResponseSchema>
 export type FavoriteListItem = z.infer<typeof DocumentListItemSchema>
@@ -102,7 +122,6 @@ const DocumentAccessRecordListResponseSchema = BaseResponseSchema.extend({
 })
 
 export type DocumentAccessRecordListResponse = z.infer<typeof DocumentAccessRecordListResponseSchema>
-
 
 // 文档权限类型
 export const DocumentPermissionSchema = BaseResponseSchema.extend({
@@ -341,6 +360,34 @@ export class DocumentAPI {
             console.error('用户文档访问记录列表数据校验失败:', error);
             throw error;
         }
+    }
+
+    async getResourceDocumentList(params: {
+        cursor?: string;
+        limit?: number;
+    }) : Promise<ResourceDocumentListResponse> {
+        const result = await this.http.request({
+            url: '/documents/resource',
+            method: 'get',
+            params: params,
+        });
+        try {
+            return ResourceDocumentListResponseSchema.parse(result);
+        } catch (error) {
+            console.error('资源文档列表数据校验失败:', error);
+            throw error;
+        }
+    }
+
+    async createResourceDocument(params: {
+        doc_id: string;
+        description: string;
+    }): Promise<BaseResponse> {
+        return this.http.request({
+            url: '/documents/resource',
+            method: 'post',
+            data: params,
+        })
     }
 
     // 删除用户文档访问记录
