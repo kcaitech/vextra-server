@@ -1,9 +1,9 @@
 db:
   # url: root:kKEIjksvnOOIjdZ6rtzE@tcp(mysql:3306)/kcserver?charset=utf8&parseTime=True&loc=Local
   user: root
-  password: kKEIjksvnOOIjdZ6rtzE
+  password: password
   host: localhost
-  port: 3307
+  port: 3306
   database: kcserver
 
 storage_url:
@@ -67,6 +67,7 @@ default_route: false
 detailed_log: true
 allow_cors: true
 
-auth_server_url: http://localhost:8080
+auth_server_url: https://account.test.vextra.cn
 auth_client_id: kcserver
 auth_client_secret: yourSecurePassword123
+auth_callback_url: https://test.vextra.cn/login_callback

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"kcaitech.com/kcserver/common/response"
 	"kcaitech.com/kcserver/services"
 	// handlers "kcaitech.com/kcserver/handlers/auth"
@@ -12,10 +13,19 @@ import (
 
 func loadLoginRoutes(api *gin.RouterGroup) {
 	router := api.Group("/auth")
-
+	router.GET("/login_url", func(c *gin.Context) {
+		config := services.GetConfig()
+		url := config.AuthServerURL + "/login?redirect_url=" + config.AuthCallbackURL + "&client_id=" + config.AuthClientID + "&state=" + uuid.New().String()
+		response.Success(c, map[string]any{
+			"url": url,
+		})
+	})
 	// router.POST("/login/wx", handlers.WxOpenWebLogin)
 	// router.POST("/login/wx_mp", handlers.WxMpLogin)
 	router.POST("/refresh_token", RefreshToken)
+	router.GET("/login/callback", LoginCallback)
+	// 需要已登录
+	router.GET("/logout", services.GetKCAuthClient().AuthRequired(), Logout)
 }
 
 // refreshToken
@@ -45,4 +55,40 @@ func RefreshToken(c *gin.Context) {
 	response.Success(c, map[string]any{
 		"token": token,
 	})
+}
+
+func LoginCallback(c *gin.Context) {
+	code := c.Query("code")
+	if code == "" {
+		response.BadRequest(c, "Code is required")
+		return
+	}
+	client := services.GetKCAuthClient()
+	result, err := client.LoginVerify(code, c)
+	if err != nil {
+		log.Printf("Login callback failed: %s", err.Error())
+		response.Unauthorized(c)
+		return
+	}
+
+	response.Success(c, map[string]any{
+		"token":    result.Token,
+		"id":       result.UserID,
+		"nickname": result.Nickname,
+		"avatar":   result.Avatar,
+	})
+}
+
+func Logout(c *gin.Context) {
+	accessToken := c.GetString("access_token")
+	client := services.GetKCAuthClient()
+	err := client.Logout(accessToken)
+	if err != nil {
+		log.Printf("Logout failed: %s", err.Error())
+		response.BadRequest(c, err.Error())
+		return
+	}
+	// 清除refreshToken
+	c.SetCookie("refreshToken", "", -1, "/", "", false, false)
+	response.Success(c, map[string]any{})
 }

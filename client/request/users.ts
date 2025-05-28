@@ -24,7 +24,12 @@ const UserInfoResponseSchema = BaseResponseSchema.extend({
     data: UserInfoSchema
 })
 
+const UserInfoWithTokenResponseSchema = UserInfoSchema.extend({
+    token: z.string(),
+})
+
 export type UserInfoResponse = z.infer<typeof UserInfoResponseSchema>
+export type UserInfoWithTokenResponse = z.infer<typeof UserInfoWithTokenResponseSchema>
 export type UserInfoData = z.infer<typeof UserInfoResponseSchema.shape.data>
 
 const RefreshTokenSchema = BaseResponseSchema.extend({
@@ -157,6 +162,37 @@ export class UsersAPI {
             console.error('RefreshToken数据校验失败:', error);
             throw error;
         }
+    }
+
+    async getLoginUrl(): Promise<string> {
+        const result = await this.http.request({
+            url: 'auth/login_url',
+            method: 'get',
+        })
+        return result.data.url
+    }
+
+    async loginCallback(code: string): Promise<UserInfoWithTokenResponse> {
+        const result = await this.http.request({
+            url: 'auth/login/callback',
+            method: 'get',
+            params: {
+                code: code,
+            },
+        })
+        try {
+            return UserInfoWithTokenResponseSchema.parse(result.data)
+        } catch (error) {
+            console.error('用户信息数据校验失败:', error)
+            throw error
+        }
+    }
+
+    async logout(): Promise<BaseResponse> {
+        return this.http.request({
+            url: 'auth/logout',
+            method: 'get',
+        })
     }
 }
 

@@ -120,6 +120,7 @@ type Configuration struct {
 	AuthServerURL    string `yaml:"auth_server_url,omitempty" json:"auth_server_url,omitempty"`
 	AuthClientID     string `yaml:"auth_client_id,omitempty" json:"auth_client_id,omitempty"`
 	AuthClientSecret string `yaml:"auth_client_secret,omitempty" json:"auth_client_secret,omitempty"`
+	AuthCallbackURL  string `yaml:"auth_callback_url,omitempty" json:"auth_callback_url,omitempty"`
 }
 
 func LoadYamlFile(filePath string) (*Configuration, error) {
