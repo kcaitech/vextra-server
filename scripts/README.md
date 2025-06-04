@@ -48,3 +48,8 @@ go run scripts/migrate_db.go
 2. 需要将旧的版本更新服务跑起来
    - branch_migrate
 
+3. 旧数据库启动测试数据：
+   - kcdeploy 的 branch_migrate分支
+   - 配置文件中version_server的url为 http://192.168.0.131:8088/generate
+   - 192.168.0.131 为本机ip地址
+   - 8088 旧版版本服务端口

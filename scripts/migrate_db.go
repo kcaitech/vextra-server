@@ -83,7 +83,7 @@ func migrateDocumentStorage(documentIds []int64) {
 		log.Fatalf("Error reading config file: %v", err)
 	}
 	services.InitAllBaseServices(conf)
-	var generateApiUrl = "http://192.168.0.131:8088/generate"
+	var generateApiUrl = "http://192.168.0.131:8088/generate"  // 旧版本更新服务地址
 	for _, documentId := range documentIds {
 		documentIdStr := str.IntToString(documentId)
 		resp, err := http.Get(generateApiUrl + "?documentId=" + documentIdStr)
