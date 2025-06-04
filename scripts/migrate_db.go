@@ -1267,7 +1267,7 @@ func main() {
 	// 		log.Printf("Error inserting comments: %v", err)
 	// 	}
 	// }
-	// migrateDocumentStorage(documentIds)
+	migrateDocumentStorage(documentIds)
 
 	log.Println("Migration completed!")
 }
