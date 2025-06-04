@@ -1,0 +1,105 @@
+{
+    "source": {
+        "mysql": {
+            "user": "root",
+            "password": "kKEIjksvnOOIjdZ6rtzE",
+            "host": "localhost",
+            "port": 3806,
+            "database": "kcserver"
+        },
+        "mongo": {
+            "url": "mongodb://root:jKKsinkjilKKLSW@localhost:28017",
+            "db": "kcserver"
+        },
+        "storage": {
+            "provider": "minio",
+            "minio": {
+                "endpoint": "localhost:9012",
+                "region": "zhuhai-1",
+                "accessKeyID": "59L3pDWuk9oLQWIgytCI",
+                "secretAccessKey": "GmwAzetY1L0jU4pUAqpO7RJGIsG7k3gozVH6whoJ",
+                "stsAccessKeyID": "user",
+                "stsSecretAccessKey": "GmwAzetY1L0jU4pUAqpO7RJGIsG7k3gozVH6whoJ",
+                "bucketName": "document",
+                "filesBucketName": "files"
+            },
+            "s3": {
+                "endpoint": "192.168.0.18:9012",
+                "region": "zhuhai-1",
+                "accessKeyID": "Gathooh88mba5H3y2",
+                "secretAccessKey": "yFukp3vtIkUNck2XL3s2KOT4wyRPR71G2",
+                "accountID": "",
+                "roleName": "",
+                "bucketName": "document",
+                "filesBucketName": "files"
+            },
+            "oss": {
+                "endpoint": "oss-cn-hangzhou.aliyuncs.com",
+                "stsEndpoint": "sts-vpc.cn-hangzhou.aliyuncs.com",
+                "region": "cn-hangzhou",
+                "accessKeyID": "LTAI5tSm1Y5obQCwVn7X9k2x",
+                "secretAccessKey": "0uXxQBqG8nQC7uiyipTX6F4JkEDlcB",
+                "accountId": "1382280232399206",
+                "roleName": "ramoss",
+                "bucketName": "protodesign-document",
+                "filesBucketName": "protodesign-files"
+            }
+        }
+    },
+    "target": {
+        "mysql": {
+            "user": "root",
+            "password": "kKEIjksvnOOIjdZ6rtzE",
+            "host": "localhost",
+            "port": 3307,
+            "database": "kcserver"
+        },
+        "mongo": {
+            "url": "mongodb://root:jKKsinkjilKKLSW@localhost:27017",
+            "db": "kcserver"
+        },
+        "storage": {
+            "provider": "minio",
+            "minio": {
+                "endpoint": "localhost:9000",
+                "region": "zhuhai-1",
+                "accessKeyID": "59L3pDWuk9oLQWIgytCI",
+                "secretAccessKey": "GmwAzetY1L0jU4pUAqpO7RJGIsG7k3gozVH6whoJ",
+                "stsAccessKeyID": "user",
+                "stsSecretAccessKey": "GmwAzetY1L0jU4pUAqpO7RJGIsG7k3gozVH6whoJ",
+                "bucketName": "document",
+                "attatchBucketName": "attatch"
+            },
+            "s3": {
+                "endpoint": "192.168.0.18:9000",
+                "region": "zhuhai-1",
+                "accessKeyID": "Gathooh88mba5H3y2",
+                "secretAccessKey": "yFukp3vtIkUNck2XL3s2KOT4wyRPR71G2",
+                "accountID": "",
+                "roleName": "",
+                "bucketName": "document",
+                "attatchBucketName": "attatch"
+            },
+            "oss": {
+                "endpoint": "oss-cn-hangzhou.aliyuncs.com",
+                "stsEndpoint": "sts-vpc.cn-hangzhou.aliyuncs.com",
+                "region": "cn-hangzhou",
+                "accessKeyID": "LTAI5tSm1Y5obQCwVn7X9k2x",
+                "secretAccessKey": "0uXxQBqG8nQC7uiyipTX6F4JkEDlcB",
+                "accountId": "1382280232399206",
+                "roleName": "ramoss",
+                "bucketName": "document",
+                "attatchBucketName": "attatch"
+            }
+        }
+    },
+    "auth": {
+        "mysql": {
+            "user": "root",
+            "password": "password",
+            "host": "localhost",
+            "port": 3306,
+            "database": "kcauth"
+        }
+    }
+}

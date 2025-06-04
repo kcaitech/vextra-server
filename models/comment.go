@@ -27,10 +27,10 @@ type UserCommentCommon struct {
 	PageId     string            `json:"page_id" bson:"page_id" binding:"required"`
 	ShapeId    string            `json:"shape_id" bson:"shape_id"`
 	Content    string            `json:"content" bson:"content"`
-	OffsetX    float32           `json:"offset_x" bson:"offset_x"`
-	OffsetY    float32           `json:"offset_y" bson:"offset_y"`
-	RootX      float32           `json:"root_x" bson:"root_x"`
-	RootY      float32           `json:"root_y" bson:"root_y"`
+	OffsetX    float64           `json:"offset_x" bson:"offset_x"`
+	OffsetY    float64           `json:"offset_y" bson:"offset_y"`
+	RootX      float64           `json:"root_x" bson:"root_x"`
+	RootY      float64           `json:"root_y" bson:"root_y"`
 	Status     UserCommentStatus `json:"status" bson:"status"`
 }
 
