@@ -38,6 +38,7 @@ const (
 	DataTypes_Op              = "op"
 	DataTypes_Comment         = "comment"
 	DataTypes_Resource        = "resource"
+	DataTypes_Thumbnail       = "thumbnail"
 	DataTypes_Selection       = "selection"
 	DataTypes_DocUpload       = "docupload"
 	DataTypes_Bind            = "bind"

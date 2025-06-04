@@ -6,8 +6,10 @@ import (
 	"encoding/json"
 	"errors"
 	"log"
+	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -213,4 +215,51 @@ func (that *MinioBucket) CopyDirectory(srcDirPath string, destDirPath string) (*
 		_, _ = that.CopyObject(objectInfo.Key, strings.Replace(objectInfo.Key, srcDirPath, destDirPath, 1))
 	}
 	return &UploadInfo{}, nil
+}
+
+func (that *MinioBucket) DeleteObject(objectName string) error {
+	return that.client.client.RemoveObject(context.Background(), that.config.BucketName, objectName, minio.RemoveObjectOptions{})
+}
+
+func (that *MinioBucket) ListObjects(prefix string) <-chan ObjectInfo {
+	ch := make(chan ObjectInfo)
+	go func() {
+		defer close(ch)
+		for objectInfo := range that.client.client.ListObjects(context.Background(), that.config.BucketName, minio.ListObjectsOptions{
+			Prefix:    prefix,
+			Recursive: true,
+		}) {
+			ch <- ObjectInfo{
+				Key:       objectInfo.Key,
+				Err:       objectInfo.Err,
+				Size:      objectInfo.Size,
+				VersionID: objectInfo.VersionID,
+			}
+		}
+	}()
+	return ch
+}
+
+func (that *MinioBucket) PresignedGetObject(objectName string, expires time.Duration, reqParams url.Values) (string, error) {
+	// 生成预签名URL
+	presignedURL, err := that.client.client.PresignedGetObject(
+		context.Background(),
+		that.config.BucketName,
+		objectName,
+		expires,
+		reqParams,
+	)
+	if err != nil {
+		return "", err
+	}
+	return presignedURL.String(), nil
+}
+
+func (that *MinioBucket) PutObjectByte(objectName string, content []byte, contentType string) (*UploadInfo, error) {
+	return that.PutObject(&PutObjectInput{
+		ObjectName:  objectName,
+		Reader:      bytes.NewReader(content),
+		ObjectSize:  int64(len(content)),
+		ContentType: contentType,
+	})
 }

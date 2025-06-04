@@ -37,6 +37,9 @@ func GetUserDocumentAccessRecordsList(c *gin.Context) {
 		return
 	}
 
+	// 获取存储客户端
+	storage := services.GetStorageClient()
+
 	result := make([]services.AccessRecordAndFavoritesQueryResItem, 0)
 	for _, item := range *accessRecordsList {
 		userId := item.Document.UserId
@@ -47,8 +50,9 @@ func GetUserDocumentAccessRecordsList(c *gin.Context) {
 				Nickname: userInfo.Nickname,
 				Avatar:   userInfo.Avatar,
 			}
-			result = append(result, item)
 		}
+		item.Document.Thumbnail = GetDocumentThumbnail(c, item.Document.Path, storage)
+		result = append(result, item)
 	}
 
 	// 构建包含下一页游标信息的响应

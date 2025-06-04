@@ -99,7 +99,7 @@ func (serv *resourceServe) handle(data *TransData, binaryData *([]byte)) {
 
 	path := document.Path + "/medias/" + resourceHeader.Name
 	log.Println("开始上传", serv.documentId, path)
-	if _, err = serv.storage.Bucket.PutObjectByte(path, *binaryData); err != nil {
+	if _, err = serv.storage.Bucket.PutObjectByte(path, *binaryData, ""); err != nil {
 
 		msgErr("上传失败", &serverData, &err)
 		return

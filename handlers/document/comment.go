@@ -124,7 +124,7 @@ func PostUserComment(c *gin.Context) {
 			OffsetX:    userComment.OffsetX,
 			OffsetY:    userComment.OffsetY,
 			RootX:      userComment.RootX,
-			RootY:      userComment.OffsetY,
+			RootY:      userComment.RootY,
 			Status:     models.UserCommentStatusCreated,
 		},
 		User:      userInfo.UserID,

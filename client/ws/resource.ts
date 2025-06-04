@@ -10,12 +10,6 @@ export class Resource extends ConnectClient {
     }
 
     public async upload(name: string, data: ArrayBuffer): Promise<boolean> {
-
-        // let count = 0
-        // while (count++ < 3 && !await this.docResourceUpload.uploadResource(name, data)) {
-        //     await new Promise(resolve => setTimeout(resolve, 1000))
-        // }
-        // return count < 3;
         await this.waitReady()
         return !!this.sendBinary({
             name: name,

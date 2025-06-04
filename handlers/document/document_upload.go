@@ -81,7 +81,7 @@ func compressPutObjectByte(path string, content []byte, _storage *storage.Storag
 			content = presed
 		}
 	}
-	return _storage.Bucket.PutObjectByte(path, content)
+	return _storage.Bucket.PutObjectByte(path, content, "")
 }
 
 func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media, resp *Response) {
@@ -204,7 +204,7 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 			go func(path string, media []byte) {
 				defer uploadWaitGroup.Done()
 				_storage := services.GetStorageClient()
-				if _, err := _storage.Bucket.PutObjectByte(path, media); err != nil {
+				if _, err := _storage.Bucket.PutObjectByte(path, media, ""); err != nil {
 					resp.Message = "对象上传错误"
 					log.Println("对象上传错误", err)
 					return

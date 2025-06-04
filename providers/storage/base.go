@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"net/url"
+	"time"
 )
 
 type Provider string
@@ -20,10 +22,10 @@ type Client interface {
 
 type ClientConfig struct {
 	// Provider        Provider `yaml:"provider" json:"provider"`
-	Endpoint        string   `yaml:"endpoint" json:"endpoint"`
-	Region          string   `yaml:"region" json:"region"`
-	AccessKeyID     string   `yaml:"accessKeyID" json:"accessKeyID"`
-	SecretAccessKey string   `yaml:"secretAccessKey" json:"secretAccessKey"`
+	Endpoint        string `yaml:"endpoint" json:"endpoint"`
+	Region          string `yaml:"region" json:"region"`
+	AccessKeyID     string `yaml:"accessKeyID" json:"accessKeyID"`
+	SecretAccessKey string `yaml:"secretAccessKey" json:"secretAccessKey"`
 
 	// minio sts
 	StsAccessKeyID     string `yaml:"stsAccessKeyID" json:"stsAccessKeyID"`
@@ -45,13 +47,16 @@ type PutObjectInput struct {
 type Bucket interface {
 	GetConfig() *Config
 	PutObject(putObjectInput *PutObjectInput) (*UploadInfo, error)
-	PutObjectByte(objectName string, content []byte) (*UploadInfo, error)
+	PutObjectByte(objectName string, content []byte, contentType string) (*UploadInfo, error)
 	// PutObjectList(putObjectInputList []*PutObjectInput) ([]*UploadInfo, []error)
 	GenerateAccessKey(authPath string, authOp int, expires int, roleSessionName string) (*AccessKeyValue, error)
 	CopyObject(srcPath string, destPath string) (*UploadInfo, error)
 	CopyDirectory(srcDirPath string, destDirPath string) (*UploadInfo, error)
 	GetObjectInfo(objectName string) (*ObjectInfo, error)
 	GetObject(objectName string) ([]byte, error)
+	DeleteObject(objectName string) error
+	ListObjects(prefix string) <-chan ObjectInfo
+	PresignedGetObject(objectName string, expires time.Duration, reqParams url.Values) (string, error)
 }
 
 type BucketConfig struct {
@@ -69,7 +74,10 @@ type UploadInfo struct {
 }
 
 type ObjectInfo struct {
-	VersionID string `json:"versionId"`
+	Key       string
+	Err       error
+	Size      int64
+	VersionID string
 }
 
 type DefaultBucket struct {
@@ -84,12 +92,12 @@ func (that *DefaultBucket) PubObject(putObjectInput *PutObjectInput) (*UploadInf
 	return nil, errors.New("PubObject方法未实现")
 }
 
-func (that *DefaultBucket) PutObjectByte(objectName string, content []byte) (*UploadInfo, error) {
+func (that *DefaultBucket) PutObjectByte(objectName string, content []byte, contentType string) (*UploadInfo, error) {
 	return that.That.PutObject(&PutObjectInput{
 		ObjectName:  objectName,
 		Reader:      bytes.NewReader(content),
 		ObjectSize:  int64(len(content)),
-		ContentType: "",
+		ContentType: contentType,
 	})
 }
 

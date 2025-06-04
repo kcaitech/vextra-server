@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -205,4 +207,51 @@ func (that *S3Bucket) CopyDirectory(srcDirPath string, destDirPath string) (*Upl
 		return nil, err
 	}
 	return &UploadInfo{}, nil
+}
+
+func (that *S3Bucket) DeleteObject(objectName string) error {
+	_, err := that.client.client.DeleteObject(&s3.DeleteObjectInput{
+		Bucket: aws.String(that.config.BucketName),
+		Key:    aws.String(objectName),
+	})
+	return err
+}
+
+func (that *S3Bucket) ListObjects(prefix string) <-chan ObjectInfo {
+	ch := make(chan ObjectInfo)
+	go func() {
+		defer close(ch)
+		err := that.client.client.ListObjectsV2Pages(&s3.ListObjectsV2Input{
+			Bucket:    aws.String(that.config.BucketName),
+			Prefix:    aws.String(prefix),
+			Delimiter: nil,
+		}, func(result *s3.ListObjectsV2Output, b bool) bool {
+			for _, objectInfo := range result.Contents {
+				ch <- ObjectInfo{
+					Key:       *objectInfo.Key,
+					Size:      *objectInfo.Size,
+					VersionID: "",
+				}
+			}
+			return true
+		})
+		if err != nil {
+			ch <- ObjectInfo{Err: err}
+		}
+	}()
+	return ch
+}
+
+func (that *S3Bucket) PresignedGetObject(objectName string, expires time.Duration, reqParams url.Values) (string, error) {
+	// 生成预签名URL
+	req, _ := that.client.client.GetObjectRequest(&s3.GetObjectInput{
+		Bucket: aws.String(that.config.BucketName),
+		Key:    aws.String(objectName),
+	})
+
+	url, err := req.Presign(expires)
+	if err != nil {
+		return "", err
+	}
+	return url, nil
 }

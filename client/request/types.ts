@@ -19,6 +19,12 @@ export const BaseResponseSchema = z.object({
   data: z.any().optional(),
 });
 
+export const CopyDocumentResponseSchema = z.object({
+  copy_id: z.string(),
+});
+
+export type CopyDocumentResponse = z.infer<typeof CopyDocumentResponseSchema>;
+
 export type BaseResponse = z.infer<typeof BaseResponseSchema>;
 
 // 用户信息类型
@@ -81,7 +87,8 @@ export const DocumentInfoSchema = z.object({
   project_id: z.string().nullable(),
   created_at: z.string(),
   updated_at: z.string(),
-  deleted_at: z.string().nullable()
+  deleted_at: z.string().nullable(),
+  thumbnail: z.string(),
 })
 
 export type DocumentInfo = z.infer<typeof DocumentInfoSchema>;

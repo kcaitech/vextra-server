@@ -203,6 +203,12 @@ func (module *DBModule) AutoMigrate() error {
 	if err != nil {
 		return fmt.Errorf("UserKVStorage:%s", err.Error())
 	}
+	// resource_document
+	err = ResourceDocument{}.AutoMigrate(module.DB)
+	if err != nil {
+		return fmt.Errorf("ResourceDocument:%s", err.Error())
+	}
+
 	// 这两个不是这里实现的
 	// user
 	// user_profile

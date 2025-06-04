@@ -185,10 +185,10 @@ func InitAllBaseServices(config *config.Configuration) error {
 	}
 	// 初始化safereview, 不是必须的
 	_, err = InitSafereviewClient(&config.SafeReiew)
-	if err != nil {
+	if err == nil {
 		// return err
 		// 打印错误信息
-		log.Printf("初始内容审核服务失败: %v", err)
+		log.Printf("内容审核服务已启动")
 	}
 	// 初始化storage
 	_, err = InitStorageClient(&config.Storage)

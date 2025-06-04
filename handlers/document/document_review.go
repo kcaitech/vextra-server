@@ -161,7 +161,7 @@ func reviewgo(newDocument *models.Document, uploadData *UploadData, docPath stri
 				continue
 			}
 			path := docPath + "/page_image/" + str.IntToString(int64(i)) + ".png"
-			if _, err := _storage.Bucket.PutObjectByte(path, png); err != nil {
+			if _, err := _storage.Bucket.PutObjectByte(path, png, ""); err != nil {
 				log.Println("图片上传错误", err)
 			}
 			base64Str := base64.StdEncoding.EncodeToString(png)

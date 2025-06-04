@@ -6,6 +6,7 @@ import { Comment } from "./comment"
 import { DocUpload, ExportFunc, MediasMgr } from "./upload";
 import { Cmd, DataTypes, IContext, NetworkStatusType } from "./types";
 import { Version } from "./version";
+import { Thumbnail } from "./thumbnail";
 export { Connect } from "./connect"
 export { Selection as SelectionSync } from "./selection"
 export { DocUpload } from "./upload"
@@ -18,11 +19,12 @@ export class WSClient {
     private op: CoopNet
     private resource: Resource
     private selection?: Selection;
-    private comment: Comment
+    private comment: Comment;
 
     private bind_document_id?: string;
     private _started?: IContext;
-    private version: Version
+    private version: Version;
+    private thumbnail: Thumbnail;
 
     private async onNetChange(networkStatus: NetworkStatusType) {
         // 如果先走了ready,也没事
@@ -42,6 +44,7 @@ export class WSClient {
         this.resource = new Resource(this.connect)
         this.comment = new Comment(this.connect)
         this.version = new Version(this.connect)
+        this.thumbnail = new Thumbnail(this.connect)
     }
 
     // 先bind，再start
@@ -63,6 +66,9 @@ export class WSClient {
 
     upload(name: string, data: ArrayBuffer): Promise<boolean> {
         return this.resource.upload(name, data)
+    }
+    genThumbnail(name: string, cotentType: string, data: ArrayBuffer): Promise<boolean> {
+        return this.thumbnail.upload(name, cotentType, data)
     }
     hasConnected(): boolean {
         return this.connect.isReady;

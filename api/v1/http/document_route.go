@@ -24,6 +24,8 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 	router.GET("/permission", handlers.GetUserDocumentPerm)
 	router.GET("/access_key", handlers.GetDocumentAccessKey)
 	router.POST("/copy", handlers.CopyDocument)
+	router.GET("/resource", handlers.GetResourceDocumentList)
+	router.POST("/resource", handlers.CreateResourceDocument)
 	// 分享
 	router.GET("/shares/receives", handlers.GetUserReceiveSharesList) // 查询用户加入的文档分享列表
 	router.DELETE("/share", handlers.DeleteUserShare)

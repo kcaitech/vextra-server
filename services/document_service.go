@@ -17,6 +17,7 @@ type DocumentService struct {
 	DocumentFavoritesService          *DocumentFavoritesService
 	DocumentPermissionRequestsService *DocumentPermissionRequestsService
 	DocumentVersionService            *DocumentVersionService
+	ResourceDocumentService           *ResourceDocumentService
 }
 
 func NewDocumentService() *DocumentService {
@@ -27,6 +28,7 @@ func NewDocumentService() *DocumentService {
 		DocumentFavoritesService:          NewDocumentFavoritesService(),
 		DocumentPermissionRequestsService: NewDocumentPermissionRequestsService(),
 		DocumentVersionService:            NewDocumentVersionService(),
+		ResourceDocumentService:           NewResourceDocumentService(),
 	}
 	that.That = that
 	return that
@@ -134,6 +136,10 @@ type AccessRecordAndFavoritesQueryResItem struct {
 	DocumentAccessRecord models.DocumentAccessRecord `gorm:"embedded;embeddedPrefix:document_access_record__" json:"document_access_record" join:";left;user_id,?user_id;document_id,document.id"`
 }
 
+type ResourceDocumentQueryResItem struct {
+	DocumentQueryResItem
+	ResourceDocument models.ResourceDocument `gorm:"embedded;embeddedPrefix:resource_document__" json:"resource_document" join:";left;document_id,document.id"`
+}
 type RecycleBinQueryResItem struct {
 	AccessRecordAndFavoritesQueryResItem
 	DeleteUser *models.UserProfile `gorm:"-" json:"delete_user"`
@@ -803,4 +809,53 @@ func (s *DocumentPermissionService) GetDocumentPermissionByPermId(documentPermis
 		return nil, err
 	}
 	return &result, nil
+}
+
+type ResourceDocumentService struct {
+	*DefaultService
+}
+
+func NewResourceDocumentService() *ResourceDocumentService {
+	that := &ResourceDocumentService{
+		DefaultService: NewDefaultService(&models.ResourceDocument{}),
+	}
+	that.That = that
+	return that
+}
+
+func (s *DocumentService) FindResourceDocuments(cursor string, limit int) (*[]ResourceDocumentQueryResItem, bool) {
+	var result []ResourceDocumentQueryResItem
+
+	whereArgs := WhereArgs{Query: "resource_document.deleted_at is null"}
+
+	if cursor != "" {
+		cursorTime, err := time.Parse(time.RFC3339, cursor)
+		if err == nil {
+			whereArgs = WhereArgs{
+				"document.deleted_at is null and resource_document.created_at < ?",
+				[]any{cursorTime},
+			}
+		}
+	}
+
+	orderLimit := &OrderLimitArgs{"resource_document.created_at desc", limit + 1}
+
+	err := s.ResourceDocumentService.Find(
+		&result,
+		&ParamArgs{},
+		&whereArgs,
+		orderLimit,
+	)
+	if nil != err {
+		log.Panicln("find resource document err", err)
+		return nil, false
+	}
+
+	hasMore := false
+	if len(result) > limit {
+		hasMore = true
+		result = result[:limit]
+	}
+
+	return &result, hasMore
 }

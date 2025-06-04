@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/aliyun/alibaba-cloud-sdk-go/sdk/requests"
 	"github.com/aliyun/alibaba-cloud-sdk-go/services/sts"
@@ -187,4 +189,37 @@ func (that *OSSBucket) CopyDirectory(srcDirPath string, destDirPath string) (*Up
 		_, _ = that.CopyObject(objectInfo.Key, strings.Replace(objectInfo.Key, srcDirPath, destDirPath, 1))
 	}
 	return &UploadInfo{}, nil
+}
+
+func (that *OSSBucket) DeleteObject(objectName string) error {
+	return that.bucket.DeleteObject(objectName)
+}
+
+func (that *OSSBucket) ListObjects(prefix string) <-chan ObjectInfo {
+	ch := make(chan ObjectInfo)
+	go func() {
+		defer close(ch)
+		result, err := that.bucket.ListObjectsV2(oss.Prefix(prefix))
+		if err != nil {
+			ch <- ObjectInfo{Err: err}
+			return
+		}
+		for _, objectInfo := range result.Objects {
+			ch <- ObjectInfo{
+				Key:       objectInfo.Key,
+				Size:      objectInfo.Size,
+				VersionID: "",
+			}
+		}
+	}()
+	return ch
+}
+
+func (that *OSSBucket) PresignedGetObject(objectName string, expires time.Duration, reqParams url.Values) (string, error) {
+	// 生成预签名URL
+	signedURL, err := that.bucket.SignURL(objectName, oss.HTTPGet, int64(expires.Seconds()))
+	if err != nil {
+		return "", err
+	}
+	return signedURL, nil
 }
