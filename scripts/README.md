@@ -40,15 +40,11 @@ go run scripts/migrate_db.go
 
 ## 注意事项
 
-1. 在运行迁移之前，请确保：
-   - 源数据库和目标数据库都已创建
-   - 目标数据库中的表结构已经存在
-   - 有足够的权限访问两个数据库
-
-2. 需要将旧的版本更新服务跑起来
+1. 需要将旧的版本更新服务跑起来
    - branch_migrate
+   - package.json @kcdesign/data：1.1.18
 
-3. 旧数据库启动测试数据：
+2. 旧数据库启动测试：
    - kcdeploy 的 branch_migrate分支
    - 配置文件中version_server的url为 http://192.168.0.131:8088/generate
    - 192.168.0.131 为本机ip地址
