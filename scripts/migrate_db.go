@@ -44,52 +44,6 @@ type Config struct {
 			URL string `json:"url"`
 			DB  string `json:"db"`
 		} `json:"mongo"`
-		Storage struct {
-			Provider string `json:"provider"`
-			Minio    struct {
-				ClientConfig struct {
-					Endpoint           string `json:"endpoint"`
-					Region             string `json:"region"`
-					AccessKeyID        string `json:"accessKeyID"`
-					SecretAccessKey    string `json:"secretAccessKey"`
-					StsAccessKeyID     string `json:"stsAccessKeyID"`
-					StsSecretAccessKey string `json:"stsSecretAccessKey"`
-				} `json:"clientConfig"`
-				BucketConfig struct {
-					BucketName        string `json:"bucketName"`
-					AttatchBucketName string `json:"attatchBucketName"`
-				} `json:"bucketConfig"`
-			} `json:"minio"`
-			S3 struct {
-				ClientConfig struct {
-					Endpoint        string `json:"endpoint"`
-					Region          string `json:"region"`
-					AccessKeyID     string `json:"accessKeyID"`
-					SecretAccessKey string `json:"secretAccessKey"`
-					AccountID       string `json:"accountID"`
-					RoleName        string `json:"roleName"`
-				} `json:"clientConfig"`
-				BucketConfig struct {
-					BucketName        string `json:"bucketName"`
-					AttatchBucketName string `json:"attatchBucketName"`
-				} `json:"bucketConfig"`
-			} `json:"s3"`
-			OSS struct {
-				ClientConfig struct {
-					Endpoint        string `json:"endpoint"`
-					StsEndpoint     string `json:"stsEndpoint"`
-					Region          string `json:"region"`
-					AccessKeyID     string `json:"accessKeyID"`
-					SecretAccessKey string `json:"secretAccessKey"`
-					AccountID       string `json:"accountId"`
-					RoleName        string `json:"roleName"`
-				} `json:"clientConfig"`
-				BucketConfig struct {
-					BucketName        string `json:"bucketName"`
-					AttatchBucketName string `json:"attatchBucketName"`
-				} `json:"bucketConfig"`
-			} `json:"oss"`
-		} `json:"storage"`
 	} `json:"source"`
 	Target struct {
 		MySQL struct {
@@ -103,43 +57,6 @@ type Config struct {
 			URL string `json:"url"`
 			DB  string `json:"db"`
 		} `json:"mongo"`
-		Storage struct {
-			Provider string `json:"provider"`
-			Minio    struct {
-				Endpoint           string `json:"endpoint"`
-				Region             string `json:"region"`
-				AccessKeyID        string `json:"accessKeyID"`
-				SecretAccessKey    string `json:"secretAccessKey"`
-				StsAccessKeyID     string `json:"stsAccessKeyID"`
-				StsSecretAccessKey string `json:"stsSecretAccessKey"`
-				BucketName         string `json:"bucketName"`
-				FilesBucketName    string `json:"filesBucketName"`
-				AttatchBucketName  string `json:"attatchBucketName"`
-			} `json:"minio"`
-			S3 struct {
-				Endpoint          string `json:"endpoint"`
-				Region            string `json:"region"`
-				AccessKeyID       string `json:"accessKeyID"`
-				SecretAccessKey   string `json:"secretAccessKey"`
-				AccountID         string `json:"accountID"`
-				RoleName          string `json:"roleName"`
-				BucketName        string `json:"bucketName"`
-				FilesBucketName   string `json:"filesBucketName"`
-				AttatchBucketName string `json:"attatchBucketName"`
-			} `json:"s3"`
-			OSS struct {
-				Endpoint          string `json:"endpoint"`
-				StsEndpoint       string `json:"stsEndpoint"`
-				Region            string `json:"region"`
-				AccessKeyID       string `json:"accessKeyID"`
-				SecretAccessKey   string `json:"secretAccessKey"`
-				AccountID         string `json:"accountId"`
-				RoleName          string `json:"roleName"`
-				BucketName        string `json:"bucketName"`
-				FilesBucketName   string `json:"filesBucketName"`
-				AttatchBucketName string `json:"attatchBucketName"`
-			} `json:"oss"`
-		} `json:"storage"`
 	} `json:"target"`
 	Auth struct {
 		MySQL struct {
