@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"io"
@@ -44,6 +45,7 @@ type Config struct {
 			URL string `json:"url"`
 			DB  string `json:"db"`
 		} `json:"mongo"`
+		GenerateApiUrl string `json:"generateApiUrl"`
 	} `json:"source"`
 	Target struct {
 		MySQL struct {
@@ -74,72 +76,77 @@ type NewWeixinUser struct {
 	UnionID string `json:"union_id" gorm:"unique"`
 }
 
-func migrateDocumentStorage(documentIds []int64) {
+func migrateDocumentStorage(documentId int64, generateApiUrl string) error {
 	// 连接目标存储
-	log.Println("documentIds: ", documentIds)
-	configDir := "config/"
+	log.Println("documentId: ", documentId)
+
+	// var generateApiUrl = "http://192.168.0.131:8088/generate" // 旧版本更新服务地址
+	documentIdStr := str.IntToString(documentId)
+	resp, err := http.Get(generateApiUrl + "?documentId=" + documentIdStr)
+	if err != nil {
+		log.Println(generateApiUrl, "http.NewRequest err", err)
+		return err
+	}
+
+	defer resp.Body.Close()
+	// 读取响应
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Println(generateApiUrl, "io.ReadAll err", err)
+		return err
+	}
+	if resp.StatusCode != 200 {
+		log.Println(generateApiUrl, "请求失败", resp.StatusCode, string(body))
+		return errors.New("请求失败")
+	}
+
+	var version struct {
+		LastCmdVerId string                `json:"lastCmdId"`
+		DocumentData autoupdate.ExFromJson `json:"documentData"`
+		DocumentText string                `json:"documentText"`
+		MediasSize   uint64                `json:"mediasSize"`
+		PageSvgs     []string              `json:"pageSvgs"`
+	}
+	err = json.Unmarshal(body, &version)
+	if err != nil {
+		log.Println(generateApiUrl, "resp", err)
+		return err
+	}
+
+	log.Println("auto update document, start upload data", documentId)
+	// upload document data
+	header := autoupdate.Header{
+		DocumentId:   documentIdStr,
+		LastCmdVerId: version.LastCmdVerId,
+	}
+	response := autoupdate.Response{}
+	data := autoupdate.UploadData{
+		DocumentMeta: autoupdate.Data(version.DocumentData.DocumentMeta),
+		Pages:        version.DocumentData.Pages,
+		MediaNames:   version.DocumentData.MediaNames,
+		MediasSize:   version.MediasSize,
+		DocumentText: version.DocumentText,
+		PageSvgs:     version.PageSvgs,
+	}
+	autoupdate.UploadDocumentData(&header, &data, nil, &response)
+	if response.Status != autoupdate.ResponseStatusSuccess {
+		log.Println("auto update failed", response.Message)
+		return errors.New("auto update failed")
+	}
+	log.Println("auto update successed")
+	return nil
+}
+
+func main() {
+	configDir := "" // 从当前目录加载
 	conf, err := config.LoadYamlFile(configDir + "config.yaml")
 	if err != nil {
 		log.Fatalf("Error reading config file: %v", err)
 	}
 	services.InitAllBaseServices(conf)
-	var generateApiUrl = "http://192.168.0.131:8088/generate"  // 旧版本更新服务地址
-	for _, documentId := range documentIds {
-		documentIdStr := str.IntToString(documentId)
-		resp, err := http.Get(generateApiUrl + "?documentId=" + documentIdStr)
-		if err != nil {
-			log.Println(generateApiUrl, "http.NewRequest err", err)
-			return
-		}
 
-		defer resp.Body.Close()
-		// 读取响应
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			log.Println(generateApiUrl, "io.ReadAll err", err)
-			return
-		}
-		if resp.StatusCode != 200 {
-			log.Println(generateApiUrl, "请求失败", resp.StatusCode, string(body))
-			return
-		}
-
-		var version struct {
-			LastCmdVerId string                `json:"lastCmdId"`
-			DocumentData autoupdate.ExFromJson `json:"documentData"`
-			DocumentText string                `json:"documentText"`
-			MediasSize   uint64                `json:"mediasSize"`
-			PageSvgs     []string              `json:"pageSvgs"`
-		}
-		err = json.Unmarshal(body, &version)
-		if err != nil {
-			log.Println(generateApiUrl, "resp", err)
-			return
-		}
-
-		log.Println("auto update document, start upload data", documentId)
-		// upload document data
-		header := autoupdate.Header{
-			DocumentId:   documentIdStr,
-			LastCmdVerId: version.LastCmdVerId,
-		}
-		response := autoupdate.Response{}
-		data := autoupdate.UploadData{
-			DocumentMeta: autoupdate.Data(version.DocumentData.DocumentMeta),
-			Pages:        version.DocumentData.Pages,
-			MediaNames:   version.DocumentData.MediaNames,
-			MediasSize:   version.MediasSize,
-			DocumentText: version.DocumentText,
-			PageSvgs:     version.PageSvgs,
-		}
-		autoupdate.UploadDocumentData(&header, &data, nil, &response)
-	}
-	log.Println("auto update successed")
-}
-
-func main() {
 	// 读取配置文件
-	configFile, err := os.ReadFile("scripts/migrate_config.json")
+	configFile, err := os.ReadFile(configDir + "migrate.json")
 	if err != nil {
 		log.Fatalf("Error reading config file: %v", err)
 	}
@@ -288,9 +295,15 @@ func main() {
 	if err := sourceDB.Table("document").Find(&oldDocuments).Error; err != nil {
 		log.Fatalf("Error querying documents: %v", err)
 	}
-	var documentIds []int64
+	// var documentIds []int64
 	for _, oldDoc := range oldDocuments {
-		documentIds = append(documentIds, oldDoc.ID)
+		// 迁移文档数据
+		err := migrateDocumentStorage(oldDoc.ID, config.Source.GenerateApiUrl)
+		if err != nil {
+			log.Println("migrateDocumentStorage failed", err)
+			continue
+		}
+		// documentIds = append(documentIds, oldDoc.ID)
 		// 创建新文档记录
 		newDoc := models.Document{
 			Id:        strconv.FormatInt(oldDoc.ID, 10),
@@ -349,7 +362,6 @@ func main() {
 			}
 		}
 	}
-	documentIds = append(documentIds, oldDocuments[0].ID)
 	// 迁移文档权限申请表
 	var oldDocPermRequests []struct {
 		ID               int64      `gorm:"column:id"`
@@ -1184,7 +1196,7 @@ func main() {
 	// 		log.Printf("Error inserting comments: %v", err)
 	// 	}
 	// }
-	migrateDocumentStorage(documentIds)
+	// migrateDocumentStorage(documentIds, config.Source.GenerateApiUrl)
 
 	log.Println("Migration completed!")
 }
