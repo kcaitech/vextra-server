@@ -24,6 +24,7 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 	router.GET("/permission", handlers.GetUserDocumentPerm)
 	router.GET("/access_key", handlers.GetDocumentAccessKey)
 	router.POST("/copy", handlers.CopyDocument)
+	router.POST("/review", handlers.ReReviewDocument)
 	router.GET("/resource", handlers.GetResourceDocumentList)
 	router.POST("/resource", handlers.CreateResourceDocument)
 	// 分享

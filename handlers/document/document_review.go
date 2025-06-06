@@ -11,9 +11,12 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/gin-gonic/gin"
+	"kcaitech.com/kcserver/common/response"
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/providers/safereview"
 	"kcaitech.com/kcserver/services"
+	"kcaitech.com/kcserver/utils"
 	"kcaitech.com/kcserver/utils/str"
 )
 
@@ -201,7 +204,7 @@ func reviewgo(newDocument *models.Document, uploadData *UploadData, docPath stri
 			}
 		}
 	}
-
+	log.Println("------------------------locked----------------------------", locked)
 	documentService := services.NewDocumentService()
 	err := documentService.AddLockedArr(locked)
 	if err != nil {
@@ -225,4 +228,149 @@ func review(newDocument *models.Document, uploadData *UploadData, docPath string
 		return
 	}
 	go reviewgo(newDocument, uploadData, docPath, pages, medias)
+}
+
+// ReReviewDocument 重新审核文档接口
+func ReReviewDocument(c *gin.Context) {
+	userId, err := utils.GetUserId(c)
+	if err != nil {
+		response.Unauthorized(c)
+		return
+	}
+
+	documentId := c.Query("doc_id")
+	if documentId == "" {
+		response.BadRequest(c, "参数错误：doc_id")
+		return
+	}
+
+	documentService := services.NewDocumentService()
+	var document models.Document
+	if err := documentService.GetById(documentId, &document); err != nil {
+		response.BadRequest(c, "文档不存在")
+		return
+	}
+
+	// 权限检查：只有文档所有者或有管理员权限的用户才能重新审核
+	var hasPermission bool
+	if document.UserId == userId {
+		hasPermission = true
+	} else if document.ProjectId != "" {
+		// 检查项目权限，需要管理员以上权限
+		projectService := services.NewProjectService()
+		projectPermType, err := projectService.GetProjectPermTypeByForUser(document.ProjectId, userId)
+		if err == nil && projectPermType != nil && (*projectPermType) >= models.ProjectPermTypeAdmin {
+			hasPermission = true
+		}
+	}
+
+	if !hasPermission {
+		response.Forbidden(c, "无权限执行重新审核")
+		return
+	}
+
+	// 获取文档内容进行审核
+	err = reReviewDocumentContent(&document)
+	if err != nil {
+		log.Println("重新审核失败:", err)
+		response.ServerError(c, "重新审核失败")
+		return
+	}
+
+	response.Success(c, "重新审核已完成")
+}
+
+// reReviewDocumentContent 重新审核文档内容的内部函数
+func reReviewDocumentContent(document *models.Document) error {
+	// 获取存储客户端
+	_storage := services.GetStorageClient()
+	docPath := document.Path
+
+	// 获取文档元数据
+	documentMetaPath := docPath + "/document-meta.json"
+	documentMetaData, err := _storage.Bucket.GetObject(documentMetaPath)
+	if err != nil {
+		return fmt.Errorf("获取文档元数据失败: %w", err)
+	}
+
+	// 解析文档元数据
+	var documentMeta map[string]interface{}
+	if err := json.Unmarshal(documentMetaData, &documentMeta); err != nil {
+		return fmt.Errorf("解析文档元数据失败: %w", err)
+	}
+
+	// 构造 UploadData 结构体
+	uploadData := &UploadData{
+		DocumentMeta: documentMeta,
+	}
+
+	// 获取文档文本内容（如果存在）
+	if documentText, ok := documentMeta["documentText"].(string); ok {
+		uploadData.DocumentText = documentText
+	}
+
+	// 获取页面信息
+	var pages []struct {
+		Id string `json:"id"`
+	}
+	if pagesList, ok := documentMeta["pagesList"].([]interface{}); ok {
+		for _, page := range pagesList {
+			if pageMap, ok := page.(map[string]interface{}); ok {
+				if pageId, ok := pageMap["id"].(string); ok {
+					pages = append(pages, struct {
+						Id string `json:"id"`
+					}{Id: pageId})
+				}
+			}
+		}
+	}
+
+	// 获取页面SVG内容
+	pageSvgs := make([]string, 0)
+	for _, page := range pages {
+		pagePath := docPath + "/pages/" + page.Id + ".json"
+		pageData, err := _storage.Bucket.GetObject(pagePath)
+		if err != nil {
+			log.Printf("获取页面 %s 失败: %v", page.Id, err)
+			continue
+		}
+
+		// 解析页面数据，提取SVG内容
+		var pageContent map[string]interface{}
+		if err := json.Unmarshal(pageData, &pageContent); err != nil {
+			log.Printf("解析页面 %s 失败: %v", page.Id, err)
+			continue
+		}
+
+		// 这里需要根据实际的页面数据结构来提取SVG内容
+		// 假设SVG内容在某个字段中，如果没有则跳过
+		if svgContent, ok := pageContent["svg"].(string); ok {
+			pageSvgs = append(pageSvgs, svgContent)
+		}
+	}
+	uploadData.PageSvgs = pageSvgs
+
+	// 获取媒体文件列表
+	var medias []Media
+	if mediaNames, ok := documentMeta["mediaNames"].([]interface{}); ok {
+		for _, mediaNameInterface := range mediaNames {
+			if mediaName, ok := mediaNameInterface.(string); ok {
+				mediaPath := docPath + "/medias/" + mediaName
+				mediaData, err := _storage.Bucket.GetObject(mediaPath)
+				if err != nil {
+					log.Printf("获取媒体文件 %s 失败: %v", mediaName, err)
+					continue
+				}
+				medias = append(medias, Media{
+					Name:    mediaName,
+					Content: &mediaData,
+				})
+			}
+		}
+	}
+
+	// 调用审核函数
+	reviewgo(document, uploadData, docPath, pages, &medias)
+
+	return nil
 }

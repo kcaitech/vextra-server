@@ -85,7 +85,6 @@ func compressPutObjectByte(path string, content []byte, _storage *storage.Storag
 }
 
 func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media, resp *Response) {
-
 	userId := header.UserId
 	documentId := (header.DocumentId)
 	projectId := (header.ProjectId)
@@ -140,6 +139,7 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 		DocType:   models.DocTypeShareable,
 		TeamId:    teamId,
 		ProjectId: projectId,
+		Id:        docId,
 	}
 
 	documentSize := uint64(0)

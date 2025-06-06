@@ -1,9 +1,9 @@
 db:
   # url: root:kKEIjksvnOOIjdZ6rtzE@tcp(mysql:3306)/kcserver?charset=utf8&parseTime=True&loc=Local
   user: root
-  password: password
+  password: kKEIjksvnOOIjdZ6rtzE
   host: localhost
-  port: 3306
+  port: 3307
   database: kcserver
 
 storage_url:
@@ -12,7 +12,7 @@ storage_url:
 
 version_server:
   url: http://localhost:30000/generate
-  min_update_interval: 600
+  min_update_interval: 60
   min_cmd_count: 1
 
 svg2png:
@@ -29,6 +29,13 @@ redis:
   # sentinel: true
   # sentinelAddrs:
   # masterName:
+
+safe_review:
+  provider: baidu
+  baidu:
+    appId: 44042444
+    apiKey: skYZWZolIBpo4j4olXzNRUKD
+    secretKey: H5KUEgVaO08I3tDPjGp9m4LqdsKcOh40
 
 storage:
   provider: minio
