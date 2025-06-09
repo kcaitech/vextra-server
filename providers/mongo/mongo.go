@@ -27,13 +27,39 @@ type MongoDB struct {
 func NewMongoDB(conf *MongoConf) (*MongoDB, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+
 	option := options.Client().ApplyURI(conf.Url)
+	// 设置连接池
+	option.SetMaxPoolSize(100)
+	option.SetMinPoolSize(5)
+	option.SetMaxConnecting(10)
+
+	// 设置超时时间
+	option.SetConnectTimeout(5 * time.Second)
+	option.SetServerSelectionTimeout(5 * time.Second)
+	option.SetSocketTimeout(10 * time.Second)
+
+	// 设置心跳检测
+	option.SetHeartbeatInterval(5 * time.Second)
+
+	// 设置重试
+	option.SetRetryWrites(true)
+	option.SetRetryReads(true)
+
+	// 读写偏好设置
 	option.SetReadPreference(readpref.PrimaryPreferred())
 	option.SetWriteConcern(writeconcern.New(writeconcern.WMajority()))
+
 	client, err := mongo.Connect(ctx, option)
 	if err != nil {
 		return nil, err
 	}
+
+	// 验证连接
+	if err := client.Ping(ctx, readpref.Primary()); err != nil {
+		return nil, err
+	}
+
 	db := client.Database(conf.Db)
 	return &MongoDB{
 		Client: client,
