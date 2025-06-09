@@ -96,7 +96,7 @@ func migrateDocumentStorage(documentId int64, generateApiUrl string) error {
 		return err
 	}
 	if resp.StatusCode != 200 {
-		log.Println(generateApiUrl, "请求失败", resp.StatusCode)
+		log.Println(generateApiUrl, "请求失败", resp.StatusCode, string(body))
 		return errors.New("请求失败")
 	}
 

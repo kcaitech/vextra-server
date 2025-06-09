@@ -11,7 +11,7 @@
             "url": "mongodb://root:kcai1212@192.168.0.123:27017",
             "db": "kcserver"
         },
-        "generateApiUrl": "http://192.168.0.123:8081/generate2"
+        "generateApiUrl": "http://192.168.0.123:8081/migrate"
     },
     "target": {
         "mysql": {
