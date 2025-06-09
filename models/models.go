@@ -2,7 +2,10 @@ package models
 
 import (
 	"fmt"
+	"log"
+	"os"
 	"strings"
+	"time"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -37,18 +40,43 @@ type DBModuleConfig struct {
 }
 
 func NewDBModule(config *DBModuleConfig) (*DBModule, error) {
-	DB, err := gorm.Open(mysql.Open(config.DB.DSN()), &gorm.Config{
+	// GORM 配置
+	gormConfig := &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{
 			SingularTable: true, // 使用单数形式的表名
 		},
-	})
-	if err != nil {
-		// log.Fatalf("连接数据库失败: %v", err)
-		return nil, err
+		// 禁用默认事务
+		SkipDefaultTransaction: true,
+		// 准备语句
+		PrepareStmt: true,
+		// 日志配置
+		Logger: logger.New(
+			log.New(os.Stdout, "\r\n", log.LstdFlags),
+			logger.Config{
+				SlowThreshold:             200 * time.Millisecond, // 慢 SQL 阈值
+				LogLevel:                  logger.Silent,          // 日志级别
+				IgnoreRecordNotFoundError: true,                   // 忽略记录未找到错误
+				Colorful:                  false,                  // 禁用彩色打印
+			},
+		),
 	}
-	DB.Logger = DB.Logger.LogMode(logger.Silent)
-	//DB = DB.Debug()
-	//DB.Logger = DB.Logger.LogMode(logger.Info)
+
+	DB, err := gorm.Open(mysql.Open(config.DB.DSN()), gormConfig)
+	if err != nil {
+		return nil, fmt.Errorf("连接数据库失败: %v", err)
+	}
+
+	// 获取通用数据库对象 sql.DB，然后使用其提供的功能
+	sqlDB, err := DB.DB()
+	if err != nil {
+		return nil, fmt.Errorf("获取底层数据库连接失败: %v", err)
+	}
+
+	// 连接池配置
+	sqlDB.SetMaxIdleConns(10)                  // 最大空闲连接数
+	sqlDB.SetMaxOpenConns(100)                 // 最大打开连接数
+	sqlDB.SetConnMaxLifetime(time.Hour)        // 连接最大生命周期
+	sqlDB.SetConnMaxIdleTime(10 * time.Minute) // 空闲连接最大生命周期
 
 	return &DBModule{
 		DB: DB,
