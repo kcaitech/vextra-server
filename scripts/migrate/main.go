@@ -96,7 +96,7 @@ func migrateDocumentStorage(documentId int64, generateApiUrl string) error {
 		return err
 	}
 	if resp.StatusCode != 200 {
-		log.Println(generateApiUrl, "请求失败", resp.StatusCode, string(body))
+		log.Println(generateApiUrl, "请求失败", resp.StatusCode)
 		return errors.New("请求失败")
 	}
 
@@ -1091,7 +1091,7 @@ func main() {
 			newKV.DeletedAt.Valid = true
 		}
 
-		if err := checkAndUpdate(targetDB, "user_kv_storage", "user_id = ? AND key = ?", []interface{}{newKV.UserId, newKV.Key}, newKV); err != nil {
+		if err := checkAndUpdate(targetDB, "user_kv_storage", "user_id = ? AND `key` = ?", []interface{}{newKV.UserId, newKV.Key}, newKV); err != nil {
 			log.Printf("Error migrating user kv storage %d: %v", oldKV.ID, err)
 		}
 	}

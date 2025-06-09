@@ -1,27 +1,28 @@
 {
     "source": {
         "mysql": {
-            "user": "root",
-            "password": "kKEIjksvnOOIjdZ6rtzE",
-            "host": "localhost",
-            "port": 3806,
+            "user": "admin",
+            "password": "kcai1212",
+            "host": "172.16.0.22",
+            "port": 3306,
             "database": "kcserver"
         },
         "mongo": {
-            "url": "mongodb://root:jKKsinkjilKKLSW@localhost:28017",
+            "url": "mongodb://root:kcai1212@192.168.0.123:27017",
             "db": "kcserver"
-        }
+        },
+        "generateApiUrl": "http://192.168.0.123:8081/generate2"
     },
     "target": {
         "mysql": {
             "user": "root",
-            "password": "kKEIjksvnOOIjdZ6rtzE",
-            "host": "localhost",
-            "port": 3307,
+            "password": "password",
+            "host": "192.168.0.125",
+            "port": 3306,
             "database": "kcserver"
         },
         "mongo": {
-            "url": "mongodb://root:jKKsinkjilKKLSW@localhost:27017",
+            "url": "mongodb://root:jKKsinkjilKKLSW@192.168.0.125:27017",
             "db": "kcserver"
         }
     },
@@ -29,7 +30,7 @@
         "mysql": {
             "user": "root",
             "password": "password",
-            "host": "localhost",
+            "host": "192.168.0.125",
             "port": 3306,
             "database": "kcauth"
         }
