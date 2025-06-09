@@ -297,6 +297,29 @@ func main() {
 	}
 	// var documentIds []int64
 	for _, oldDoc := range oldDocuments {
+		// 查询文档和版本信息
+		var docInfo struct {
+			ID        int64  `gorm:"column:id"`
+			Path      string `gorm:"column:path"`
+			VersionId string `gorm:"column:version_id"`
+			LastCmdId int64  `gorm:"column:last_cmd_id"`
+		}
+
+		query := `
+			SELECT d.id, d.path, d.version_id, dv.last_cmd_id
+			FROM document d
+			INNER JOIN document_version dv ON dv.document_id=d.id AND dv.version_id=d.version_id AND dv.deleted_at IS NULL
+			WHERE d.id=? AND d.deleted_at IS NULL
+			LIMIT 1
+		`
+
+		if err := sourceDB.Raw(query, oldDoc.ID).Scan(&docInfo).Error; err != nil {
+			log.Printf("Error querying document info for ID %d: %v", oldDoc.ID, err)
+		} else {
+			log.Printf("Document Info - ID: %d, Path: %s, VersionId: %s, LastCmdId: %d",
+				docInfo.ID, docInfo.Path, docInfo.VersionId, docInfo.LastCmdId)
+		}
+
 		// 迁移文档数据
 		err := migrateDocumentStorage(oldDoc.ID, config.Source.GenerateApiUrl)
 		if err != nil {
