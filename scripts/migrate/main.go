@@ -82,10 +82,33 @@ func migrateDocumentStorage(documentId int64, generateApiUrl string) error {
 
 	// var generateApiUrl = "http://192.168.0.131:8088/generate" // 旧版本更新服务地址
 	documentIdStr := str.IntToString(documentId)
-	resp, err := http.Get(generateApiUrl + "?documentId=" + documentIdStr)
-	if err != nil {
-		log.Println(generateApiUrl, "http.NewRequest err", err)
-		return err
+	requestUrl := generateApiUrl + "?documentId=" + documentIdStr
+	log.Println("完整请求URL: ", requestUrl) // 添加完整URL日志
+
+	// 创建HTTP客户端，设置超时
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+	}
+
+	// 重试机制
+	var resp *http.Response
+	var err error
+	maxRetries := 3
+	for i := 0; i < maxRetries; i++ {
+		if i > 0 {
+			log.Printf("重试第 %d 次请求...", i)
+			time.Sleep(time.Duration(i) * time.Second) // 递增延迟
+		}
+
+		resp, err = client.Get(requestUrl)
+		if err != nil {
+			log.Printf("第 %d 次请求失败: %v", i+1, err)
+			if i == maxRetries-1 {
+				return fmt.Errorf("所有重试都失败了，最后错误: %v", err)
+			}
+			continue
+		}
+		break // 请求成功，跳出重试循环
 	}
 
 	defer resp.Body.Close()
