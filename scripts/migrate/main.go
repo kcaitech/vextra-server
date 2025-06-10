@@ -297,12 +297,6 @@ func main() {
 	}
 	// var documentIds []int64
 	for _, oldDoc := range oldDocuments {
-		// 迁移文档数据
-		err := migrateDocumentStorage(oldDoc.ID, config.Source.GenerateApiUrl)
-		if err != nil {
-			log.Println("migrateDocumentStorage failed", err)
-			continue
-		}
 		// documentIds = append(documentIds, oldDoc.ID)
 		// 创建新文档记录
 		newDoc := models.Document{
@@ -345,6 +339,13 @@ func main() {
 		// 检查并更新文档记录
 		if err := checkAndUpdate(targetDB, "document", "id = ?", newDoc.Id, newDoc); err != nil {
 			log.Printf("Error migrating document %d: %v", oldDoc.ID, err)
+			continue
+		}
+
+		// 迁移文档数据
+		err := migrateDocumentStorage(oldDoc.ID, config.Source.GenerateApiUrl)
+		if err != nil {
+			log.Println("migrateDocumentStorage failed", err)
 			continue
 		}
 
