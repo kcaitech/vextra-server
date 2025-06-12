@@ -2,13 +2,13 @@ db:
   # url: root:kKEIjksvnOOIjdZ6rtzE@tcp(mysql:3306)/kcserver?charset=utf8&parseTime=True&loc=Local
   user: root
   password: password
-  host: localhost
+  host: 192.168.0.125
   port: 3306
   database: kcserver
 
 storage_url:
-  document: http://localhost:9000
-  attatch: http://localhost:9000/attatch
+  document: http://document.test.vextra.cn
+  attatch: http://attatch.test.vextra.cn
 
 version_server:
   url: http://localhost:30000/generate
@@ -19,11 +19,11 @@ svg2png:
   url: http://kcsvg2png:10050/svg_to_png
 
 mongo:
-  url: mongodb://root:jKKsinkjilKKLSW@localhost:27017
+  url: mongodb://root:jKKsinkjilKKLSW@192.168.0.125:27017
   db: kcserver
 
 redis:
-  addr: localhost:6380
+  addr: 192.168.0.125:6379
   password: kcserver
   db: 0
   # sentinel: true
@@ -33,7 +33,7 @@ redis:
 storage:
   provider: minio
   minio:
-    endpoint: "localhost:9000"
+    endpoint: "192.168.0.125:9000"
     region: "zhuhai-1"
     accessKeyID: "59L3pDWuk9oLQWIgytCI"
     secretAccessKey: "GmwAzetY1L0jU4pUAqpO7RJGIsG7k3gozVH6whoJ"
