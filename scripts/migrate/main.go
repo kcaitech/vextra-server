@@ -29,7 +29,7 @@ import (
 	"kcaitech.com/kcserver/providers/mongo"
 	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils/str"
-	utilTime "kcaitech.com/kcserver/utils/time"
+	// utilTime "kcaitech.com/kcserver/utils/time"
 )
 
 type Config struct {
@@ -272,98 +272,98 @@ func main() {
 	log.Println("Migrating MySQL data...")
 
 	// 迁移文档表
-	// var oldDocuments []struct {
-	// 	ID           int64      `gorm:"column:id"`
-	// 	CreatedAt    time.Time  `gorm:"column:created_at"`
-	// 	UpdatedAt    time.Time  `gorm:"column:updated_at"`
-	// 	DeletedAt    *time.Time `gorm:"column:deleted_at"`
-	// 	UserId       int64      `gorm:"column:user_id"`
-	// 	Path         string     `gorm:"column:path"`
-	// 	DocType      uint8      `gorm:"column:doc_type"`
-	// 	Name         string     `gorm:"column:name"`
-	// 	Size         uint64     `gorm:"column:size"`
-	// 	PurgedAt     time.Time  `gorm:"column:purged_at"`
-	// 	DeleteBy     int64      `gorm:"column:delete_by"`
-	// 	VersionId    string     `gorm:"column:version_id"`
-	// 	TeamId       int64      `gorm:"column:team_id"`
-	// 	ProjectId    int64      `gorm:"column:project_id"`
-	// 	LockedAt     time.Time  `gorm:"column:locked_at"`
-	// 	LockedReason string     `gorm:"column:locked_reason"`
-	// 	LockedWords  string     `gorm:"column:locked_words"`
-	// }
+	var oldDocuments []struct {
+		ID           int64      `gorm:"column:id"`
+		CreatedAt    time.Time  `gorm:"column:created_at"`
+		UpdatedAt    time.Time  `gorm:"column:updated_at"`
+		DeletedAt    *time.Time `gorm:"column:deleted_at"`
+		UserId       int64      `gorm:"column:user_id"`
+		Path         string     `gorm:"column:path"`
+		DocType      uint8      `gorm:"column:doc_type"`
+		Name         string     `gorm:"column:name"`
+		Size         uint64     `gorm:"column:size"`
+		PurgedAt     time.Time  `gorm:"column:purged_at"`
+		DeleteBy     int64      `gorm:"column:delete_by"`
+		VersionId    string     `gorm:"column:version_id"`
+		TeamId       int64      `gorm:"column:team_id"`
+		ProjectId    int64      `gorm:"column:project_id"`
+		LockedAt     time.Time  `gorm:"column:locked_at"`
+		LockedReason string     `gorm:"column:locked_reason"`
+		LockedWords  string     `gorm:"column:locked_words"`
+	}
 
-	// if err := sourceDB.Table("document").Where("id < ?", 478095419935571968).Order("created_at DESC").Find(&oldDocuments).Error; err != nil {
-	// 	log.Fatalf("Error querying documents: %v", err)
-	// }
-	// // var documentIds []int64
-	// for _, oldDoc := range oldDocuments {
-	// 	// documentIds = append(documentIds, oldDoc.ID)
-	// 	// 创建新文档记录
+	if err := sourceDB.Table("document").Where("id < ?", 475961140963196928).Order("created_at DESC").Find(&oldDocuments).Error; err != nil {
+		log.Fatalf("Error querying documents: %v", err)
+	}
+	// var documentIds []int64
+	for _, oldDoc := range oldDocuments {
+		// documentIds = append(documentIds, oldDoc.ID)
+		// 创建新文档记录
 
-	// 	newDoc := models.Document{
-	// 		Id:        strconv.FormatInt(oldDoc.ID, 10),
-	// 		CreatedAt: oldDoc.CreatedAt,
-	// 		UpdatedAt: oldDoc.UpdatedAt,
-	// 		DeletedAt: models.DeletedAt{},
-	// 		UserId:    getUserID(oldDoc.UserId),
-	// 		Path:      oldDoc.Path,
-	// 		DocType:   models.DocType(oldDoc.DocType),
-	// 		Name:      oldDoc.Name,
-	// 		Size:      oldDoc.Size,
-	// 		DeleteBy: func() string {
-	// 			if oldDoc.DeleteBy == 0 {
-	// 				return ""
-	// 			}
-	// 			return getUserID(oldDoc.DeleteBy)
-	// 		}(),
-	// 		VersionId: oldDoc.VersionId,
-	// 		TeamId: func() string {
-	// 			if oldDoc.TeamId == 0 {
-	// 				return ""
-	// 			}
-	// 			return strconv.FormatInt(oldDoc.TeamId, 10)
-	// 		}(),
-	// 		ProjectId: func() string {
-	// 			if oldDoc.ProjectId == 0 {
-	// 				return ""
-	// 			}
-	// 			return strconv.FormatInt(oldDoc.ProjectId, 10)
-	// 		}(),
-	// 	}
+		newDoc := models.Document{
+			Id:        strconv.FormatInt(oldDoc.ID, 10),
+			CreatedAt: oldDoc.CreatedAt,
+			UpdatedAt: oldDoc.UpdatedAt,
+			DeletedAt: models.DeletedAt{},
+			UserId:    getUserID(oldDoc.UserId),
+			Path:      oldDoc.Path,
+			DocType:   models.DocType(oldDoc.DocType),
+			Name:      oldDoc.Name,
+			Size:      oldDoc.Size,
+			DeleteBy: func() string {
+				if oldDoc.DeleteBy == 0 {
+					return ""
+				}
+				return getUserID(oldDoc.DeleteBy)
+			}(),
+			VersionId: oldDoc.VersionId,
+			TeamId: func() string {
+				if oldDoc.TeamId == 0 {
+					return ""
+				}
+				return strconv.FormatInt(oldDoc.TeamId, 10)
+			}(),
+			ProjectId: func() string {
+				if oldDoc.ProjectId == 0 {
+					return ""
+				}
+				return strconv.FormatInt(oldDoc.ProjectId, 10)
+			}(),
+		}
 
-	// 	// 设置DeletedAt
-	// 	if oldDoc.DeletedAt != nil {
-	// 		newDoc.DeletedAt.Time = *oldDoc.DeletedAt
-	// 		newDoc.DeletedAt.Valid = true
-	// 	}
+		// 设置DeletedAt
+		if oldDoc.DeletedAt != nil {
+			newDoc.DeletedAt.Time = *oldDoc.DeletedAt
+			newDoc.DeletedAt.Valid = true
+		}
 
-	// 	// 检查并更新文档记录
-	// 	if err := checkAndUpdate(targetDB, "document", "id = ?", newDoc.Id, newDoc); err != nil {
-	// 		log.Printf("Error migrating document %d: %v", oldDoc.ID, err)
-	// 		continue
-	// 	}
+		// 检查并更新文档记录
+		if err := checkAndUpdate(targetDB, "document", "id = ?", newDoc.Id, newDoc); err != nil {
+			log.Printf("Error migrating document %d: %v", oldDoc.ID, err)
+			continue
+		}
 
-	// 	// 迁移文档数据
-	// 	err := migrateDocumentStorage(oldDoc.ID, config.Source.GenerateApiUrl)
-	// 	if err != nil {
-	// 		log.Println("migrateDocumentStorage failed", err)
-	// 		continue
-	// 	}
+		// 迁移文档数据
+		err := migrateDocumentStorage(oldDoc.ID, config.Source.GenerateApiUrl)
+		if err != nil {
+			log.Println("migrateDocumentStorage failed", err)
+			continue
+		}
 
-	// 	// 如果有锁定信息，检查并更新DocumentLock记录
-	// 	if !oldDoc.LockedAt.IsZero() || oldDoc.LockedReason != "" || oldDoc.LockedWords != "" {
-	// 		docLock := models.DocumentLock{
-	// 			DocumentId:   newDoc.Id,
-	// 			LockedReason: oldDoc.LockedReason,
-	// 			LockedType:   models.LockedTypeText,
-	// 			LockedTarget: "",
-	// 			LockedWords:  oldDoc.LockedWords,
-	// 		}
-	// 		if err := checkAndUpdate(targetDB, "document_lock", "document_id = ?", docLock.DocumentId, docLock); err != nil {
-	// 			log.Printf("Error creating/updating document lock for document %s: %v", newDoc.Id, err)
-	// 		}
-	// 	}
-	// }
+		// 如果有锁定信息，检查并更新DocumentLock记录
+		if !oldDoc.LockedAt.IsZero() || oldDoc.LockedReason != "" || oldDoc.LockedWords != "" {
+			docLock := models.DocumentLock{
+				DocumentId:   newDoc.Id,
+				LockedReason: oldDoc.LockedReason,
+				LockedType:   models.LockedTypeText,
+				LockedTarget: "",
+				LockedWords:  oldDoc.LockedWords,
+			}
+			if err := checkAndUpdate(targetDB, "document_lock", "document_id = ?", docLock.DocumentId, docLock); err != nil {
+				log.Printf("Error creating/updating document lock for document %s: %v", newDoc.Id, err)
+			}
+		}
+	}
 	// 迁移文档权限申请表
 	// var oldDocPermRequests []struct {
 	// 	ID               int64      `gorm:"column:id"`
@@ -577,448 +577,448 @@ func main() {
 	// }
 
 	// 迁移团队表
-	var oldTeams []struct {
-		ID              int64      `gorm:"column:id"`
-		CreatedAt       time.Time  `gorm:"column:created_at"`
-		UpdatedAt       time.Time  `gorm:"column:updated_at"`
-		DeletedAt       *time.Time `gorm:"column:deleted_at"`
-		Name            string     `gorm:"column:name"`
-		Description     string     `gorm:"column:description"`
-		Avatar          string     `gorm:"column:avatar"`
-		Uid             string     `gorm:"column:uid"`
-		InvitedPermType uint8      `gorm:"column:invited_perm_type"`
-		InvitedSwitch   bool       `gorm:"column:invited_switch"`
-	}
+	// var oldTeams []struct {
+	// 	ID              int64      `gorm:"column:id"`
+	// 	CreatedAt       time.Time  `gorm:"column:created_at"`
+	// 	UpdatedAt       time.Time  `gorm:"column:updated_at"`
+	// 	DeletedAt       *time.Time `gorm:"column:deleted_at"`
+	// 	Name            string     `gorm:"column:name"`
+	// 	Description     string     `gorm:"column:description"`
+	// 	Avatar          string     `gorm:"column:avatar"`
+	// 	Uid             string     `gorm:"column:uid"`
+	// 	InvitedPermType uint8      `gorm:"column:invited_perm_type"`
+	// 	InvitedSwitch   bool       `gorm:"column:invited_switch"`
+	// }
 
-	if err := sourceDB.Table("team").Find(&oldTeams).Error; err != nil {
-		log.Fatalf("Error querying teams: %v", err)
-	}
-	log.Println("oldTeams 长度", len(oldTeams))
-	for _, oldTeam := range oldTeams {
-		// 转换时间类型
-		customCreatedAt := utilTime.Time(oldTeam.CreatedAt)
-		customUpdatedAt := utilTime.Time(oldTeam.UpdatedAt)
+	// if err := sourceDB.Table("team").Find(&oldTeams).Error; err != nil {
+	// 	log.Fatalf("Error querying teams: %v", err)
+	// }
+	// log.Println("oldTeams 长度", len(oldTeams))
+	// for _, oldTeam := range oldTeams {
+	// 	// 转换时间类型
+	// 	customCreatedAt := utilTime.Time(oldTeam.CreatedAt)
+	// 	customUpdatedAt := utilTime.Time(oldTeam.UpdatedAt)
 
-		newTeam := models.Team{
-			Id:              strconv.FormatInt(oldTeam.ID, 10),
-			CreatedAt:       customCreatedAt,
-			UpdatedAt:       customUpdatedAt,
-			DeletedAt:       models.DeletedAt{},
-			Name:            oldTeam.Name,
-			Description:     oldTeam.Description,
-			Avatar:          oldTeam.Avatar,
-			InvitedPermType: models.TeamPermType(oldTeam.InvitedPermType),
-			OpenInvite:      oldTeam.InvitedSwitch,
-		}
+	// 	newTeam := models.Team{
+	// 		Id:              strconv.FormatInt(oldTeam.ID, 10),
+	// 		CreatedAt:       customCreatedAt,
+	// 		UpdatedAt:       customUpdatedAt,
+	// 		DeletedAt:       models.DeletedAt{},
+	// 		Name:            oldTeam.Name,
+	// 		Description:     oldTeam.Description,
+	// 		Avatar:          oldTeam.Avatar,
+	// 		InvitedPermType: models.TeamPermType(oldTeam.InvitedPermType),
+	// 		OpenInvite:      oldTeam.InvitedSwitch,
+	// 	}
 
-		if oldTeam.DeletedAt != nil {
-			newTeam.DeletedAt.Time = *oldTeam.DeletedAt
-			newTeam.DeletedAt.Valid = true
-		}
+	// 	if oldTeam.DeletedAt != nil {
+	// 		newTeam.DeletedAt.Time = *oldTeam.DeletedAt
+	// 		newTeam.DeletedAt.Valid = true
+	// 	}
 
-		if err := checkAndUpdate(targetDB, "team", "id = ?", newTeam.Id, newTeam); err != nil {
-			log.Printf("Error migrating team %d: %v", oldTeam.ID, err)
-		}
-	}
+	// 	if err := checkAndUpdate(targetDB, "team", "id = ?", newTeam.Id, newTeam); err != nil {
+	// 		log.Printf("Error migrating team %d: %v", oldTeam.ID, err)
+	// 	}
+	// }
 
-	// 迁移团队成员表
-	var oldTeamMembers []struct {
-		ID        int64      `gorm:"column:id"`
-		CreatedAt time.Time  `gorm:"column:created_at"`
-		UpdatedAt time.Time  `gorm:"column:updated_at"`
-		DeletedAt *time.Time `gorm:"column:deleted_at"`
-		TeamId    int64      `gorm:"column:team_id"`
-		UserId    int64      `gorm:"column:user_id"`
-		PermType  uint8      `gorm:"column:perm_type"`
-		Nickname  string     `gorm:"column:nickname"`
-	}
+	// // 迁移团队成员表
+	// var oldTeamMembers []struct {
+	// 	ID        int64      `gorm:"column:id"`
+	// 	CreatedAt time.Time  `gorm:"column:created_at"`
+	// 	UpdatedAt time.Time  `gorm:"column:updated_at"`
+	// 	DeletedAt *time.Time `gorm:"column:deleted_at"`
+	// 	TeamId    int64      `gorm:"column:team_id"`
+	// 	UserId    int64      `gorm:"column:user_id"`
+	// 	PermType  uint8      `gorm:"column:perm_type"`
+	// 	Nickname  string     `gorm:"column:nickname"`
+	// }
 
-	if err := sourceDB.Table("team_member").Find(&oldTeamMembers).Error; err != nil {
-		log.Fatalf("Error querying team members: %v", err)
-	}
+	// if err := sourceDB.Table("team_member").Find(&oldTeamMembers).Error; err != nil {
+	// 	log.Fatalf("Error querying team members: %v", err)
+	// }
 
-	for _, oldMember := range oldTeamMembers {
-		newMember := models.TeamMember{
-			BaseModelStruct: models.BaseModelStruct{
-				CreatedAt: oldMember.CreatedAt,
-				UpdatedAt: oldMember.UpdatedAt,
-				DeletedAt: models.DeletedAt{},
-			},
-			TeamId: func() string {
-				if oldMember.TeamId == 0 {
-					return ""
-				}
-				return strconv.FormatInt(oldMember.TeamId, 10)
-			}(),
-			UserId:   getUserID(oldMember.UserId),
-			PermType: models.TeamPermType(oldMember.PermType),
-			Nickname: oldMember.Nickname,
-		}
+	// for _, oldMember := range oldTeamMembers {
+	// 	newMember := models.TeamMember{
+	// 		BaseModelStruct: models.BaseModelStruct{
+	// 			CreatedAt: oldMember.CreatedAt,
+	// 			UpdatedAt: oldMember.UpdatedAt,
+	// 			DeletedAt: models.DeletedAt{},
+	// 		},
+	// 		TeamId: func() string {
+	// 			if oldMember.TeamId == 0 {
+	// 				return ""
+	// 			}
+	// 			return strconv.FormatInt(oldMember.TeamId, 10)
+	// 		}(),
+	// 		UserId:   getUserID(oldMember.UserId),
+	// 		PermType: models.TeamPermType(oldMember.PermType),
+	// 		Nickname: oldMember.Nickname,
+	// 	}
 
-		if oldMember.DeletedAt != nil {
-			newMember.DeletedAt.Time = *oldMember.DeletedAt
-			newMember.DeletedAt.Valid = true
-		}
+	// 	if oldMember.DeletedAt != nil {
+	// 		newMember.DeletedAt.Time = *oldMember.DeletedAt
+	// 		newMember.DeletedAt.Valid = true
+	// 	}
 
-		if err := checkAndUpdate(targetDB, "team_member", "team_id = ? AND user_id = ?", []interface{}{newMember.TeamId, newMember.UserId}, newMember); err != nil {
-			log.Printf("Error migrating team member %d: %v", oldMember.ID, err)
-		}
-	}
+	// 	if err := checkAndUpdate(targetDB, "team_member", "team_id = ? AND user_id = ?", []interface{}{newMember.TeamId, newMember.UserId}, newMember); err != nil {
+	// 		log.Printf("Error migrating team member %d: %v", oldMember.ID, err)
+	// 	}
+	// }
 
-	// 迁移团队加入申请表
-	var oldTeamJoinRequests []struct {
-		ID               int64      `gorm:"column:id"`
-		CreatedAt        time.Time  `gorm:"column:created_at"`
-		UpdatedAt        time.Time  `gorm:"column:updated_at"`
-		DeletedAt        *time.Time `gorm:"column:deleted_at"`
-		UserId           int64      `gorm:"column:user_id"`
-		TeamId           int64      `gorm:"column:team_id"`
-		PermType         uint8      `gorm:"column:perm_type"`
-		Status           uint8      `gorm:"column:status"`
-		FirstDisplayedAt time.Time  `gorm:"column:first_displayed_at"`
-		ProcessedAt      time.Time  `gorm:"column:processed_at"`
-		ProcessedBy      int64      `gorm:"column:processed_by"`
-		ApplicantNotes   string     `gorm:"column:applicant_notes"`
-		ProcessorNotes   string     `gorm:"column:processor_notes"`
-	}
+	// // 迁移团队加入申请表
+	// var oldTeamJoinRequests []struct {
+	// 	ID               int64      `gorm:"column:id"`
+	// 	CreatedAt        time.Time  `gorm:"column:created_at"`
+	// 	UpdatedAt        time.Time  `gorm:"column:updated_at"`
+	// 	DeletedAt        *time.Time `gorm:"column:deleted_at"`
+	// 	UserId           int64      `gorm:"column:user_id"`
+	// 	TeamId           int64      `gorm:"column:team_id"`
+	// 	PermType         uint8      `gorm:"column:perm_type"`
+	// 	Status           uint8      `gorm:"column:status"`
+	// 	FirstDisplayedAt time.Time  `gorm:"column:first_displayed_at"`
+	// 	ProcessedAt      time.Time  `gorm:"column:processed_at"`
+	// 	ProcessedBy      int64      `gorm:"column:processed_by"`
+	// 	ApplicantNotes   string     `gorm:"column:applicant_notes"`
+	// 	ProcessorNotes   string     `gorm:"column:processor_notes"`
+	// }
 
-	if err := sourceDB.Table("team_join_request").Find(&oldTeamJoinRequests).Error; err != nil {
-		log.Fatalf("Error querying team join requests: %v", err)
-	}
+	// if err := sourceDB.Table("team_join_request").Find(&oldTeamJoinRequests).Error; err != nil {
+	// 	log.Fatalf("Error querying team join requests: %v", err)
+	// }
 
-	for _, oldRequest := range oldTeamJoinRequests {
-		// 转换时间类型
-		customFirstDisplayedAt := utilTime.Time(oldRequest.FirstDisplayedAt)
-		customProcessedAt := utilTime.Time(oldRequest.ProcessedAt)
+	// for _, oldRequest := range oldTeamJoinRequests {
+	// 	// 转换时间类型
+	// 	customFirstDisplayedAt := utilTime.Time(oldRequest.FirstDisplayedAt)
+	// 	customProcessedAt := utilTime.Time(oldRequest.ProcessedAt)
 
-		newRequest := models.TeamJoinRequest{
-			BaseModelStruct: models.BaseModelStruct{
-				CreatedAt: oldRequest.CreatedAt,
-				UpdatedAt: oldRequest.UpdatedAt,
-				DeletedAt: models.DeletedAt{},
-			},
-			UserId:           getUserID(oldRequest.UserId),
-			TeamId:           strconv.FormatInt(oldRequest.TeamId, 10),
-			PermType:         models.TeamPermType(oldRequest.PermType),
-			Status:           models.TeamJoinRequestStatus(oldRequest.Status),
-			FirstDisplayedAt: customFirstDisplayedAt,
-			ProcessedAt:      customProcessedAt,
-			ProcessedBy:      getUserID(oldRequest.ProcessedBy),
-			ApplicantNotes:   oldRequest.ApplicantNotes,
-			ProcessorNotes:   oldRequest.ProcessorNotes,
-		}
+	// 	newRequest := models.TeamJoinRequest{
+	// 		BaseModelStruct: models.BaseModelStruct{
+	// 			CreatedAt: oldRequest.CreatedAt,
+	// 			UpdatedAt: oldRequest.UpdatedAt,
+	// 			DeletedAt: models.DeletedAt{},
+	// 		},
+	// 		UserId:           getUserID(oldRequest.UserId),
+	// 		TeamId:           strconv.FormatInt(oldRequest.TeamId, 10),
+	// 		PermType:         models.TeamPermType(oldRequest.PermType),
+	// 		Status:           models.TeamJoinRequestStatus(oldRequest.Status),
+	// 		FirstDisplayedAt: customFirstDisplayedAt,
+	// 		ProcessedAt:      customProcessedAt,
+	// 		ProcessedBy:      getUserID(oldRequest.ProcessedBy),
+	// 		ApplicantNotes:   oldRequest.ApplicantNotes,
+	// 		ProcessorNotes:   oldRequest.ProcessorNotes,
+	// 	}
 
-		// 处理空ID
-		if oldRequest.ProcessedBy == 0 {
-			newRequest.ProcessedBy = ""
-		}
+	// 	// 处理空ID
+	// 	if oldRequest.ProcessedBy == 0 {
+	// 		newRequest.ProcessedBy = ""
+	// 	}
 
-		// 设置DeletedAt
-		if oldRequest.DeletedAt != nil {
-			newRequest.DeletedAt.Time = *oldRequest.DeletedAt
-			newRequest.DeletedAt.Valid = true
-		}
+	// 	// 设置DeletedAt
+	// 	if oldRequest.DeletedAt != nil {
+	// 		newRequest.DeletedAt.Time = *oldRequest.DeletedAt
+	// 		newRequest.DeletedAt.Valid = true
+	// 	}
 
-		if err := checkAndUpdate(targetDB, "team_join_request", "user_id = ? AND team_id = ?", []interface{}{newRequest.UserId, newRequest.TeamId}, newRequest); err != nil {
-			log.Printf("Error migrating team join request %d: %v", oldRequest.ID, err)
-		}
-	}
+	// 	if err := checkAndUpdate(targetDB, "team_join_request", "user_id = ? AND team_id = ?", []interface{}{newRequest.UserId, newRequest.TeamId}, newRequest); err != nil {
+	// 		log.Printf("Error migrating team join request %d: %v", oldRequest.ID, err)
+	// 	}
+	// }
 
-	// 迁移团队加入申请消息表
-	var oldTeamMessageShows []struct {
-		ID                int64      `gorm:"column:id"`
-		CreatedAt         time.Time  `gorm:"column:created_at"`
-		UpdatedAt         time.Time  `gorm:"column:updated_at"`
-		DeletedAt         *time.Time `gorm:"column:deleted_at"`
-		TeamJoinRequestId int64      `gorm:"column:team_join_request_id"`
-		UserId            int64      `gorm:"column:user_id"`
-		TeamId            int64      `gorm:"column:team_id"`
-		FirstDisplayedAt  time.Time  `gorm:"column:first_displayed_at"`
-	}
+	// // 迁移团队加入申请消息表
+	// var oldTeamMessageShows []struct {
+	// 	ID                int64      `gorm:"column:id"`
+	// 	CreatedAt         time.Time  `gorm:"column:created_at"`
+	// 	UpdatedAt         time.Time  `gorm:"column:updated_at"`
+	// 	DeletedAt         *time.Time `gorm:"column:deleted_at"`
+	// 	TeamJoinRequestId int64      `gorm:"column:team_join_request_id"`
+	// 	UserId            int64      `gorm:"column:user_id"`
+	// 	TeamId            int64      `gorm:"column:team_id"`
+	// 	FirstDisplayedAt  time.Time  `gorm:"column:first_displayed_at"`
+	// }
 
-	if err := sourceDB.Table("team_join_request_message_show").Find(&oldTeamMessageShows).Error; err != nil {
-		log.Fatalf("Error querying team join request messages: %v", err)
-	}
+	// if err := sourceDB.Table("team_join_request_message_show").Find(&oldTeamMessageShows).Error; err != nil {
+	// 	log.Fatalf("Error querying team join request messages: %v", err)
+	// }
 
-	for _, oldMessage := range oldTeamMessageShows {
-		// 转换时间类型
-		customFirstDisplayedAt := utilTime.Time(oldMessage.FirstDisplayedAt)
+	// for _, oldMessage := range oldTeamMessageShows {
+	// 	// 转换时间类型
+	// 	customFirstDisplayedAt := utilTime.Time(oldMessage.FirstDisplayedAt)
 
-		newMessage := models.TeamJoinRequestMessageShow{
-			BaseModelStruct: models.BaseModelStruct{
-				CreatedAt: oldMessage.CreatedAt,
-				UpdatedAt: oldMessage.UpdatedAt,
-				DeletedAt: models.DeletedAt{},
-			},
-			// TeamJoinRequestId 保持 int64 类型
-			TeamJoinRequestId: oldMessage.TeamJoinRequestId,
-			// 转换 UserId 和 TeamId 为 string 类型
-			UserId: strconv.FormatInt(oldMessage.UserId, 10),
-			TeamId: func() string {
-				if oldMessage.TeamId == 0 {
-					return ""
-				}
-				return strconv.FormatInt(oldMessage.TeamId, 10)
-			}(),
-			FirstDisplayedAt: customFirstDisplayedAt,
-		}
+	// 	newMessage := models.TeamJoinRequestMessageShow{
+	// 		BaseModelStruct: models.BaseModelStruct{
+	// 			CreatedAt: oldMessage.CreatedAt,
+	// 			UpdatedAt: oldMessage.UpdatedAt,
+	// 			DeletedAt: models.DeletedAt{},
+	// 		},
+	// 		// TeamJoinRequestId 保持 int64 类型
+	// 		TeamJoinRequestId: oldMessage.TeamJoinRequestId,
+	// 		// 转换 UserId 和 TeamId 为 string 类型
+	// 		UserId: strconv.FormatInt(oldMessage.UserId, 10),
+	// 		TeamId: func() string {
+	// 			if oldMessage.TeamId == 0 {
+	// 				return ""
+	// 			}
+	// 			return strconv.FormatInt(oldMessage.TeamId, 10)
+	// 		}(),
+	// 		FirstDisplayedAt: customFirstDisplayedAt,
+	// 	}
 
-		if oldMessage.DeletedAt != nil {
-			newMessage.DeletedAt.Time = *oldMessage.DeletedAt
-			newMessage.DeletedAt.Valid = true
-		}
+	// 	if oldMessage.DeletedAt != nil {
+	// 		newMessage.DeletedAt.Time = *oldMessage.DeletedAt
+	// 		newMessage.DeletedAt.Valid = true
+	// 	}
 
-		if err := checkAndUpdate(targetDB, "team_join_request_message_show", "team_join_request_id = ? AND team_id = ?", []interface{}{newMessage.TeamJoinRequestId, newMessage.TeamId}, newMessage); err != nil {
-			log.Printf("Error migrating team join request message %d: %v", oldMessage.ID, err)
-		}
-	}
+	// 	if err := checkAndUpdate(targetDB, "team_join_request_message_show", "team_join_request_id = ? AND team_id = ?", []interface{}{newMessage.TeamJoinRequestId, newMessage.TeamId}, newMessage); err != nil {
+	// 		log.Printf("Error migrating team join request message %d: %v", oldMessage.ID, err)
+	// 	}
+	// }
 
 	// 迁移项目表
-	var oldProjects []struct {
-		ID            int64      `gorm:"column:id"`
-		CreatedAt     time.Time  `gorm:"column:created_at"`
-		UpdatedAt     time.Time  `gorm:"column:updated_at"`
-		DeletedAt     *time.Time `gorm:"column:deleted_at"`
-		TeamId        int64      `gorm:"column:team_id"`
-		Name          string     `gorm:"column:name"`
-		Description   string     `gorm:"column:description"`
-		PublicSwitch  bool       `gorm:"column:public_switch"`
-		PermType      uint8      `gorm:"column:perm_type"`
-		InvitedSwitch bool       `gorm:"column:invited_switch"`
-		NeedApproval  bool       `gorm:"column:need_approval"`
-	}
+	// var oldProjects []struct {
+	// 	ID            int64      `gorm:"column:id"`
+	// 	CreatedAt     time.Time  `gorm:"column:created_at"`
+	// 	UpdatedAt     time.Time  `gorm:"column:updated_at"`
+	// 	DeletedAt     *time.Time `gorm:"column:deleted_at"`
+	// 	TeamId        int64      `gorm:"column:team_id"`
+	// 	Name          string     `gorm:"column:name"`
+	// 	Description   string     `gorm:"column:description"`
+	// 	PublicSwitch  bool       `gorm:"column:public_switch"`
+	// 	PermType      uint8      `gorm:"column:perm_type"`
+	// 	InvitedSwitch bool       `gorm:"column:invited_switch"`
+	// 	NeedApproval  bool       `gorm:"column:need_approval"`
+	// }
 
-	if err := sourceDB.Table("project").Find(&oldProjects).Error; err != nil {
-		log.Fatalf("Error querying projects: %v", err)
-	}
-	log.Println("oldProjects 长度", len(oldProjects))
-	for _, oldProject := range oldProjects {
-		// 转换时间类型
-		customCreatedAt := utilTime.Time(oldProject.CreatedAt)
-		customUpdatedAt := utilTime.Time(oldProject.UpdatedAt)
+	// if err := sourceDB.Table("project").Find(&oldProjects).Error; err != nil {
+	// 	log.Fatalf("Error querying projects: %v", err)
+	// }
+	// log.Println("oldProjects 长度", len(oldProjects))
+	// for _, oldProject := range oldProjects {
+	// 	// 转换时间类型
+	// 	customCreatedAt := utilTime.Time(oldProject.CreatedAt)
+	// 	customUpdatedAt := utilTime.Time(oldProject.UpdatedAt)
 
-		newProject := models.Project{
-			Id:        strconv.FormatInt(oldProject.ID, 10),
-			CreatedAt: customCreatedAt,
-			UpdatedAt: customUpdatedAt,
-			DeletedAt: models.DeletedAt{},
-			TeamId: func() string {
-				if oldProject.TeamId == 0 {
-					return ""
-				}
-				return strconv.FormatInt(oldProject.TeamId, 10)
-			}(),
-			Name:         oldProject.Name,
-			Description:  oldProject.Description,
-			IsPublic:     oldProject.PublicSwitch,
-			PermType:     models.ProjectPermType(oldProject.PermType),
-			OpenInvite:   oldProject.InvitedSwitch,
-			NeedApproval: oldProject.NeedApproval,
-		}
+	// 	newProject := models.Project{
+	// 		Id:        strconv.FormatInt(oldProject.ID, 10),
+	// 		CreatedAt: customCreatedAt,
+	// 		UpdatedAt: customUpdatedAt,
+	// 		DeletedAt: models.DeletedAt{},
+	// 		TeamId: func() string {
+	// 			if oldProject.TeamId == 0 {
+	// 				return ""
+	// 			}
+	// 			return strconv.FormatInt(oldProject.TeamId, 10)
+	// 		}(),
+	// 		Name:         oldProject.Name,
+	// 		Description:  oldProject.Description,
+	// 		IsPublic:     oldProject.PublicSwitch,
+	// 		PermType:     models.ProjectPermType(oldProject.PermType),
+	// 		OpenInvite:   oldProject.InvitedSwitch,
+	// 		NeedApproval: oldProject.NeedApproval,
+	// 	}
 
-		if oldProject.DeletedAt != nil {
-			newProject.DeletedAt.Time = *oldProject.DeletedAt
-			newProject.DeletedAt.Valid = true
-		}
+	// 	if oldProject.DeletedAt != nil {
+	// 		newProject.DeletedAt.Time = *oldProject.DeletedAt
+	// 		newProject.DeletedAt.Valid = true
+	// 	}
 
-		if err := checkAndUpdate(targetDB, "project", "id = ?", newProject.Id, newProject); err != nil {
-			log.Printf("Error migrating project %d: %v", oldProject.ID, err)
-		}
-	}
+	// 	if err := checkAndUpdate(targetDB, "project", "id = ?", newProject.Id, newProject); err != nil {
+	// 		log.Printf("Error migrating project %d: %v", oldProject.ID, err)
+	// 	}
+	// }
 
-	// 迁移项目收藏表
-	var oldProjectFavorites []struct {
-		ID        int64      `gorm:"column:id"`
-		CreatedAt time.Time  `gorm:"column:created_at"`
-		UpdatedAt time.Time  `gorm:"column:updated_at"`
-		DeletedAt *time.Time `gorm:"column:deleted_at"`
-		UserId    int64      `gorm:"column:user_id"`
-		ProjectId int64      `gorm:"column:project_id"`
-		IsFavor   bool       `gorm:"column:is_favor"`
-	}
+	// // 迁移项目收藏表
+	// var oldProjectFavorites []struct {
+	// 	ID        int64      `gorm:"column:id"`
+	// 	CreatedAt time.Time  `gorm:"column:created_at"`
+	// 	UpdatedAt time.Time  `gorm:"column:updated_at"`
+	// 	DeletedAt *time.Time `gorm:"column:deleted_at"`
+	// 	UserId    int64      `gorm:"column:user_id"`
+	// 	ProjectId int64      `gorm:"column:project_id"`
+	// 	IsFavor   bool       `gorm:"column:is_favor"`
+	// }
 
-	if err := sourceDB.Table("project_favorite").Find(&oldProjectFavorites).Error; err != nil {
-		log.Fatalf("Error querying project favorites: %v", err)
-	}
+	// if err := sourceDB.Table("project_favorite").Find(&oldProjectFavorites).Error; err != nil {
+	// 	log.Fatalf("Error querying project favorites: %v", err)
+	// }
 
-	for _, oldFav := range oldProjectFavorites {
-		newFav := models.ProjectFavorite{
-			BaseModelStruct: models.BaseModelStruct{
-				CreatedAt: oldFav.CreatedAt,
-				UpdatedAt: oldFav.UpdatedAt,
-				DeletedAt: models.DeletedAt{},
-			},
-			UserId:    getUserID(oldFav.UserId),
-			ProjectId: strconv.FormatInt(oldFav.ProjectId, 10),
-			IsFavor:   oldFav.IsFavor,
-		}
+	// for _, oldFav := range oldProjectFavorites {
+	// 	newFav := models.ProjectFavorite{
+	// 		BaseModelStruct: models.BaseModelStruct{
+	// 			CreatedAt: oldFav.CreatedAt,
+	// 			UpdatedAt: oldFav.UpdatedAt,
+	// 			DeletedAt: models.DeletedAt{},
+	// 		},
+	// 		UserId:    getUserID(oldFav.UserId),
+	// 		ProjectId: strconv.FormatInt(oldFav.ProjectId, 10),
+	// 		IsFavor:   oldFav.IsFavor,
+	// 	}
 
-		if oldFav.DeletedAt != nil {
-			newFav.DeletedAt.Time = *oldFav.DeletedAt
-			newFav.DeletedAt.Valid = true
-		}
+	// 	if oldFav.DeletedAt != nil {
+	// 		newFav.DeletedAt.Time = *oldFav.DeletedAt
+	// 		newFav.DeletedAt.Valid = true
+	// 	}
 
-		if err := checkAndUpdate(targetDB, "project_favorite", "user_id = ? AND project_id = ?", []interface{}{newFav.UserId, newFav.ProjectId}, newFav); err != nil {
-			log.Printf("Error migrating project favorite %d: %v", oldFav.ID, err)
-		}
-	}
+	// 	if err := checkAndUpdate(targetDB, "project_favorite", "user_id = ? AND project_id = ?", []interface{}{newFav.UserId, newFav.ProjectId}, newFav); err != nil {
+	// 		log.Printf("Error migrating project favorite %d: %v", oldFav.ID, err)
+	// 	}
+	// }
 
-	// 迁移项目申请表
-	var oldProjectJoinRequests []struct {
-		ID               int64      `gorm:"column:id"`
-		CreatedAt        time.Time  `gorm:"column:created_at"`
-		UpdatedAt        time.Time  `gorm:"column:updated_at"`
-		DeletedAt        *time.Time `gorm:"column:deleted_at"`
-		UserId           int64      `gorm:"column:user_id"`
-		ProjectId        int64      `gorm:"column:project_id"`
-		PermType         uint8      `gorm:"column:perm_type"`
-		Status           uint8      `gorm:"column:status"`
-		FirstDisplayedAt time.Time  `gorm:"column:first_displayed_at"`
-		ProcessedAt      time.Time  `gorm:"column:processed_at"`
-		ProcessedBy      int64      `gorm:"column:processed_by"`
-		ApplicantNotes   string     `gorm:"column:applicant_notes"`
-		ProcessorNotes   string     `gorm:"column:processor_notes"`
-	}
+	// // 迁移项目申请表
+	// var oldProjectJoinRequests []struct {
+	// 	ID               int64      `gorm:"column:id"`
+	// 	CreatedAt        time.Time  `gorm:"column:created_at"`
+	// 	UpdatedAt        time.Time  `gorm:"column:updated_at"`
+	// 	DeletedAt        *time.Time `gorm:"column:deleted_at"`
+	// 	UserId           int64      `gorm:"column:user_id"`
+	// 	ProjectId        int64      `gorm:"column:project_id"`
+	// 	PermType         uint8      `gorm:"column:perm_type"`
+	// 	Status           uint8      `gorm:"column:status"`
+	// 	FirstDisplayedAt time.Time  `gorm:"column:first_displayed_at"`
+	// 	ProcessedAt      time.Time  `gorm:"column:processed_at"`
+	// 	ProcessedBy      int64      `gorm:"column:processed_by"`
+	// 	ApplicantNotes   string     `gorm:"column:applicant_notes"`
+	// 	ProcessorNotes   string     `gorm:"column:processor_notes"`
+	// }
 
-	if err := sourceDB.Table("project_join_request").Find(&oldProjectJoinRequests).Error; err != nil {
-		log.Fatalf("Error querying project join requests: %v", err)
-	}
+	// if err := sourceDB.Table("project_join_request").Find(&oldProjectJoinRequests).Error; err != nil {
+	// 	log.Fatalf("Error querying project join requests: %v", err)
+	// }
 
-	for _, oldRequest := range oldProjectJoinRequests {
-		// 转换时间类型
-		customFirstDisplayedAt := utilTime.Time(oldRequest.FirstDisplayedAt)
-		customProcessedAt := utilTime.Time(oldRequest.ProcessedAt)
+	// for _, oldRequest := range oldProjectJoinRequests {
+	// 	// 转换时间类型
+	// 	customFirstDisplayedAt := utilTime.Time(oldRequest.FirstDisplayedAt)
+	// 	customProcessedAt := utilTime.Time(oldRequest.ProcessedAt)
 
-		newRequest := models.ProjectJoinRequest{
-			BaseModelStruct: models.BaseModelStruct{
-				CreatedAt: oldRequest.CreatedAt,
-				UpdatedAt: oldRequest.UpdatedAt,
-				DeletedAt: models.DeletedAt{},
-			},
-			UserId: strconv.FormatInt(oldRequest.UserId, 10),
-			ProjectId: func() string {
-				if oldRequest.ProjectId == 0 {
-					return ""
-				}
-				return strconv.FormatInt(oldRequest.ProjectId, 10)
-			}(),
-			PermType:         models.ProjectPermType(oldRequest.PermType),
-			Status:           models.ProjectJoinRequestStatus(oldRequest.Status),
-			FirstDisplayedAt: customFirstDisplayedAt,
-			ProcessedAt:      customProcessedAt,
-			ProcessedBy:      getUserID(oldRequest.ProcessedBy),
-			ApplicantNotes:   oldRequest.ApplicantNotes,
-			ProcessorNotes:   oldRequest.ProcessorNotes,
-		}
+	// 	newRequest := models.ProjectJoinRequest{
+	// 		BaseModelStruct: models.BaseModelStruct{
+	// 			CreatedAt: oldRequest.CreatedAt,
+	// 			UpdatedAt: oldRequest.UpdatedAt,
+	// 			DeletedAt: models.DeletedAt{},
+	// 		},
+	// 		UserId: strconv.FormatInt(oldRequest.UserId, 10),
+	// 		ProjectId: func() string {
+	// 			if oldRequest.ProjectId == 0 {
+	// 				return ""
+	// 			}
+	// 			return strconv.FormatInt(oldRequest.ProjectId, 10)
+	// 		}(),
+	// 		PermType:         models.ProjectPermType(oldRequest.PermType),
+	// 		Status:           models.ProjectJoinRequestStatus(oldRequest.Status),
+	// 		FirstDisplayedAt: customFirstDisplayedAt,
+	// 		ProcessedAt:      customProcessedAt,
+	// 		ProcessedBy:      getUserID(oldRequest.ProcessedBy),
+	// 		ApplicantNotes:   oldRequest.ApplicantNotes,
+	// 		ProcessorNotes:   oldRequest.ProcessorNotes,
+	// 	}
 
-		// 处理空ID
-		if oldRequest.ProcessedBy == 0 {
-			newRequest.ProcessedBy = ""
-		}
+	// 	// 处理空ID
+	// 	if oldRequest.ProcessedBy == 0 {
+	// 		newRequest.ProcessedBy = ""
+	// 	}
 
-		// 设置DeletedAt
-		if oldRequest.DeletedAt != nil {
-			newRequest.DeletedAt.Time = *oldRequest.DeletedAt
-			newRequest.DeletedAt.Valid = true
-		}
+	// 	// 设置DeletedAt
+	// 	if oldRequest.DeletedAt != nil {
+	// 		newRequest.DeletedAt.Time = *oldRequest.DeletedAt
+	// 		newRequest.DeletedAt.Valid = true
+	// 	}
 
-		if err := checkAndUpdate(targetDB, "project_join_request", "user_id = ? AND project_id = ?", []interface{}{newRequest.UserId, newRequest.ProjectId}, newRequest); err != nil {
-			log.Printf("Error migrating project join request %d: %v", oldRequest.ID, err)
-		}
-	}
+	// 	if err := checkAndUpdate(targetDB, "project_join_request", "user_id = ? AND project_id = ?", []interface{}{newRequest.UserId, newRequest.ProjectId}, newRequest); err != nil {
+	// 		log.Printf("Error migrating project join request %d: %v", oldRequest.ID, err)
+	// 	}
+	// }
 
 	// 迁移项目申请消息表
-	var oldMessageShows []struct {
-		ID                   int64      `gorm:"column:id"`
-		CreatedAt            time.Time  `gorm:"column:created_at"`
-		UpdatedAt            time.Time  `gorm:"column:updated_at"`
-		DeletedAt            *time.Time `gorm:"column:deleted_at"`
-		ProjectJoinRequestId int64      `gorm:"column:project_join_request_id"`
-		UserId               int64      `gorm:"column:user_id"`
-		ProjectId            int64      `gorm:"column:project_id"`
-		FirstDisplayedAt     time.Time  `gorm:"column:first_displayed_at"`
-	}
+	// var oldMessageShows []struct {
+	// 	ID                   int64      `gorm:"column:id"`
+	// 	CreatedAt            time.Time  `gorm:"column:created_at"`
+	// 	UpdatedAt            time.Time  `gorm:"column:updated_at"`
+	// 	DeletedAt            *time.Time `gorm:"column:deleted_at"`
+	// 	ProjectJoinRequestId int64      `gorm:"column:project_join_request_id"`
+	// 	UserId               int64      `gorm:"column:user_id"`
+	// 	ProjectId            int64      `gorm:"column:project_id"`
+	// 	FirstDisplayedAt     time.Time  `gorm:"column:first_displayed_at"`
+	// }
 
-	if err := sourceDB.Table("project_join_request_message_show").Find(&oldMessageShows).Error; err != nil {
-		log.Fatalf("Error querying project join request messages: %v", err)
-	}
+	// if err := sourceDB.Table("project_join_request_message_show").Find(&oldMessageShows).Error; err != nil {
+	// 	log.Fatalf("Error querying project join request messages: %v", err)
+	// }
 
-	for _, oldMessage := range oldMessageShows {
-		// 转换时间类型
-		customFirstDisplayedAt := utilTime.Time(oldMessage.FirstDisplayedAt)
+	// for _, oldMessage := range oldMessageShows {
+	// 	// 转换时间类型
+	// 	customFirstDisplayedAt := utilTime.Time(oldMessage.FirstDisplayedAt)
 
-		newMessage := models.ProjectJoinRequestMessageShow{
-			BaseModelStruct: models.BaseModelStruct{
-				CreatedAt: oldMessage.CreatedAt,
-				UpdatedAt: oldMessage.UpdatedAt,
-				DeletedAt: models.DeletedAt{},
-			},
-			// 保持 ProjectJoinRequestId 为 int64 类型
-			ProjectJoinRequestId: oldMessage.ProjectJoinRequestId,
-			// 转换 UserId 和 ProjectId 为 string 类型
-			UserId: strconv.FormatInt(oldMessage.UserId, 10),
-			ProjectId: func() string {
-				if oldMessage.ProjectId == 0 {
-					return ""
-				}
-				return strconv.FormatInt(oldMessage.ProjectId, 10)
-			}(),
-			FirstDisplayedAt: customFirstDisplayedAt,
-		}
+	// 	newMessage := models.ProjectJoinRequestMessageShow{
+	// 		BaseModelStruct: models.BaseModelStruct{
+	// 			CreatedAt: oldMessage.CreatedAt,
+	// 			UpdatedAt: oldMessage.UpdatedAt,
+	// 			DeletedAt: models.DeletedAt{},
+	// 		},
+	// 		// 保持 ProjectJoinRequestId 为 int64 类型
+	// 		ProjectJoinRequestId: oldMessage.ProjectJoinRequestId,
+	// 		// 转换 UserId 和 ProjectId 为 string 类型
+	// 		UserId: strconv.FormatInt(oldMessage.UserId, 10),
+	// 		ProjectId: func() string {
+	// 			if oldMessage.ProjectId == 0 {
+	// 				return ""
+	// 			}
+	// 			return strconv.FormatInt(oldMessage.ProjectId, 10)
+	// 		}(),
+	// 		FirstDisplayedAt: customFirstDisplayedAt,
+	// 	}
 
-		if oldMessage.DeletedAt != nil {
-			newMessage.DeletedAt.Time = *oldMessage.DeletedAt
-			newMessage.DeletedAt.Valid = true
-		}
+	// 	if oldMessage.DeletedAt != nil {
+	// 		newMessage.DeletedAt.Time = *oldMessage.DeletedAt
+	// 		newMessage.DeletedAt.Valid = true
+	// 	}
 
-		if err := checkAndUpdate(targetDB, "project_join_request_message_show", "project_join_request_id = ? AND project_id = ?", []interface{}{newMessage.ProjectJoinRequestId, newMessage.ProjectId}, newMessage); err != nil {
-			log.Printf("Error migrating project join request message %d: %v", oldMessage.ID, err)
-		}
-	}
+	// 	if err := checkAndUpdate(targetDB, "project_join_request_message_show", "project_join_request_id = ? AND project_id = ?", []interface{}{newMessage.ProjectJoinRequestId, newMessage.ProjectId}, newMessage); err != nil {
+	// 		log.Printf("Error migrating project join request message %d: %v", oldMessage.ID, err)
+	// 	}
+	// }
 
-	// 迁移项目成员表
-	var oldProjectMembers []struct {
-		ID             int64      `gorm:"column:id"`
-		CreatedAt      time.Time  `gorm:"column:created_at"`
-		UpdatedAt      time.Time  `gorm:"column:updated_at"`
-		DeletedAt      *time.Time `gorm:"column:deleted_at"`
-		ProjectId      int64      `gorm:"column:project_id"`
-		UserId         int64      `gorm:"column:user_id"`
-		PermType       uint8      `gorm:"column:perm_type"`
-		PermSourceType uint8      `gorm:"column:perm_source_type"`
-	}
+	// // 迁移项目成员表
+	// var oldProjectMembers []struct {
+	// 	ID             int64      `gorm:"column:id"`
+	// 	CreatedAt      time.Time  `gorm:"column:created_at"`
+	// 	UpdatedAt      time.Time  `gorm:"column:updated_at"`
+	// 	DeletedAt      *time.Time `gorm:"column:deleted_at"`
+	// 	ProjectId      int64      `gorm:"column:project_id"`
+	// 	UserId         int64      `gorm:"column:user_id"`
+	// 	PermType       uint8      `gorm:"column:perm_type"`
+	// 	PermSourceType uint8      `gorm:"column:perm_source_type"`
+	// }
 
-	if err := sourceDB.Table("project_member").Find(&oldProjectMembers).Error; err != nil {
-		log.Fatalf("Error querying project members: %v", err)
-	}
+	// if err := sourceDB.Table("project_member").Find(&oldProjectMembers).Error; err != nil {
+	// 	log.Fatalf("Error querying project members: %v", err)
+	// }
 
-	for _, oldMember := range oldProjectMembers {
-		newMember := models.ProjectMember{
-			BaseModelStruct: models.BaseModelStruct{
-				CreatedAt: oldMember.CreatedAt,
-				UpdatedAt: oldMember.UpdatedAt,
-				DeletedAt: models.DeletedAt{},
-			},
-			ProjectId: func() string {
-				if oldMember.ProjectId == 0 {
-					return ""
-				}
-				return strconv.FormatInt(oldMember.ProjectId, 10)
-			}(),
-			UserId:         getUserID(oldMember.UserId),
-			PermType:       models.ProjectPermType(oldMember.PermType),
-			PermSourceType: models.ProjectPermSourceType(oldMember.PermSourceType),
-		}
+	// for _, oldMember := range oldProjectMembers {
+	// 	newMember := models.ProjectMember{
+	// 		BaseModelStruct: models.BaseModelStruct{
+	// 			CreatedAt: oldMember.CreatedAt,
+	// 			UpdatedAt: oldMember.UpdatedAt,
+	// 			DeletedAt: models.DeletedAt{},
+	// 		},
+	// 		ProjectId: func() string {
+	// 			if oldMember.ProjectId == 0 {
+	// 				return ""
+	// 			}
+	// 			return strconv.FormatInt(oldMember.ProjectId, 10)
+	// 		}(),
+	// 		UserId:         getUserID(oldMember.UserId),
+	// 		PermType:       models.ProjectPermType(oldMember.PermType),
+	// 		PermSourceType: models.ProjectPermSourceType(oldMember.PermSourceType),
+	// 	}
 
-		if oldMember.DeletedAt != nil {
-			newMember.DeletedAt.Time = *oldMember.DeletedAt
-			newMember.DeletedAt.Valid = true
-		}
+	// 	if oldMember.DeletedAt != nil {
+	// 		newMember.DeletedAt.Time = *oldMember.DeletedAt
+	// 		newMember.DeletedAt.Valid = true
+	// 	}
 
-		if err := checkAndUpdate(targetDB, "project_member", "project_id = ? AND user_id = ?", []interface{}{newMember.ProjectId, newMember.UserId}, newMember); err != nil {
-			log.Printf("Error migrating project member %d: %v", oldMember.ID, err)
-		}
-	}
+	// 	if err := checkAndUpdate(targetDB, "project_member", "project_id = ? AND user_id = ?", []interface{}{newMember.ProjectId, newMember.UserId}, newMember); err != nil {
+	// 		log.Printf("Error migrating project member %d: %v", oldMember.ID, err)
+	// 	}
+	// }
 
 	// 迁移反馈表
 	// var oldFeedbacks []struct {
