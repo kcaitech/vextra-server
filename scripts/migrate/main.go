@@ -312,14 +312,16 @@ func main() {
 		LockedWords  string     `gorm:"column:locked_words"`
 	}
 
-	if err := sourceDB.Table("document").Where("id < ?", 474540640181436416).Order("created_at DESC").Find(&oldDocuments).Error; err != nil {
+	if err := sourceDB.Table("document").Where("id < ?", 470869833186033664).Order("created_at DESC").Find(&oldDocuments).Error; err != nil {
 		log.Fatalf("Error querying documents: %v", err)
 	}
 	// var documentIds []int64
 	for _, oldDoc := range oldDocuments {
 		// documentIds = append(documentIds, oldDoc.ID)
 		// 创建新文档记录
-
+		if (oldDoc.Name == "腾讯TDesign 桌面端组件.sketch") {
+			continue
+		}
 		newDoc := models.Document{
 			Id:        strconv.FormatInt(oldDoc.ID, 10),
 			CreatedAt: oldDoc.CreatedAt,
