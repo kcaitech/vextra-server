@@ -312,7 +312,7 @@ func main() {
 		LockedWords  string     `gorm:"column:locked_words"`
 	}
 
-	if err := sourceDB.Table("document").Where("id < ?", 475233030424772608).Order("created_at DESC").Find(&oldDocuments).Error; err != nil {
+	if err := sourceDB.Table("document").Where("id < ?", 474540640181436416).Order("created_at DESC").Find(&oldDocuments).Error; err != nil {
 		log.Fatalf("Error querying documents: %v", err)
 	}
 	// var documentIds []int64
