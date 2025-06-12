@@ -77,9 +77,29 @@ type NewWeixinUser struct {
 }
 
 func migrateDocumentStorage(documentId int64, generateApiUrl string) error {
-	// 连接目标存储
-	log.Println("documentId: ", documentId)
+	const maxRetries = 3
+	const retryDelay = 3 * time.Second
 
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		log.Printf("documentId: %d, attempt: %d/%d", documentId, attempt, maxRetries)
+
+		err := migrateDocumentStorageOnce(documentId, generateApiUrl)
+		if err == nil {
+			return nil
+		}
+
+		log.Printf("attempt %d failed: %v", attempt, err)
+		if attempt < maxRetries {
+			log.Printf("retrying in %v...", retryDelay)
+			time.Sleep(retryDelay)
+		}
+	}
+
+	log.Printf("all %d attempts failed for document %d", maxRetries, documentId)
+	return fmt.Errorf("failed after %d attempts", maxRetries)
+}
+
+func migrateDocumentStorageOnce(documentId int64, generateApiUrl string) error {
 	// var generateApiUrl = "http://192.168.0.131:8088/generate" // 旧版本更新服务地址
 	documentIdStr := str.IntToString(documentId)
 	resp, err := http.Get(generateApiUrl + "?documentId=" + documentIdStr)
@@ -292,7 +312,7 @@ func main() {
 		LockedWords  string     `gorm:"column:locked_words"`
 	}
 
-	if err := sourceDB.Table("document").Where("id < ?", 475961140963196928).Order("created_at DESC").Find(&oldDocuments).Error; err != nil {
+	if err := sourceDB.Table("document").Where("id < ?", 475233030424772608).Order("created_at DESC").Find(&oldDocuments).Error; err != nil {
 		log.Fatalf("Error querying documents: %v", err)
 	}
 	// var documentIds []int64
