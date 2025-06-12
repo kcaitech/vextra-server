@@ -292,13 +292,14 @@ func main() {
 		LockedWords  string     `gorm:"column:locked_words"`
 	}
 
-	if err := sourceDB.Table("document").Order("created_at DESC").Find(&oldDocuments).Error; err != nil {
+	if err := sourceDB.Table("document").Where("id < ?", 479520961515765760).Order("created_at DESC").Find(&oldDocuments).Error; err != nil {
 		log.Fatalf("Error querying documents: %v", err)
 	}
 	// var documentIds []int64
 	for _, oldDoc := range oldDocuments {
 		// documentIds = append(documentIds, oldDoc.ID)
 		// 创建新文档记录
+
 		newDoc := models.Document{
 			Id:        strconv.FormatInt(oldDoc.ID, 10),
 			CreatedAt: oldDoc.CreatedAt,
