@@ -312,14 +312,14 @@ func main() {
 		LockedWords  string     `gorm:"column:locked_words"`
 	}
 
-	if err := sourceDB.Table("document").Where("id = ?", 189660612962304000).Find(&oldDocuments).Error; err != nil {
+	if err := sourceDB.Table("document").Where("id > ? AND deleted_at is null AND version_id is not null", 189660612962304000).Find(&oldDocuments).Error; err != nil {
 		log.Fatalf("Error querying documents: %v", err)
 	}
 	// var documentIds []int64 149610729308176384
 	for _, oldDoc := range oldDocuments {
 		// documentIds = append(documentIds, oldDoc.ID)
 		// 创建新文档记录
-		if (oldDoc.VersionId == "" || oldDoc.Name == "腾讯TDesign 桌面端组件.sketch") { //这个文件会导致服务崩溃
+		if (oldDoc.Name == "腾讯TDesign 桌面端组件.sketch") { //这个文件会导致服务崩溃
 			continue
 		}
 		newDoc := models.Document{
