@@ -319,7 +319,7 @@ func main() {
 	for _, oldDoc := range oldDocuments {
 		// documentIds = append(documentIds, oldDoc.ID)
 		// 创建新文档记录
-		if (oldDoc.Name == "腾讯TDesign 桌面端组件.sketch") { //这个文件会导致服务崩溃
+		if (oldDoc.VersionId == "" || oldDoc.Name == "腾讯TDesign 桌面端组件.sketch") { //这个文件会导致服务崩溃
 			continue
 		}
 		newDoc := models.Document{
