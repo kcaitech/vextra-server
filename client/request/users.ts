@@ -194,5 +194,22 @@ export class UsersAPI {
             method: 'get',
         })
     }
+
+    // 微信小程序登录
+    async wechatMiniProgramLogin(code: string): Promise<UserInfoWithTokenResponse> {
+        const result = await this.http.request({
+            url: 'auth/login/mini_program',
+            method: 'get',
+            params: {
+                code: code,
+            },
+        })
+        try {
+            return UserInfoWithTokenResponseSchema.parse(result.data)
+        } catch (error) {
+            console.error('微信小程序登录响应数据校验失败:', error)
+            throw error
+        }
+    }
 }
 
