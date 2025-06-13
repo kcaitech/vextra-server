@@ -140,6 +140,7 @@ func migrateDocumentStorageOnce(documentId int64, generateApiUrl string) error {
 		LastCmdVerId: version.LastCmdVerId,
 	}
 	response := autoupdate.Response{}
+	log.Println("version.DocumentData.Pages", version.DocumentData.Pages)
 	data := autoupdate.UploadData{
 		DocumentMeta: autoupdate.Data(version.DocumentData.DocumentMeta),
 		Pages:        version.DocumentData.Pages,

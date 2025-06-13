@@ -227,7 +227,7 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 		versionId, ok2 := idToVersionId.Get(pageId)
 		if !ok || !ok1 || !ok2 {
 			resp.Message = "对象上传错误" + fmt.Sprintf("ok: %v, ok1: %v, ok2: %v", ok, ok1, ok2)
-			log.Println("对象上传错误1", ok, ok1, ok2, idToVersionId.Len(), len(pagesList), pageId, len(pages))
+			log.Println("对象上传错误1", ok, ok1, ok2, len(pages))
 			return
 		}
 		pageItem["versionId"] = versionId
