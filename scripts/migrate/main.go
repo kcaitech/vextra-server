@@ -140,7 +140,6 @@ func migrateDocumentStorageOnce(documentId int64, generateApiUrl string) error {
 		LastCmdVerId: version.LastCmdVerId,
 	}
 	response := autoupdate.Response{}
-	log.Println("version.DocumentData.Pages", string(version.DocumentData.Pages))
 	data := autoupdate.UploadData{
 		DocumentMeta: autoupdate.Data(version.DocumentData.DocumentMeta),
 		Pages:        version.DocumentData.Pages,
@@ -313,7 +312,7 @@ func main() {
 		LockedWords  string     `gorm:"column:locked_words"`
 	}
 
-	if err := sourceDB.Table("document").Where("id > ?", 189506651395473408).Find(&oldDocuments).Error; err != nil {
+	if err := sourceDB.Table("document").Where("id = ?", 189660612962304000).Find(&oldDocuments).Error; err != nil {
 		log.Fatalf("Error querying documents: %v", err)
 	}
 	// var documentIds []int64 149610729308176384
