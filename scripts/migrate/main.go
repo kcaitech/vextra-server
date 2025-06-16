@@ -312,10 +312,10 @@ func main() {
 		LockedWords  string     `gorm:"column:locked_words"`
 	}
 
-	if err := sourceDB.Table("document").Where("id > ? AND deleted_at is null AND version_id is not null", 159449532998893568).Find(&oldDocuments).Error; err != nil {
+	if err := sourceDB.Table("document").Where("id > ? AND deleted_at is null AND version_id is not null", 277307853738360832).Find(&oldDocuments).Error; err != nil {
 		log.Fatalf("Error querying documents: %v", err)
 	}
-	// var documentIds []int64 189660612962304000 - 287543299479191552 较多的 对象上传错误1
+	// var documentIds []int64 153476083642023936
 	for _, oldDoc := range oldDocuments {
 		// documentIds = append(documentIds, oldDoc.ID)
 		// 创建新文档记录
