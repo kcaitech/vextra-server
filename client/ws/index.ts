@@ -57,9 +57,9 @@ export class WSClient {
         return ret;
     }
 
-    async start(context: IContext) {
+    async start(context: IContext, last_cmd_version?: number) {
         await this.connect.waitReady()
-        const ret = await this.connect.send(DataTypes.Start, { last_cmd_version: context.lastRemoteCmdVersion() })
+        const ret = await this.connect.send(DataTypes.Start, { last_cmd_version })
         this._started = context;
         return ret;
     }
