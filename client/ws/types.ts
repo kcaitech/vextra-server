@@ -142,7 +142,7 @@ export interface IContext {
         };
         watch: (callback: (type: string) => void) => void;
     };
-    lastRemoteCmdVersion: () => number | undefined;
+    // lastRemoteCmdVersion: () => number | undefined;
 }
 
 export enum SelectionEvents {
