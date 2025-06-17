@@ -319,7 +319,7 @@ func main() {
 	for _, oldDoc := range oldDocuments {
 		// documentIds = append(documentIds, oldDoc.ID)
 		// 创建新文档记录
-		if (oldDoc.Name == "腾讯TDesign 桌面端组件.sketch" || oldDoc.Name == "Ant Design Open Source (Community).fig" || oldDoc.Name == "腾讯TDesign 桌面端组件") { //这个文件会导致服务崩溃
+		if (oldDoc.Name == "腾讯TDesign 桌面端组件.sketch" || oldDoc.Name == "Ant Design Open Source (Community).fig" || oldDoc.Name == "腾讯TDesign 桌面端组件" || oldDoc.Name == "Ant Design Open Source (Community)") { //这个文件会导致服务崩溃
 			continue
 		}
 		newDoc := models.Document{
