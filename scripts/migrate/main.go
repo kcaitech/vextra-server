@@ -29,6 +29,7 @@ import (
 	"kcaitech.com/kcserver/providers/mongo"
 	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils/str"
+
 	// utilTime "kcaitech.com/kcserver/utils/time"
 
 	"github.com/minio/minio-go/v7"
@@ -50,10 +51,14 @@ type Config struct {
 		} `json:"mongo"`
 		GenerateApiUrl string `json:"generateApiUrl"`
 		Minio          struct {
-			Endpoint  string `json:"endpoint"`
-			AccessKey string `json:"accessKey"`
-			SecretKey string `json:"secretKey"`
-			UseSSL    bool   `json:"useSSL"`
+			Endpoint     string `json:"endpoint"`
+			Region       string `json:"region"`
+			AccessKey    string `json:"accessKey"`
+			SecretKey    string `json:"secretKey"`
+			StsAccessKey string `json:"stsAccessKey"`
+			StsSecretKey string `json:"stsSecretKey"`
+			Bucket       string `json:"bucket"`
+			FilesBucket  string `json:"filesBucket"`
 		} `json:"minio"`
 	} `json:"source"`
 	Target struct {
@@ -93,9 +98,13 @@ func getOldMedias(path string, mediaNames []string, sourceMinioConf Config) ([]a
 	}
 
 	// 创建源 Minio 客户端
+	// 优先使用主要的AccessKey/SecretKey
+	creds := credentials.NewStaticV4(sourceMinioConf.Source.Minio.AccessKey, sourceMinioConf.Source.Minio.SecretKey, "")
+
 	sourceMinioClient, err := minio.New(sourceMinioConf.Source.Minio.Endpoint, &minio.Options{
-		Creds:  credentials.NewStaticV4(sourceMinioConf.Source.Minio.AccessKey, sourceMinioConf.Source.Minio.SecretKey, ""),
-		Secure: sourceMinioConf.Source.Minio.UseSSL,
+		Creds:  creds,
+		Region: sourceMinioConf.Source.Minio.Region,
+		Secure: false,
 	})
 	if err != nil {
 		log.Printf("Failed to create source minio client: %v", err)
@@ -109,7 +118,7 @@ func getOldMedias(path string, mediaNames []string, sourceMinioConf Config) ([]a
 		mediaPath := fmt.Sprintf("documents/%s/medias/%s", path, mediaName)
 
 		// 从源 bucket 获取媒体文件
-		sourceObject, err := sourceMinioClient.GetObject(context.Background(), "files", mediaPath, minio.GetObjectOptions{})
+		sourceObject, err := sourceMinioClient.GetObject(context.Background(), sourceMinioConf.Source.Minio.FilesBucket, mediaPath, minio.GetObjectOptions{})
 		if err != nil {
 			log.Printf("Failed to get media object %s: %v", mediaPath, err)
 			continue // 继续处理其他文件，不中断整个流程

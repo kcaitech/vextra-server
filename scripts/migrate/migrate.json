@@ -11,6 +11,16 @@
             "url": "mongodb://root:kcai1212@192.168.0.123:27017",
             "db": "kcserver"
         },
+        "minio": {
+            "endpoint": "192.168.0.123:9000",
+            "region": "zhuhai-1",
+            "accessKey": "59L3pDWuk9oLQWIgytCI",
+            "secretKey": "GmwAzetY1L0jU4pUAqpO7RJGIsG7k3gozVH6whoJ",
+            "stsAccessKey": "user",
+            "stsSecretKey": "GmwAzetY1L0jU4pUAqpO7RJGIsG7k3gozVH6whoJ",
+            "bucket": "document",
+            "filesBucket": "files"
+        },
         "generateApiUrl": "http://192.168.0.123:8081/migrate"
     },
     "target": {
