@@ -1442,28 +1442,11 @@ func uploadTeamFile(filePath string, fileContent []byte) error {
 		return fmt.Errorf("AttatchBucket未初始化")
 	}
 
-	// 获取bucket配置信息用于调试
-	config := _storage.AttatchBucket.GetConfig()
-	if config != nil {
-		log.Printf("Bucket配置: BucketName=%s, AttatchBucketName=%s",
-			config.BucketConfig.BucketName, config.BucketConfig.AttatchBucketName)
-	}
-
 	path := fmt.Sprintf("/teams/%s/avatar/%s", teamId, parts[3])
 	if _, err := _storage.AttatchBucket.PutObjectByte(path, fileContent, ""); err != nil {
 		log.Printf("上传文件失败: %v", err)
 		return fmt.Errorf("上传文件失败: %v", err)
 	}
-
-	// 更新团队头像数据库记录
-	teamService := services.NewTeamService()
-	if _, err := teamService.UpdateColumnsById(teamId, map[string]any{
-		"avatar": path,
-	}); err != nil {
-		log.Printf("更新团队头像失败: %v", err)
-		return fmt.Errorf("更新错误: %v", err)
-	}
-
 	log.Printf("Successfully updated team %s avatar: %s", teamId, path)
 	return nil
 }
