@@ -18,6 +18,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+
 	// "kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/services"
 
@@ -261,10 +262,12 @@ func main() {
 		LockedReason string     `gorm:"column:locked_reason"`
 		LockedWords  string     `gorm:"column:locked_words"`
 	}
-
-	if err := sourceDB.Table("document").Where("deleted_at is null AND version_id is not null").Find(&oldDocuments).Error; err != nil {
+	if err := sourceDB.Table("document").Where("deleted_at IS NULL AND version_id IS NOT NULL AND version_id != ''").Find(&oldDocuments).Error; err != nil {
 		log.Fatalf("Error querying documents: %v", err)
 	}
+
+	log.Printf("实际查询到符合条件的文档数: %d", len(oldDocuments))
+
 	// var documentIds []int64
 	for _, oldDoc := range oldDocuments {
 		// documentIds = append(documentIds, oldDoc.ID)
