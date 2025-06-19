@@ -18,7 +18,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
-	"kcaitech.com/kcserver/models"
+	// "kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/services"
 
 	"net/http"
@@ -190,12 +190,12 @@ func main() {
 		}
 	}
 	// 辅助函数：获取用户ID
-	getUserID := func(oldUserID int64) string {
-		if newID, ok := userIDMap[oldUserID]; ok {
-			return newID
-		}
-		return strconv.FormatInt(oldUserID, 10)
-	}
+	// getUserID := func(oldUserID int64) string {
+	// 	if newID, ok := userIDMap[oldUserID]; ok {
+	// 		return newID
+	// 	}
+	// 	return strconv.FormatInt(oldUserID, 10)
+	// }
 
 	// 连接目标数据库
 	targetDSN := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8&parseTime=True&loc=Local",
@@ -236,7 +236,7 @@ func main() {
 	// 开始迁移
 	log.Println("Starting migration...")
 
-	getOldTeams(config)
+	// getOldTeams(config)
 
 	// 1. 迁移MySQL数据
 	log.Println("Migrating MySQL data...")
@@ -262,7 +262,7 @@ func main() {
 		LockedWords  string     `gorm:"column:locked_words"`
 	}
 
-	if err := sourceDB.Table("document").Where("id = ? AND deleted_at is null AND version_id is not null", 601337590443950080).Find(&oldDocuments).Error; err != nil {
+	if err := sourceDB.Table("document").Where("deleted_at is null AND version_id is not null").Find(&oldDocuments).Error; err != nil {
 		log.Fatalf("Error querying documents: %v", err)
 	}
 	// var documentIds []int64
@@ -273,48 +273,48 @@ func main() {
 			oldDoc.Name == "腾讯TDesign 桌面端组件" || oldDoc.Name == "Ant Design Open Source (Community)" { //这个文件会导致服务崩溃
 			continue
 		}
-		newDoc := models.Document{
-			Id:        strconv.FormatInt(oldDoc.ID, 10),
-			CreatedAt: oldDoc.CreatedAt,
-			UpdatedAt: oldDoc.UpdatedAt,
-			DeletedAt: models.DeletedAt{},
-			UserId:    getUserID(oldDoc.UserId),
-			Path:      oldDoc.Path,
-			DocType:   models.DocType(oldDoc.DocType),
-			Name:      oldDoc.Name,
-			Size:      oldDoc.Size,
-			DeleteBy: func() string {
-				if oldDoc.DeleteBy == 0 {
-					return ""
-				}
-				return getUserID(oldDoc.DeleteBy)
-			}(),
-			VersionId: oldDoc.VersionId,
-			TeamId: func() string {
-				if oldDoc.TeamId == 0 {
-					return ""
-				}
-				return strconv.FormatInt(oldDoc.TeamId, 10)
-			}(),
-			ProjectId: func() string {
-				if oldDoc.ProjectId == 0 {
-					return ""
-				}
-				return strconv.FormatInt(oldDoc.ProjectId, 10)
-			}(),
-		}
+		// newDoc := models.Document{
+		// 	Id:        strconv.FormatInt(oldDoc.ID, 10),
+		// 	CreatedAt: oldDoc.CreatedAt,
+		// 	UpdatedAt: oldDoc.UpdatedAt,
+		// 	DeletedAt: models.DeletedAt{},
+		// 	UserId:    getUserID(oldDoc.UserId),
+		// 	Path:      oldDoc.Path,
+		// 	DocType:   models.DocType(oldDoc.DocType),
+		// 	Name:      oldDoc.Name,
+		// 	Size:      oldDoc.Size,
+		// 	DeleteBy: func() string {
+		// 		if oldDoc.DeleteBy == 0 {
+		// 			return ""
+		// 		}
+		// 		return getUserID(oldDoc.DeleteBy)
+		// 	}(),
+		// 	VersionId: oldDoc.VersionId,
+		// 	TeamId: func() string {
+		// 		if oldDoc.TeamId == 0 {
+		// 			return ""
+		// 		}
+		// 		return strconv.FormatInt(oldDoc.TeamId, 10)
+		// 	}(),
+		// 	ProjectId: func() string {
+		// 		if oldDoc.ProjectId == 0 {
+		// 			return ""
+		// 		}
+		// 		return strconv.FormatInt(oldDoc.ProjectId, 10)
+		// 	}(),
+		// }
 
 		// 设置DeletedAt
-		if oldDoc.DeletedAt != nil {
-			newDoc.DeletedAt.Time = *oldDoc.DeletedAt
-			newDoc.DeletedAt.Valid = true
-		}
+		// if oldDoc.DeletedAt != nil {
+		// 	newDoc.DeletedAt.Time = *oldDoc.DeletedAt
+		// 	newDoc.DeletedAt.Valid = true
+		// }
 
 		// 检查并更新文档记录
-		if err := checkAndUpdate(targetDB, "document", "id = ?", newDoc.Id, newDoc); err != nil {
-			log.Printf("Error migrating document %d: %v", oldDoc.ID, err)
-			continue
-		}
+		// if err := checkAndUpdate(targetDB, "document", "id = ?", newDoc.Id, newDoc); err != nil {
+		// 	log.Printf("Error migrating document %d: %v", oldDoc.ID, err)
+		// 	continue
+		// }
 
 		// 迁移文档数据
 		err := migrateDocumentStorage(oldDoc.ID, config.Source.GenerateApiUrl, config, oldDoc.Path)
@@ -324,18 +324,18 @@ func main() {
 		}
 
 		// 如果有锁定信息，检查并更新DocumentLock记录
-		if !oldDoc.LockedAt.IsZero() || oldDoc.LockedReason != "" || oldDoc.LockedWords != "" {
-			docLock := models.DocumentLock{
-				DocumentId:   newDoc.Id,
-				LockedReason: oldDoc.LockedReason,
-				LockedType:   models.LockedTypeText,
-				LockedTarget: "",
-				LockedWords:  oldDoc.LockedWords,
-			}
-			if err := checkAndUpdate(targetDB, "document_lock", "document_id = ?", docLock.DocumentId, docLock); err != nil {
-				log.Printf("Error creating/updating document lock for document %s: %v", newDoc.Id, err)
-			}
-		}
+		// if !oldDoc.LockedAt.IsZero() || oldDoc.LockedReason != "" || oldDoc.LockedWords != "" {
+		// 	docLock := models.DocumentLock{
+		// 		DocumentId:   newDoc.Id,
+		// 		LockedReason: oldDoc.LockedReason,
+		// 		LockedType:   models.LockedTypeText,
+		// 		LockedTarget: "",
+		// 		LockedWords:  oldDoc.LockedWords,
+		// 	}
+		// 	if err := checkAndUpdate(targetDB, "document_lock", "document_id = ?", docLock.DocumentId, docLock); err != nil {
+		// 		log.Printf("Error creating/updating document lock for document %s: %v", newDoc.Id, err)
+		// 	}
+		// }
 	}
 	// 迁移文档权限申请表
 	// var oldDocPermRequests []struct {
