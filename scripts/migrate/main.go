@@ -111,28 +111,6 @@ func getOldMedias(path string, mediaNames []string, sourceMinioConf Config) ([]a
 		return nil, err
 	}
 
-	// 先调试：查看bucket中的文件结构
-	log.Printf("=== DEBUG: Checking bucket structure for document path: %s ===", path)
-
-	// 列出bucket中前20个文件来了解结构
-	objectCh := sourceMinioClient.ListObjects(context.Background(), sourceMinioConf.Source.Minio.FilesBucket, minio.ListObjectsOptions{
-		Recursive: true,
-		MaxKeys:   20,
-	})
-
-	log.Printf("Files in bucket '%s':", sourceMinioConf.Source.Minio.FilesBucket)
-	fileCount := 0
-	for object := range objectCh {
-		if object.Err != nil {
-			log.Printf("Error listing objects: %v", object.Err)
-			break
-		}
-		log.Printf("  %s", object.Key)
-		fileCount++
-	}
-	log.Printf("Total files shown: %d", fileCount)
-	log.Printf("=== END DEBUG ===")
-
 	var oldMedias []autoupdate.Media
 
 	for _, mediaName := range mediaNames {
@@ -141,7 +119,7 @@ func getOldMedias(path string, mediaNames []string, sourceMinioConf Config) ([]a
 		log.Printf("Looking for media file: %s", mediaPath)
 
 		// 从源 bucket 获取媒体文件
-		sourceObject, err := sourceMinioClient.GetObject(context.Background(), sourceMinioConf.Source.Minio.FilesBucket, mediaPath, minio.GetObjectOptions{})
+		sourceObject, err := sourceMinioClient.GetObject(context.Background(), sourceMinioConf.Source.Minio.Bucket, mediaPath, minio.GetObjectOptions{})
 		if err != nil {
 			log.Printf("Failed to get media object %s: %v", mediaPath, err)
 			continue // 继续处理其他文件，不中断整个流程
