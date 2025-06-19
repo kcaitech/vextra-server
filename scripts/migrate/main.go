@@ -90,158 +90,6 @@ type NewWeixinUser struct {
 	UnionID string `json:"union_id" gorm:"unique"`
 }
 
-// 获取旧的媒体文件
-func getOldMedias(path string, mediaNames []string, sourceMinioConf Config) ([]autoupdate.Media, error) {
-	if len(mediaNames) == 0 {
-		log.Printf("No media files to migrate for document %s", path)
-		return []autoupdate.Media{}, nil
-	}
-
-	// 创建源 Minio 客户端
-	// 优先使用主要的AccessKey/SecretKey
-	creds := credentials.NewStaticV4(sourceMinioConf.Source.Minio.AccessKey, sourceMinioConf.Source.Minio.SecretKey, "")
-
-	sourceMinioClient, err := minio.New(sourceMinioConf.Source.Minio.Endpoint, &minio.Options{
-		Creds:  creds,
-		Region: sourceMinioConf.Source.Minio.Region,
-		Secure: false,
-	})
-	if err != nil {
-		log.Printf("Failed to create source minio client: %v", err)
-		return nil, err
-	}
-
-	var oldMedias []autoupdate.Media
-
-	for _, mediaName := range mediaNames {
-		// 构建媒体文件路径
-		mediaPath := fmt.Sprintf("%s/medias/%s", path, mediaName)
-		log.Printf("Looking for media file: %s", mediaPath)
-
-		// 从源 bucket 获取媒体文件
-		sourceObject, err := sourceMinioClient.GetObject(context.Background(), sourceMinioConf.Source.Minio.Bucket, mediaPath, minio.GetObjectOptions{})
-		if err != nil {
-			log.Printf("Failed to get media object %s: %v", mediaPath, err)
-			continue // 继续处理其他文件，不中断整个流程
-		}
-
-		// 读取文件内容
-		mediaContent, err := io.ReadAll(sourceObject)
-		sourceObject.Close()
-		if err != nil {
-			log.Printf("Failed to read media content %s: %v", mediaPath, err)
-			continue
-		}
-
-		// 创建 Media 结构
-		media := autoupdate.Media{
-			Name:    mediaName,
-			Content: &mediaContent,
-		}
-
-		oldMedias = append(oldMedias, media)
-		log.Printf("Retrieved media file: %s, size: %d bytes", mediaName, len(mediaContent))
-	}
-
-	log.Printf("Successfully retrieved %d/%d media files for document %s", len(oldMedias), len(mediaNames), path)
-	return oldMedias, nil
-}
-
-func migrateDocumentStorage(documentId int64, generateApiUrl string, config Config, path string) error {
-	const maxRetries = 3
-	const retryDelay = 3 * time.Second
-
-	for attempt := 1; attempt <= maxRetries; attempt++ {
-		log.Printf("documentId: %d, attempt: %d/%d", documentId, attempt, maxRetries)
-
-		err := migrateDocumentStorageOnce(documentId, generateApiUrl, config, path)
-		if err == nil {
-			return nil
-		}
-
-		log.Printf("attempt %d failed: %v", attempt, err)
-		if attempt < maxRetries {
-			log.Printf("retrying in %v...", retryDelay)
-			time.Sleep(retryDelay)
-		}
-	}
-
-	log.Printf("all %d attempts failed for document %d", maxRetries, documentId)
-	return fmt.Errorf("failed after %d attempts", maxRetries)
-}
-
-func migrateDocumentStorageOnce(documentId int64, generateApiUrl string, sourceMinioConf Config, path string) error {
-	// var generateApiUrl = "http://192.168.0.131:8088/generate" // 旧版本更新服务地址
-	documentIdStr := str.IntToString(documentId)
-	resp, err := http.Get(generateApiUrl + "?documentId=" + documentIdStr)
-	if err != nil {
-		log.Println(generateApiUrl, "http.NewRequest err", err)
-		return err
-	}
-
-	defer resp.Body.Close()
-	// 读取响应
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		log.Println(generateApiUrl, "io.ReadAll err", err)
-		return err
-	}
-	if resp.StatusCode != 200 {
-		log.Println(generateApiUrl, "请求失败", resp.StatusCode, string(body))
-		return errors.New("请求失败")
-	}
-
-	var version struct {
-		LastCmdVerId string                `json:"lastCmdId"`
-		DocumentData autoupdate.ExFromJson `json:"documentData"`
-		DocumentText string                `json:"documentText"`
-		MediasSize   uint64                `json:"mediasSize"`
-		PageSvgs     []string              `json:"pageSvgs"`
-	}
-	err = json.Unmarshal(body, &version)
-	if err != nil {
-		log.Println(generateApiUrl, "resp", err)
-		return err
-	}
-
-	// 获取旧的媒体文件
-	oldMedias, err := getOldMedias(path, version.DocumentData.MediaNames, sourceMinioConf)
-	if err != nil {
-		log.Printf("Failed to get old medias for document %d: %v", documentId, err)
-		// 不中断流程，继续处理其他数据
-	}
-
-	log.Println("auto update document, start upload data", documentId)
-	// upload document data
-	header := autoupdate.Header{
-		DocumentId:   documentIdStr,
-		LastCmdVerId: version.LastCmdVerId,
-	}
-	response := autoupdate.Response{}
-	data := autoupdate.UploadData{
-		DocumentMeta: autoupdate.Data(version.DocumentData.DocumentMeta),
-		Pages:        version.DocumentData.Pages,
-		MediaNames:   version.DocumentData.MediaNames,
-		MediasSize:   version.MediasSize,
-		DocumentText: version.DocumentText,
-		PageSvgs:     version.PageSvgs,
-	}
-
-	// 传递媒体文件到 UploadDocumentData
-	var mediasPtr *[]autoupdate.Media
-	if len(oldMedias) > 0 {
-		mediasPtr = &oldMedias
-	}
-
-	autoupdate.UploadDocumentData(&header, &data, mediasPtr, &response)
-	if response.Status != autoupdate.ResponseStatusSuccess {
-		log.Println("auto update failed", response.Message)
-		return errors.New("auto update failed")
-	}
-	log.Println("auto update successed")
-	return nil
-}
-
 func main() {
 	configDir := "" // 从当前目录加载
 	conf, err := config.LoadYamlFile(configDir + "config.yaml")
@@ -372,6 +220,8 @@ func main() {
 
 	// 开始迁移
 	log.Println("Starting migration...")
+
+	getOldTeams(config)
 
 	// 1. 迁移MySQL数据
 	log.Println("Migrating MySQL data...")
@@ -1335,4 +1185,201 @@ func checkAndUpdate(db *gorm.DB, table string, whereClause string, whereArgs int
 		log.Printf("Created new record in %s with %s = %v", table, whereClause, whereArgs)
 	}
 	return nil
+}
+
+// 获取旧的媒体文件
+func getOldMedias(path string, mediaNames []string, sourceMinioConf Config) ([]autoupdate.Media, error) {
+	if len(mediaNames) == 0 {
+		log.Printf("No media files to migrate for document %s", path)
+		return []autoupdate.Media{}, nil
+	}
+
+	// 创建源 Minio 客户端
+	// 优先使用主要的AccessKey/SecretKey
+	creds := credentials.NewStaticV4(sourceMinioConf.Source.Minio.AccessKey, sourceMinioConf.Source.Minio.SecretKey, "")
+
+	sourceMinioClient, err := minio.New(sourceMinioConf.Source.Minio.Endpoint, &minio.Options{
+		Creds:  creds,
+		Region: sourceMinioConf.Source.Minio.Region,
+		Secure: false,
+	})
+	if err != nil {
+		log.Printf("Failed to create source minio client: %v", err)
+		return nil, err
+	}
+
+	var oldMedias []autoupdate.Media
+
+	for _, mediaName := range mediaNames {
+		// 构建媒体文件路径
+		mediaPath := fmt.Sprintf("%s/medias/%s", path, mediaName)
+		log.Printf("Looking for media file: %s", mediaPath)
+
+		// 从源 bucket 获取媒体文件
+		sourceObject, err := sourceMinioClient.GetObject(context.Background(), sourceMinioConf.Source.Minio.Bucket, mediaPath, minio.GetObjectOptions{})
+		if err != nil {
+			log.Printf("Failed to get media object %s: %v", mediaPath, err)
+			continue // 继续处理其他文件，不中断整个流程
+		}
+
+		// 读取文件内容
+		mediaContent, err := io.ReadAll(sourceObject)
+		sourceObject.Close()
+		if err != nil {
+			log.Printf("Failed to read media content %s: %v", mediaPath, err)
+			continue
+		}
+
+		// 创建 Media 结构
+		media := autoupdate.Media{
+			Name:    mediaName,
+			Content: &mediaContent,
+		}
+
+		oldMedias = append(oldMedias, media)
+		log.Printf("Retrieved media file: %s, size: %d bytes", mediaName, len(mediaContent))
+	}
+
+	log.Printf("Successfully retrieved %d/%d media files for document %s", len(oldMedias), len(mediaNames), path)
+	return oldMedias, nil
+}
+
+func migrateDocumentStorage(documentId int64, generateApiUrl string, config Config, path string) error {
+	const maxRetries = 3
+	const retryDelay = 3 * time.Second
+
+	for attempt := 1; attempt <= maxRetries; attempt++ {
+		log.Printf("documentId: %d, attempt: %d/%d", documentId, attempt, maxRetries)
+
+		err := migrateDocumentStorageOnce(documentId, generateApiUrl, config, path)
+		if err == nil {
+			return nil
+		}
+
+		log.Printf("attempt %d failed: %v", attempt, err)
+		if attempt < maxRetries {
+			log.Printf("retrying in %v...", retryDelay)
+			time.Sleep(retryDelay)
+		}
+	}
+
+	log.Printf("all %d attempts failed for document %d", maxRetries, documentId)
+	return fmt.Errorf("failed after %d attempts", maxRetries)
+}
+
+func migrateDocumentStorageOnce(documentId int64, generateApiUrl string, sourceMinioConf Config, path string) error {
+	// var generateApiUrl = "http://192.168.0.131:8088/generate" // 旧版本更新服务地址
+	documentIdStr := str.IntToString(documentId)
+	resp, err := http.Get(generateApiUrl + "?documentId=" + documentIdStr)
+	if err != nil {
+		log.Println(generateApiUrl, "http.NewRequest err", err)
+		return err
+	}
+
+	defer resp.Body.Close()
+	// 读取响应
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		log.Println(generateApiUrl, "io.ReadAll err", err)
+		return err
+	}
+	if resp.StatusCode != 200 {
+		log.Println(generateApiUrl, "请求失败", resp.StatusCode, string(body))
+		return errors.New("请求失败")
+	}
+
+	var version struct {
+		LastCmdVerId string                `json:"lastCmdId"`
+		DocumentData autoupdate.ExFromJson `json:"documentData"`
+		DocumentText string                `json:"documentText"`
+		MediasSize   uint64                `json:"mediasSize"`
+		PageSvgs     []string              `json:"pageSvgs"`
+	}
+	err = json.Unmarshal(body, &version)
+	if err != nil {
+		log.Println(generateApiUrl, "resp", err)
+		return err
+	}
+
+	// 获取旧的媒体文件
+	oldMedias, err := getOldMedias(path, version.DocumentData.MediaNames, sourceMinioConf)
+	if err != nil {
+		log.Printf("Failed to get old medias for document %d: %v", documentId, err)
+		// 不中断流程，继续处理其他数据
+	}
+
+	log.Println("auto update document, start upload data", documentId)
+	// upload document data
+	header := autoupdate.Header{
+		DocumentId:   documentIdStr,
+		LastCmdVerId: version.LastCmdVerId,
+	}
+	response := autoupdate.Response{}
+	data := autoupdate.UploadData{
+		DocumentMeta: autoupdate.Data(version.DocumentData.DocumentMeta),
+		Pages:        version.DocumentData.Pages,
+		MediaNames:   version.DocumentData.MediaNames,
+		MediasSize:   version.MediasSize,
+		DocumentText: version.DocumentText,
+		PageSvgs:     version.PageSvgs,
+	}
+
+	// 传递媒体文件到 UploadDocumentData
+	var mediasPtr *[]autoupdate.Media
+	if len(oldMedias) > 0 {
+		mediasPtr = &oldMedias
+	}
+
+	autoupdate.UploadDocumentData(&header, &data, mediasPtr, &response)
+	if response.Status != autoupdate.ResponseStatusSuccess {
+		log.Println("auto update failed", response.Message)
+		return errors.New("auto update failed")
+	}
+	log.Println("auto update successed")
+	return nil
+}
+
+func getOldTeams(sourceMinioConf Config) {
+	// 创建源 Minio 客户端
+	creds := credentials.NewStaticV4(sourceMinioConf.Source.Minio.AccessKey, sourceMinioConf.Source.Minio.SecretKey, "")
+
+	sourceMinioClient, err := minio.New(sourceMinioConf.Source.Minio.Endpoint, &minio.Options{
+		Creds:  creds,
+		Region: sourceMinioConf.Source.Minio.Region,
+		Secure: false,
+	})
+	if err != nil {
+		log.Printf("Failed to create source minio client: %v", err)
+		return
+	}
+
+	// 列出files bucket中teams文件夹下的所有文件
+	log.Printf("=== 开始获取teams文件夹结构 ===")
+	objectCh := sourceMinioClient.ListObjects(context.Background(), sourceMinioConf.Source.Minio.FilesBucket, minio.ListObjectsOptions{
+		Prefix:    "teams/",
+		Recursive: true,
+	})
+
+	fileCount := 0
+	totalSize := int64(0)
+
+	for object := range objectCh {
+		if object.Err != nil {
+			log.Printf("Error listing objects: %v", object.Err)
+			break
+		}
+		log.Printf("  %s (size: %d bytes)", object.Key, object.Size)
+		fileCount++
+		totalSize += object.Size
+
+		// 每100个文件输出一次进度
+		if fileCount%100 == 0 {
+			log.Printf("已处理 %d 个文件...", fileCount)
+		}
+	}
+
+	log.Printf("=== teams文件夹结构获取完成 ===")
+	log.Printf("teams文件夹总文件数: %d", fileCount)
+	log.Printf("teams文件夹总大小: %.2f MB", float64(totalSize)/(1024*1024))
+	log.Printf("=== END DEBUG ===")
 }
