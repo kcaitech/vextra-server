@@ -115,7 +115,7 @@ func getOldMedias(path string, mediaNames []string, sourceMinioConf Config) ([]a
 
 	for _, mediaName := range mediaNames {
 		// 构建媒体文件路径
-		mediaPath := fmt.Sprintf("documents/%s/medias/%s", path, mediaName)
+		mediaPath := fmt.Sprintf("%s/medias/%s", path, mediaName)
 
 		// 从源 bucket 获取媒体文件
 		sourceObject, err := sourceMinioClient.GetObject(context.Background(), sourceMinioConf.Source.Minio.FilesBucket, mediaPath, minio.GetObjectOptions{})
