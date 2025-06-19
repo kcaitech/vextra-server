@@ -53,12 +53,12 @@ type Config struct {
 		Minio          struct {
 			Endpoint     string `json:"endpoint"`
 			Region       string `json:"region"`
-			AccessKey    string `json:"accessKey"`
-			SecretKey    string `json:"secretKey"`
-			StsAccessKey string `json:"stsAccessKey"`
-			StsSecretKey string `json:"stsSecretKey"`
-			Bucket       string `json:"bucket"`
-			FilesBucket  string `json:"filesBucket"`
+			AccessKey    string `json:"accessKeyID"`
+			SecretKey    string `json:"secretAccessKey"`
+			StsAccessKey string `json:"stsAccessKeyID"`
+			StsSecretKey string `json:"stsSecretAccessKey"`
+			Bucket       string `json:"bucketName"`
+			FilesBucket  string `json:"filesBucketName"`
 		} `json:"minio"`
 	} `json:"source"`
 	Target struct {

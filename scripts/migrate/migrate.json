@@ -14,12 +14,12 @@
         "minio": {
             "endpoint": "192.168.0.123:9000",
             "region": "zhuhai-1",
-            "accessKey": "59L3pDWuk9oLQWIgytCI",
-            "secretKey": "GmwAzetY1L0jU4pUAqpO7RJGIsG7k3gozVH6whoJ",
-            "stsAccessKey": "user",
-            "stsSecretKey": "GmwAzetY1L0jU4pUAqpO7RJGIsG7k3gozVH6whoJ",
-            "bucket": "document",
-            "filesBucket": "files"
+            "accessKeyID": "Gathooh88mba5H3y2",
+            "secretAccessKey": "yFukp3vtIkUNck2XL3s2KOT4wyRPR71G2",
+            "stsAccessKeyID": "Gathooh88mba5H3y1",
+            "stsSecretAccessKey": "yFukp3vtIkUNck2XL3s2KOT4wyRPR71G1",
+            "bucketName": "document",
+            "filesBucketName": "files"
         },
         "generateApiUrl": "http://192.168.0.123:8081/migrate"
     },
