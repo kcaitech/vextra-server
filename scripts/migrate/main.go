@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"io"
 	"log"
@@ -18,6 +19,7 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"kcaitech.com/kcserver/models"
+	"kcaitech.com/kcserver/services"
 
 	"net/http"
 
@@ -27,7 +29,6 @@ import (
 	"reflect"
 
 	"kcaitech.com/kcserver/providers/mongo"
-	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils/str"
 
 	// utilTime "kcaitech.com/kcserver/utils/time"
@@ -1353,39 +1354,85 @@ func getOldTeams(sourceMinioConf Config) {
 		return
 	}
 
-	// 要获取的文件夹列表
-	folders := []string{"teams/", "users/"}
+	objectCh := sourceMinioClient.ListObjects(context.Background(), sourceMinioConf.Source.Minio.FilesBucket, minio.ListObjectsOptions{
+		Prefix:    "teams/",
+		Recursive: true,
+	})
 
-	for _, folder := range folders {
-		log.Printf("=== 开始获取%s文件夹结构 ===", folder)
+	fileCount := 0
+	successCount := 0
+	failCount := 0
+	totalSize := int64(0)
 
-		objectCh := sourceMinioClient.ListObjects(context.Background(), sourceMinioConf.Source.Minio.FilesBucket, minio.ListObjectsOptions{
-			Prefix:    folder,
-			Recursive: true,
-		})
-
-		fileCount := 0
-		totalSize := int64(0)
-
-		for object := range objectCh {
-			if object.Err != nil {
-				log.Printf("Error listing objects: %v", object.Err)
-				break
-			}
-			log.Printf("  %s (size: %d bytes)", object.Key, object.Size)
-			fileCount++
-			totalSize += object.Size
-
-			// 每100个文件输出一次进度
-			if fileCount%100 == 0 {
-				log.Printf("已处理 %d 个文件...", fileCount)
-			}
+	for object := range objectCh {
+		if object.Err != nil {
+			log.Printf("Error listing objects: %v", object.Err)
+			break
 		}
 
-		log.Printf("=== %s文件夹结构获取完成 ===", folder)
-		log.Printf("%s文件夹总文件数: %d", folder, fileCount)
-		log.Printf("%s文件夹总大小: %.2f MB", folder, float64(totalSize)/(1024*1024))
-		log.Printf("=== END %s DEBUG ===", folder)
-		log.Println() // 添加空行分隔
+		fileCount++
+		totalSize += object.Size
+		log.Printf("处理文件 %d: %s (size: %d bytes)", fileCount, object.Key, object.Size)
+
+		// 下载源文件
+		sourceObject, err := sourceMinioClient.GetObject(context.Background(), sourceMinioConf.Source.Minio.FilesBucket, object.Key, minio.GetObjectOptions{})
+		if err != nil {
+			log.Printf("Failed to get source object %s: %v", object.Key, err)
+			failCount++
+			continue
+		}
+
+		// 读取文件内容
+		fileContent, err := io.ReadAll(sourceObject)
+		sourceObject.Close()
+		if err != nil {
+			log.Printf("Failed to read source object %s: %v", object.Key, err)
+			failCount++
+			continue
+		}
+
+		// 解析路径获取ID和文件类型，只处理teams文件
+		if strings.HasPrefix(object.Key, "teams/") {
+			err = uploadTeamFile(object.Key, fileContent)
+		}
+
+		if err != nil {
+			log.Printf("Failed to upload %s: %v", object.Key, err)
+			failCount++
+		} else {
+			log.Printf("✅ Successfully uploaded: %s", object.Key)
+			successCount++
+		}
 	}
+
+	log.Printf("=== teams文件夹迁移完成 ===")
+	log.Printf("teams总文件数: %d, teams失败数量: %d, teams成功上传: %d, teams总大小: %.2f MB", fileCount, failCount, successCount, float64(totalSize)/(1024*1024))
+	log.Printf("=== END teams MIGRATION ===")
+}
+
+// 上传团队文件
+func uploadTeamFile(filePath string, fileContent []byte) error {
+	// 解析路径: teams/{teamId}/avatar/{filename}
+	parts := strings.Split(filePath, "/")
+	teamId := parts[1]
+
+	// 使用存储服务上传文件到attach bucket
+	_storage := services.GetStorageClient()
+	path := fmt.Sprintf("/teams/%s/avatar/%s", teamId, parts[3])
+	if _, err := _storage.AttatchBucket.PutObjectByte(path, fileContent, ""); err != nil {
+		log.Printf("上传文件失败: %v", err)
+		return fmt.Errorf("上传文件失败: %v", err)
+	}
+
+	// 更新团队头像数据库记录
+	teamService := services.NewTeamService()
+	if _, err := teamService.UpdateColumnsById(teamId, map[string]any{
+		"avatar": path,
+	}); err != nil {
+		log.Printf("更新团队头像失败: %v", err)
+		return fmt.Errorf("更新错误: %v", err)
+	}
+
+	log.Printf("Successfully updated team %s avatar: %s", teamId, path)
+	return nil
 }
