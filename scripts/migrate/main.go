@@ -1418,6 +1418,23 @@ func uploadTeamFile(filePath string, fileContent []byte) error {
 
 	// 使用存储服务上传文件到attach bucket
 	_storage := services.GetStorageClient()
+	if _storage == nil {
+		log.Printf("存储客户端为空")
+		return fmt.Errorf("存储客户端未初始化")
+	}
+
+	if _storage.AttatchBucket == nil {
+		log.Printf("AttatchBucket为空")
+		return fmt.Errorf("AttatchBucket未初始化")
+	}
+
+	// 获取bucket配置信息用于调试
+	config := _storage.AttatchBucket.GetConfig()
+	if config != nil {
+		log.Printf("Bucket配置: BucketName=%s, AttatchBucketName=%s",
+			config.BucketConfig.BucketName, config.BucketConfig.AttatchBucketName)
+	}
+
 	path := fmt.Sprintf("/teams/%s/avatar/%s", teamId, parts[3])
 	if _, err := _storage.AttatchBucket.PutObjectByte(path, fileContent, ""); err != nil {
 		log.Printf("上传文件失败: %v", err)
