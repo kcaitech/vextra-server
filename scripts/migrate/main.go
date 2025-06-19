@@ -1353,33 +1353,39 @@ func getOldTeams(sourceMinioConf Config) {
 		return
 	}
 
-	// 列出files bucket中teams文件夹下的所有文件
-	log.Printf("=== 开始获取teams文件夹结构 ===")
-	objectCh := sourceMinioClient.ListObjects(context.Background(), sourceMinioConf.Source.Minio.FilesBucket, minio.ListObjectsOptions{
-		Prefix:    "teams/",
-		Recursive: true,
-	})
+	// 要获取的文件夹列表
+	folders := []string{"teams/", "users/"}
 
-	fileCount := 0
-	totalSize := int64(0)
+	for _, folder := range folders {
+		log.Printf("=== 开始获取%s文件夹结构 ===", folder)
 
-	for object := range objectCh {
-		if object.Err != nil {
-			log.Printf("Error listing objects: %v", object.Err)
-			break
+		objectCh := sourceMinioClient.ListObjects(context.Background(), sourceMinioConf.Source.Minio.FilesBucket, minio.ListObjectsOptions{
+			Prefix:    folder,
+			Recursive: true,
+		})
+
+		fileCount := 0
+		totalSize := int64(0)
+
+		for object := range objectCh {
+			if object.Err != nil {
+				log.Printf("Error listing objects: %v", object.Err)
+				break
+			}
+			log.Printf("  %s (size: %d bytes)", object.Key, object.Size)
+			fileCount++
+			totalSize += object.Size
+
+			// 每100个文件输出一次进度
+			if fileCount%100 == 0 {
+				log.Printf("已处理 %d 个文件...", fileCount)
+			}
 		}
-		log.Printf("  %s (size: %d bytes)", object.Key, object.Size)
-		fileCount++
-		totalSize += object.Size
 
-		// 每100个文件输出一次进度
-		if fileCount%100 == 0 {
-			log.Printf("已处理 %d 个文件...", fileCount)
-		}
+		log.Printf("=== %s文件夹结构获取完成 ===", folder)
+		log.Printf("%s文件夹总文件数: %d", folder, fileCount)
+		log.Printf("%s文件夹总大小: %.2f MB", folder, float64(totalSize)/(1024*1024))
+		log.Printf("=== END %s DEBUG ===", folder)
+		log.Println() // 添加空行分隔
 	}
-
-	log.Printf("=== teams文件夹结构获取完成 ===")
-	log.Printf("teams文件夹总文件数: %d", fileCount)
-	log.Printf("teams文件夹总大小: %.2f MB", float64(totalSize)/(1024*1024))
-	log.Printf("=== END DEBUG ===")
 }
