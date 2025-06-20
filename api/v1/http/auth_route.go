@@ -24,6 +24,7 @@ func loadLoginRoutes(api *gin.RouterGroup) {
 	// router.POST("/login/wx_mp", handlers.WxMpLogin)
 	router.POST("/refresh_token", RefreshToken)
 	router.GET("/login/callback", LoginCallback)
+	router.GET("/login/mini_program", LoginMiniProgram)
 	// 需要已登录
 	router.GET("/logout", services.GetKCAuthClient().AuthRequired(), Logout)
 }
@@ -71,6 +72,27 @@ func LoginCallback(c *gin.Context) {
 		return
 	}
 
+	response.Success(c, map[string]any{
+		"token":    result.Token,
+		"id":       result.UserID,
+		"nickname": result.Nickname,
+		"avatar":   result.Avatar,
+	})
+}
+
+func LoginMiniProgram(c *gin.Context) {
+	code := c.Query("code")
+	if code == "" {
+		response.BadRequest(c, "Code is required")
+		return
+	}
+	client := services.GetKCAuthClient()
+	result, err := client.WeixinMiniLogin(code, c)
+	if err != nil {
+		log.Printf("Login callback failed: %s", err.Error())
+		response.Unauthorized(c)
+		return
+	}
 	response.Success(c, map[string]any{
 		"token":    result.Token,
 		"id":       result.UserID,

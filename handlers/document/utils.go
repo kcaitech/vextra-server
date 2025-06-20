@@ -45,6 +45,15 @@ func GetDocumentThumbnail(c *gin.Context, documentId string, storage *storage.St
 			reqParams.Set("response-content-disposition", "inline")
 			presignedURL, err := storage.Bucket.PresignedGetObject(object.Key, time.Hour, nil)
 			if err == nil {
+				// 将预签名URL中的域名替换成配置中的storage_url.document
+				documentStorageUrl := services.GetConfig().StorageUrl.Document
+				if parsedURL, parseErr := url.Parse(presignedURL); parseErr == nil {
+					if configURL, configErr := url.Parse(documentStorageUrl); configErr == nil {
+						parsedURL.Scheme = configURL.Scheme
+						parsedURL.Host = configURL.Host
+						return parsedURL.String()
+					}
+				}
 				return presignedURL
 			}
 			break
