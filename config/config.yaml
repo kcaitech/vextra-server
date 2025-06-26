@@ -4,6 +4,7 @@ db:
   host: 192.168.0.125
   port: 3306
   database: kcserver
+  charset: utf8mb4
 
 mongo:
   url: mongodb://root:jKKsinkjilKKLSW@192.168.0.125:27017
