@@ -9,12 +9,11 @@ import (
 	"log"
 	"mime/multipart"
 	"net/http"
-	"sync"
+	"os"
 
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/providers/safereview"
 	"kcaitech.com/kcserver/services"
-	"kcaitech.com/kcserver/utils/str"
 )
 
 func _svgToPng(svgContent string, svg2pngUrl string) ([]byte, error) {
@@ -79,51 +78,6 @@ func _svgToPng(svgContent string, svg2pngUrl string) ([]byte, error) {
 	return body, nil
 }
 
-func svg2png(uploadData *UploadData, svg2pngUrl string) *[][]byte {
-	count := len(uploadData.PageSvgs)
-	if count == 0 {
-		return nil
-	}
-
-	// 创建一个 WaitGroup 并设置初始计数器值
-	var wg sync.WaitGroup
-
-	wg.Add(count) // 假设我们要发起5个请求
-
-	pngs := make([][]byte, count)
-
-	// 创建一个有界通道，用于限制并发请求的数量
-	const maxConcurrentRequests = 5
-	requestCh := make(chan struct{}, maxConcurrentRequests)
-
-	// 循环发起请求
-	for i, svg := range uploadData.PageSvgs {
-		go func(i int, svg string) {
-			defer wg.Done() // 每个 goroutine 结束时调用 Done()
-
-			// 获取一个并发请求的许可
-			requestCh <- struct{}{}
-
-			// 在请求结束后释放许可
-			defer func() {
-				<-requestCh
-			}()
-
-			png, err := _svgToPng(svg, svg2pngUrl)
-			if err != nil {
-				log.Println("svg2png fail", err)
-			} else {
-				pngs[i] = png
-			}
-		}(i, svg)
-	}
-
-	// 等待所有请求完成
-	wg.Wait()
-	// fmt.Println("All requests have been processed.")
-	return &pngs
-}
-
 func reviewgo(newDocument *models.Document, uploadData *UploadData, docPath string, pages []struct {
 	Id string `json:"id"`
 }, medias *[]Media) {
@@ -131,9 +85,6 @@ func reviewgo(newDocument *models.Document, uploadData *UploadData, docPath stri
 	if reviewClient == nil {
 		return
 	}
-
-	// svg2png
-	pngs := svg2png(uploadData, services.GetConfig().Svg2Png.Url)
 
 	_storage := services.GetStorageClient()
 
@@ -153,18 +104,36 @@ func reviewgo(newDocument *models.Document, uploadData *UploadData, docPath stri
 			})
 		}
 	}
+	tmp_dir := services.GetConfig().TmpDir + "/" + newDocument.Id
 	// review pages
-	if uploadData.PageSvgs != nil && len(uploadData.PageSvgs) > 0 {
-		for i, page := range pages {
-			png := (*pngs)[i]
+	if uploadData.PagePngs != nil && len(uploadData.PagePngs) > 0 {
+		for _, page := range pages {
+			pagePng := page.Id + ".png"
+
+			png := ""
+			for _, pagePngName := range uploadData.PagePngs {
+				if pagePngName == pagePng {
+					png = pagePngName
+					break
+				}
+			}
 			if len(png) == 0 {
 				continue
 			}
-			path := docPath + "/page_image/" + str.IntToString(int64(i)) + ".png"
-			if _, err := _storage.Bucket.PutObjectByte(path, png, ""); err != nil {
+
+			path := docPath + "/page_image/" + page.Id + ".png"
+
+			// 读取png文件
+			pngBytes, err := os.ReadFile(tmp_dir + "/" + pagePng)
+			if err != nil {
+				log.Println("读取png文件失败", err)
+				continue
+			}
+
+			if _, err := _storage.Bucket.PutObjectByte(path, pngBytes, ""); err != nil {
 				log.Println("图片上传错误", err)
 			}
-			base64Str := base64.StdEncoding.EncodeToString(png)
+			base64Str := base64.StdEncoding.EncodeToString(pngBytes)
 			reviewResponse, err := (reviewClient).ReviewPictureFromBase64(base64Str)
 			if err != nil {
 				log.Println("图片审核失败", err)
@@ -179,6 +148,8 @@ func reviewgo(newDocument *models.Document, uploadData *UploadData, docPath stri
 			}
 		}
 	}
+	// 清空临时目录
+	os.RemoveAll(tmp_dir)
 
 	// medias
 	if medias != nil && len(*medias) > 0 {
@@ -221,7 +192,7 @@ func review(newDocument *models.Document, uploadData *UploadData, docPath string
 		return
 	}
 	// 没有内容
-	if (uploadData.PageSvgs == nil || len(uploadData.PageSvgs) == 0) && uploadData.DocumentText == "" && (medias == nil || len(*medias) == 0) {
+	if (uploadData.PagePngs == nil || len(uploadData.PagePngs) == 0) && uploadData.DocumentText == "" && (medias == nil || len(*medias) == 0) {
 		return
 	}
 	go reviewgo(newDocument, uploadData, docPath, pages, medias)

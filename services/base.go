@@ -120,7 +120,7 @@ func GetSafereviewClient() safereview.Client {
 // storage client 的单例
 var storageClient *storage.StorageClient
 
-func InitStorageClient(config *storage.StorageConf) (*storage.StorageClient, error) {
+func InitStorageClient(config *storage.Config) (*storage.StorageClient, error) {
 	if storageClient != nil {
 		return storageClient, nil
 	}

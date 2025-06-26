@@ -49,12 +49,10 @@ type PageSvg struct {
 type UploadData struct {
 	DocumentMeta Data            `json:"document_meta"`
 	Pages        json.RawMessage `json:"pages"`
-	// FreeSymbols         json.RawMessage `json:"freesymbols"` // 这个现在在document meta里
-	MediaNames   []string `json:"media_names"`
-	MediasSize   uint64   `json:"medias_size"`
-	DocumentText string   `json:"document_text"`
-	// PageImageList *[][]byte `json:"page_image_list"`
-	PageSvgs []string `json:"pageSvgs"`
+	MediaNames   []string        `json:"media_names"`
+	MediasSize   uint64          `json:"medias_size"`
+	DocumentText string          `json:"document_text"`
+	PagePngs     []string        `json:"pages_png_generated"`
 }
 
 type Media struct {
@@ -145,15 +143,6 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 
 	documentSize := uint64(0)
 
-	// reviewText(uploadData.DocumentText, &newDocument)
-	// reviewPages(uploadData.PageImageList, &newDocument, docPath, documentService)
-
-	// if !newDocument.LockedAt.IsZero() && !isFirstUpload {
-	// 	_, _ = documentService.UpdateColumnsById(documentId, map[string]any{
-	// 		"locked_at": nil,
-	// 	})
-	// }
-
 	uploadWaitGroup := sync.WaitGroup{}
 
 	// pages部分
@@ -193,8 +182,6 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 
 	// medias部分
 	if medias != nil { // 非首次上传即版本更新，不会有medias
-		// reviewMedias(medias, &newDocument, documentService, services.GetSafereviewClient())
-
 		// upload medias
 		for _, media := range *medias {
 			path := docPath + "/medias/" + media.Name

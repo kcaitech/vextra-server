@@ -146,7 +146,7 @@ func migrateDocumentStorageOnce(documentId int64, generateApiUrl string) error {
 		MediaNames:   version.DocumentData.MediaNames,
 		MediasSize:   version.MediasSize,
 		DocumentText: version.DocumentText,
-		PageSvgs:     version.PageSvgs,
+		// PageSvgs:     version.PageSvgs,
 	}
 	autoupdate.UploadDocumentData(&header, &data, nil, &response)
 	if response.Status != autoupdate.ResponseStatusSuccess {

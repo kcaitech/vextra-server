@@ -78,6 +78,8 @@ type Configuration struct {
 	AuthClientID     string `yaml:"auth_client_id,omitempty" json:"auth_client_id,omitempty"`
 	AuthClientSecret string `yaml:"auth_client_secret,omitempty" json:"auth_client_secret,omitempty"`
 	AuthCallbackURL  string `yaml:"auth_callback_url,omitempty" json:"auth_callback_url,omitempty"`
+
+	TmpDir string `yaml:"tmp_dir,omitempty" json:"tmp_dir,omitempty" default:"/tmp/com.kcaitech.kcserver"`
 }
 
 func LoadYamlFile(filePath string) (*Configuration, error) {
