@@ -117,11 +117,13 @@ func (serv *docUploadServe) handle(data *TransData, binaryData *([]byte)) {
 			ProjectId: serv.data.ProjectId,
 		}
 
-		uploadData := document.UploadData{
-			DocumentMeta: document.Data(serv.data.Export.DocumentMeta),
-			Pages:        serv.data.Export.Pages,
-			MediaNames:   serv.data.Export.MediaNames,
-			MediasSize:   serv.data.MediasSize,
+		uploadData := document.VersionResp{
+			DocumentData: document.ExFromJson{
+				DocumentMeta: document.Data(serv.data.Export.DocumentMeta),
+				Pages:        serv.data.Export.Pages,
+				MediaNames:   serv.data.Export.MediaNames,
+			},
+			MediasSize: serv.data.MediasSize,
 		}
 
 		resp := document.Response{}

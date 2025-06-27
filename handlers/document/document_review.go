@@ -78,7 +78,7 @@ func _svgToPng(svgContent string, svg2pngUrl string) ([]byte, error) {
 	return body, nil
 }
 
-func reviewgo(newDocument *models.Document, uploadData *UploadData, docPath string, pages []struct {
+func reviewgo(newDocument *models.Document, uploadData *VersionResp, docPath string, pages []struct {
 	Id string `json:"id"`
 }, medias *[]Media) {
 	reviewClient := services.GetSafereviewClient()
@@ -184,7 +184,7 @@ func reviewgo(newDocument *models.Document, uploadData *UploadData, docPath stri
 	}
 }
 
-func review(newDocument *models.Document, uploadData *UploadData, docPath string, pages []struct {
+func review(newDocument *models.Document, uploadData *VersionResp, docPath string, pages []struct {
 	Id string `json:"id"`
 }, medias *[]Media) {
 	reviewClient := services.GetSafereviewClient()
