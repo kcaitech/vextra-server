@@ -48,26 +48,23 @@ export class HttpMgr {
     private timer: any
     private service: any
     private onUnauthorized: () => void
-    private _token?: string
-
-    private get localStorage() {
-        if (typeof window !== 'undefined' && window.localStorage) {
-            return window.localStorage
-        }
-        return undefined
+    private _token: {
+        getToken: () => string | undefined,
+        setToken: (token: string | undefined) => void
     }
 
-    private get token() {
-        if (this._token) return this._token
-        return this.localStorage?.getItem('token') ?? undefined
+    // private get localStorage() {
+    //     if (typeof window !== 'undefined' && window.localStorage) {
+    //         return window.localStorage
+    //     }
+    //     return undefined
+    // }
+
+    public get token() {
+        return this._token.getToken()
     }
-    private set token(value: string | undefined) {
-        this._token = value
-        if (value) {
-            this.localStorage?.setItem('token', value)
-        } else {
-            this.localStorage?.removeItem('token')
-        }
+    public set token(value: string | undefined) {
+        this._token.setToken(value)
     }
     private auth_request(config: any) {
         const token = this.token
@@ -116,7 +113,10 @@ export class HttpMgr {
         }
     }
 
-    constructor(apiUrl: string, onUnauthorized: () => void, token?: string) {
+    constructor(apiUrl: string, onUnauthorized: () => void, token: {
+        getToken: () => string | undefined,
+        setToken: (token: string | undefined) => void
+    }) {
         this._request = this._request.bind(this)
         this.onUnauthorized = onUnauthorized
         this.service = axios.create({
