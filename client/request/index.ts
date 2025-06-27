@@ -22,7 +22,7 @@ export class Request {
 
 export type { UserInfo, TeamInfo, ProjectInfo, LockedInfo } from "./types"
 
-export { TeamPermType } from "./types"
+export { TeamPermType, LocketType } from "./types"
 
 export { HttpCode } from "./httpcode"
 export * from "./users"
