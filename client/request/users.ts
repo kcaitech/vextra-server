@@ -131,6 +131,7 @@ export class UsersAPI {
         page_url?: string;
         files?: ArrayBuffer[];
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         const formData = new FormData();
         formData.append('type', params.type.toString());
         formData.append('content', params.content);
