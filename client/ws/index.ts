@@ -13,7 +13,6 @@ export { DocUpload } from "./upload"
 export * from "./types"
 
 export class WSClient {
-    // private context: IContext
     connect: Connect
 
     private op: CoopNet
