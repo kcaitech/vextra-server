@@ -101,6 +101,13 @@ func (serv *docUploadServe) handle(data *TransData, binaryData *([]byte)) {
 		return
 	}
 	if uploadHeader.Media != "" && binaryData != nil {
+		// 去除失败重传的图片
+		for _, media := range serv.data.Medias {
+			if media.Name == uploadHeader.Media {
+				_ = serv.ws.WriteJSON(serverData)
+				return
+			}
+		}
 		media := document.Media{
 			Name:    uploadHeader.Media,
 			Content: binaryData,
