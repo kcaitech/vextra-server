@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/common/response"
+	"kcaitech.com/kcserver/handlers/common"
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/providers/safereview"
 	"kcaitech.com/kcserver/services"
@@ -21,7 +21,7 @@ import (
 func CreateTeam(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	teamService := services.NewTeamService()
@@ -30,11 +30,11 @@ func CreateTeam(c *gin.Context) {
 		Description string `json:"description" form:"description"`
 	}
 	if err := c.ShouldBind(&req); err != nil {
-		response.BadRequest(c, err.Error())
+		common.BadRequest(c, err.Error())
 		return
 	}
 	if req.Name == "" {
-		response.BadRequest(c, "参数错误：name")
+		common.BadRequest(c, "参数错误：name")
 		return
 	}
 
@@ -43,21 +43,21 @@ func CreateTeam(c *gin.Context) {
 		reviewResponse, err := (reviewClient).ReviewText(req.Name)
 		if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
 			log.Println("名称审核不通过", req.Name, err, reviewResponse)
-			response.ReviewFail(c, "审核不通过")
+			common.ReviewFail(c, "审核不通过")
 			return
 		}
 		if req.Description != "" {
 			reviewResponse, err = (reviewClient).ReviewText(req.Description)
 			if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
 				log.Println("描述审核不通过", req.Description, err, reviewResponse)
-				response.ReviewFail(c, "审核不通过")
+				common.ReviewFail(c, "审核不通过")
 				return
 			}
 		}
 	}
 	id, err := utils.GenerateBase62ID()
 	if err != nil {
-		response.ServerError(c, err.Error())
+		common.ServerError(c, err.Error())
 		return
 	}
 	team := models.Team{
@@ -66,25 +66,25 @@ func CreateTeam(c *gin.Context) {
 		Id:          id,
 	}
 	if teamService.Create(&team) != nil {
-		response.ServerError(c, "团队创建失败")
+		common.ServerError(c, "团队创建失败")
 		return
 	}
 
 	fileHeader, err := c.FormFile("avatar")
 	if err == nil {
 		if fileHeader.Size > 2<<20 {
-			response.BadRequest(c, "文件大小不能超过2MB")
+			common.BadRequest(c, "文件大小不能超过2MB")
 			return
 		}
 		file, err := fileHeader.Open()
 		if err != nil {
-			response.BadRequest(c, "获取文件失败")
+			common.BadRequest(c, "获取文件失败")
 			return
 		}
 		defer file.Close()
 		fileBytes := make([]byte, fileHeader.Size)
 		if _, err := file.Read(fileBytes); err != nil {
-			response.BadRequest(c, "读取文件失败")
+			common.BadRequest(c, "读取文件失败")
 			return
 		}
 		contentType := fileHeader.Header.Get("Content-Type")
@@ -93,18 +93,18 @@ func CreateTeam(c *gin.Context) {
 			reviewResponse, err := (reviewClient).ReviewPictureFromBase64(base64Str)
 			if err != nil {
 				log.Println("头像审核错误", err)
-				response.BadRequest(c, "头像审核错误")
+				common.BadRequest(c, "头像审核错误")
 				return
 			} else if reviewResponse.Status != safereview.ReviewImageResultPass {
 				log.Println("头像审核不通过", err, reviewResponse)
-				response.BadRequest(c, "头像审核不通过")
+				common.BadRequest(c, "头像审核不通过")
 				return
 			}
 		}
 		_, err = services.NewTeamService().UploadTeamAvatar(&team, fileBytes, contentType)
 		if err != nil {
 			log.Println("头像上传失败", err)
-			response.BadRequest(c, "头像上传失败")
+			common.BadRequest(c, "头像上传失败")
 			return
 		}
 	}
@@ -116,7 +116,7 @@ func CreateTeam(c *gin.Context) {
 		PermType: models.TeamPermTypeCreator,
 	}
 	if teamMemberService.Create(&teamMember) != nil {
-		response.ServerError(c, "团队创建失败.")
+		common.ServerError(c, "团队创建失败.")
 		return
 	}
 
@@ -129,14 +129,14 @@ func CreateTeam(c *gin.Context) {
 	// if team.Avatar != "" {
 	// 	result["avatar"] = config.Config.StorageUrl.Attatch + team.Avatar
 	// }
-	response.Success(c, result)
+	common.Success(c, result)
 }
 
 // GetTeamList 获取团队列表
 func GetTeamList(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	teamService := services.NewTeamService()
@@ -150,7 +150,7 @@ func GetTeamList(c *gin.Context) {
 	userMap, err := GetUsersInfo(c, userIds)
 	if err != nil {
 		log.Println("get users info fail:", err.Error())
-		response.ServerError(c, "查询错误")
+		common.ServerError(c, "查询错误")
 		return
 	}
 
@@ -184,27 +184,27 @@ func GetTeamList(c *gin.Context) {
 		})
 	}
 
-	response.Success(c, resultWithCreator)
+	common.Success(c, resultWithCreator)
 }
 
 // GetTeamMemberList 获取团队成员列表
 func GetTeamMemberList(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	teamId := (c.Query("team_id"))
 	if teamId == "" {
-		response.BadRequest(c, "参数错误：team_id")
+		common.BadRequest(c, "参数错误：team_id")
 		return
 	}
 	teamService := services.NewTeamService()
 	if permType, err := teamService.GetTeamPermTypeByForUser(teamId, userId); err != nil || permType == nil {
-		response.ServerError(c, "查询错误")
+		common.ServerError(c, "查询错误")
 		return
 	} else if *permType == models.TeamPermTypeNone || *permType < models.TeamPermTypeReadOnly {
-		response.Forbidden(c, "")
+		common.Forbidden(c, "")
 		return
 	}
 	result := teamService.FindTeamMember(teamId)
@@ -216,7 +216,7 @@ func GetTeamMemberList(c *gin.Context) {
 	userMap, err := GetUsersInfo(c, userIds)
 	if err != nil {
 		log.Println("get users info fail:", err.Error())
-		response.ServerError(c, "查询错误")
+		common.ServerError(c, "查询错误")
 		return
 	}
 
@@ -255,28 +255,28 @@ func GetTeamMemberList(c *gin.Context) {
 		}
 	}
 
-	response.Success(c, mergedResult)
+	common.Success(c, mergedResult)
 }
 
 // DeleteTeam 解散团队
 func DeleteTeam(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	teamId := (c.Query("team_id"))
 	if teamId == "" {
-		response.BadRequest(c, "参数错误：team_id")
+		common.BadRequest(c, "参数错误：team_id")
 		return
 	}
 	teamService := services.NewTeamService()
 	var team models.Team
 	if err := teamService.GetById(teamId, &team); err != nil {
 		if errors.Is(err, services.ErrRecordNotFound) {
-			response.BadRequest(c, "团队不存在")
+			common.BadRequest(c, "团队不存在")
 		} else {
-			response.ServerError(c, "查询错误")
+			common.ServerError(c, "查询错误")
 		}
 		return
 	}
@@ -287,47 +287,47 @@ func DeleteTeam(c *gin.Context) {
 		if errors.Is(err, services.ErrRecordNotFound) {
 			// 记录不存在
 			log.Println("团队成员不存在", err, teamId, userId)
-			response.Forbidden(c, "不是团队成员")
+			common.Forbidden(c, "不是团队成员")
 			return
 		} else {
-			response.ServerError(c, "查询错误")
+			common.ServerError(c, "查询错误")
 			return
 		}
 	}
 	if teamMember.PermType != models.TeamPermTypeCreator {
-		response.Forbidden(c, "团队所有者才可删除团队")
+		common.Forbidden(c, "团队所有者才可删除团队")
 		return
 	}
 	// 删除团队申请记录
 	teamJoinRequestService := teamService.TeamJoinRequestService
 	if _, err := teamJoinRequestService.Delete("team_id = ?", teamId); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
-		response.ServerError(c, "团队申请记录删除失败")
+		common.ServerError(c, "团队申请记录删除失败")
 		return
 	}
 	// 删除团队成员
 	if _, err := teamMemberService.Delete("team_id = ?", teamId); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
-		response.ServerError(c, "团队成员删除失败")
+		common.ServerError(c, "团队成员删除失败")
 		return
 	}
 	// 删除团队项目
 	projectService := services.NewProjectService()
 	if _, err := projectService.Delete("team_id = ?", teamId); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
-		response.ServerError(c, "团队项目删除失败")
+		common.ServerError(c, "团队项目删除失败")
 		return
 	}
 	// 删除团队文档
 	documentService := services.NewDocumentService()
 	if _, err := documentService.Delete("team_id = ?", teamId); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
 		log.Println("团队文档删除失败", err)
-		response.ServerError(c, "团队文档删除失败")
+		common.ServerError(c, "团队文档删除失败")
 		return
 	}
 	// 删除团队
 	if _, err := teamService.Delete("id = ?", teamId); err != nil {
-		response.ServerError(c, "团队删除失败")
+		common.ServerError(c, "团队删除失败")
 		return
 	}
-	response.Success(c, "")
+	common.Success(c, "")
 }
 
 // ApplyJoinTeam 申请加入团队
@@ -343,7 +343,7 @@ func ApplyJoinTeam(c *gin.Context) {
 
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	var req struct {
@@ -351,12 +351,12 @@ func ApplyJoinTeam(c *gin.Context) {
 		ApplicantNotes string `json:"applicant_notes"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "")
+		common.BadRequest(c, "")
 		return
 	}
 	teamId := (req.TeamId)
 	if teamId == "" {
-		response.BadRequest(c, "参数错误：team_id")
+		common.BadRequest(c, "参数错误：team_id")
 		return
 	}
 	teamService := services.NewTeamService()
@@ -364,34 +364,34 @@ func ApplyJoinTeam(c *gin.Context) {
 	if err := teamService.GetById(teamId, &team); err != nil {
 		if errors.Is(err, services.ErrRecordNotFound) {
 			failResponseData["code"] = FailCodeTeamNotExist
-			response.BadRequestData(c, "团队不存在", failResponseData)
+			common.BadRequestData(c, "团队不存在", failResponseData)
 		} else {
-			response.ServerError(c, "查询错误")
+			common.ServerError(c, "查询错误")
 		}
 		return
 	}
 	if !team.OpenInvite {
 		failResponseData["code"] = FailCodeInvitedNotOpen
-		response.BadRequestData(c, "团队未开启邀请", failResponseData)
+		common.BadRequestData(c, "团队未开启邀请", failResponseData)
 		return
 	}
 	invitedPermType := team.InvitedPermType
 	teamMemberService := teamService.TeamMemberService
 	if ok, err := teamMemberService.Exist("deleted_at is null and team_id = ? and user_id = ?", teamId, userId); ok {
 		failResponseData["code"] = FailCodeAlreadyJoined
-		response.BadRequestData(c, "已加入团队", failResponseData)
+		common.BadRequestData(c, "已加入团队", failResponseData)
 		return
 	} else if err != nil {
-		response.ServerError(c, "查询错误.")
+		common.ServerError(c, "查询错误.")
 		return
 	}
 	teamJoinRequestService := teamService.TeamJoinRequestService
 	if ok, err := teamJoinRequestService.Exist("deleted_at is null and team_id = ? and user_id = ? and status = ?", teamId, userId, models.TeamJoinRequestStatusPending); ok {
 		failResponseData["code"] = FailCodeAlreadyApplied
-		response.BadRequestData(c, "不能重复申请", failResponseData)
+		common.BadRequestData(c, "不能重复申请", failResponseData)
 		return
 	} else if err != nil {
-		response.ServerError(c, "查询错误..")
+		common.ServerError(c, "查询错误..")
 		return
 	}
 	if err := teamJoinRequestService.Create(&models.TeamJoinRequest{
@@ -400,16 +400,16 @@ func ApplyJoinTeam(c *gin.Context) {
 		PermType:       invitedPermType,
 		ApplicantNotes: req.ApplicantNotes,
 	}); err != nil {
-		response.ServerError(c, "新建错误")
+		common.ServerError(c, "新建错误")
 	}
-	response.Success(c, "")
+	common.Success(c, "")
 }
 
 // GetTeamJoinRequestList 获取申请列表
 func GetTeamJoinRequestList(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	teamId := (c.Query("team_id"))
@@ -432,7 +432,7 @@ func GetTeamJoinRequestList(c *gin.Context) {
 	}
 	userMap, err := GetUsersInfo(c, userIds)
 	if err != nil {
-		response.ServerError(c, err.Error())
+		common.ServerError(c, err.Error())
 		return
 	}
 	for i := range result {
@@ -447,14 +447,14 @@ func GetTeamJoinRequestList(c *gin.Context) {
 		}
 	}
 	if startTimeStr == "" {
-		response.Success(c, result)
+		common.Success(c, result)
 		return
 	}
 
 	var messageShowList []models.TeamJoinRequestMessageShow
 	if err := teamJoinRequestMessageShowService.Find(&messageShowList, "user_id = ? and team_id = ?", userId, teamId); err != nil {
 		log.Println("TeamJoinRequestMessageShow查询错误", err)
-		response.ServerError(c, "查询错误")
+		common.ServerError(c, "查询错误")
 		return
 	}
 	result = sliceutil.FilterT(func(item services.TeamJoinRequestQuery) bool {
@@ -473,18 +473,18 @@ func GetTeamJoinRequestList(c *gin.Context) {
 	for i := range newMessageShowList {
 		if err := teamJoinRequestMessageShowService.Create(newMessageShowList[i]); err != nil {
 			log.Println("TeamJoinRequestMessageShow新建错误", err)
-			response.ServerError(c, "新建错误")
+			common.ServerError(c, "新建错误")
 			return
 		}
 	}
-	response.Success(c, result)
+	common.Success(c, result)
 }
 
 // GetSelfTeamJoinRequestList 获取自身的申请列表
 func GetSelfTeamJoinRequestList(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	teamId := (c.Query("team_id"))
@@ -506,7 +506,7 @@ func GetSelfTeamJoinRequestList(c *gin.Context) {
 
 	userMap, err := GetUsersInfo(c, userIds)
 	if err != nil {
-		response.ServerError(c, err.Error())
+		common.ServerError(c, err.Error())
 		return
 	}
 	for i := range result {
@@ -520,14 +520,14 @@ func GetSelfTeamJoinRequestList(c *gin.Context) {
 			}
 		}
 	}
-	response.Success(c, result)
+	common.Success(c, result)
 }
 
 // ReviewTeamJoinRequest 权限申请审核
 func ReviewTeamJoinRequest(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	var req struct {
@@ -535,17 +535,17 @@ func ReviewTeamJoinRequest(c *gin.Context) {
 		ApprovalCode uint8  `json:"approval_code" binding:"min=0,max=1"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "")
+		common.BadRequest(c, "")
 		return
 	}
 	teamJoinRequestsId := str.DefaultToInt(req.ApplyId, 0)
 	if teamJoinRequestsId <= 0 {
-		response.BadRequest(c, "参数错误：apply_id")
+		common.BadRequest(c, "参数错误：apply_id")
 		return
 	}
 	approvalCode := req.ApprovalCode
 	if approvalCode != 0 && approvalCode != 1 {
-		response.BadRequest(c, "参数错误：approval_code")
+		common.BadRequest(c, "参数错误：approval_code")
 		return
 	}
 	// 权限校验
@@ -565,14 +565,14 @@ func ReviewTeamJoinRequest(c *gin.Context) {
 		},
 	); err != nil {
 		if errors.Is(err, services.ErrRecordNotFound) {
-			response.BadRequest(c, "申请已被处理或无权限")
+			common.BadRequest(c, "申请已被处理或无权限")
 		} else {
-			response.ServerError(c, "查询错误")
+			common.ServerError(c, "查询错误")
 		}
 		return
 	}
 	if teamJoinRequest.PermType < models.TeamPermTypeReadOnly || teamJoinRequest.PermType > models.TeamPermTypeEditable {
-		response.BadRequest(c, "参数错误：teamJoinRequest.PermType")
+		common.BadRequest(c, "参数错误：teamJoinRequest.PermType")
 		return
 	}
 	if approvalCode == 0 {
@@ -583,12 +583,12 @@ func ReviewTeamJoinRequest(c *gin.Context) {
 	teamJoinRequest.ProcessedAt = myTime.Time(time.Now())
 	teamJoinRequest.ProcessedBy = userId
 	if _, err := teamService.TeamJoinRequestService.UpdatesById(teamJoinRequestsId, &teamJoinRequest); err != nil {
-		response.ServerError(c, "更新错误")
+		common.ServerError(c, "更新错误")
 		return
 	}
 	if approvalCode == 1 {
 		if permType, err := teamService.GetTeamPermTypeByForUser(teamJoinRequest.TeamId, teamJoinRequest.UserId); err != nil || permType == nil {
-			response.ServerError(c, "查询错误")
+			common.ServerError(c, "查询错误")
 			return
 		} else if *permType == models.TeamPermTypeNone {
 			if err := teamService.TeamMemberService.Create(&models.TeamMember{
@@ -596,29 +596,29 @@ func ReviewTeamJoinRequest(c *gin.Context) {
 				UserId:   teamJoinRequest.UserId,
 				PermType: teamJoinRequest.PermType,
 			}); err != nil {
-				response.ServerError(c, "新建错误")
+				common.ServerError(c, "新建错误")
 				return
 			}
 		} else if teamJoinRequest.PermType <= *permType {
-			response.Success(c, "")
+			common.Success(c, "")
 			return
 		} else {
 			if _, err := teamService.TeamMemberService.UpdatesIgnoreZero(&models.TeamMember{
 				PermType: teamJoinRequest.PermType,
 			}, "team_id = ? and user_id = ?", teamJoinRequest.TeamId, teamJoinRequest.UserId); err != nil {
-				response.ServerError(c, "更新错误")
+				common.ServerError(c, "更新错误")
 				return
 			}
 		}
 	}
-	response.Success(c, "")
+	common.Success(c, "")
 }
 
 // SetTeamInfo 设置团队信息
 func SetTeamInfo(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	var req struct {
@@ -627,30 +627,30 @@ func SetTeamInfo(c *gin.Context) {
 		Description string `json:"description" form:"description"`
 	}
 	if err := c.ShouldBind(&req); err != nil {
-		response.BadRequest(c, err.Error())
+		common.BadRequest(c, err.Error())
 		return
 	}
 	teamId := (req.TeamId)
 	if teamId == "" {
-		response.BadRequest(c, "参数错误：team_id")
+		common.BadRequest(c, "参数错误：team_id")
 		return
 	}
 	teamService := services.NewTeamService()
 	if permType, err := teamService.GetTeamPermTypeByForUser(teamId, userId); err != nil || permType == nil {
-		response.ServerError(c, "查询错误")
+		common.ServerError(c, "查询错误")
 		return
 	} else if *permType < models.TeamPermTypeAdmin {
-		response.Forbidden(c, "")
+		common.Forbidden(c, "")
 		return
 	}
 	fileHeader, err := c.FormFile("avatar")
 	fileExists := err == nil
 	if fileExists && fileHeader.Size > 2<<20 {
-		response.BadRequest(c, "文件大小不能超过2MB")
+		common.BadRequest(c, "文件大小不能超过2MB")
 		return
 	}
 	if req.Name == "" && req.Description == "" && !fileExists {
-		response.BadRequest(c, "")
+		common.BadRequest(c, "")
 		return
 	}
 	reviewClient := services.GetSafereviewClient()
@@ -659,7 +659,7 @@ func SetTeamInfo(c *gin.Context) {
 			reviewResponse, err := (reviewClient).ReviewText(req.Name)
 			if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
 				log.Println("名称审核不通过", req.Name, err, reviewResponse)
-				response.ReviewFail(c, "审核不通过")
+				common.ReviewFail(c, "审核不通过")
 				return
 			}
 		}
@@ -667,7 +667,7 @@ func SetTeamInfo(c *gin.Context) {
 			reviewResponse, err := (reviewClient).ReviewText(req.Description)
 			if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
 				log.Println("描述审核不通过", req.Description, err, reviewResponse)
-				response.ReviewFail(c, "审核不通过")
+				common.ReviewFail(c, "审核不通过")
 				return
 			}
 		}
@@ -675,7 +675,7 @@ func SetTeamInfo(c *gin.Context) {
 			Name:        req.Name,
 			Description: req.Description,
 		}); err != nil {
-			response.ServerError(c, "更新错误")
+			common.ServerError(c, "更新错误")
 			return
 		}
 	}
@@ -683,13 +683,13 @@ func SetTeamInfo(c *gin.Context) {
 	if fileExists {
 		file, err := fileHeader.Open()
 		if err != nil {
-			response.BadRequest(c, "获取文件失败")
+			common.BadRequest(c, "获取文件失败")
 			return
 		}
 		defer file.Close()
 		fileBytes := make([]byte, fileHeader.Size)
 		if _, err := file.Read(fileBytes); err != nil {
-			response.BadRequest(c, "读取文件失败")
+			common.BadRequest(c, "读取文件失败")
 			return
 		}
 		contentType := fileHeader.Header.Get("Content-Type")
@@ -698,11 +698,11 @@ func SetTeamInfo(c *gin.Context) {
 			reviewResponse, err := (reviewClient).ReviewPictureFromBase64(base64Str)
 			if err != nil {
 				log.Println("头像审核错误", err)
-				response.ReviewFail(c, "头像审核错误")
+				common.ReviewFail(c, "头像审核错误")
 				return
 			} else if reviewResponse.Status != safereview.ReviewImageResultPass {
 				log.Println("头像审核不通过", err, reviewResponse)
-				response.ReviewFail(c, "头像审核不通过")
+				common.ReviewFail(c, "头像审核不通过")
 				return
 			}
 		}
@@ -714,14 +714,14 @@ func SetTeamInfo(c *gin.Context) {
 			log.Println("上传头像失败", err)
 		}
 	}
-	response.Success(c, result)
+	common.Success(c, result)
 }
 
 // SetTeamInvited 修改团队邀请设置
 func SetTeamInvited(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	var req struct {
@@ -730,28 +730,28 @@ func SetTeamInvited(c *gin.Context) {
 		OpenInvite      *bool                `json:"open_invite"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, err.Error())
+		common.BadRequest(c, err.Error())
 		return
 	}
 	teamId := (req.TeamId)
 	if teamId == "" {
-		response.BadRequest(c, "参数错误：team_id")
+		common.BadRequest(c, "参数错误：team_id")
 		return
 	}
 	if req.InvitedPermType == nil && req.OpenInvite == nil {
-		response.BadRequest(c, "")
+		common.BadRequest(c, "")
 		return
 	}
 	if req.InvitedPermType != nil && (*req.InvitedPermType < models.TeamPermTypeReadOnly || *req.InvitedPermType > models.TeamPermTypeEditable) {
-		response.BadRequest(c, "参数错误：invited_perm_type")
+		common.BadRequest(c, "参数错误：invited_perm_type")
 		return
 	}
 	teamService := services.NewTeamService()
 	if permType, err := teamService.GetTeamPermTypeByForUser(teamId, userId); err != nil || permType == nil {
-		response.ServerError(c, "查询错误")
+		common.ServerError(c, "查询错误")
 		return
 	} else if *permType < models.TeamPermTypeAdmin {
-		response.Forbidden(c, "")
+		common.Forbidden(c, "")
 		return
 	}
 	updateColumns := map[string]any{}
@@ -762,37 +762,37 @@ func SetTeamInvited(c *gin.Context) {
 		updateColumns["open_invite"] = *req.OpenInvite
 	}
 	if _, err := teamService.UpdateColumnsById(teamId, updateColumns); err != nil {
-		response.ServerError(c, "更新错误")
+		common.ServerError(c, "更新错误")
 		return
 	}
-	response.Success(c, "")
+	common.Success(c, "")
 }
 
 // GetTeamInvitedInfo 获取团队信息
 func GetTeamInvitedInfo(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	teamId := (c.Query("team_id"))
 	if teamId == "" {
-		response.BadRequest(c, "参数错误：team_id")
+		common.BadRequest(c, "参数错误：team_id")
 		return
 	}
 	teamService := services.NewTeamService()
 	var team models.Team
 	if err := teamService.GetById(teamId, &team); err != nil {
 		if errors.Is(err, services.ErrRecordNotFound) {
-			response.BadRequest(c, "团队不存在")
+			common.BadRequest(c, "团队不存在")
 		} else {
-			response.ServerError(c, "查询错误")
+			common.ServerError(c, "查询错误")
 		}
 		return
 	}
 	selfPermType, err := teamService.GetTeamPermTypeByForUser(teamId, userId)
 	if err != nil {
-		response.ServerError(c, "查询错误")
+		common.ServerError(c, "查询错误")
 		return
 	}
 	result := map[string]any{
@@ -802,34 +802,34 @@ func GetTeamInvitedInfo(c *gin.Context) {
 		"invited_perm_type": team.InvitedPermType,
 		"invited_switch":    team.OpenInvite,
 	}
-	response.Success(c, result)
+	common.Success(c, result)
 }
 
 // ExitTeam 退出团队
 func ExitTeam(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	var req struct {
 		TeamId string `json:"team_id" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "")
+		common.BadRequest(c, "")
 		return
 	}
 	teamId := (req.TeamId)
 	if teamId == "" {
-		response.BadRequest(c, "参数错误：team_id")
+		common.BadRequest(c, "参数错误：team_id")
 		return
 	}
 	teamService := services.NewTeamService()
 	if permType, err := teamService.GetTeamPermTypeByForUser(teamId, userId); err != nil || permType == nil {
-		response.ServerError(c, "查询错误")
+		common.ServerError(c, "查询错误")
 		return
 	} else if *permType == models.TeamPermTypeCreator {
-		response.Forbidden(c, "团队创建者不能退出团队，需要先转移团队")
+		common.Forbidden(c, "团队创建者不能退出团队，需要先转移团队")
 		return
 	}
 	// 退出或删除项目 todo
@@ -837,17 +837,17 @@ func ExitTeam(c *gin.Context) {
 	// 删除团队成员
 	teamMemberService := services.NewTeamMemberService()
 	if _, err := teamMemberService.Delete("team_id = ? and user_id = ?", teamId, userId); err != nil {
-		response.ServerError(c, "团队成员删除失败")
+		common.ServerError(c, "团队成员删除失败")
 		return
 	}
-	response.Success(c, "")
+	common.Success(c, "")
 }
 
 // SetTeamMemberPermission 设置团队成员权限
 func SetTeamMemberPermission(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	var req struct {
@@ -856,56 +856,56 @@ func SetTeamMemberPermission(c *gin.Context) {
 		PermType *models.TeamPermType `json:"perm_type" binding:"min=0,max=2"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "")
+		common.BadRequest(c, "")
 		return
 	}
 	teamId := (req.TeamId)
 	if teamId == "" {
-		response.BadRequest(c, "参数错误：team_id")
+		common.BadRequest(c, "参数错误：team_id")
 		return
 	}
 	reqUserId := req.UserId
 	if reqUserId == "" {
-		response.BadRequest(c, "参数错误：user_id")
+		common.BadRequest(c, "参数错误：user_id")
 		return
 	}
 	if req.PermType == nil {
-		response.BadRequest(c, "参数错误：perm_type")
+		common.BadRequest(c, "参数错误：perm_type")
 		return
 	}
 	teamService := services.NewTeamService()
 	selfPermType, err := teamService.GetTeamPermTypeByForUser(teamId, userId)
 	if err != nil {
-		response.ServerError(c, "查询错误")
+		common.ServerError(c, "查询错误")
 		return
 	} else if selfPermType == nil || *selfPermType < models.TeamPermTypeAdmin {
-		response.Forbidden(c, "权限不足")
+		common.Forbidden(c, "权限不足")
 		return
 	}
 	permType, err := teamService.GetTeamPermTypeByForUser(teamId, reqUserId)
 	if err != nil || permType == nil {
-		response.ServerError(c, "查询错误")
+		common.ServerError(c, "查询错误")
 		return
 	}
 	if *permType >= *selfPermType {
-		response.Forbidden(c, "不可设置比自己更高的权限")
+		common.Forbidden(c, "不可设置比自己更高的权限")
 		return
 	}
 	teamMemberService := services.NewTeamMemberService()
 	if _, err := teamMemberService.UpdateColumns(map[string]any{
 		"perm_type": req.PermType,
 	}, "team_id = ? and user_id = ?", teamId, reqUserId); err != nil {
-		response.ServerError(c, "更新错误")
+		common.ServerError(c, "更新错误")
 		return
 	}
-	response.Success(c, "")
+	common.Success(c, "")
 }
 
 // ChangeTeamCreator 更改团队创建者
 func ChangeTeamCreator(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	var req struct {
@@ -913,30 +913,30 @@ func ChangeTeamCreator(c *gin.Context) {
 		UserId string `json:"user_id" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "")
+		common.BadRequest(c, "")
 		return
 	}
 	teamId := (req.TeamId)
 	if teamId == "" {
-		response.BadRequest(c, "参数错误：team_id")
+		common.BadRequest(c, "参数错误：team_id")
 		return
 	}
 	reqUserId := req.UserId
 	if reqUserId == "" {
-		response.BadRequest(c, "参数错误：user_id")
+		common.BadRequest(c, "参数错误：user_id")
 		return
 	}
 	if userId == reqUserId {
-		response.BadRequest(c, "不能转移给自己")
+		common.BadRequest(c, "不能转移给自己")
 		return
 	}
 	teamService := services.NewTeamService()
 	selfPermType, err := teamService.GetTeamPermTypeByForUser(teamId, userId)
 	if err != nil {
-		response.ServerError(c, "查询错误")
+		common.ServerError(c, "查询错误")
 		return
 	} else if selfPermType == nil || *selfPermType != models.TeamPermTypeCreator {
-		response.Forbidden(c, "")
+		common.Forbidden(c, "")
 		return
 	}
 	teamMemberService := services.NewTeamMemberService()
@@ -950,63 +950,63 @@ func ChangeTeamCreator(c *gin.Context) {
 		}
 	}()
 	if err := transactDB.Error; err != nil {
-		response.ServerError(c, "更新错误")
+		common.ServerError(c, "更新错误")
 		needRollback = true
 		return
 	}
 	if _, err := teamMemberService.UpdateColumns(map[string]any{
 		"perm_type": models.TeamPermTypeAdmin,
 	}, "team_id = ? and user_id = ?", teamId, userId); err != nil {
-		response.ServerError(c, "更新错误.")
+		common.ServerError(c, "更新错误.")
 		needRollback = true
 		return
 	}
 	if _, err := teamMemberService.UpdateColumns(map[string]any{
 		"perm_type": models.TeamPermTypeCreator,
 	}, "team_id = ? and user_id = ?", teamId, reqUserId); err != nil {
-		response.ServerError(c, "更新错误..")
+		common.ServerError(c, "更新错误..")
 		needRollback = true
 		return
 	}
-	response.Success(c, "")
+	common.Success(c, "")
 }
 
 // RemoveTeamMember 移除团队成员
 func RemoveTeamMember(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	teamId := (c.Query("team_id"))
 	if teamId == "" {
-		response.BadRequest(c, "参数错误：team_id")
+		common.BadRequest(c, "参数错误：team_id")
 		return
 	}
 	reqUserId := c.Query("user_id")
 	if reqUserId == "" {
-		response.BadRequest(c, "参数错误：user_id")
+		common.BadRequest(c, "参数错误：user_id")
 		return
 	}
 	if userId == reqUserId {
-		response.BadRequest(c, "不能移除自己")
+		common.BadRequest(c, "不能移除自己")
 		return
 	}
 	teamService := services.NewTeamService()
 	selfPermType, err := teamService.GetTeamPermTypeByForUser(teamId, userId)
 	if err != nil {
-		response.ServerError(c, "查询错误")
+		common.ServerError(c, "查询错误")
 		return
 	} else if selfPermType == nil || *selfPermType < models.TeamPermTypeAdmin {
-		response.Forbidden(c, "")
+		common.Forbidden(c, "")
 		return
 	}
 	permType, err := teamService.GetTeamPermTypeByForUser(teamId, reqUserId)
 	if err != nil || permType == nil {
-		response.ServerError(c, "查询错误")
+		common.ServerError(c, "查询错误")
 		return
 	} else if *permType >= *selfPermType {
-		response.Forbidden(c, "")
+		common.Forbidden(c, "")
 		return
 	}
 	// 退出或删除项目 todo
@@ -1014,17 +1014,17 @@ func RemoveTeamMember(c *gin.Context) {
 	// 删除团队成员
 	teamMemberService := services.NewTeamMemberService()
 	if _, err := teamMemberService.Delete("team_id = ? and user_id = ?", teamId, reqUserId); err != nil {
-		response.ServerError(c, "团队成员删除失败")
+		common.ServerError(c, "团队成员删除失败")
 		return
 	}
-	response.Success(c, "")
+	common.Success(c, "")
 }
 
 // SetTeamMemberNickname 设置团队成员昵称
 func SetTeamMemberNickname(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	var req struct {
@@ -1033,35 +1033,35 @@ func SetTeamMemberNickname(c *gin.Context) {
 		Nickname string `json:"nickname" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "")
+		common.BadRequest(c, "")
 		return
 	}
 	teamId := (req.TeamId)
 	if teamId == "" {
-		response.BadRequest(c, "参数错误：team_id")
+		common.BadRequest(c, "参数错误：team_id")
 		return
 	}
 	reqUserId := req.UserId
 	if reqUserId == "" {
-		response.BadRequest(c, "参数错误：user_id")
+		common.BadRequest(c, "参数错误：user_id")
 		return
 	}
 	teamService := services.NewTeamService()
 	teamMemberService := teamService.TeamMemberService
 	if ok, err := teamMemberService.Exist("team_id = ? and user_id = ?", teamId, reqUserId); err != nil {
-		response.ServerError(c, "查询错误")
+		common.ServerError(c, "查询错误")
 		return
 	} else if !ok {
-		response.BadRequest(c, "团队成员不存在")
+		common.BadRequest(c, "团队成员不存在")
 		return
 	}
 	if userId != reqUserId {
 		selfPermType, err := teamService.GetTeamPermTypeByForUser(teamId, userId)
 		if err != nil {
-			response.ServerError(c, "查询错误")
+			common.ServerError(c, "查询错误")
 			return
 		} else if selfPermType == nil || *selfPermType < models.TeamPermTypeAdmin {
-			response.Forbidden(c, "")
+			common.Forbidden(c, "")
 			return
 		}
 	}
@@ -1070,7 +1070,7 @@ func SetTeamMemberNickname(c *gin.Context) {
 		reviewResponse, err := (reviewClient).ReviewText(req.Nickname)
 		if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
 			log.Println("昵称审核不通过", req.Nickname, err, reviewResponse)
-			response.ReviewFail(c, "审核不通过")
+			common.ReviewFail(c, "审核不通过")
 			return
 		}
 	}
@@ -1078,8 +1078,8 @@ func SetTeamMemberNickname(c *gin.Context) {
 	if _, err := teamMemberService.UpdateColumns(map[string]any{
 		"nickname": req.Nickname,
 	}, "team_id = ? and user_id = ?", teamId, reqUserId); err != nil {
-		response.ServerError(c, "更新错误")
+		common.ServerError(c, "更新错误")
 		return
 	}
-	response.Success(c, "")
+	common.Success(c, "")
 }

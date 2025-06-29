@@ -17,6 +17,7 @@ export const BaseResponseSchema = z.object({
   code: z.number(),
   message: z.string().optional(),
   data: z.any().optional(),
+  sha1: z.string().optional(),
 });
 
 export const CopyDocumentResponseSchema = z.object({

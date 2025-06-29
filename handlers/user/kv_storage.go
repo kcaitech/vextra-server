@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/common/response"
+	"kcaitech.com/kcserver/handlers/common"
 	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils"
 	"kcaitech.com/kcserver/utils/sliceutil"
@@ -17,20 +17,20 @@ func GetUserKVStorage(c *gin.Context) {
 
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 
 	key := c.Query("key")
 	if key == "" {
-		response.BadRequest(c, "参数错误：key")
+		common.BadRequest(c, "参数错误：key")
 		return
 	}
 
 	if len(sliceutil.FilterT(func(code string) bool {
 		return key == code
 	}, AllowedKeyList...)) == 0 {
-		response.BadRequest(c, "不允许的key: "+key)
+		common.BadRequest(c, "不允许的key: "+key)
 		return
 	}
 
@@ -41,13 +41,13 @@ func GetUserKVStorage(c *gin.Context) {
 	if err == nil {
 		result[key] = userKVStorage
 	}
-	response.Success(c, result)
+	common.Success(c, result)
 }
 
 func SetUserKVStorage(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	var req struct {
@@ -55,25 +55,25 @@ func SetUserKVStorage(c *gin.Context) {
 		Value string `json:"value" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, err.Error())
+		common.BadRequest(c, err.Error())
 		return
 	}
 	if req.Key == "" {
-		response.BadRequest(c, "参数错误：key")
+		common.BadRequest(c, "参数错误：key")
 		return
 	}
 	if len(sliceutil.FilterT(func(code string) bool {
 		return req.Key == code
 	}, AllowedKeyList...)) == 0 {
-		response.BadRequest(c, "不允许的key: "+req.Key)
+		common.BadRequest(c, "不允许的key: "+req.Key)
 		return
 	}
 
 	userKVStorageService := services.NewUserKVStorageService()
 	if !userKVStorageService.SetOne(userId, req.Key, req.Value) {
-		response.ServerError(c, "操作失败")
+		common.ServerError(c, "操作失败")
 		return
 	}
 
-	response.Success(c, "")
+	common.Success(c, "")
 }

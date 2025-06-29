@@ -1,4 +1,4 @@
-package document
+package common
 
 import (
 	"bytes"
@@ -184,7 +184,7 @@ func AutoUpdate(documentId string, config *config.Configuration) {
 	}
 	UploadDocumentData(&header, &data, nil, &response)
 
-	if response.Status != ResponseStatusSuccess {
+	if response.Code != http.StatusOK {
 		log.Println("UploadDocumentData fail")
 		return
 	}

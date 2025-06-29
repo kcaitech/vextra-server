@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/common/response"
 	"kcaitech.com/kcserver/providers/auth"
 	safereviewBase "kcaitech.com/kcserver/providers/safereview"
 	"kcaitech.com/kcserver/services"
@@ -13,6 +12,7 @@ import (
 
 	// "kcaitech.com/kcserver/common"
 	// . "kcaitech.com/kcserver/common/gin/reverse_proxy"
+	"kcaitech.com/kcserver/handlers/common"
 	handlers "kcaitech.com/kcserver/handlers/user"
 )
 
@@ -48,11 +48,11 @@ func GetUserInfo(c *gin.Context) {
 	user, err := get_user_info(c)
 	if err != nil {
 		log.Println("获取用户信息失败", err)
-		response.ServerError(c, "操作失败")
+		common.ServerError(c, "操作失败")
 		return
 	}
 
-	response.Success(c, map[string]any{
+	common.Success(c, map[string]any{
 		"id":       user.UserID,
 		"nickname": user.Nickname,
 		"avatar":   user.Avatar,
@@ -63,7 +63,7 @@ func SetNickname(c *gin.Context) {
 		Nickname string `json:"nickname" binding:"required"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, err.Error())
+		common.BadRequest(c, err.Error())
 		return
 	}
 	// 审核
@@ -72,54 +72,54 @@ func SetNickname(c *gin.Context) {
 		reviewResponse, err := safereview.ReviewText(req.Nickname)
 		if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
 			log.Println("昵称审核不通过", req.Nickname, err, reviewResponse)
-			response.ReviewFail(c, "审核不通过")
+			common.ReviewFail(c, "审核不通过")
 			return
 		}
 	}
 	// get user info
 	user, err := get_user_info(c)
 	if err != nil {
-		response.ServerError(c, "操作失败")
+		common.ServerError(c, "操作失败")
 		return
 	}
 	user.Nickname = req.Nickname
 	client := services.GetKCAuthClient()
 	token, err := utils.GetAccessToken(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	err = client.UpdateUserInfo(token, user)
 	if err != nil {
-		response.ServerError(c, "操作失败")
+		common.ServerError(c, "操作失败")
 		return
 	}
-	response.Success(c, "")
+	common.Success(c, "")
 }
 func SetAvatar(c *gin.Context) {
 	// user, err := auth.GetUser(c)
 	// if err != nil {
-	// 	response.Unauthorized(c)
+	// 	common.Unauthorized(c)
 	// 	return
 	// }
 	fileHeader, err := c.FormFile("file")
 	if err != nil {
-		response.BadRequest(c, "参数错误：file")
+		common.BadRequest(c, "参数错误：file")
 		return
 	}
 	if fileHeader.Size > 2<<20 {
-		response.BadRequest(c, "文件大小不能超过2MB")
+		common.BadRequest(c, "文件大小不能超过2MB")
 		return
 	}
 	file, err := fileHeader.Open()
 	if err != nil {
-		response.BadRequest(c, "获取文件失败")
+		common.BadRequest(c, "获取文件失败")
 		return
 	}
 	defer file.Close()
 	fileBytes := make([]byte, fileHeader.Size)
 	if _, err := file.Read(fileBytes); err != nil {
-		response.BadRequest(c, "读取文件失败")
+		common.BadRequest(c, "读取文件失败")
 		return
 	}
 	// contentType := fileHeader.Header.Get("Content-Type")
@@ -130,27 +130,27 @@ func SetAvatar(c *gin.Context) {
 		reviewResponse, err := safereview.ReviewPictureFromBase64(base64Str)
 		if err != nil {
 			log.Println("头像审核失败", err)
-			response.ReviewFail(c, "头像审核失败")
+			common.ReviewFail(c, "头像审核失败")
 			return
 
 		} else if reviewResponse.Status != safereviewBase.ReviewImageResultPass {
 			log.Println("头像审核不通过", err, reviewResponse)
-			response.ReviewFail(c, "头像审核不通过")
+			common.ReviewFail(c, "头像审核不通过")
 			return
 		}
 	}
 	token, err := utils.GetAccessToken(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	client := services.GetKCAuthClient()
 	url, err := client.UpdateAvatar(token, fileBytes, fileHeader.Filename)
 	if err != nil {
-		response.ServerError(c, err.Error())
+		common.ServerError(c, err.Error())
 		return
 	}
-	response.Success(c, map[string]any{
+	common.Success(c, map[string]any{
 		"avatar": url,
 	})
 }

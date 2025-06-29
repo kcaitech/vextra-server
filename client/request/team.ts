@@ -240,7 +240,7 @@ export class TeamAPI {
             formData.append('avatar', params.avatar);
         }
         const result = await this.http.request({
-            url: '/documents/team',
+            url: '/team',
             method: 'post',
             data: formData,
         });
@@ -261,7 +261,7 @@ export class TeamAPI {
         start_time?: number;
     }): Promise<TeamApplyListResponse> {
         const result = await this.http.request({
-            url: `/documents/team/apply`,
+            url: `/team/apply`,
             method: 'get',
             params: params,
         });
@@ -279,7 +279,7 @@ export class TeamAPI {
         approval_code: number;
     }): Promise<BaseResponse> {
         const result = await this.http.request({
-            url: `/documents/team/apply/audit`,
+            url: `/team/apply/audit`,
             method: 'post',
             data: params,
         });
@@ -298,7 +298,7 @@ export class TeamAPI {
         page_size?: number;
     }): Promise<TeamNoticeResponse> {
         const result = await this.http.request({
-            url: '/documents/team/self_apply',
+            url: '/team/self_apply',
             method: 'get',
             params: params,
         });
@@ -317,7 +317,7 @@ export class TeamAPI {
         nickname: string;
     }): Promise<BaseResponse> {
         const result = await this.http.request({
-            url: '/documents/team/member/nickname',
+            url: '/team/member/nickname',
             method: 'put',
             data: params,
         });
@@ -335,7 +335,7 @@ export class TeamAPI {
         page_size?: number;
     }): Promise<TeamListResponse> {
         const result = await this.http.request({
-            url: '/documents/team/list',
+            url: '/team/list',
             method: 'get',
             params,
         });
@@ -354,7 +354,7 @@ export class TeamAPI {
         page_size?: number;
     }): Promise<TeamMemberListResponse> {
         const result = await this.http.request({
-            url: '/documents/team/member/list',
+            url: '/team/member/list',
             method: 'get',
             params,
         });
@@ -385,7 +385,7 @@ export class TeamAPI {
             formData.append('avatar', params.avatar);
         }
         const result = await this.http.request({
-            url: '/documents/team/info',
+            url: '/team/info',
             method: 'put',
             data: formData,
         });
@@ -404,7 +404,7 @@ export class TeamAPI {
         invited_perm_type?: number;
     }): Promise<BaseResponse> {
         return this.http.request({
-            url: '/documents/team/invite',
+            url: '/team/invite',
             method: 'put',
             data: params,
         })
@@ -416,7 +416,7 @@ export class TeamAPI {
         user_id: string;
     }): Promise<BaseResponse> {
         return this.http.request({
-            url: '/documents/team/owner',
+            url: '/team/owner',
             method: 'put',
             data: params,
         })
@@ -427,7 +427,7 @@ export class TeamAPI {
         team_id: string;
     }): Promise<TeamInfoResponse|BaseResponse> {
         return this.http.request({
-            url: '/documents/team/info/invite',
+            url: '/team/info/invite',
             method: 'get',
             params: params,
         })
@@ -439,22 +439,9 @@ export class TeamAPI {
         applicant_notes?: string
     }): Promise<BaseResponse> {
         return this.http.request({
-            url: '/documents/team/apply',
+            url: '/team/apply',
             method: 'post',
             data: params,
-        })
-    }
-
-    //获取申请列表
-    async getTeamApplyList(params: {
-        team_id: string;
-        page?: number;
-        page_size?: number;
-    }): Promise<BaseResponse> {
-        return this.http.request({
-            url: '/documents/team/apply',
-            method: 'get',
-            params: params,
         })
     }
 
@@ -464,7 +451,7 @@ export class TeamAPI {
         user_id: string;
     }): Promise<BaseResponse> {
         return this.http.request({
-            url: '/documents/team/member',
+            url: '/team/member',
             method: 'delete',
             params: params,
         })
@@ -477,7 +464,7 @@ export class TeamAPI {
         perm_type: TeamPermType;
     }): Promise<BaseResponse> {
         const result = await this.http.request({
-            url: '/documents/team/member/perm',
+            url: '/team/member/perm',
             method: 'put',
             data: params,
         });
@@ -494,7 +481,7 @@ export class TeamAPI {
         team_id: string;
     }): Promise<BaseResponse> {
         const result = await this.http.request({
-            url: '/documents/team/exit',
+            url: '/team/exit',
             method: 'post',
             data: params,
         });
@@ -511,7 +498,7 @@ export class TeamAPI {
         team_id: string;
     }): Promise<BaseResponse> {
         const result = await this.http.request({
-            url: '/documents/team',
+            url: '/team',
             method: 'delete',
             params,
         });
@@ -532,7 +519,7 @@ export class TeamAPI {
         description?: string;
     }): Promise<BaseResponse> {
         const result = await this.http.request({
-            url: '/documents/team/project',
+            url: '/team/project',
             method: 'post',
             data: params,
         });
@@ -554,7 +541,7 @@ export class TeamAPI {
         start_time?: number;
     }): Promise<ProjectApplyListResponse> {
         const result = await this.http.request({
-            url: `/documents/team/project/apply`,
+            url: `/team/project/apply`,
             method: 'get',
             params: params,
         });
@@ -572,7 +559,7 @@ export class TeamAPI {
         approval_code: number;
     }): Promise<BaseResponse> {
         const result = await this.http.request({
-            url: `/documents/team/project/apply/audit`,
+            url: `/team/project/apply/audit`,
             method: 'post',
             data: params,
         });
@@ -591,7 +578,7 @@ export class TeamAPI {
         page_size?: number;
     }): Promise<ProjectFavoriteListResponse> {
         const result = await this.http.request({
-            url: '/documents/team/project/favorite/list',
+            url: '/team/project/favorite/list',
             method: 'get',
             params: params,
         });
@@ -609,7 +596,7 @@ export class TeamAPI {
         is_favor: boolean;
     }): Promise<BaseResponse> {
         const result = await this.http.request({
-            url: '/documents/team/project/favorite',
+            url: '/team/project/favorite',
             method: 'put',
             data: params,
         });
@@ -628,7 +615,7 @@ export class TeamAPI {
         description?: string;
     }): Promise<BaseResponse> {
         const result = await this.http.request({
-            url: '/documents/team/project/info',
+            url: '/team/project/info',
             method: 'put',
             data: params,
         });
@@ -648,7 +635,7 @@ export class TeamAPI {
         is_public?: boolean;
     }): Promise<BaseResponse> {
         const result = await this.http.request({
-            url: '/documents/team/project/invite',
+            url: '/team/project/invite',
             method: 'put',
             data: params,
         });
@@ -665,7 +652,7 @@ export class TeamAPI {
         project_id: string;
     }): Promise<ProjectInvitedInfoResponse> {
         const result = await this.http.request({
-            url: '/documents/team/project/info/invite',
+            url: '/team/project/info/invite',
             method: 'get',
             params: params,
         });
@@ -683,7 +670,7 @@ export class TeamAPI {
         applicant_notes?: string;
     }): Promise<BaseResponse> {
         const result = await this.http.request({
-            url: '/documents/team/project/apply',
+            url: '/team/project/apply',
             method: 'post',
             data: params,
         });
@@ -702,7 +689,7 @@ export class TeamAPI {
         page_size?: number;
     }): Promise<TeamProjectListResponse> {
         const result = await this.http.request({
-            url: '/documents/team/project/list',
+            url: '/team/project/list',
             method: 'get',
             params: params,
         });
@@ -721,7 +708,7 @@ export class TeamAPI {
         page_size?: number;
     }): Promise<ProjectMemberListResponse> {
         const result = await this.http.request({
-            url: '/documents/team/project/member/list',
+            url: '/team/project/member/list',
             method: 'get',
             params: params,
         });
@@ -738,7 +725,7 @@ export class TeamAPI {
         project_id: string;
     }): Promise<BaseResponse> {
         const result = await this.http.request({
-            url: '/documents/team/project/exit',
+            url: '/team/project/exit',
             method: 'post',
             data: params,
         });
@@ -757,7 +744,7 @@ export class TeamAPI {
         perm_type: number;
     }): Promise<BaseResponse> {
         const result = await this.http.request({
-            url: '/documents/team/project/member/perm',
+            url: '/team/project/member/perm',
             method: 'put',
             data: params,
         });
@@ -775,7 +762,7 @@ export class TeamAPI {
         user_id: string;
     }): Promise<BaseResponse> {
         const result = await this.http.request({
-            url: '/documents/team/project/member',
+            url: '/team/project/member',
             method: 'delete',
             params: params,
         });
@@ -793,7 +780,7 @@ export class TeamAPI {
         user_id: string;
     }): Promise<BaseResponse> {
         const result = await this.http.request({
-            url: '/documents/team/project/owner',
+            url: '/team/project/owner',
             method: 'put',
             data: params,
         });
@@ -810,7 +797,7 @@ export class TeamAPI {
         project_id: string;
     }): Promise<BaseResponse> {
         const result = await this.http.request({
-            url: '/documents/team/project',
+            url: '/team/project',
             method: 'delete',
             params: params,
         });
@@ -829,7 +816,7 @@ export class TeamAPI {
         page_size?: number;
     }): Promise<ProjectNoticeResponse> {
         const result = await this.http.request({
-            url: '/documents/team/project/self_apply',
+            url: '/team/project/self_apply',
             method: 'get',
             params: params,
         });
@@ -841,7 +828,6 @@ export class TeamAPI {
         }
     }
 
-
     //移动文档
     async moveFileToProject(params: {
         document_id: string;
@@ -849,7 +835,7 @@ export class TeamAPI {
         target_project_id?: string;
     }): Promise<BaseResponse> {
         const result = await this.http.request({
-            url: '/documents/team/project/document/move',
+            url: '/team/project/document/move',
             method: 'post',
             data: params,
         });
@@ -860,5 +846,4 @@ export class TeamAPI {
             throw error;
         }
     }
-
 }

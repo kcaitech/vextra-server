@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/common/response"
+	"kcaitech.com/kcserver/handlers/common"
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils"
@@ -15,7 +15,7 @@ import (
 func GetUserRecycleBinDocumentList(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	projectId := c.Query("project_id")
@@ -34,13 +34,13 @@ func GetUserRecycleBinDocumentList(c *gin.Context) {
 
 	userMap, err := GetUsersInfo(c, userIds)
 	if err != nil {
-		response.ServerError(c, err.Error())
+		common.ServerError(c, err.Error())
 		return
 	}
 
 	deleteUserMap, err := GetUsersInfo(c, deleteUserIds)
 	if err != nil {
-		response.ServerError(c, err.Error())
+		common.ServerError(c, err.Error())
 		return
 	}
 
@@ -74,7 +74,7 @@ func GetUserRecycleBinDocumentList(c *gin.Context) {
 		nextCursor = lastItem.DocumentAccessRecord.LastAccessTime.Format(time.RFC3339)
 	}
 
-	response.Success(c, gin.H{
+	common.Success(c, gin.H{
 		"list":        result,
 		"has_more":    hasMore,
 		"next_cursor": nextCursor,
@@ -89,28 +89,28 @@ type RestoreUserRecycleBinDocumentReq struct {
 func RestoreUserRecycleBinDocument(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	var req RestoreUserRecycleBinDocumentReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "")
+		common.BadRequest(c, "")
 		return
 	}
 	documentId := (req.DocId)
 	if documentId == "" {
-		response.BadRequest(c, "参数错误：doc_id")
+		common.BadRequest(c, "参数错误：doc_id")
 		return
 	}
 	documentService := services.NewDocumentService()
 	document := models.Document{}
 	if documentService.Get(&document, "id = ? and deleted_at is not null", documentId, &services.Unscoped{}) != nil {
-		response.BadRequest(c, "文档不存在")
+		common.BadRequest(c, "文档不存在")
 		return
 	}
 	if document.ProjectId == "" {
 		if document.UserId != userId {
-			response.Forbidden(c, "")
+			common.Forbidden(c, "")
 			return
 		}
 	} else {
@@ -118,7 +118,7 @@ func RestoreUserRecycleBinDocument(c *gin.Context) {
 		projectPermType, err := projectService.GetProjectPermTypeByForUser(document.ProjectId, userId)
 		// 管理员以上权限或文档创建者且可编辑权限
 		if !(err == nil && projectPermType != nil && ((*projectPermType) >= models.ProjectPermTypeAdmin || ((*projectPermType) == models.ProjectPermTypeEditable && document.UserId == userId))) {
-			response.Forbidden(c, "")
+			common.Forbidden(c, "")
 			return
 		}
 	}
@@ -127,33 +127,33 @@ func RestoreUserRecycleBinDocument(c *gin.Context) {
 		"id = ? and deleted_at is not null", documentId,
 		&services.Unscoped{},
 	); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
-		response.ServerError(c, "更新错误")
+		common.ServerError(c, "更新错误")
 		return
 	}
-	response.Success(c, "")
+	common.Success(c, "")
 }
 
 // DeleteUserRecycleBinDocument 彻底删除用户回收站内的某份文档
 func DeleteUserRecycleBinDocument(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	documentId := c.Query("doc_id")
 	if documentId == "" {
-		response.BadRequest(c, "参数错误：doc_id")
+		common.BadRequest(c, "参数错误：doc_id")
 		return
 	}
 	documentService := services.NewDocumentService()
 	document := models.Document{}
 	if documentService.Get(&document, "id = ? and deleted_at is not null", documentId, &services.Unscoped{}) != nil {
-		response.BadRequest(c, "文档不存在")
+		common.BadRequest(c, "文档不存在")
 		return
 	}
 	if document.ProjectId == "" {
 		if document.UserId != userId {
-			response.Forbidden(c, "")
+			common.Forbidden(c, "")
 			return
 		}
 	} else {
@@ -161,15 +161,15 @@ func DeleteUserRecycleBinDocument(c *gin.Context) {
 		projectPermType, err := projectService.GetProjectPermTypeByForUser(document.ProjectId, userId)
 		// 管理员以上权限或文档创建者且可编辑权限
 		if !(err == nil && projectPermType != nil && ((*projectPermType) >= models.ProjectPermTypeAdmin || ((*projectPermType) == models.ProjectPermTypeEditable && document.UserId == userId))) {
-			response.Forbidden(c, "")
+			common.Forbidden(c, "")
 			return
 		}
 	}
 	_, err = documentService.HardDelete("id = ? and deleted_at is not null", documentId)
 	if err != nil && !errors.Is(err, services.ErrRecordNotFound) {
-		response.ServerError(c, "更新错误")
+		common.ServerError(c, "更新错误")
 		return
 	}
 	// todo 删除oss文件
-	response.Success(c, "")
+	common.Success(c, "")
 }

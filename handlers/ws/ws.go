@@ -10,8 +10,7 @@ import (
 	"sync/atomic"
 
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/common/response"
-	document "kcaitech.com/kcserver/handlers/document"
+	"kcaitech.com/kcserver/handlers/common"
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils/str"
@@ -138,11 +137,11 @@ func (c *ACommuncation) handleBind(clientData *TransData) {
 	}
 	locked, _ := docService.GetLocked(documentId)
 	if len(locked) > 0 && docInfo.Document.UserId != c.userId {
-		c.msgErrWithCode("审核不通过", &serverData, nil, response.StatusDocumentNotFound)
+		c.msgErrWithCode("审核不通过", &serverData, nil, common.StatusDocumentNotFound)
 		return
 	}
 
-	accessKey, err_code, err := document.GetDocumentAccessKey1(c.userId, documentId)
+	accessKey, err_code, err := common.GetDocumentAccessKey(c.userId, documentId)
 	if err != nil {
 		c.msgErrWithCode(err.Error(), &serverData, nil, err_code)
 		return
@@ -293,7 +292,7 @@ func Ws(c *gin.Context) {
 	token := c.Query("token")
 	if token == "" {
 		log.Println("ws-未登录")
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 
@@ -301,14 +300,14 @@ func Ws(c *gin.Context) {
 	claims, err := jwtClient.ValidateToken(token)
 	if err != nil {
 		log.Println("ws-Token错误", err)
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 
 	userId := claims.UserID
 	if userId == "" {
 		log.Println("ws-UserId错误", userId)
-		response.BadRequest(c, "UserId错误")
+		common.BadRequest(c, "UserId错误")
 		return
 	}
 
@@ -316,7 +315,7 @@ func Ws(c *gin.Context) {
 	ws, err := websocket.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Println("ws-建立ws连接失败：", userId, err)
-		response.ServerError(c, "建立ws连接失败")
+		common.ServerError(c, "建立ws连接失败")
 		return
 	}
 	defer ws.Close()

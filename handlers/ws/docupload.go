@@ -3,10 +3,11 @@ package ws
 import (
 	"encoding/json"
 	"log"
+	"net/http"
 
 	"kcaitech.com/kcserver/utils/websocket"
 
-	document "kcaitech.com/kcserver/handlers/document"
+	"kcaitech.com/kcserver/handlers/common"
 )
 
 type Export struct {
@@ -19,7 +20,7 @@ type DocData struct {
 	Id         string
 	ProjectId  string
 	Export     *Export
-	Medias     []document.Media
+	Medias     []common.Media
 	MediasSize uint64
 }
 
@@ -91,7 +92,7 @@ func (serv *docUploadServe) handle(data *TransData, binaryData *([]byte)) {
 		serv.data = &DocData{
 			Id:        uploadHeader.DocumentId,
 			ProjectId: uploadHeader.ProjectId,
-			Medias:    []document.Media{},
+			Medias:    []common.Media{},
 		}
 	}
 
@@ -101,7 +102,7 @@ func (serv *docUploadServe) handle(data *TransData, binaryData *([]byte)) {
 		return
 	}
 	if uploadHeader.Media != "" && binaryData != nil {
-		media := document.Media{
+		media := common.Media{
 			Name:    uploadHeader.Media,
 			Content: binaryData,
 		}
@@ -112,22 +113,22 @@ func (serv *docUploadServe) handle(data *TransData, binaryData *([]byte)) {
 	}
 	if uploadHeader.Commit && serv.data != nil && serv.data.Export != nil {
 		log.Println("uploading commit", uploadHeader.DocumentId)
-		header := document.Header{
+		header := common.Header{
 			UserId:    (serv.userId),
 			ProjectId: serv.data.ProjectId,
 		}
 
-		uploadData := document.UploadData{
-			DocumentMeta: document.Data(serv.data.Export.DocumentMeta),
+		uploadData := common.UploadData{
+			DocumentMeta: common.Data(serv.data.Export.DocumentMeta),
 			Pages:        serv.data.Export.Pages,
 			MediaNames:   serv.data.Export.MediaNames,
 			MediasSize:   serv.data.MediasSize,
 		}
 
-		resp := document.Response{}
-		document.UploadDocumentData(&header, &uploadData, &serv.data.Medias, &resp)
+		resp := common.Response{}
+		common.UploadDocumentData(&header, &uploadData, &serv.data.Medias, &resp)
 
-		if resp.Status == document.ResponseStatusSuccess {
+		if resp.Code == http.StatusOK {
 			retData, err := json.Marshal(resp.Data)
 			if err != nil {
 				log.Println("resp.Data错误??", err)

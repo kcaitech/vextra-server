@@ -6,7 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"kcaitech.com/kcserver/common/response"
+	"kcaitech.com/kcserver/handlers/common"
 	"kcaitech.com/kcserver/services"
 	// handlers "kcaitech.com/kcserver/handlers/auth"
 )
@@ -16,7 +16,7 @@ func loadLoginRoutes(api *gin.RouterGroup) {
 	router.GET("/login_url", func(c *gin.Context) {
 		config := services.GetConfig()
 		url := config.AuthServerURL + "/login?redirect_url=" + config.AuthCallbackURL + "&client_id=" + config.AuthClientID + "&state=" + uuid.New().String()
-		response.Success(c, map[string]any{
+		common.Success(c, map[string]any{
 			"url": url,
 		})
 	})
@@ -33,27 +33,27 @@ func loadLoginRoutes(api *gin.RouterGroup) {
 func RefreshToken(c *gin.Context) {
 	// token, err := utils.GetAccessToken(c)
 	// if err != nil {
-	// 	response.Unauthorized(c)
+	// 	common.Unauthorized(c)
 	// 	return
 	// }
 	client := services.GetKCAuthClient()
 	refreshToken, _ := c.Cookie("refreshToken")
 	if refreshToken == "" {
 		log.Print("Refresh token not provided")
-		response.BadRequest(c, "Refresh token not provided")
+		common.BadRequest(c, "Refresh token not provided")
 		return
 	}
 	token, statusCode, err := client.RefreshToken(refreshToken, c)
 	if err != nil {
 		log.Printf("Refresh token failed: %s", err.Error())
 		if statusCode == http.StatusUnauthorized {
-			response.Unauthorized(c)
+			common.Unauthorized(c)
 		} else {
-			response.BadRequest(c, err.Error())
+			common.BadRequest(c, err.Error())
 		}
 		return
 	}
-	response.Success(c, map[string]any{
+	common.Success(c, map[string]any{
 		"token": token,
 	})
 }
@@ -61,18 +61,18 @@ func RefreshToken(c *gin.Context) {
 func LoginCallback(c *gin.Context) {
 	code := c.Query("code")
 	if code == "" {
-		response.BadRequest(c, "Code is required")
+		common.BadRequest(c, "Code is required")
 		return
 	}
 	client := services.GetKCAuthClient()
 	result, err := client.LoginVerify(code, c)
 	if err != nil {
 		log.Printf("Login callback failed: %s", err.Error())
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 
-	response.Success(c, map[string]any{
+	common.Success(c, map[string]any{
 		"token":    result.Token,
 		"id":       result.UserID,
 		"nickname": result.Nickname,
@@ -83,17 +83,17 @@ func LoginCallback(c *gin.Context) {
 func LoginMiniProgram(c *gin.Context) {
 	code := c.Query("code")
 	if code == "" {
-		response.BadRequest(c, "Code is required")
+		common.BadRequest(c, "Code is required")
 		return
 	}
 	client := services.GetKCAuthClient()
 	result, err := client.WeixinMiniLogin(code, c)
 	if err != nil {
 		log.Printf("Login callback failed: %s", err.Error())
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
-	response.Success(c, map[string]any{
+	common.Success(c, map[string]any{
 		"token":    result.Token,
 		"id":       result.UserID,
 		"nickname": result.Nickname,
@@ -107,10 +107,10 @@ func Logout(c *gin.Context) {
 	err := client.Logout(accessToken)
 	if err != nil {
 		log.Printf("Logout failed: %s", err.Error())
-		response.BadRequest(c, err.Error())
+		common.BadRequest(c, err.Error())
 		return
 	}
 	// 清除refreshToken
 	c.SetCookie("refreshToken", "", -1, "/", "", false, false)
-	response.Success(c, map[string]any{})
+	common.Success(c, map[string]any{})
 }

@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/go-redsync/redsync/v4"
-	autoupdate "kcaitech.com/kcserver/handlers/document"
+	"kcaitech.com/kcserver/handlers/common"
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/providers/mongo"
 	"kcaitech.com/kcserver/providers/redis"
@@ -343,7 +343,7 @@ func (serv *opServe) handleCommit(data *TransData, receiveData *ReceiveData) {
 		// debug
 		// log.Panic()
 		_ = serv.ws.WriteJSON(serverData) // sucess
-		go autoupdate.AutoUpdate(serv.documentId, services.GetConfig())
+		go common.AutoUpdate(serv.documentId, services.GetConfig())
 	}
 }
 

@@ -18,6 +18,10 @@ export class Request {
         this.share_api = new ShareAPI(httpmgr);
         this.document_api = new DocumentAPI(httpmgr);
     }
+
+    watch(key: string, callback: (value: any) => void) {
+        // todo
+    }
 }
 
 export type { UserInfo, TeamInfo, ProjectInfo } from "./types"

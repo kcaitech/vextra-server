@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/common/response"
+	"kcaitech.com/kcserver/handlers/common"
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils"
@@ -14,7 +14,7 @@ import (
 func PostFeedback(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	var req struct {
@@ -23,23 +23,23 @@ func PostFeedback(c *gin.Context) {
 		PageUrl string              `json:"page_url" form:"page_url" binding:"required"`
 	}
 	if err := c.ShouldBind(&req); err != nil {
-		response.BadRequest(c, err.Error())
+		common.BadRequest(c, err.Error())
 		return
 	}
 	if req.Type >= models.FeedbackTypeLast || req.Content == "" || req.PageUrl == "" {
-		response.BadRequest(c, "")
+		common.BadRequest(c, "")
 		return
 	}
 	feedbackService := services.NewFeedbackService()
 	form, err := c.MultipartForm()
 	if err != nil {
-		response.BadRequest(c, "参数错误：files")
+		common.BadRequest(c, "参数错误：files")
 		return
 	}
 	fileHeaderList := form.File["files"]
 	for _, fileHeader := range fileHeaderList {
 		if fileHeader.Size > 2<<20 {
-			response.BadRequest(c, "文件大小不能超过2MB")
+			common.BadRequest(c, "文件大小不能超过2MB")
 			return
 		}
 	}
@@ -47,19 +47,19 @@ func PostFeedback(c *gin.Context) {
 	for _, fileHeader := range fileHeaderList {
 		file, err := fileHeader.Open()
 		if err != nil {
-			response.BadRequest(c, "获取文件失败")
+			common.BadRequest(c, "获取文件失败")
 			return
 		}
 		defer file.Close()
 		fileBytes := make([]byte, fileHeader.Size)
 		if _, err := file.Read(fileBytes); err != nil {
-			response.BadRequest(c, "读取文件失败")
+			common.BadRequest(c, "读取文件失败")
 			return
 		}
 		contentType := fileHeader.Header.Get("Content-Type")
 		imagePath, err := feedbackService.UploadImage(userId, fileBytes, contentType)
 		if err != nil {
-			response.ServerError(c, err.Error())
+			common.ServerError(c, err.Error())
 			return
 		}
 		imagePathList = append(imagePathList, imagePath)
@@ -76,7 +76,7 @@ func PostFeedback(c *gin.Context) {
 		ImagePathList: imagePathListJson,
 		PageUrl:       req.PageUrl,
 	}); err != nil {
-		response.ServerError(c, "")
+		common.ServerError(c, "")
 	}
-	response.Success(c, nil)
+	common.Success(c, nil)
 }

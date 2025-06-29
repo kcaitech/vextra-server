@@ -22,7 +22,7 @@ import (
 	"net/http"
 
 	config "kcaitech.com/kcserver/config"
-	autoupdate "kcaitech.com/kcserver/handlers/document"
+	autoupdate "kcaitech.com/kcserver/handlers/common"
 
 	"reflect"
 
@@ -149,7 +149,7 @@ func migrateDocumentStorageOnce(documentId int64, generateApiUrl string) error {
 		// PageSvgs:     version.PageSvgs,
 	}
 	autoupdate.UploadDocumentData(&header, &data, nil, &response)
-	if response.Status != autoupdate.ResponseStatusSuccess {
+	if response.Code != http.StatusOK {
 		log.Println("auto update failed", response.Message)
 		return errors.New("auto update failed")
 	}

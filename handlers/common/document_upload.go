@@ -1,4 +1,4 @@
-package document
+package common
 
 import (
 	"bytes"
@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"sync"
 	"time"
 
@@ -30,16 +31,16 @@ type Header struct {
 
 type ResponseStatusType string
 
-const (
-	ResponseStatusSuccess ResponseStatusType = "success"
-	ResponseStatusFail    ResponseStatusType = "fail"
-)
+// const (
+// 	ResponseStatusSuccess ResponseStatusType = "success"
+// 	ResponseStatusFail    ResponseStatusType = "fail"
+// )
 
-type Response struct {
-	Status  ResponseStatusType `json:"status,omitempty"`
-	Message string             `json:"message,omitempty"`
-	Data    Data               `json:"data,omitempty"`
-}
+// type Response struct {
+// 	Status  ResponseStatusType `json:"status,omitempty"`
+// 	Message string             `json:"message,omitempty"`
+// 	Data    Data               `json:"data,omitempty"`
+// }
 
 type PageSvg struct {
 	Name    string
@@ -297,7 +298,7 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 		return
 	}
 
-	resp.Status = ResponseStatusSuccess
+	resp.Code = http.StatusOK
 	resp.Data = Data{
 		"document_id": (documentId),
 		"version_id":  documentVersionId,

@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/common/response"
+	"kcaitech.com/kcserver/handlers/common"
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils"
@@ -19,7 +19,7 @@ import (
 func GetUserReceiveSharesList(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	cursor := c.Query("cursor")
@@ -34,7 +34,7 @@ func GetUserReceiveSharesList(c *gin.Context) {
 
 	userMap, err := GetUsersInfo(c, userIds)
 	if err != nil {
-		response.ServerError(c, err.Error())
+		common.ServerError(c, err.Error())
 		return
 	}
 	result := make([]services.DocumentSharesAndFavoritesQueryRes, 0)
@@ -56,7 +56,7 @@ func GetUserReceiveSharesList(c *gin.Context) {
 		lastItem := result[len(result)-1]
 		nextCursor = lastItem.DocumentAccessRecord.LastAccessTime.Format(time.RFC3339)
 	}
-	response.Success(c, gin.H{
+	common.Success(c, gin.H{
 		"list":        result,
 		"has_more":    hasMore,
 		"next_cursor": nextCursor,
@@ -67,21 +67,21 @@ func GetUserReceiveSharesList(c *gin.Context) {
 func DeleteUserShare(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	permissionId := str.DefaultToInt(c.Query("share_id"), 0)
 	if permissionId <= 0 {
-		response.BadRequest(c, "参数错误：share_id")
+		common.BadRequest(c, "参数错误：share_id")
 		return
 	}
 	if _, err := services.NewDocumentService().DocumentPermissionService.HardDelete(
 		"grantee_id = ? and id = ?", userId, permissionId,
 	); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
-		response.ServerError(c, "删除错误")
+		common.ServerError(c, "删除错误")
 		return
 	}
-	response.Success(c, nil)
+	common.Success(c, nil)
 }
 
 type SetDocumentShareTypeReq struct {
@@ -93,22 +93,22 @@ type SetDocumentShareTypeReq struct {
 func SetDocumentShareType(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	var req SetDocumentShareTypeReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "")
+		common.BadRequest(c, "")
 		return
 	}
 	documentId := req.DocId
 	if documentId == "" {
-		response.BadRequest(c, "参数错误：doc_id")
+		common.BadRequest(c, "参数错误：doc_id")
 		return
 	}
 	docType := req.DocType
 	if docType > models.DocTypePublicEditable {
-		response.BadRequest(c, "参数错误：doc_type")
+		common.BadRequest(c, "参数错误：doc_type")
 		return
 	}
 
@@ -116,15 +116,15 @@ func SetDocumentShareType(c *gin.Context) {
 	var document models.Document
 	if err := documentService.Get(&document, "id = ?", documentId); err != nil {
 		if errors.Is(err, services.ErrRecordNotFound) {
-			response.Forbidden(c, "")
+			common.Forbidden(c, "")
 		} else {
 			log.Println("查询错误", err)
-			response.ServerError(c, "")
+			common.ServerError(c, "")
 		}
 		return
 	}
 	if document.ProjectId == "" && document.UserId != userId {
-		response.Forbidden(c, "")
+		common.Forbidden(c, "")
 		return
 	} else if document.ProjectId != "" {
 		projectService := services.NewProjectService()
@@ -132,17 +132,17 @@ func SetDocumentShareType(c *gin.Context) {
 		permType, err := projectService.GetProjectPermTypeByForUser(document.ProjectId, userId)
 		if err != nil || permType == nil {
 			log.Println("权限查询错误", err)
-			response.ServerError(c, "")
+			common.ServerError(c, "")
 			return
 		}
 		if (document.UserId != userId && *permType < models.ProjectPermTypeAdmin) || (document.UserId == userId && *permType < models.ProjectPermTypeCommentable) {
-			response.Forbidden(c, "")
+			common.Forbidden(c, "")
 			return
 		}
 	}
 	document.DocType = docType
 	if _, err := documentService.UpdatesById(documentId, &document); err != nil {
-		response.ServerError(c, "更新错误")
+		common.ServerError(c, "更新错误")
 		return
 	}
 	if docType == models.DocTypePublicReadable || docType == models.DocTypePublicCommentable || docType == models.DocTypePublicEditable {
@@ -161,49 +161,49 @@ func SetDocumentShareType(c *gin.Context) {
 		}, "resource_type = ? and resource_id = ? and perm_source_type = ?", models.ResourceTypeDoc, documentId, models.PermSourceTypeDefault)
 		if err != nil {
 			// log.Println("更新错误", err)
-			// response.ServerError(c, "更新错误")
+			// common.ServerError(c, "更新错误")
 			// return
 		}
 	}
-	response.Success(c, "")
+	common.Success(c, "")
 }
 
 // GetDocumentSharesList 获取分享列表
 func GetDocumentSharesList(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	documentId := (c.Query("doc_id"))
 	if documentId == "" {
-		response.BadRequest(c, "参数错误：doc_id")
+		common.BadRequest(c, "参数错误：doc_id")
 		return
 	}
 	documentService := services.NewDocumentService()
 	var document models.Document
 	if err := documentService.Get(&document, "id = ?", documentId); err != nil {
 		if errors.Is(err, services.ErrRecordNotFound) {
-			response.Forbidden(c, "")
+			common.Forbidden(c, "")
 		} else {
 			log.Println("查询错误", err)
-			response.BadRequest(c, "文档不存在")
+			common.BadRequest(c, "文档不存在")
 		}
 		return
 	}
 	if document.ProjectId == "" && document.UserId != userId {
-		response.Forbidden(c, "")
+		common.Forbidden(c, "")
 		return
 	} else if document.ProjectId != "" {
 		projectService := services.NewProjectService()
 		permType, err := projectService.GetProjectPermTypeByForUser(document.ProjectId, userId)
 		if err != nil || permType == nil {
 			log.Println("权限查询错误", err)
-			response.ServerError(c, "")
+			common.ServerError(c, "")
 			return
 		}
 		if (document.UserId != userId && *permType < models.ProjectPermTypeAdmin) || (document.UserId == userId && *permType < models.ProjectPermTypeCommentable) {
-			response.Forbidden(c, "")
+			common.Forbidden(c, "")
 			return
 		}
 	}
@@ -214,7 +214,7 @@ func GetDocumentSharesList(c *gin.Context) {
 	}
 	userMap, err := GetUsersInfo(c, userIds)
 	if err != nil {
-		response.ServerError(c, err.Error())
+		common.ServerError(c, err.Error())
 		return
 	}
 	result := make([]services.DocumentSharesQueryRes, 0)
@@ -230,7 +230,7 @@ func GetDocumentSharesList(c *gin.Context) {
 			result = append(result, item)
 		}
 	}
-	response.Success(c, result)
+	common.Success(c, result)
 }
 
 type SetDocumentSharePermissionReq struct {
@@ -242,22 +242,22 @@ type SetDocumentSharePermissionReq struct {
 func SetDocumentSharePermission(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	var req SetDocumentSharePermissionReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "")
+		common.BadRequest(c, "")
 		return
 	}
 	permissionId := str.DefaultToInt(req.ShareId, 0)
 	if permissionId <= 0 {
-		response.BadRequest(c, "参数错误：share_id")
+		common.BadRequest(c, "参数错误：share_id")
 		return
 	}
 	permType := req.PermType
 	if permType < models.PermTypeReadOnly || permType > models.PermTypeEditable {
-		response.BadRequest(c, "参数错误：perm_type")
+		common.BadRequest(c, "参数错误：perm_type")
 		return
 	}
 	documentPermissionService := services.NewDocumentService().DocumentPermissionService
@@ -265,28 +265,28 @@ func SetDocumentSharePermission(c *gin.Context) {
 	if err != nil {
 		if errors.Is(err, services.ErrRecordNotFound) {
 			log.Println("数据不存在", err)
-			response.BadRequest(c, "数据不存在")
+			common.BadRequest(c, "数据不存在")
 		} else {
 			log.Println("查询错误", err)
-			response.ServerError(c, "")
+			common.ServerError(c, "")
 		}
 		return
 	}
 	// 权限校验
 	projectId := documentPermission.Document.ProjectId
 	if projectId == "" && documentPermission.Document.UserId != userId {
-		response.Forbidden(c, "非团队文档，权限不足")
+		common.Forbidden(c, "非团队文档，权限不足")
 		return
 	} else if projectId != "" {
 		projectService := services.NewProjectService()
 		permType, err := projectService.GetProjectPermTypeByForUser(projectId, userId)
 		if err != nil || permType == nil {
 			log.Println("权限查询错误", err)
-			response.ServerError(c, "")
+			common.ServerError(c, "")
 			return
 		}
 		if (documentPermission.Document.UserId != userId && *permType < models.ProjectPermTypeAdmin) || (documentPermission.Document.UserId == userId && *permType < models.ProjectPermTypeCommentable) {
-			response.Forbidden(c, "权限不足")
+			common.Forbidden(c, "权限不足")
 			return
 		}
 	}
@@ -295,19 +295,19 @@ func SetDocumentSharePermission(c *gin.Context) {
 		"id = ?",
 		permissionId,
 	)
-	response.Success(c, "")
+	common.Success(c, "")
 }
 
 // DeleteDocumentSharePermission 移除分享权限
 func DeleteDocumentSharePermission(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	permissionId := str.DefaultToInt(c.Query("share_id"), 0)
 	if permissionId <= 0 {
-		response.BadRequest(c, "参数错误：share_id")
+		common.BadRequest(c, "参数错误：share_id")
 		return
 	}
 	documentPermissionService := services.NewDocumentService().DocumentPermissionService
@@ -318,14 +318,14 @@ func DeleteDocumentSharePermission(c *gin.Context) {
 		&services.WhereArgs{Query: "document_permission.resource_type = ? and document_permission.id = ? and document.user_id = ?", Args: []any{models.ResourceTypeDoc, permissionId, userId}},
 	); err != nil || count <= 0 {
 		if err != nil {
-			response.ServerError(c, "删除错误")
+			common.ServerError(c, "删除错误")
 		} else {
-			response.Forbidden(c, "")
+			common.Forbidden(c, "")
 		}
 		return
 	}
 	_, _ = services.NewDocumentService().DocumentPermissionService.HardDelete("id = ?", permissionId)
-	response.Success(c, "")
+	common.Success(c, "")
 }
 
 type ApplyDocumentPermissionReq struct {
@@ -338,53 +338,53 @@ type ApplyDocumentPermissionReq struct {
 func ApplyDocumentPermission(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	var req ApplyDocumentPermissionReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "")
+		common.BadRequest(c, "")
 		return
 	}
 	documentId := (req.DocId)
 	if documentId == "" {
-		response.BadRequest(c, "参数错误：doc_id")
+		common.BadRequest(c, "参数错误：doc_id")
 		return
 	}
 	documentService := services.NewDocumentService()
 	var document models.Document
 	if err := documentService.GetById(documentId, &document); err != nil {
 		if errors.Is(err, services.ErrRecordNotFound) {
-			response.BadRequest(c, "文档不存在")
+			common.BadRequest(c, "文档不存在")
 		} else {
-			response.ServerError(c, "查询错误")
+			common.ServerError(c, "查询错误")
 		}
 		return
 	}
 	if document.UserId == userId {
-		response.BadRequest(c, "不能申请自己的文档")
+		common.BadRequest(c, "不能申请自己的文档")
 		return
 	}
 	if document.DocType != models.DocTypeShareable {
-		response.Forbidden(c, "")
+		common.Forbidden(c, "")
 		return
 	}
 	permType := req.PermType
 	if permType < models.PermTypeReadOnly || permType > models.PermTypeEditable {
-		response.BadRequest(c, "参数错误：perm_type")
+		common.BadRequest(c, "参数错误：perm_type")
 		return
 	}
 	documentInfoQueryRes := documentService.GetDocumentInfoByDocumentAndUserId(documentId, userId, permType)
 	if permType <= documentInfoQueryRes.DocumentPermission.PermType {
-		response.BadRequest(c, "已拥有权限")
+		common.BadRequest(c, "已拥有权限")
 		return
 	}
 	if documentInfoQueryRes.ApplicationCount >= 3 {
-		response.BadRequest(c, "申请次数已达上限")
+		common.BadRequest(c, "申请次数已达上限")
 		return
 	}
 	//if documentInfoQueryRes.SharesCount >= 5 && documentInfoQueryRes.DocumentPermission.PermType == 0 {
-	//	response.BadRequest(c, "分享数量已达上限")
+	//	common.BadRequest(c, "分享数量已达上限")
 	//	return
 	//}
 	if err := documentService.DocumentPermissionRequestsService.Create(&models.DocumentPermissionRequests{
@@ -393,17 +393,17 @@ func ApplyDocumentPermission(c *gin.Context) {
 		PermType:       permType,
 		ApplicantNotes: req.ApplicantNotes,
 	}); err != nil {
-		response.ServerError(c, "新建错误")
+		common.ServerError(c, "新建错误")
 		return
 	}
-	response.Success(c, "")
+	common.Success(c, "")
 }
 
 // GetDocumentPermissionRequestsList 获取申请列表
 func GetDocumentPermissionRequestsList(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	documentId := c.Query("doc_id")
@@ -424,7 +424,7 @@ func GetDocumentPermissionRequestsList(c *gin.Context) {
 	}
 	userMap, err := GetUsersInfo(c, userIds)
 	if err != nil {
-		response.ServerError(c, err.Error())
+		common.ServerError(c, err.Error())
 		return
 	}
 	for i := range *result {
@@ -450,7 +450,7 @@ func GetDocumentPermissionRequestsList(c *gin.Context) {
 			log.Println(err)
 		}
 	}
-	response.Success(c, result)
+	common.Success(c, result)
 }
 
 type ReviewDocumentPermissionRequestReq struct {
@@ -462,22 +462,22 @@ type ReviewDocumentPermissionRequestReq struct {
 func ReviewDocumentPermissionRequest(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	var req ReviewDocumentPermissionRequestReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "")
+		common.BadRequest(c, "")
 		return
 	}
 	documentPermissionRequestsId := str.DefaultToInt(req.ApplyId, 0)
 	if documentPermissionRequestsId <= 0 {
-		response.BadRequest(c, "参数错误：apply_id")
+		common.BadRequest(c, "参数错误：apply_id")
 		return
 	}
 	approvalCode := req.ApprovalCode
 	if approvalCode != 0 && approvalCode != 1 {
-		response.BadRequest(c, "参数错误：approval_code")
+		common.BadRequest(c, "参数错误：approval_code")
 		return
 	}
 	documentService := services.NewDocumentService()
@@ -491,14 +491,14 @@ func ReviewDocumentPermissionRequest(c *gin.Context) {
 		},
 	); err != nil {
 		if errors.Is(err, services.ErrRecordNotFound) {
-			response.BadRequest(c, "申请已被处理")
+			common.BadRequest(c, "申请已被处理")
 		} else {
-			response.ServerError(c, "查询错误")
+			common.ServerError(c, "查询错误")
 		}
 		return
 	}
 	if documentPermissionRequest.PermType < models.PermTypeReadOnly || documentPermissionRequest.PermType > models.PermTypeEditable {
-		response.BadRequest(c, "参数错误：documentPermissionRequest.PermType")
+		common.BadRequest(c, "参数错误：documentPermissionRequest.PermType")
 		return
 	}
 	if approvalCode == 0 {
@@ -509,7 +509,7 @@ func ReviewDocumentPermissionRequest(c *gin.Context) {
 	documentPermissionRequest.ProcessedAt = myTime.Time(time.Now())
 	documentPermissionRequest.ProcessedBy = userId
 	if _, err := documentService.DocumentPermissionRequestsService.UpdatesById(documentPermissionRequestsId, &documentPermissionRequest); err != nil {
-		response.ServerError(c, "更新错误")
+		common.ServerError(c, "更新错误")
 		return
 	}
 	if approvalCode == 1 {
@@ -520,7 +520,7 @@ func ReviewDocumentPermissionRequest(c *gin.Context) {
 			documentPermissionRequest.UserId,
 		)
 		if err != nil {
-			response.ServerError(c, "查询错误")
+			common.ServerError(c, "查询错误")
 			return
 		}
 		if documentPermission == nil {
@@ -531,23 +531,23 @@ func ReviewDocumentPermissionRequest(c *gin.Context) {
 				PermType:       documentPermissionRequest.PermType,
 				PermSourceType: models.PermSourceTypeCustom,
 			}); err != nil {
-				response.ServerError(c, "新建错误")
+				common.ServerError(c, "新建错误")
 				return
 			}
 		} else {
 			if documentPermissionRequest.PermType <= permType {
-				response.Success(c, "")
+				common.Success(c, "")
 				return
 			} else {
 				documentPermission.PermType = documentPermissionRequest.PermType
 				if _, err := documentService.DocumentPermissionService.UpdatesById(documentPermission.Id, documentPermission); err != nil {
-					response.ServerError(c, "更新错误")
+					common.ServerError(c, "更新错误")
 					return
 				}
 			}
 		}
 	}
-	response.Success(c, "")
+	common.Success(c, "")
 }
 
 type UserDocumentPermResp struct {
@@ -563,27 +563,27 @@ type wxMpAccessTokenResp struct {
 func GetUserDocumentPerm(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	documentId := (c.Query("doc_id"))
 	if documentId == "" {
-		response.BadRequest(c, "参数错误：doc_id")
+		common.BadRequest(c, "参数错误：doc_id")
 		return
 	}
 	result := UserDocumentPermResp{}
 	if err := services.NewDocumentService().GetPermTypeByDocumentAndUserId(&result.PermType, documentId, userId); err != nil {
-		response.BadRequest(c, "文档不存在")
+		common.BadRequest(c, "文档不存在")
 		return
 	}
-	response.Success(c, result)
+	common.Success(c, result)
 }
 
 // GetWxMpCode 获取微信小程序码
 // func GetWxMpCode(c *gin.Context) {
 // 	scene := c.Query("scene")
 // 	if len(scene) > 32 {
-// 		response.BadRequest(c, "参数错误：scene")
+// 		common.BadRequest(c, "参数错误：scene")
 // 		return
 // 	}
 
@@ -595,7 +595,7 @@ func GetUserDocumentPerm(c *gin.Context) {
 // 		envVersion = "release"
 // 	}
 // 	if envVersion != "release" && envVersion != "trial" && envVersion != "develop" {
-// 		response.BadRequest(c, "参数错误：env_version")
+// 		common.BadRequest(c, "参数错误：env_version")
 // 		return
 // 	}
 
@@ -610,7 +610,7 @@ func GetUserDocumentPerm(c *gin.Context) {
 // 	resp, err := http.Get("https://api.weixin.qq.com/cgi-bin/token" + "?" + queryParams.Encode())
 // 	if err != nil {
 // 		log.Println(err)
-// 		response.ServerError(c, "获取失败")
+// 		common.ServerError(c, "获取失败")
 // 		return
 // 	}
 // 	defer resp.Body.Close()
@@ -618,7 +618,7 @@ func GetUserDocumentPerm(c *gin.Context) {
 // 	body, err := io.ReadAll(resp.Body)
 // 	if err != nil {
 // 		log.Println(err)
-// 		response.ServerError(c, "获取失败")
+// 		common.ServerError(c, "获取失败")
 // 		return
 // 	}
 // 	// json解析
@@ -626,7 +626,7 @@ func GetUserDocumentPerm(c *gin.Context) {
 // 	err = json.Unmarshal(body, &wxAccessTokenResp)
 // 	if err != nil {
 // 		log.Println(err)
-// 		response.ServerError(c, "获取失败")
+// 		common.ServerError(c, "获取失败")
 // 		return
 // 	}
 
@@ -658,7 +658,7 @@ func GetUserDocumentPerm(c *gin.Context) {
 // 	resp, err = http.Post("https://api.weixin.qq.com/wxa/getwxacodeunlimit"+"?"+queryParams.Encode(), "application/json", bytes.NewBuffer(requestBodyBytes))
 // 	if err != nil {
 // 		log.Println(err)
-// 		response.ServerError(c, "获取失败")
+// 		common.ServerError(c, "获取失败")
 // 		return
 // 	}
 // 	defer resp.Body.Close()
@@ -670,11 +670,11 @@ func GetUserDocumentPerm(c *gin.Context) {
 // 	if strings.Contains(contentType, "application/json") {
 // 		if err != nil {
 // 			log.Println(err)
-// 			response.ServerError(c, "获取失败")
+// 			common.ServerError(c, "获取失败")
 // 			return
 // 		}
 // 		log.Println("获取小程序码失败", string(body))
-// 		response.ServerError(c, "获取失败")
+// 		common.ServerError(c, "获取失败")
 // 		return
 // 	}
 
@@ -682,5 +682,5 @@ func GetUserDocumentPerm(c *gin.Context) {
 // 	if contentType != "" {
 // 		imageType = contentType
 // 	}
-// 	response.Success(c, "data:"+imageType+";base64,"+base64.StdEncoding.EncodeToString(body))
+// 	common.Success(c, "data:"+imageType+";base64,"+base64.StdEncoding.EncodeToString(body))
 // }

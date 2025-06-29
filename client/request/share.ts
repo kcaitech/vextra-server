@@ -146,7 +146,7 @@ export class ShareAPI {
     //查询某个文档对所有用户的分享列表
     async getShareGranteesList(params: { doc_id: string }): Promise<ShareListResponse1> {
         const result = await this.http.request({
-            url: `/documents/shares/grantees`,
+            url: `/share/grantees`,
             method: 'get',
             params: params,
         });
@@ -164,7 +164,7 @@ export class ShareAPI {
         limit?: number;
     }): Promise<ShareListResponse> {
         const result = await this.http.request({
-            url: '/documents/shares/receives',
+            url: '/share/receives',
             method: 'get',
             params: params,
         })
@@ -176,12 +176,10 @@ export class ShareAPI {
         }
     }
 
-
-
     //设置分享类型
     async setShateType(params: { doc_id: string; doc_type: DocType }): Promise<BaseResponse> {
         const result = await this.http.request({
-            url: '/documents/shares/set',
+            url: '/share/set',
             method: 'put',
             data: params,
         });
@@ -196,7 +194,7 @@ export class ShareAPI {
     //修改分享权限
     async changeShareAuthority(params: { share_id: string; perm_type: PermType }): Promise<BaseResponse> {
         const result = await this.http.request({
-            url: '/documents/shares',
+            url: '/share',
             method: 'put',
             data: params,
         });
@@ -211,7 +209,7 @@ export class ShareAPI {
     //移除分享权限
     async delShareAuthority(params: { share_id: string }): Promise<BaseResponse> {
         const result = await this.http.request({
-            url: `/documents/shares`,
+            url: `/share`,
             method: 'delete',
             params: params,
         });
@@ -226,7 +224,7 @@ export class ShareAPI {
     // 申请文档权限
     async applyDocumentAuthority(params: ShareApply): Promise<BaseResponse> {
         const result = await this.http.request({
-            url: '/documents/shares/apply',
+            url: '/share/apply',
             method: 'post',
             data: params,
         });
@@ -241,7 +239,7 @@ export class ShareAPI {
     // 获取申请列表
     async getApplyList(params: { start_time?: number, page?: number; page_size?: number }): Promise<ShareApplyListResponse> {
         const result = await this.http.request({
-            url: `/documents/shares/apply`,
+            url: `/share/apply`,
             method: 'get',
             params: params,
         });
@@ -256,7 +254,7 @@ export class ShareAPI {
     // 权限申请审核
     async permissionApplyAudit(params: ShareApplyAudit): Promise<BaseResponse> {
         const result = await this.http.request({
-            url: '/documents/shares/apply/audit',
+            url: '/share/apply/audit',
             method: 'post',
             data: params,
         });
@@ -273,7 +271,7 @@ export class ShareAPI {
         share_id: string;
     }): Promise<BaseResponse> {
         return this.http.request({
-            url: 'documents/share',
+            url: '/share',
             method: 'delete',
             params: params,
         })

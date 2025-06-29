@@ -390,17 +390,6 @@ export class DocumentAPI {
         })
     }
 
-    // 删除用户文档访问记录
-    // async deleteUserDocumentAccessRecord(params: {
-    //     access_record_id: string;
-    // }): Promise<BaseResponse> {
-    //     return this.http.request({
-    //         url: '/documents/access_record',
-    //         method: 'delete',
-    //         params: params,
-    //     })
-    // }
-
     //移动文件到回收站
     async moveFileToRecycleBin(params: {
         doc_id: string;

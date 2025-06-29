@@ -15,33 +15,33 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 	router.GET("/favorites", handlers.GetUserDocumentFavoritesList)
 	router.PUT("/favorites", handlers.SetUserDocumentFavoriteStatus)
 	router.GET("/", handlers.GetUserDocumentList)
-	router.DELETE("/", handlers.DeleteUserDocument)
+	router.DELETE("/", handlers.DeleteUserDocument) // 移动文件到回收站
 	router.PUT("/name", handlers.SetDocumentName)
 	router.GET("/recycle_bin", handlers.GetUserRecycleBinDocumentList)
 	router.PUT("/recycle_bin", handlers.RestoreUserRecycleBinDocument)
 	router.DELETE("/recycle_bin", handlers.DeleteUserRecycleBinDocument)
-	router.GET("/info", handlers.GetUserDocumentInfo)
-	router.GET("/permission", handlers.GetUserDocumentPerm)
-	router.GET("/access_key", handlers.GetDocumentAccessKey)
+	router.GET("/info", handlers.GetUserDocumentInfo)        // 获取文档信息
+	router.GET("/permission", handlers.GetUserDocumentPerm)  // 获取文档权限
+	router.GET("/access_key", handlers.GetDocumentAccessKey) // 获取文档密钥
 	router.POST("/copy", handlers.CopyDocument)
 	router.GET("/resource", handlers.GetResourceDocumentList)
 	router.POST("/resource", handlers.CreateResourceDocument)
-	// 分享
-	router.GET("/shares/receives", handlers.GetUserReceiveSharesList) // 查询用户加入的文档分享列表
-	router.DELETE("/share", handlers.DeleteUserShare)
-	router.PUT("/shares/set", handlers.SetDocumentShareType)
-	router.GET("/shares/grantees", handlers.GetDocumentSharesList) // 查询某个文档对所有用户的分享列表
-	router.PUT("/shares", handlers.SetDocumentSharePermission)
-	router.DELETE("/shares", handlers.DeleteDocumentSharePermission)
-	router.POST("/shares/apply", handlers.ApplyDocumentPermission)
-	router.GET("/shares/apply", handlers.GetDocumentPermissionRequestsList)
-	router.POST("/shares/apply/audit", handlers.ReviewDocumentPermissionRequest)
 	// 评论
-	router.GET("/comments", handlers.GetDocumentComment)
-	router.POST("/comment", handlers.PostUserComment)
-	router.PUT("/comment", handlers.PutUserComment)
-	router.DELETE("/comment", handlers.DeleteUserComment)
-	router.PUT("/comment/status", handlers.SetUserCommentStatus)
+	router.GET("/comments", handlers.GetDocumentComment)         // 获取文档评论
+	router.POST("/comment", handlers.PostUserComment)            // 创建评论
+	router.PUT("/comment", handlers.PutUserComment)              // 编辑评论
+	router.DELETE("/comment", handlers.DeleteUserComment)        // 删除评论
+	router.PUT("/comment/status", handlers.SetUserCommentStatus) // 设置评论状态
+	// 分享
+	router.GET("/shares/receives", handlers.GetUserReceiveSharesList)            // 查询用户加入的文档分享列表
+	router.DELETE("/share", handlers.DeleteUserShare)                            // 退出共享
+	router.PUT("/shares/set", handlers.SetDocumentShareType)                     // 设置分享类型
+	router.GET("/shares/grantees", handlers.GetDocumentSharesList)               // 查询某个文档对所有用户的分享列表
+	router.PUT("/shares", handlers.SetDocumentSharePermission)                   // 修改分享权限
+	router.DELETE("/shares", handlers.DeleteDocumentSharePermission)             // 移除分享权限
+	router.POST("/shares/apply", handlers.ApplyDocumentPermission)               // 申请文档权限
+	router.GET("/shares/apply", handlers.GetDocumentPermissionRequestsList)      // 获取申请列表
+	router.POST("/shares/apply/audit", handlers.ReviewDocumentPermissionRequest) // 权限申请审核
 	// team
 	router.POST("/team", handlers.CreateTeam)
 	router.GET("/team/list", handlers.GetTeamList)

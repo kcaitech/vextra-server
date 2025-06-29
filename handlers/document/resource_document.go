@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/common/response"
+	"kcaitech.com/kcserver/handlers/common"
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils"
@@ -25,7 +25,7 @@ func GetResourceDocumentList(c *gin.Context) {
 
 	userMap, err := GetUsersInfo(c, userIds)
 	if err != nil {
-		response.ServerError(c, err.Error())
+		common.ServerError(c, err.Error())
 		return
 	}
 
@@ -53,7 +53,7 @@ func GetResourceDocumentList(c *gin.Context) {
 		nextCursor = lastItem.Document.CreatedAt.Format(time.RFC3339)
 	}
 
-	response.Success(c, gin.H{
+	common.Success(c, gin.H{
 		"list":        result,
 		"has_more":    hasMore,
 		"next_cursor": nextCursor,
@@ -68,19 +68,19 @@ type CreateResourceDocumentReq struct {
 func CreateResourceDocument(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 
 	var req CreateResourceDocumentReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "")
+		common.BadRequest(c, "")
 		return
 	}
 
 	documentId := req.DocId
 	if documentId == "" {
-		response.BadRequest(c, "参数错误：doc_id")
+		common.BadRequest(c, "参数错误：doc_id")
 		return
 	}
 
@@ -100,9 +100,9 @@ func CreateResourceDocument(c *gin.Context) {
 	}
 
 	if err := documentService.ResourceDocumentService.Create(&resourceDocument); err != nil {
-		response.ServerError(c, "创建资源文档失败")
+		common.ServerError(c, "创建资源文档失败")
 		return
 	}
 
-	response.Success(c, result)
+	common.Success(c, result)
 }

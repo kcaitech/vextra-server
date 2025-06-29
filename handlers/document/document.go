@@ -13,7 +13,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"kcaitech.com/kcserver/common/response"
+	"kcaitech.com/kcserver/handlers/common"
 	"kcaitech.com/kcserver/models"
 	safereviewBase "kcaitech.com/kcserver/providers/safereview"
 	"kcaitech.com/kcserver/providers/storage"
@@ -26,7 +26,7 @@ import (
 func GetUserDocumentList(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 
@@ -54,7 +54,7 @@ func GetUserDocumentList(c *gin.Context) {
 
 	userMap, err := GetUsersInfo(c, userIds)
 	if err != nil {
-		response.ServerError(c, err.Error())
+		common.ServerError(c, err.Error())
 		return
 	}
 
@@ -78,7 +78,7 @@ func GetUserDocumentList(c *gin.Context) {
 		nextCursor = lastItem.DocumentAccessRecord.LastAccessTime.Format(time.RFC3339)
 	}
 
-	response.Success(c, gin.H{
+	common.Success(c, gin.H{
 		"list":        result,
 		"has_more":    hasMore,
 		"next_cursor": nextCursor,
@@ -89,25 +89,25 @@ func GetUserDocumentList(c *gin.Context) {
 func DeleteUserDocument(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	documentId := (c.Query("doc_id"))
 	if documentId == "" {
-		response.BadRequest(c, "参数错误：doc_id")
+		common.BadRequest(c, "参数错误：doc_id")
 		return
 	}
 	documentService := services.NewDocumentService()
 	document := models.Document{}
 	if documentService.GetById(documentId, &document) != nil {
-		response.BadRequest(c, "文档不存在")
+		common.BadRequest(c, "文档不存在")
 		return
 	}
 	if document.ProjectId == "" {
 		if _, err := documentService.Delete(
 			"user_id = ? and id = ?", userId, documentId,
 		); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
-			response.ServerError(c, "删除错误")
+			common.ServerError(c, "删除错误")
 			return
 		}
 		_, err = documentService.UpdateColumns(map[string]any{"delete_by": userId}, "deleted_at is not null and id = ?", documentId, &services.Unscoped{})
@@ -118,13 +118,13 @@ func DeleteUserDocument(c *gin.Context) {
 		projectService := services.NewProjectService()
 		projectPermType, err := projectService.GetProjectPermTypeByForUser(document.ProjectId, userId)
 		if err != nil || projectPermType == nil || (*projectPermType) < models.ProjectPermTypeEditable {
-			response.Forbidden(c, "")
+			common.Forbidden(c, "")
 			return
 		}
 		if _, err := documentService.Delete(
 			"id = ?", documentId,
 		); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
-			response.ServerError(c, "删除错误")
+			common.ServerError(c, "删除错误")
 			return
 		}
 		_, err = documentService.UpdateColumns(map[string]any{"delete_by": userId}, "deleted_at is not null and id = ?", documentId, &services.Unscoped{})
@@ -132,7 +132,7 @@ func DeleteUserDocument(c *gin.Context) {
 			log.Println("更新文档删除者失败", err.Error())
 		}
 	}
-	response.Success(c, "")
+	common.Success(c, "")
 }
 
 // GetUserDocumentInfo 获取用户某份文档的信息
@@ -140,12 +140,12 @@ func GetUserDocumentInfo(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
 		log.Println("获取userId失败", err.Error())
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	documentId := (c.Query("doc_id"))
 	if documentId == "" {
-		response.BadRequest(c, "参数错误：doc_id")
+		common.BadRequest(c, "参数错误：doc_id")
 		return
 	}
 	permType := models.PermType(str.DefaultToInt(c.Query("perm_type"), 0))
@@ -155,12 +155,12 @@ func GetUserDocumentInfo(c *gin.Context) {
 	docService := services.NewDocumentService()
 	result := docService.GetDocumentInfoByDocumentAndUserId(documentId, userId, permType)
 	if result == nil {
-		response.Resp(c, http.StatusNotFound, "文档不存在", nil)
+		common.Resp(c, http.StatusNotFound, "文档不存在", nil)
 		return
 	}
 	locked, _ := docService.GetLocked(documentId)
 	if len(locked) > 0 && result.Document.UserId != userId {
-		response.Resp(c, response.StatusDocumentNotFound, "审核不通过", nil)
+		common.Resp(c, common.StatusDocumentNotFound, "审核不通过", nil)
 		return
 	}
 
@@ -170,16 +170,16 @@ func GetUserDocumentInfo(c *gin.Context) {
 	token, err := utils.GetAccessToken(c)
 	if err != nil {
 		log.Println("获取token失败")
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	userInfo, err := authClient.GetUserInfoById(token, docUserId)
 	if err != nil {
-		response.ServerError(c, err.Error())
+		common.ServerError(c, err.Error())
 		return
 	}
 
-	response.Success(c, gin.H{
+	common.Success(c, gin.H{
 		"user": models.UserProfile{
 			Id:       userInfo.UserID,
 			Nickname: userInfo.Nickname,
@@ -198,37 +198,6 @@ func GetUserDocumentInfo(c *gin.Context) {
 	})
 }
 
-// GetDocumentBasicInfoById 通过文档ID获取文档的基本信息
-func GetDocumentBasicInfoById(documentId string) (*DocumentInfo, error) {
-	// 获取数据库连接
-	db := services.GetDBModule().DB
-
-	// 创建返回结果结构体
-	docInfo := &DocumentInfo{}
-
-	// 执行查询
-	query := `
-        SELECT d.id as document_id, d.path, d.version_id, dv.last_cmd_ver_id as last_cmd_id
-        FROM document d
-        INNER JOIN document_version dv ON dv.document_id = d.id AND dv.version_id = d.version_id AND dv.deleted_at IS NULL
-        WHERE d.id = ? AND d.deleted_at IS NULL
-        LIMIT 1
-    `
-
-	// 执行查询并将结果映射到结构体
-	err := db.Raw(query, documentId).Scan(docInfo).Error
-	if err != nil {
-		return nil, err
-	}
-
-	// 检查查询结果是否有效
-	if docInfo.DocumentId == "" {
-		return nil, errors.New("文档不存在")
-	}
-
-	return docInfo, nil
-}
-
 type SetDocumentNameReq struct {
 	DocId string `json:"doc_id" binding:"required"`
 	Name  string `json:"name" binding:"required"`
@@ -238,28 +207,28 @@ type SetDocumentNameReq struct {
 func SetDocumentName(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	var req SetDocumentNameReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "")
+		common.BadRequest(c, "")
 		return
 	}
 	documentId := (req.DocId)
 	if documentId == "" {
-		response.BadRequest(c, "参数错误：doc_id")
+		common.BadRequest(c, "参数错误：doc_id")
 		return
 	}
 	documentService := services.NewDocumentService()
 	document := models.Document{}
 	if documentService.Get(&document, "id = ?", documentId) != nil {
-		response.BadRequest(c, "文档不存在")
+		common.BadRequest(c, "文档不存在")
 		return
 	}
 	if document.ProjectId == "" {
 		if document.UserId != userId {
-			response.Forbidden(c, "")
+			common.Forbidden(c, "")
 			return
 		}
 	} else {
@@ -267,7 +236,7 @@ func SetDocumentName(c *gin.Context) {
 		projectPermType, err := projectService.GetProjectPermTypeByForUser(document.ProjectId, userId)
 		// 管理员以上权限或文档创建者且可编辑权限
 		if !(err == nil && projectPermType != nil && ((*projectPermType) >= models.ProjectPermTypeAdmin || ((*projectPermType) == models.ProjectPermTypeEditable && document.UserId == userId))) {
-			response.Forbidden(c, "")
+			common.Forbidden(c, "")
 			return
 		}
 	}
@@ -277,7 +246,7 @@ func SetDocumentName(c *gin.Context) {
 		reviewResponse, err := (reviewClient).ReviewText(req.Name)
 		if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
 			log.Println("名称审核不通过", req.Name, err, reviewResponse)
-			response.ReviewFail(c, "审核不通过")
+			common.ReviewFail(c, "审核不通过")
 			return
 		}
 	}
@@ -286,14 +255,14 @@ func SetDocumentName(c *gin.Context) {
 		map[string]any{"name": req.Name},
 		"id = ?", documentId,
 	); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
-		response.ServerError(c, "更新错误")
+		common.ServerError(c, "更新错误")
 		return
 	}
 	if errors.Is(err, services.ErrRecordNotFound) {
-		response.Forbidden(c, "")
+		common.Forbidden(c, "")
 		return
 	}
-	response.Success(c, "")
+	common.Success(c, "")
 }
 
 type CopyDocumentReq struct {
@@ -308,29 +277,29 @@ func copyDocument(userId string, documentId string, c *gin.Context, documentName
 	documentService := services.NewDocumentService()
 	sourceDocument := models.Document{}
 	if err := documentService.Get(&sourceDocument, "id = ?", documentId); err != nil {
-		response.Forbidden(c, "")
+		common.Forbidden(c, "")
 		return
 	}
 	lockedInfo, err := documentService.GetLocked(documentId)
 	if err != nil {
-		response.Forbidden(c, "")
+		common.Forbidden(c, "")
 		return
 	}
 	if len(lockedInfo) > 0 {
-		response.Forbidden(c, "审核不通过")
+		common.Forbidden(c, "审核不通过")
 		return
 	}
 	if sourceDocument.ProjectId == "" {
 		var permType models.PermType
 		if err := documentService.GetPermTypeByDocumentAndUserId(&permType, documentId, userId); err != nil || permType < models.PermTypeEditable {
-			response.Forbidden(c, "")
+			common.Forbidden(c, "")
 			return
 		}
 	} else {
 		projectService := services.NewProjectService()
 		projectPermType, err := projectService.GetProjectPermTypeByForUser(sourceDocument.ProjectId, userId)
 		if !(err == nil && projectPermType != nil && (*projectPermType) >= models.ProjectPermTypeEditable) { // 需有可编辑权限
-			response.Forbidden(c, "")
+			common.Forbidden(c, "")
 			return
 		}
 	}
@@ -342,7 +311,7 @@ func copyDocument(userId string, documentId string, c *gin.Context, documentName
 
 	documentVersion := models.DocumentVersion{}
 	if err := documentService.DocumentVersionService.Get(&documentVersion, "document_id = ? and version_id = ?", documentId, sourceDocument.VersionId); err != nil {
-		response.ServerError(c, "获取文档版本失败")
+		common.ServerError(c, "获取文档版本失败")
 		return
 	}
 	// 获取文档cmd
@@ -350,7 +319,7 @@ func copyDocument(userId string, documentId string, c *gin.Context, documentName
 	documentCmdList, err := cmdServices.GetCmdItemsFromStart(documentId, documentVersion.LastCmdVerId)
 	if err != nil {
 		log.Println("获取文档cmd失败:", err, "documentId:", documentId, "LastCmdVerId:", documentVersion.LastCmdVerId)
-		response.ServerError(c, "获取文档cmd失败")
+		common.ServerError(c, "获取文档cmd失败")
 		return
 	}
 	var minBaseVer uint
@@ -369,7 +338,7 @@ func copyDocument(userId string, documentId string, c *gin.Context, documentName
 	baseVerCmdList, err := cmdServices.GetCmdItems(documentId, minBaseVer, documentVersion.LastCmdVerId)
 	if err != nil {
 		log.Println("获取基础版本cmd失败:", err, "documentId:", documentId, "minBaseVer:", minBaseVer, "LastCmdVerId:", documentVersion.LastCmdVerId)
-		response.ServerError(c, "获取基础版本cmd失败")
+		common.ServerError(c, "获取基础版本cmd失败")
 		return
 	}
 
@@ -398,14 +367,14 @@ func copyDocument(userId string, documentId string, c *gin.Context, documentName
 	// 复制目录
 	if _, err := _storage.Bucket.CopyDirectory(sourceDocument.Path, targetDocumentId); err != nil {
 		log.Println("复制目录失败：", err)
-		response.ServerError(c, "复制失败")
+		common.ServerError(c, "复制失败")
 		return
 	}
 
 	documentMetaBytes, err := _storage.Bucket.GetObject(targetDocumentId + "/document-meta.json")
 	if err != nil {
 		log.Println("获取document-meta.json失败：", targetDocumentId+"/document-meta.json", err)
-		response.ServerError(c, "复制失败")
+		common.ServerError(c, "复制失败")
 		return
 	}
 
@@ -416,13 +385,13 @@ func copyDocument(userId string, documentId string, c *gin.Context, documentName
 		// 尝试解压缩 gzip 数据
 		reader, err := gzip.NewReader(bytes.NewReader(documentMetaBytes))
 		if err != nil {
-			response.ServerError(c, "复制失败：文档元数据格式错误")
+			common.ServerError(c, "复制失败：文档元数据格式错误")
 			return
 		}
 		// 读取解压缩后的数据
 		decompressed, err := io.ReadAll(reader)
 		if err != nil {
-			response.ServerError(c, "复制失败：文档元数据解压缩错误")
+			common.ServerError(c, "复制失败：文档元数据解压缩错误")
 			return
 		}
 		reader.Close()
@@ -431,20 +400,20 @@ func copyDocument(userId string, documentId string, c *gin.Context, documentName
 
 	documentMeta := map[string]any{}
 	if err := json.Unmarshal(documentMetaBytes, &documentMeta); err != nil {
-		response.ServerError(c, "复制失败：文档元数据解析错误")
+		common.ServerError(c, "复制失败：文档元数据解析错误")
 		return
 	}
 
 	for _, page := range documentMeta["pagesList"].([]any) {
 		pageItem, ok := page.(map[string]any)
 		if !ok {
-			response.ServerError(c, "pageItem转map失败：复制失败")
+			common.ServerError(c, "pageItem转map失败：复制失败")
 			return
 		}
 		pageObjectInfo, err := _storage.Bucket.GetObjectInfo(targetDocumentId + "/pages/" + pageItem["id"].(string) + ".json")
 		if err != nil {
 			log.Println("获取pageObjectInfo失败：", err)
-			response.ServerError(c, "获取pageObjectInfo失败：复制失败")
+			common.ServerError(c, "获取pageObjectInfo失败：复制失败")
 			return
 		}
 		pageItem["versionId"] = pageObjectInfo.VersionID
@@ -454,14 +423,14 @@ func copyDocument(userId string, documentId string, c *gin.Context, documentName
 	documentMetaBytes, err = json.Marshal(documentMeta)
 	if err != nil {
 		log.Println("documentMeta转json失败：", err)
-		response.ServerError(c, "复制失败")
+		common.ServerError(c, "复制失败")
 		return
 	}
 
 	documentMetaUploadInfo, err := _storage.Bucket.PutObjectByte(targetDocumentId+"/document-meta.json", documentMetaBytes, "")
 	if err != nil {
 		log.Println("documentMeta上传失败：", err)
-		response.ServerError(c, "复制失败")
+		common.ServerError(c, "复制失败")
 		return
 	}
 
@@ -509,7 +478,7 @@ func copyDocument(userId string, documentId string, c *gin.Context, documentName
 		// 确保设置文档ID
 		if err := documentService.Create(&targetDocument); err != nil {
 			log.Println("创建文档记录失败:", err, "userId:", userId, "documentName:", documentName)
-			response.ServerError(c, "创建失败: "+err.Error())
+			common.ServerError(c, "创建失败: "+err.Error())
 			return
 		}
 		// 添加最近访问
@@ -531,22 +500,22 @@ func copyDocument(userId string, documentId string, c *gin.Context, documentName
 func CopyDocument(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	var req CopyDocumentReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "")
+		common.BadRequest(c, "")
 		return
 	}
 	documentId := (req.DocId)
 	if documentId == "" {
-		response.BadRequest(c, "参数错误：doc_id")
+		common.BadRequest(c, "参数错误：doc_id")
 		return
 	}
 	result := copyDocument(userId, documentId, c, "%s_副本", services.GetStorageClient(), true)
 	if result != nil {
-		response.Success(c, result)
+		common.Success(c, result)
 	}
 }
 
@@ -560,12 +529,12 @@ func CopyDocument(c *gin.Context) {
 // 		DocumentName string `json:"document_name" binding:"required"`
 // 	}
 // 	if err := c.ShouldBindJSON(&req); err != nil {
-// 		response.BadRequest(c, "")
+// 		common.BadRequest(c, "")
 // 		return
 // 	}
 
 // 	if req.VerifyCode != "123456" {
-// 		response.Forbidden(c, "")
+// 		common.Forbidden(c, "")
 // 		return
 // 	}
 
@@ -574,19 +543,19 @@ func CopyDocument(c *gin.Context) {
 // 	if req.DocumentId2 == "" {
 // 		userId := req.UserId
 // 		if userId == "" {
-// 			response.BadRequest(c, "参数错误：user_id")
+// 			common.BadRequest(c, "参数错误：user_id")
 // 			return
 // 		}
 
 // 		documentId := str.DefaultToInt(req.DocumentId, 0)
 // 		if documentId <= 0 {
-// 			response.BadRequest(c, "参数错误：document_id")
+// 			common.BadRequest(c, "参数错误：document_id")
 // 			return
 // 		}
 
 // 		result1 := copyDocument(userId, documentId, c, req.DocumentName)
 // 		if result1 == nil {
-// 			response.Fail(c, "创建文档失败")
+// 			common.Fail(c, "创建文档失败")
 // 			return
 // 		}
 // 		models.StructToMap(result1, result)
@@ -602,10 +571,10 @@ func CopyDocument(c *gin.Context) {
 // 		Nickname: "测试用户",
 // 	})
 // 	if err != nil {
-// 		response.Fail(c, err.Error())
+// 		common.Fail(c, err.Error())
 // 		return
 // 	}
 // 	result["token"] = token
 
-// 	response.Success(c, result)
+// 	common.Success(c, result)
 // }

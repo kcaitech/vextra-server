@@ -4,9 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/gin-gonic/gin"
 	"gopkg.in/yaml.v3"
-	"kcaitech.com/kcserver/common/response"
 )
 
 // GetAppVersionList 获取APP版本列表
@@ -47,9 +45,9 @@ func LoadPackageVersion() *string {
 
 var version *string
 
-func GetAppVersion(c *gin.Context) {
-	if version == nil {
-		version = LoadPackageVersion()
-	}
-	response.Success(c, version)
-}
+// func GetAppVersion(c *gin.Context) {
+// 	if version == nil {
+// 		version = LoadPackageVersion()
+// 	}
+// 	response.Success(c, version)
+// }

@@ -1,4 +1,4 @@
-package response
+package common
 
 import (
 	"net/http"
@@ -13,8 +13,9 @@ const (
 
 type Response struct {
 	Code    int    `json:"code"`
-	Message string `json:"message"`
+	Message string `json:"message,omitempty"`
 	Data    any    `json:"data,omitempty"`
+	Sha1    string `json:"sha1,omitempty"`
 }
 
 // func Abort(c *gin.Context, code int, message string, data any) Response {
@@ -27,18 +28,19 @@ type Response struct {
 // 	return resp
 // }
 
-func Resp(c *gin.Context, code int, message string, data any) Response {
+func Resp(c *gin.Context, code int, message string, data any, sha1 ...string) Response {
 	resp := Response{
 		Code:    code,
 		Message: message,
 		Data:    data,
+		Sha1:    sha1[0],
 	}
 	c.JSON(code, resp)
 	return resp
 }
 
 func Success(c *gin.Context, data any) Response {
-	return Resp(c, http.StatusOK, "成功", data)
+	return Resp(c, http.StatusOK, "", data)
 }
 
 // func Fail(c *gin.Context, message string) Response {
@@ -52,7 +54,7 @@ func Unauthorized(c *gin.Context) Response {
 	// if message == "" {
 	// 	message = "未登录"
 	// }
-	return Resp(c, http.StatusUnauthorized, "未登录", nil)
+	return Resp(c, http.StatusUnauthorized, "", nil)
 }
 
 func BadRequest(c *gin.Context, message string) Response {

@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/common/response"
+	"kcaitech.com/kcserver/handlers/common"
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils"
@@ -15,7 +15,7 @@ import (
 func GetUserDocumentAccessRecordsList(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 
@@ -33,7 +33,7 @@ func GetUserDocumentAccessRecordsList(c *gin.Context) {
 
 	userMap, err := GetUsersInfo(c, userIds)
 	if err != nil {
-		response.ServerError(c, err.Error())
+		common.ServerError(c, err.Error())
 		return
 	}
 
@@ -63,7 +63,7 @@ func GetUserDocumentAccessRecordsList(c *gin.Context) {
 		nextCursor = lastItem.DocumentAccessRecord.LastAccessTime.Format(time.RFC3339)
 	}
 
-	response.Success(c, gin.H{
+	common.Success(c, gin.H{
 		"list":        result,
 		"has_more":    hasMore,
 		"next_cursor": nextCursor,
@@ -74,19 +74,19 @@ func GetUserDocumentAccessRecordsList(c *gin.Context) {
 func DeleteUserDocumentAccessRecord(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	accessRecordId := c.Query("access_record_id")
 	if accessRecordId == "" {
-		response.BadRequest(c, "参数错误：access_record_id")
+		common.BadRequest(c, "参数错误：access_record_id")
 		return
 	}
 	if _, err := services.NewDocumentService().DocumentAccessRecordService.Delete(
 		"user_id = ? and id = ?", userId, accessRecordId,
 	); err != nil && !errors.Is(err, services.ErrRecordNotFound) {
-		response.ServerError(c, "删除错误")
+		common.ServerError(c, "删除错误")
 		return
 	}
-	response.Success(c, "")
+	common.Success(c, "")
 }

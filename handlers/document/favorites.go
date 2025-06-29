@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"kcaitech.com/kcserver/common/response"
+	"kcaitech.com/kcserver/handlers/common"
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils"
@@ -15,7 +15,7 @@ import (
 func GetUserDocumentFavoritesList(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 
@@ -34,7 +34,7 @@ func GetUserDocumentFavoritesList(c *gin.Context) {
 
 	userMap, err := GetUsersInfo(c, userIds)
 	if err != nil {
-		response.ServerError(c, err.Error())
+		common.ServerError(c, err.Error())
 		return
 	}
 
@@ -60,7 +60,7 @@ func GetUserDocumentFavoritesList(c *gin.Context) {
 		nextCursor = lastItem.DocumentAccessRecord.LastAccessTime.Format(time.RFC3339)
 	}
 
-	response.Success(c, gin.H{
+	common.Success(c, gin.H{
 		"list":        result,
 		"has_more":    hasMore,
 		"next_cursor": nextCursor,
@@ -76,22 +76,22 @@ type SetUserDocumentFavoriteStatusReq struct {
 func SetUserDocumentFavoriteStatus(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
-		response.Unauthorized(c)
+		common.Unauthorized(c)
 		return
 	}
 	var req SetUserDocumentFavoriteStatusReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "")
+		common.BadRequest(c, "")
 		return
 	}
 	documentId := (req.DocId)
 	if documentId == "" {
-		response.BadRequest(c, "参数错误：doc_id")
+		common.BadRequest(c, "参数错误：doc_id")
 		return
 	}
 	documentService := services.NewDocumentService()
 	if exist, err := documentService.Exist("id = ?", documentId); !exist || err != nil {
-		response.BadRequest(c, "文档不存在")
+		common.BadRequest(c, "文档不存在")
 		return
 	}
 	documentFavoritesService := documentService.DocumentFavoritesService
@@ -103,23 +103,23 @@ func SetUserDocumentFavoriteStatus(c *gin.Context) {
 		services.SelectArgs{Select: "document_favorites.*"},
 	); err != nil {
 		if !errors.Is(err, services.ErrRecordNotFound) {
-			response.ServerError(c, "查询错误")
+			common.ServerError(c, "查询错误")
 			return
 		}
 		documentFavorites.UserId = userId
 		documentFavorites.DocumentId = documentId
 		documentFavorites.IsFavorite = req.Status
 		if err := documentFavoritesService.Create(&documentFavorites); err != nil {
-			response.ServerError(c, "创建失败")
+			common.ServerError(c, "创建失败")
 			return
 		}
-		response.Success(c, "")
+		common.Success(c, "")
 		return
 	}
 	documentFavorites.IsFavorite = req.Status
 	if _, err := documentFavoritesService.UpdatesById(documentFavorites.Id, &documentFavorites); err != nil {
-		response.ServerError(c, "更新失败")
+		common.ServerError(c, "更新失败")
 		return
 	}
-	response.Success(c, "")
+	common.Success(c, "")
 }
