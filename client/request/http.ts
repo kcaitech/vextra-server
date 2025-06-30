@@ -1,5 +1,6 @@
 import axios, { AxiosResponse } from 'axios'
 import { HttpCode } from './httpcode'
+import * as base64 from "js-base64";
 
 declare module "axios" {
     interface AxiosResponse<T = any> {
@@ -35,6 +36,20 @@ function clone(data: any) {
     return JSON.parse(JSON.stringify(data))
 }
 
+function getTokenExpireRemain(token: string | undefined): number {
+    try {
+        if (!token) return 0;
+        const res = token.split(".");
+        if (res.length !== 3) return 0; // jwt格式不正确
+        const r = base64.decode(res[1]);
+        const payload = JSON.parse(r);
+        return (payload.exp ?? 0) * 1000 - Date.now();
+    } catch (e) {
+        console.log("parse jwt error", e);
+        return 0;
+    }
+}
+
 export class HttpMgr {
     private _cache = new Map<string, ReqItem>()
     private _cache1 = new Map<number, ReqItem>()
@@ -53,12 +68,8 @@ export class HttpMgr {
         setToken: (token: string | undefined) => void
     }
 
-    // private get localStorage() {
-    //     if (typeof window !== 'undefined' && window.localStorage) {
-    //         return window.localStorage
-    //     }
-    //     return undefined
-    // }
+    private _token_remain_cache: string | undefined = undefined
+    private _token_remain: number = 0
 
     public get token() {
         return this._token.getToken()
@@ -66,6 +77,17 @@ export class HttpMgr {
     public set token(value: string | undefined) {
         this._token.setToken(value)
     }
+
+    public get token_remain() {
+        const _token = this.token
+        if (this._token_remain_cache && this._token_remain_cache === _token) {
+            return this._token_remain
+        }   
+        this._token_remain_cache = _token
+        this._token_remain = getTokenExpireRemain(_token)
+        return this._token_remain
+    }
+
     private auth_request(config: any) {
         const token = this.token
         if (token) {
