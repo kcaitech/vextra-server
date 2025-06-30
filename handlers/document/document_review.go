@@ -205,7 +205,6 @@ func reviewgo(newDocument *models.Document, uploadData *UploadData, docPath stri
 			}
 		}
 	}
-	log.Println("------------------------locked----------------------------", locked)
 	documentService := services.NewDocumentService()
 	err := documentService.AddLockedArr(locked)
 	if err != nil {
@@ -215,6 +214,8 @@ func reviewgo(newDocument *models.Document, uploadData *UploadData, docPath stri
 	if err != nil {
 		log.Println(err)
 	}
+	reviewComment(newDocument)
+	reviewThumbnail(newDocument)
 }
 
 func review(newDocument *models.Document, uploadData *UploadData, docPath string, pages []struct {
@@ -372,13 +373,6 @@ func reReviewDocumentContent(document *models.Document) error {
 
 	// 调用审核函数
 	reviewgo(document, uploadData, docPath, pages, &medias)
-
-	// 审核文档内容完成后，再审核评论
-	reviewComment(document)
-
-	// 审核缩略图
-	reviewThumbnail(document)
-
 	return nil
 }
 

@@ -210,7 +210,7 @@ func GetUserDocumentInfo(c *gin.Context) {
 		"locked_info":                  locked,
 	})
 }
-
+	
 // GetDocumentBasicInfoById 通过文档ID获取文档的基本信息
 func GetDocumentBasicInfoById(documentId string) (*DocumentInfo, error) {
 	// 获取数据库连接
