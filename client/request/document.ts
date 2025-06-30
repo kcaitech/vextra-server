@@ -362,6 +362,7 @@ export class DocumentAPI {
         }
     }
 
+    // 获取资源文档列表
     async getResourceDocumentList(params: {
         cursor?: string;
         limit?: number;
@@ -379,6 +380,7 @@ export class DocumentAPI {
         }
     }
 
+    // 创建资源文档
     async createResourceDocument(params: {
         doc_id: string;
         description: string;
