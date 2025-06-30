@@ -1,4 +1,3 @@
-// import { Cmd, ICoopNet, serialCmds, parseCmds, cloneCmds, RadixConvert } from "@kcdesign/data"
 import * as timing_util from "./timing_util"
 import { convert } from "./cmd_convert";
 import { Connect, ConnectClient } from "./connect";
@@ -15,63 +14,20 @@ export class CoopNet extends ConnectClient {
         super(connect, DataTypes.Op)
     }
 
-    // private send?: (data: any, isListened?: boolean, timeout?: number) => Promise<boolean>
     private watcherList: ((cmds: Cmd[]) => void)[] = []
     private errorWatcherList: ((errorInfo: CoopNetError) => void)[] = []
-    // private onClose?: () => void
-    // private isConnected = false
-    // private pullCmdsPromiseList: Record<string, {
-    //     resolve: (value: Cmd[]) => void,
-    //     reject: (reason: any) => void
-    // }[]> = {}
-
-    // private serialCmds(cmds: Cmd[]): any[] {
-    //     return cmds.map(cmd => ({
-    //         // cmd_id: cmd.id,
-    //         // id: cmd.version ? this.radixRevert.to(cmd.version) : undefined,
-    //         // previous_id: cmd.previousVersion ? this.radixRevert.to(cmd.previousVersion) : undefined,
-    //         cmd: {
-    //             ...cmd,
-    //             id: undefined,
-    //             version: undefined,
-    //             previousVersion: undefined
-    //         }
-    //     }));
-    // }
-
-    // private parseCmds(data: any[]): Cmd[] {
-    //     return data.map(item => ({
-    //         ...item,
-    //         id: item.id || "",
-    //         baseVer: Number(item.baseVer) || 0,
-    //         batchId: item.batchId || "",
-    //         ops: item.ops || [],
-    //         isRecovery: Boolean(item.isRecovery),
-    //         description: item.description || "",
-    //         time: Number(item.time) || 0,
-    //         posttime: Number(item.posttime) || 0,
-    //         dataFmtVer: item.dataFmtVer || "",
-    //         version: item.version || undefined,
-    //         preVersion: item.preVersion || undefined
-    //     }));
-    // }
 
     async _pullCmds(from?: number, to?: number): Promise<Cmd[]> {
         const ready = await this.waitReady()
         if (!ready) return [];
-        // from = from ? this.radixRevert.to(from).toString(10) : ""
-        // to = to ? this.radixRevert.to(to).toString(10) : ""
-        // console.log("pullCmds", from, to)
         const result = await this.send({
             type: "pullCmds",
             from: from,
             to: to,
         }, 0, 0)
 
-        // const json_data = result.data && JSON.parse(result.data)
         const cmdsData = JSON.parse(result.data.cmds_data ?? '""') as any[]
         let cmds: Cmd[] | undefined
-        // let cmds1: Cmd[] | undefined
         if (Array.isArray(cmdsData)) {
             cmds = cmdsData;
         }
@@ -83,7 +39,6 @@ export class CoopNet extends ConnectClient {
     async _postCmds(cmds: Cmd[], serial:(cmds: Cmd[])=> string): Promise<boolean> {
         const ready = await this.waitReady()
         if (!ready) return false;
-        // console.log("postCmds", cloneCmds(cmds))
         this.send({
             type: "commit",
             cmds: serial(cmds),
@@ -108,46 +63,15 @@ export class CoopNet extends ConnectClient {
     onMessage(data: any): void {
         const cmdsData = JSON.parse(data.cmds_data ?? '""') as any[]
         let cmds: Cmd[] | undefined
-        // let cmds1: Cmd[] | undefined
         if (Array.isArray(cmdsData)) {
-            cmds = cmdsData; // this.parseCmds(cmdsData)
-            // cmds1 = this.parseCmds(cmdsData)
+            cmds = cmdsData;
         }
-        // pullCmdsResult update errorInvalidParams errorNoPermission errorInsertFailed errorPullCmdsFailed
-        // if (data.type === "pullCmdsResult" || data.type === "errorPullCmdsFailed") {
-        //     if (data.type === "errorPullCmdsFailed") console.log("拉取数据失败");
-
-        //     const from = typeof data.from === "string" ? data.from : ""
-        //     const to = typeof data.to === "string" ? data.to : ""
-
-        //     const key = `${from}-${to}`
-        //     if (!this.pullCmdsPromiseList[key]) return;
-
-        //     if (data.type === "pullCmdsResult") {
-        //         if (!Array.isArray(cmds)) {
-        //             console.log("返回数据格式错误")
-        //             for (const item of this.pullCmdsPromiseList[key]) item.reject(new Error("返回数据格式错误"));
-        //         } else {
-        //             console.log("pullCmdsResult", JSON.stringify(cmds))
-        //             for (const item of this.pullCmdsPromiseList[key]) item.resolve(cmds);
-        //         }
-        //         // 有什么用？
-        //         // if (typeof data.previous_id !== "string") {
-        //         //     console.log("返回数据格式错误，缺少previous_id")
-        //         // }
-        //     } else {
-        //         for (const item of this.pullCmdsPromiseList[key]) item.reject(new Error("拉取数据失败"));
-        //     }
-
-        //     delete this.pullCmdsPromiseList[key]
-        // } else 
         if (data.type === "update") {
             if (!Array.isArray(cmds)) {
                 console.log("返回数据格式错误")
                 return
             }
             console.log("update", cmds)
-            // for (const watcher of this.watcherList) watcher(convert(cmds));
             this.watcherList.slice(0).forEach(watcher => watcher(convert(cmds)));
         } else if (data.type === "errorInvalidParams") {
             console.log("参数错误")
@@ -167,8 +91,6 @@ export class CoopNet extends ConnectClient {
                     return
                 }
                 duplicateCmd.cmd.id = duplicateCmd.cmd_id
-                // duplicateCmd.cmd.version = this.radixRevert.from(duplicateCmd.id)
-                // duplicateCmd.cmd.previousVersion = this.radixRevert.from(duplicateCmd.previous_id)
                 if (!duplicateCmd.cmd.ops) duplicateCmd.cmd.ops = [];
                 const duplicateCmd1 = duplicateCmd.cmd
                 for (const watcher of this.errorWatcherList) {

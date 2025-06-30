@@ -54,8 +54,6 @@ export type DocSelectionData = {
     // 以下字段仅读取时有效
     user_id?: string,
     permission?: number,
-    // avatar?: string,
-    // nickname?: string,
     user?: UserInfo,
     enter_time?: number,
 }
@@ -142,7 +140,6 @@ export interface IContext {
         };
         watch: (callback: (type: string) => void) => void;
     };
-    // lastRemoteCmdVersion: () => number | undefined;
 }
 
 export enum SelectionEvents {
