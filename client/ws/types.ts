@@ -128,7 +128,7 @@ export interface HeartbeatData {
     timestamp: number;
 }
 
-export interface IContext {
+export interface IClientContext {
     selection: {
         selectedPage?: { id: string };
         selectedShapes: Array<{ id: string }>;
@@ -140,6 +140,7 @@ export interface IContext {
         };
         watch: (callback: (type: string) => void) => void;
     };
+    lastRemoteCmdVersion: () => number | undefined;
 }
 
 export enum SelectionEvents {
