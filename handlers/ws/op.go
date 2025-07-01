@@ -157,7 +157,7 @@ func (serv *opServe) start(documentId string, lastCmdVersion uint) {
 			log.Println("json编码错误 cmdItemsData", err)
 			return
 		}
-		log.Println("Document Op[DocumentId:"+documentId+"]"+"获取成功", len(cmdItemList), cmdItemList, lastCmdVersion)
+		log.Println("Document Op[DocumentId:"+documentId+"]"+"获取成功", len(cmdItemList), lastCmdVersion)
 		serv.send(string(cmdItemListData))
 
 		// documentIdStr := str.IntToString(documentId)
