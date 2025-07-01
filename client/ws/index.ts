@@ -57,6 +57,7 @@ export class WSClient {
     }
 
     async start(context: IClientContext) {
+        if (!this.bind_document_id) throw new Error("need bind first");
         await this.connect.waitReady()
         const ret = await this.connect.send(DataTypes.Start, { last_cmd_version: context.lastRemoteCmdVersion() })
         this._started = context;
@@ -91,9 +92,10 @@ export class WSClient {
         this.connect.close();
     }
 
-    getSelectionSync(context: IClientContext) {
+    getSelectionSync() {
         if (this.selection) return this.selection;
-        this.selection = new Selection(this.connect, context)
+        if (!this._started) throw new Error("need start first");
+        this.selection = new Selection(this.connect, this._started)
         return this.selection;
     }
 
