@@ -1,82 +1,15 @@
 package document
 
 import (
-	"bytes"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
-	"io"
 	"log"
-	"mime/multipart"
-	"net/http"
 	"os"
 
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/providers/safereview"
 	"kcaitech.com/kcserver/services"
 )
-
-func _svgToPng(svgContent string, svg2pngUrl string) ([]byte, error) {
-	// 将SVG内容转换为字节切片
-	svgBuffer := []byte(svgContent)
-
-	// 创建FormData
-	formData := new(bytes.Buffer)
-	writer := multipart.NewWriter(formData)
-
-	// 添加SVG文件到表单
-	part, err := writer.CreateFormFile("svg", "image.svg")
-	if err != nil {
-		return nil, err
-	}
-	_, err = io.Copy(part, bytes.NewReader(svgBuffer))
-	if err != nil {
-		return nil, err
-	}
-	err = writer.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	// 设置请求头
-	headers := map[string]string{
-		"Content-Type": writer.FormDataContentType(),
-	}
-
-	// 创建请求
-	req, err := http.NewRequest("POST", svg2pngUrl, formData)
-	if err != nil {
-		return nil, err
-	}
-
-	// 添加请求头
-	for key, value := range headers {
-		req.Header.Set(key, value)
-	}
-
-	// 设置响应类型为 arraybuffer
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	// 检查响应状态
-	if resp.StatusCode != 200 {
-		body, _ := io.ReadAll(resp.Body)
-		log.Printf("SVG to PNG conversion failed with status: %d, message: %s", resp.StatusCode, body)
-		return nil, fmt.Errorf("svgToPng错误")
-	}
-
-	// 读取响应体
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	return body, nil
-}
 
 func reviewgo(newDocument *models.Document, uploadData *VersionResp, docPath string, pages []struct {
 	Id string `json:"id"`
@@ -106,7 +39,7 @@ func reviewgo(newDocument *models.Document, uploadData *VersionResp, docPath str
 	}
 	tmp_dir := services.GetConfig().SafeReview.TmpPngDir + "/" + newDocument.Id
 	// review pages
-	if uploadData.PagePngs != nil && len(uploadData.PagePngs) > 0 {
+	if len(uploadData.PagePngs) > 0 {
 		for _, page := range pages {
 			pagePng := page.Id + ".png"
 
@@ -126,7 +59,7 @@ func reviewgo(newDocument *models.Document, uploadData *VersionResp, docPath str
 			// 读取png文件
 			pngBytes, err := os.ReadFile(tmp_dir + "/" + pagePng)
 			if err != nil {
-				log.Println("读取png文件失败", err)
+				log.Println("读取png文件失败", err, tmp_dir+"/"+pagePng)
 				continue
 			}
 
@@ -192,7 +125,7 @@ func review(newDocument *models.Document, uploadData *VersionResp, docPath strin
 		return
 	}
 	// 没有内容
-	if (uploadData.PagePngs == nil || len(uploadData.PagePngs) == 0) && uploadData.DocumentText == "" && (medias == nil || len(*medias) == 0) {
+	if (len(uploadData.PagePngs) == 0) && uploadData.DocumentText == "" && (medias == nil || len(*medias) == 0) {
 		return
 	}
 	go reviewgo(newDocument, uploadData, docPath, pages, medias)

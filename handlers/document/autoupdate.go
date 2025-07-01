@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/go-redsync/redsync/v4"
@@ -137,9 +138,11 @@ func AutoUpdate(documentId string, config *config.Configuration) {
 
 	reviewClient := services.GetSafereviewClient()
 	if reviewClient != nil { // 需要审查才生成png图片
+		tmpPngDir := config.SafeReview.TmpPngDir + "/" + documentId
 		reqBody["gen_pages_png"] = map[string]interface{}{
-			"tmp_dir": config.SafeReview.TmpPngDir + "/" + documentId,
+			"tmp_dir": tmpPngDir,
 		}
+		os.MkdirAll(tmpPngDir, 0755)
 	}
 
 	jsonData, err := json.Marshal(reqBody)
