@@ -104,7 +104,7 @@ func reviewgo(newDocument *models.Document, uploadData *VersionResp, docPath str
 			})
 		}
 	}
-	tmp_dir := services.GetConfig().TmpDir + "/" + newDocument.Id
+	tmp_dir := services.GetConfig().SafeReview.TmpPngDir + "/" + newDocument.Id
 	// review pages
 	if uploadData.PagePngs != nil && len(uploadData.PagePngs) > 0 {
 		for _, page := range pages {

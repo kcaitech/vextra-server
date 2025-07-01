@@ -184,7 +184,7 @@ func InitAllBaseServices(config *config.Configuration) error {
 		return err
 	}
 	// 初始化safereview, 不是必须的
-	_, err = InitSafereviewClient(&config.SafeReiew)
+	_, err = InitSafereviewClient(&config.SafeReview)
 	if err == nil {
 		// return err
 		// 打印错误信息

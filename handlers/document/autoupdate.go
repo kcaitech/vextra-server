@@ -138,7 +138,7 @@ func AutoUpdate(documentId string, config *config.Configuration) {
 	reviewClient := services.GetSafereviewClient()
 	if reviewClient != nil { // 需要审查才生成png图片
 		reqBody["gen_pages_png"] = map[string]interface{}{
-			"tmp_dir": config.TmpDir + "/" + documentId,
+			"tmp_dir": config.SafeReview.TmpPngDir + "/" + documentId,
 		}
 	}
 

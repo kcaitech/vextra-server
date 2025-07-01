@@ -27,6 +27,8 @@ type SafeReviewConf struct {
 		ApiKey    string `yaml:"apiKey" json:"apiKey"`
 		SecretKey string `yaml:"secretKey" json:"secretKey"`
 	} `yaml:"baidu" json:"baidu"`
+
+	TmpPngDir string `yaml:"tmp_png_dir,omitempty" json:"tmp_png_dir,omitempty" default:"/tmp/com.kcaitech.kcserver/png"`
 }
 
 type ReviewTextResult string
