@@ -36,14 +36,14 @@ function clone(data: any) {
     return JSON.parse(JSON.stringify(data))
 }
 
-function getTokenExpireRemain(token: string | undefined): number {
+function getTokenExp(token: string | undefined): number {
     try {
         if (!token) return 0;
         const res = token.split(".");
         if (res.length !== 3) return 0; // jwt格式不正确
         const r = base64.decode(res[1]);
         const payload = JSON.parse(r);
-        return (payload.exp ?? 0) * 1000 - Date.now();
+        return (payload.exp ?? 0) * 1000;
     } catch (e) {
         console.log("parse jwt error", e);
         return 0;
@@ -68,8 +68,8 @@ export class HttpMgr {
         setToken: (token: string | undefined) => void
     }
 
-    private _token_remain_cache: string | undefined = undefined
-    private _token_remain: number = 0
+    private _token_exp_cache: string | undefined = undefined
+    private _token_exp: number = 0
 
     public get token() {
         return this._token.getToken()
@@ -80,12 +80,12 @@ export class HttpMgr {
 
     public get token_remain() {
         const _token = this.token
-        if (this._token_remain_cache && this._token_remain_cache === _token) {
-            return this._token_remain
+        if (this._token_exp_cache && this._token_exp_cache === _token) {
+            return this._token_exp - Date.now()
         }   
-        this._token_remain_cache = _token
-        this._token_remain = getTokenExpireRemain(_token)
-        return this._token_remain
+        this._token_exp_cache = _token
+        this._token_exp = getTokenExp(_token)
+        return this._token_exp - Date.now()
     }
 
     private auth_request(config: any) {
