@@ -24,7 +24,9 @@ func reviewgo(newDocument models.Document, uploadData *VersionResp, docPath stri
 	locked := make([]models.DocumentLock, 0)
 	if uploadData.DocumentText != "" {
 		reviewResponse, err := reviewClient.ReviewText(uploadData.DocumentText)
-		if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
+		if err != nil {
+			log.Println("文本审核失败", err)
+		} else if reviewResponse != nil && reviewResponse.Status != safereview.ReviewTextResultPass {
 			var lockedWords string
 			if wordsBytes, err := json.Marshal(reviewResponse.Words); err == nil {
 				lockedWords = string(wordsBytes)
@@ -71,7 +73,7 @@ func reviewgo(newDocument models.Document, uploadData *VersionResp, docPath stri
 			if err != nil {
 				log.Println("图片审核失败", err)
 				continue
-			} else if reviewResponse.Status != safereview.ReviewImageResultPass {
+			} else if reviewResponse != nil && reviewResponse.Status != safereview.ReviewImageResultPass {
 				locked = append(locked, models.DocumentLock{
 					DocumentId:   newDocument.Id,
 					LockedReason: reviewResponse.Reason,
@@ -95,7 +97,7 @@ func reviewgo(newDocument models.Document, uploadData *VersionResp, docPath stri
 			if err != nil {
 				log.Println("图片审核失败", err)
 				continue
-			} else if reviewResponse.Status != safereview.ReviewImageResultPass {
+			} else if reviewResponse != nil && reviewResponse.Status != safereview.ReviewImageResultPass {
 				locked = append(locked, models.DocumentLock{
 					DocumentId:   newDocument.Id,
 					LockedReason: reviewResponse.Reason,

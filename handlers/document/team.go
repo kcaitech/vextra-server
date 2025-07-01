@@ -41,15 +41,23 @@ func CreateTeam(c *gin.Context) {
 	reviewClient := services.GetSafereviewClient()
 	if reviewClient != nil {
 		reviewResponse, err := (reviewClient).ReviewText(req.Name)
-		if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
-			log.Println("名称审核不通过", req.Name, err, reviewResponse)
+		if err != nil {
+			log.Println("名称审核失败", req.Name, err)
+			response.ReviewFail(c, "审核失败")
+			return
+		} else if reviewResponse != nil && reviewResponse.Status != safereview.ReviewTextResultPass {
+			log.Println("名称审核不通过", req.Name, reviewResponse)
 			response.ReviewFail(c, "审核不通过")
 			return
 		}
 		if req.Description != "" {
 			reviewResponse, err = (reviewClient).ReviewText(req.Description)
-			if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
-				log.Println("描述审核不通过", req.Description, err, reviewResponse)
+			if err != nil {
+				log.Println("描述审核失败", req.Description, err)
+				response.ReviewFail(c, "审核失败")
+				return
+			} else if reviewResponse != nil && reviewResponse.Status != safereview.ReviewTextResultPass {
+				log.Println("描述审核不通过", req.Description, reviewResponse)
 				response.ReviewFail(c, "审核不通过")
 				return
 			}
@@ -657,16 +665,24 @@ func SetTeamInfo(c *gin.Context) {
 	if req.Name != "" || req.Description != "" {
 		if req.Name != "" && reviewClient != nil {
 			reviewResponse, err := (reviewClient).ReviewText(req.Name)
-			if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
-				log.Println("名称审核不通过", req.Name, err, reviewResponse)
+			if err != nil {
+				log.Println("名称审核失败", req.Name, err)
+				response.ReviewFail(c, "审核失败")
+				return
+			} else if reviewResponse != nil && reviewResponse.Status != safereview.ReviewTextResultPass {
+				log.Println("名称审核不通过", req.Name, reviewResponse)
 				response.ReviewFail(c, "审核不通过")
 				return
 			}
 		}
 		if req.Description != "" && reviewClient != nil {
 			reviewResponse, err := (reviewClient).ReviewText(req.Description)
-			if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
-				log.Println("描述审核不通过", req.Description, err, reviewResponse)
+			if err != nil {
+				log.Println("描述审核失败", req.Description, err)
+				response.ReviewFail(c, "审核失败")
+				return
+			} else if reviewResponse != nil && reviewResponse.Status != safereview.ReviewTextResultPass {
+				log.Println("描述审核不通过", req.Description, reviewResponse)
 				response.ReviewFail(c, "审核不通过")
 				return
 			}
@@ -1068,8 +1084,12 @@ func SetTeamMemberNickname(c *gin.Context) {
 	reviewClient := services.GetSafereviewClient()
 	if reviewClient != nil {
 		reviewResponse, err := (reviewClient).ReviewText(req.Nickname)
-		if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
-			log.Println("昵称审核不通过", req.Nickname, err, reviewResponse)
+		if err != nil {
+			log.Println("昵称审核失败", req.Nickname, err)
+			response.ReviewFail(c, "审核失败")
+			return
+		} else if reviewResponse != nil && reviewResponse.Status != safereview.ReviewTextResultPass {
+			log.Println("昵称审核不通过", req.Nickname, reviewResponse)
 			response.ReviewFail(c, "审核不通过")
 			return
 		}
