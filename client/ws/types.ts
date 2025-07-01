@@ -54,8 +54,6 @@ export type DocSelectionData = {
     // 以下字段仅读取时有效
     user_id?: string,
     permission?: number,
-    // avatar?: string,
-    // nickname?: string,
     user?: UserInfo,
     enter_time?: number,
 }
@@ -130,7 +128,7 @@ export interface HeartbeatData {
     timestamp: number;
 }
 
-export interface IContext {
+export interface IClientContext {
     selection: {
         selectedPage?: { id: string };
         selectedShapes: Array<{ id: string }>;
@@ -142,7 +140,7 @@ export interface IContext {
         };
         watch: (callback: (type: string) => void) => void;
     };
-    // lastRemoteCmdVersion: () => number | undefined;
+    lastRemoteCmdVersion: () => number | undefined;
 }
 
 export enum SelectionEvents {

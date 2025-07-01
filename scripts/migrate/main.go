@@ -103,10 +103,10 @@ func main() {
 	log.Printf("配置加载成功，存储配置详情：")
 	log.Printf("Provider: %s", conf.Storage.Provider)
 	log.Printf("Minio配置: Endpoint=%s, AccessKeyID=%s, BucketName=%s, AttatchBucketName=%s",
-		conf.Storage.Minio.Endpoint,
-		conf.Storage.Minio.AccessKeyID,
-		conf.Storage.Minio.BucketName,
-		conf.Storage.Minio.AttatchBucketName)
+		conf.Storage.Endpoint,
+		conf.Storage.AccessKeyID,
+		conf.Storage.BucketName,
+		conf.Storage.AttatchBucketName)
 
 	err = services.InitAllBaseServices(conf)
 	if err != nil {
@@ -1311,7 +1311,6 @@ func migrateDocumentStorageOnce(documentId int64, generateApiUrl string, sourceM
 		DocumentData autoupdate.ExFromJson `json:"documentData"`
 		DocumentText string                `json:"documentText"`
 		MediasSize   uint64                `json:"mediasSize"`
-		PageSvgs     []string              `json:"pageSvgs"`
 	}
 	err = json.Unmarshal(body, &version)
 	if err != nil {
@@ -1333,13 +1332,14 @@ func migrateDocumentStorageOnce(documentId int64, generateApiUrl string, sourceM
 		LastCmdVerId: version.LastCmdVerId,
 	}
 	response := autoupdate.Response{}
-	data := autoupdate.UploadData{
-		DocumentMeta: autoupdate.Data(version.DocumentData.DocumentMeta),
-		Pages:        version.DocumentData.Pages,
-		MediaNames:   version.DocumentData.MediaNames,
+	data := autoupdate.VersionResp{
+		DocumentData: autoupdate.ExFromJson{
+			DocumentMeta: autoupdate.Data(version.DocumentData.DocumentMeta),
+			Pages:        version.DocumentData.Pages,
+			MediaNames:   version.DocumentData.MediaNames,
+		},
 		MediasSize:   version.MediasSize,
 		DocumentText: version.DocumentText,
-		PageSvgs:     version.PageSvgs,
 	}
 
 	// 传递媒体文件到 UploadDocumentData

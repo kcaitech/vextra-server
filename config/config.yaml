@@ -1,22 +1,10 @@
 db:
-  # url: root:kKEIjksvnOOIjdZ6rtzE@tcp(mysql:3306)/kcserver?charset=utf8&parseTime=True&loc=Local
   user: root
   password: password
   host: 192.168.0.125
   port: 3306
   database: kcserver
-
-storage_url:
-  document: http://document.test.vextra.cn
-  attatch: http://attatch.test.vextra.cn
-
-version_server:
-  url: http://localhost:30000/generate
-  min_update_interval: 600
-  min_cmd_count: 1
-
-svg2png:
-  url: http://kcsvg2png:10050/svg_to_png
+  charset: utf8mb4
 
 mongo:
   url: mongodb://root:jKKsinkjilKKLSW@192.168.0.125:27017
@@ -26,42 +14,47 @@ redis:
   addr: 192.168.0.125:6379
   password: kcserver
   db: 0
-  # sentinel: true
-  # sentinelAddrs:
-  # masterName:
+
+storage_public_url:
+  document: http://document.test.vextra.cn
+  attatch: http://attatch.test.vextra.cn
 
 storage:
   provider: minio
-  minio:
-    endpoint: "192.168.0.125:9000"
-    region: "zhuhai-1"
-    accessKeyID: "59L3pDWuk9oLQWIgytCI"
-    secretAccessKey: "GmwAzetY1L0jU4pUAqpO7RJGIsG7k3gozVH6whoJ"
-    stsAccessKeyID: "user"
-    stsSecretAccessKey: "GmwAzetY1L0jU4pUAqpO7RJGIsG7k3gozVH6whoJ"
-    bucketName: "document"
-    attatchBucketName: "attatch"
+  endpoint: "192.168.0.125:9000"
+  region: "zhuhai-1"
+  accessKeyID: "59L3pDWuk9oLQWIgytCI"
+  secretAccessKey: "GmwAzetY1L0jU4pUAqpO7RJGIsG7k3gozVH6whoJ"
+  stsAccessKeyID: "user"
+  stsSecretAccessKey: "GmwAzetY1L0jU4pUAqpO7RJGIsG7k3gozVH6whoJ"
+  bucketName: "document"
+  attatchBucketName: "attatch"
 
-  s3:
-    endpoint: "192.168.0.18:9000"
-    region: "zhuhai-1"
-    accessKeyID: "Gathooh88mba5H3y2"
-    secretAccessKey: "yFukp3vtIkUNck2XL3s2KOT4wyRPR71G2"
-    accountID: ""
-    roleName: ""
-    bucketName: "document"
-    attatchBucketName: "files"
+  # provider: s3
+  # endpoint: "192.168.0.18:9000"
+  # region: "zhuhai-1"
+  # accessKeyID: "Gathooh88mba5H3y2"
+  # secretAccessKey: "yFukp3vtIkUNck2XL3s2KOT4wyRPR71G2"
+  # accountID: ""
+  # roleName: ""
+  # bucketName: "document"
+  # attatchBucketName: "files"
 
-  oss:
-    endpoint: "oss-cn-hangzhou.aliyuncs.com"
-    stsEndpoint: "sts-vpc.cn-hangzhou.aliyuncs.com"
-    region: "cn-hangzhou"
-    accessKeyID: "LTAI5tSm1Y5obQCwVn7X9k2x"
-    secretAccessKey: "0uXxQBqG8nQC7uiyipTX6F4JkEDlcB"
-    accountId: "1382280232399206"
-    roleName: "ramoss"
-    bucketName: "protodesign-document"
-    attatchBucketName: "protodesign-files"
+  # provider: oss
+  # endpoint: "oss-cn-hangzhou.aliyuncs.com"
+  # region: "cn-hangzhou"
+  # accessKeyID: "LTAI5tSm1Y5obQCwVn7X9k2x"
+  # stsEndpoint: "sts-vpc.cn-hangzhou.aliyuncs.com"
+  # secretAccessKey: "0uXxQBqG8nQC7uiyipTX6F4JkEDlcB"
+  # accountId: "1382280232399206"
+  # roleName: "ramoss"
+  # bucketName: "protodesign-document"
+  # attatchBucketName: "protodesign-files"
+
+doc_update_server:
+  url: http://localhost:30000/generate
+  min_update_interval: 600
+  min_cmd_count: 1
 
 default_route: false
 detailed_log: true

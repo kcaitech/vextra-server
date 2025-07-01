@@ -4,7 +4,7 @@ import { Resource } from "./resource";
 import { Selection } from "./selection"
 import { Comment } from "./comment"
 import { DocUpload, ExportFunc, MediasMgr } from "./upload";
-import { Cmd, DataTypes, IContext, NetworkStatusType } from "./types";
+import { Cmd, DataTypes, IClientContext, NetworkStatusType } from "./types";
 import { Version } from "./version";
 import { Thumbnail } from "./thumbnail";
 export { Connect } from "./connect"
@@ -13,7 +13,6 @@ export { DocUpload } from "./upload"
 export * from "./types"
 
 export class WSClient {
-    // private context: IContext
     connect: Connect
 
     private op: CoopNet
@@ -22,7 +21,7 @@ export class WSClient {
     private comment: Comment;
 
     private bind_document_id?: string;
-    private _started?: IContext;
+    private _started?: IClientContext;
     private version: Version;
     private thumbnail: Thumbnail;
 
@@ -57,9 +56,10 @@ export class WSClient {
         return ret;
     }
 
-    async start(context: IContext, last_cmd_version?: number) {
+    async start(context: IClientContext) {
+        if (!this.bind_document_id) throw new Error("need bind first");
         await this.connect.waitReady()
-        const ret = await this.connect.send(DataTypes.Start, { last_cmd_version })
+        const ret = await this.connect.send(DataTypes.Start, { last_cmd_version: context.lastRemoteCmdVersion() })
         this._started = context;
         return ret;
     }
@@ -92,9 +92,10 @@ export class WSClient {
         this.connect.close();
     }
 
-    getSelectionSync(context: IContext) {
+    getSelectionSync() {
         if (this.selection) return this.selection;
-        this.selection = new Selection(this.connect, context)
+        if (!this._started) throw new Error("need start first");
+        this.selection = new Selection(this.connect, this._started)
         return this.selection;
     }
 
