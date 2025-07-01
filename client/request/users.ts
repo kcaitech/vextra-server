@@ -1,4 +1,5 @@
 import { HttpMgr } from './http'
+import { checkRefreshToken, refreshToken } from './refresh_token';
 import { UserInfoSchema, BaseResponseSchema, BaseResponse } from './types'
 import { z } from 'zod';
 
@@ -32,11 +33,6 @@ export type UserInfoResponse = z.infer<typeof UserInfoResponseSchema>
 export type UserInfoWithTokenResponse = z.infer<typeof UserInfoWithTokenResponseSchema>
 export type UserInfoData = z.infer<typeof UserInfoResponseSchema.shape.data>
 
-const RefreshTokenSchema = BaseResponseSchema.extend({
-    data: z.object({
-        token: z.string()
-    })
-})
 
 export class UsersAPI {
     private http: HttpMgr
@@ -47,6 +43,7 @@ export class UsersAPI {
 
     // 获取用户信息
     async getInfo(): Promise<UserInfoResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/users/info',
             method: 'get',
@@ -61,6 +58,7 @@ export class UsersAPI {
 
     //设置用户头像
     async setAvatar(file: File): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         const formData = new FormData()
         formData.append('file', file)
 
@@ -81,6 +79,7 @@ export class UsersAPI {
     async setNickname(params: {
         nickname: string;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/users/info/nickname',
             method: 'put',
@@ -98,6 +97,7 @@ export class UsersAPI {
     async getKVStorage(params: {
         key: string;
     }): Promise<UserKVStorageResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/users/kv_storage',
             method: 'get',
@@ -116,6 +116,7 @@ export class UsersAPI {
         key: string;
         value: string;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         return this.http.request({
             url: '/users/kv_storage',
             method: 'post',
@@ -130,6 +131,7 @@ export class UsersAPI {
         page_url?: string;
         files?: ArrayBuffer[];
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         const formData = new FormData();
         formData.append('type', params.type.toString());
         formData.append('content', params.content);
@@ -152,16 +154,7 @@ export class UsersAPI {
     }
 
     async refreshToken() {
-        const result = await this.http.request({
-            url: 'auth/refresh_token',
-            method: 'post',
-        })
-        try {
-            return RefreshTokenSchema.parse(result);
-        } catch (error) {
-            console.error('RefreshToken数据校验失败:', error);
-            throw error;
-        }
+        return refreshToken(this.http);
     }
 
     async getLoginUrl(): Promise<string> {

@@ -157,7 +157,7 @@ func (serv *opServe) start(documentId string, lastCmdVersion uint) {
 			log.Println("json编码错误 cmdItemsData", err)
 			return
 		}
-		log.Println("Document Op[DocumentId:"+documentId+"]"+"获取成功", len(cmdItemList), cmdItemList, lastCmdVersion)
+		log.Println("Document Op[DocumentId:"+documentId+"]"+"获取成功", len(cmdItemList), lastCmdVersion)
 		serv.send(string(cmdItemListData))
 
 		// documentIdStr := str.IntToString(documentId)
@@ -337,7 +337,7 @@ func (serv *opServe) handleCommit(data *TransData, receiveData *ReceiveData) {
 			log.Println("Document lastCmdVerId[DocumentId:"+documentId+"]"+"设置失败", err)
 			// return errors.New("数据插入失败")
 		}
-		log.Println("广播", string(cmdItemListData))
+		log.Println("收到cmd广播", len(cmdItemListData), documentId)
 		serv.redis.Client.Publish(context.Background(), "Document Op[DocumentId:"+documentId+"]", cmdItemListData) // 通知客户端是通过redis订阅来触发的
 		// return nil
 		// debug

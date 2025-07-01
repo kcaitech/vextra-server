@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/go-redsync/redsync/v4"
@@ -133,10 +134,17 @@ func AutoUpdate(documentId string, config *config.Configuration) {
 		"documentInfo": documentInfo,
 		"cmdItemList":  cmdItemList,
 		"force":        false,
-		"gen_pages_png": map[string]interface{}{
-			"tmp_dir": config.TmpDir + "/" + documentId,
-		},
 	}
+
+	reviewClient := services.GetSafereviewClient()
+	if reviewClient != nil { // 需要审查才生成png图片
+		tmpPngDir := config.SafeReview.TmpPngDir + "/" + documentId
+		reqBody["gen_pages_png"] = map[string]interface{}{
+			"tmp_dir": tmpPngDir,
+		}
+		os.MkdirAll(tmpPngDir, 0755)
+	}
+
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
 		log.Println("Failed to marshal request body:", err)
@@ -174,15 +182,7 @@ func AutoUpdate(documentId string, config *config.Configuration) {
 		LastCmdVerId: version.LastCmdVerId,
 	}
 	response := Response{}
-	data := UploadData{
-		DocumentMeta: Data(version.DocumentData.DocumentMeta),
-		Pages:        version.DocumentData.Pages,
-		MediaNames:   version.DocumentData.MediaNames,
-		MediasSize:   version.MediasSize,
-		DocumentText: version.DocumentText,
-		PagePngs:     version.PagePngs,
-	}
-	UploadDocumentData(&header, &data, nil, &response)
+	UploadDocumentData(&header, &version, nil, &response)
 
 	if response.Code != http.StatusOK {
 		log.Println("UploadDocumentData fail")

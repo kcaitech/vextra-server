@@ -1,4 +1,5 @@
 import { HttpMgr } from "./http"
+import { checkRefreshToken } from "./refresh_token";
 import { BaseResponse, BaseResponseSchema, PermType, ProjectInfoSchema, TeamInfoSchema, UserInfoSchema, DocumentInfoSchema as DocumentSchema } from "./types"
 import { z } from 'zod';
 
@@ -223,6 +224,7 @@ export class DocumentAPI {
     async deleteAccessRecord(params: {
         access_record_id: string;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         return this.http.request({
             url: 'documents/access_record',
             method: 'delete',
@@ -235,6 +237,7 @@ export class DocumentAPI {
         cursor?: string;
         limit?: number;
     }): Promise<FavoriteListResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: 'documents/favorites',
             method: 'get',
@@ -253,6 +256,7 @@ export class DocumentAPI {
         doc_id: string;
         status: boolean;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         return this.http.request({
             url: 'documents/favorites',
             method: 'put',
@@ -267,6 +271,7 @@ export class DocumentAPI {
         cursor?: string;
         limit?: number;
     }): Promise<DocumentRecycleListResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: 'documents/recycle_bin',
             method: 'get',
@@ -284,6 +289,7 @@ export class DocumentAPI {
     async recoverFile(params: {
         doc_id: string;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         return this.http.request({
             url: 'documents/recycle_bin',
             method: 'put',
@@ -295,6 +301,7 @@ export class DocumentAPI {
     async deleteFile(params: {
         doc_id: string;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         return this.http.request({
             url: 'documents/recycle_bin',
             method: 'delete',
@@ -307,6 +314,7 @@ export class DocumentAPI {
         doc_id: string;
         name: string;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         return this.http.request({
             url: '/documents/name',
             method: 'put',
@@ -318,6 +326,7 @@ export class DocumentAPI {
     async copyFile(params: {
         doc_id: string;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         return this.http.request({
             url: '/documents/copy',
             method: 'post',
@@ -332,6 +341,7 @@ export class DocumentAPI {
         cursor?: string;
         limit?: number;
     }): Promise<DocumentListResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/documents/',
             method: 'get',
@@ -349,6 +359,7 @@ export class DocumentAPI {
         cursor?: string;
         limit?: number;
     }): Promise<DocumentListResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/documents/access_records',
             method: 'get',
@@ -367,6 +378,7 @@ export class DocumentAPI {
         cursor?: string;
         limit?: number;
     }) : Promise<ResourceDocumentListResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/documents/resource',
             method: 'get',
@@ -385,6 +397,7 @@ export class DocumentAPI {
         doc_id: string;
         description: string;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         return this.http.request({
             url: '/documents/resource',
             method: 'post',
@@ -396,6 +409,7 @@ export class DocumentAPI {
     async moveFileToRecycleBin(params: {
         doc_id: string;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         return this.http.request({
             url: 'documents/',
             method: 'delete',
@@ -405,6 +419,7 @@ export class DocumentAPI {
 
     //获取文档权限
     async getDocumentAuthority(params: { doc_id: string }): Promise<DocumentPermission> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: `/documents/permission`,
             method: 'get',
@@ -420,6 +435,7 @@ export class DocumentAPI {
 
     //获取文档密钥
     async getDocumentAccessKey(params: { doc_id: string }): Promise<DocumentKeyResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: `/documents/access_key`,
             method: 'get',
@@ -435,6 +451,7 @@ export class DocumentAPI {
 
     //获取文档信息
     async getDocumentInfo(params: { doc_id: string }): Promise<DocumentInfoResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: `/documents/info`,
             method: 'get',

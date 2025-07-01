@@ -66,16 +66,24 @@ func CreateProject(c *gin.Context) {
 	reviewClient := services.GetSafereviewClient()
 	if req.Name != "" && reviewClient != nil {
 		reviewResponse, err := (reviewClient).ReviewText(req.Name)
-		if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
-			log.Println("名称审核不通过", req.Name, err, reviewResponse)
+		if err != nil {
+			log.Println("名称审核失败", req.Name, err)
+			common.ReviewFail(c, "审核失败")
+			return
+		} else if reviewResponse != nil && reviewResponse.Status != safereview.ReviewTextResultPass {
+			log.Println("名称审核不通过", req.Name, reviewResponse)
 			common.ReviewFail(c, "审核不通过")
 			return
 		}
 	}
 	if req.Description != "" && reviewClient != nil {
 		reviewResponse, err := (reviewClient).ReviewText(req.Description)
-		if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
-			log.Println("描述审核不通过", req.Description, err, reviewResponse)
+		if err != nil {
+			log.Println("描述审核失败", req.Description, err)
+			common.ReviewFail(c, "审核失败")
+			return
+		} else if reviewResponse != nil && reviewResponse.Status != safereview.ReviewTextResultPass {
+			log.Println("描述审核不通过", req.Description, reviewResponse)
 			common.ReviewFail(c, "审核不通过")
 			return
 		}
@@ -677,16 +685,24 @@ func SetProjectInfo(c *gin.Context) {
 	if req.Name != "" || req.Description != "" {
 		if req.Name != "" && reviewClient != nil {
 			reviewResponse, err := (reviewClient).ReviewText(req.Name)
-			if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
-				log.Println("名称审核不通过", req.Name, err, reviewResponse)
+			if err != nil {
+				log.Println("名称审核失败", req.Name, err)
+				common.ReviewFail(c, "审核失败")
+				return
+			} else if reviewResponse != nil && reviewResponse.Status != safereview.ReviewTextResultPass {
+				log.Println("名称审核不通过", req.Name, reviewResponse)
 				common.ReviewFail(c, "审核不通过")
 				return
 			}
 		}
 		if req.Description != "" && reviewClient != nil {
 			reviewResponse, err := (reviewClient).ReviewText(req.Description)
-			if err != nil || reviewResponse.Status != safereview.ReviewTextResultPass {
-				log.Println("描述审核不通过", req.Description, err, reviewResponse)
+			if err != nil {
+				log.Println("描述审核失败", req.Description, err)
+				common.ReviewFail(c, "审核失败")
+				return
+			} else if reviewResponse != nil && reviewResponse.Status != safereview.ReviewTextResultPass {
+				log.Println("描述审核不通过", req.Description, reviewResponse)
 				common.ReviewFail(c, "审核不通过")
 				return
 			}

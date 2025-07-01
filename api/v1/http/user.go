@@ -70,8 +70,12 @@ func SetNickname(c *gin.Context) {
 	safereview := services.GetSafereviewClient()
 	if safereview != nil {
 		reviewResponse, err := safereview.ReviewText(req.Nickname)
-		if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
-			log.Println("昵称审核不通过", req.Nickname, err, reviewResponse)
+		if err != nil {
+			log.Println("昵称审核失败", req.Nickname, err)
+			common.ReviewFail(c, "审核失败")
+			return
+		} else if reviewResponse != nil && reviewResponse.Status != safereviewBase.ReviewTextResultPass {
+			log.Println("昵称审核不通过", req.Nickname, reviewResponse)
 			common.ReviewFail(c, "审核不通过")
 			return
 		}

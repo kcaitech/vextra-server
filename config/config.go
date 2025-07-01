@@ -65,10 +65,10 @@ type Configuration struct {
 		MinCmdCount       int    `yaml:"min_cmd_count" json:"min_cmd_count"`
 	} `yaml:"doc_update_server" json:"doc_update_server"`
 
-	Mongo     mongo.MongoConf           `yaml:"mongo" json:"mongo"`
-	Redis     redis.RedisConf           `yaml:"redis" json:"redis"`
-	SafeReiew safereview.SafeReviewConf `yaml:"safe_review" json:"safe_review"`
-	Storage   storage.Config            `yaml:"storage" json:"storage"`
+	Mongo      mongo.MongoConf           `yaml:"mongo" json:"mongo"`
+	Redis      redis.RedisConf           `yaml:"redis" json:"redis"`
+	SafeReview safereview.SafeReviewConf `yaml:"safe_review" json:"safe_review"`
+	Storage    storage.Config            `yaml:"storage" json:"storage"`
 
 	DefaultRoute bool `yaml:"default_route,omitempty" json:"default_route,omitempty"`
 	DetailedLog  bool `yaml:"detailed_log,omitempty" json:"detailed_log,omitempty"`
@@ -78,8 +78,6 @@ type Configuration struct {
 	AuthClientID     string `yaml:"auth_client_id,omitempty" json:"auth_client_id,omitempty"`
 	AuthClientSecret string `yaml:"auth_client_secret,omitempty" json:"auth_client_secret,omitempty"`
 	AuthCallbackURL  string `yaml:"auth_callback_url,omitempty" json:"auth_callback_url,omitempty"`
-
-	TmpDir string `yaml:"tmp_dir,omitempty" json:"tmp_dir,omitempty" default:"/tmp/com.kcaitech.kcserver"`
 }
 
 func LoadYamlFile(filePath string) (*Configuration, error) {

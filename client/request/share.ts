@@ -1,19 +1,7 @@
 import { HttpMgr } from './http'
+import { checkRefreshToken } from './refresh_token';
 import { BaseResponseSchema, BaseResponse, PermType, UserInfoSchema, TeamInfoSchema, ProjectInfoSchema, DocumentInfoSchema } from './types';
 import { z } from 'zod';
-
-// 分享相关类型定义
-// export const ShareSchema = z.object({
-//     id: z.string(),
-//     document_id: z.string(),
-//     share_type: z.string(),
-//     created_at: z.string(),
-//     updated_at: z.string(),
-//     permissions: z.array(z.string()),
-// });
-
-// export type Share = z.infer<typeof ShareSchema>;
-
 
 export const ShareListResponseSchema1 = BaseResponseSchema.extend({
     data: z.array(z.object({
@@ -145,6 +133,7 @@ export class ShareAPI {
 
     //查询某个文档对所有用户的分享列表
     async getShareGranteesList(params: { doc_id: string }): Promise<ShareListResponse1> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: `/share/grantees`,
             method: 'get',
@@ -163,6 +152,7 @@ export class ShareAPI {
         cursor?: string;
         limit?: number;
     }): Promise<ShareListResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/share/receives',
             method: 'get',
@@ -178,6 +168,7 @@ export class ShareAPI {
 
     //设置分享类型
     async setShateType(params: { doc_id: string; doc_type: DocType }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/share/set',
             method: 'put',
@@ -193,6 +184,7 @@ export class ShareAPI {
 
     //修改分享权限
     async changeShareAuthority(params: { share_id: string; perm_type: PermType }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/share',
             method: 'put',
@@ -208,6 +200,7 @@ export class ShareAPI {
 
     //移除分享权限
     async delShareAuthority(params: { share_id: string }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: `/share`,
             method: 'delete',
@@ -223,6 +216,7 @@ export class ShareAPI {
 
     // 申请文档权限
     async applyDocumentAuthority(params: ShareApply): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/share/apply',
             method: 'post',
@@ -238,6 +232,7 @@ export class ShareAPI {
 
     // 获取申请列表
     async getApplyList(params: { start_time?: number, page?: number; page_size?: number }): Promise<ShareApplyListResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: `/share/apply`,
             method: 'get',
@@ -253,6 +248,7 @@ export class ShareAPI {
 
     // 权限申请审核
     async permissionApplyAudit(params: ShareApplyAudit): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/share/apply/audit',
             method: 'post',
@@ -270,11 +266,11 @@ export class ShareAPI {
     async exitSharing(params: {
         share_id: string;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         return this.http.request({
             url: '/share',
             method: 'delete',
             params: params,
         })
     }
-
 }

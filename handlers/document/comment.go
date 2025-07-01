@@ -138,8 +138,10 @@ func PostUserComment(c *gin.Context) {
 	reviewClient := services.GetSafereviewClient()
 	if reviewClient != nil {
 		reviewResponse, err := (reviewClient).ReviewText(userComment.Content)
-		if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
-			log.Println("评论审核不通过", userComment.Content, err, reviewResponse)
+		if err != nil {
+			log.Println("评论审核失败", userComment.Content, err)
+		} else if reviewResponse != nil && reviewResponse.Status != safereviewBase.ReviewTextResultPass {
+			log.Println("评论审核不通过", userComment.Content, reviewResponse)
 			var LockedWords string
 			if wordsBytes, err := json.Marshal(reviewResponse.Words); err == nil {
 				LockedWords = string(wordsBytes)
@@ -240,8 +242,12 @@ func PutUserComment(c *gin.Context) {
 	reviewClient := services.GetSafereviewClient()
 	if userComment.Content != "" && reviewClient != nil {
 		reviewResponse, err := (reviewClient).ReviewText(userComment.Content)
-		if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
-			log.Println("评论审核不通过", userComment.Content, err, reviewResponse)
+		if err != nil {
+			log.Println("评论审核失败", userComment.Content, err)
+			common.BadRequest(c, "审核失败")
+			return
+		} else if reviewResponse != nil && reviewResponse.Status != safereviewBase.ReviewTextResultPass {
+			log.Println("评论审核不通过", userComment.Content, reviewResponse)
 			common.BadRequest(c, "审核不通过")
 			return
 		}

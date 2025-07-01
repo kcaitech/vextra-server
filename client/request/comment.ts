@@ -1,5 +1,6 @@
 // 导入axios实例
 import { HttpMgr } from './http'
+import { checkRefreshToken } from './refresh_token';
 import { BaseResponseSchema, BaseResponse, UserInfoSchema } from './types';
 import { z } from 'zod';
 
@@ -96,6 +97,7 @@ export class CommentAPI {
 
     //获取文档评论
     async list(params: { doc_id: string }): Promise<CommentListResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: `/documents/comments`,
             method: 'get',
@@ -106,6 +108,7 @@ export class CommentAPI {
 
     // 创建评论
     async create(params: CreateComment): Promise<SingleCommentResponse> {
+        await checkRefreshToken(this.http);
         const validatedParams = CreateCommentSchema.parse(params);
         const result = await this.http.request({
             url: `/documents/comment`,
@@ -117,6 +120,7 @@ export class CommentAPI {
 
     // 设置评论状态
     async modifyStatus(params: SetCommentStatus): Promise<SingleCommentResponse> {
+        await checkRefreshToken(this.http);
         const validatedParams = SetCommentStatusSchema.parse(params);
         const result = await this.http.request({
             url: `/documents/comment/status`,
@@ -128,6 +132,7 @@ export class CommentAPI {
 
     // 编辑评论
     async modify(params: CommentCommon): Promise<SingleCommentResponse> {
+        await checkRefreshToken(this.http);
         const validatedParams = CommentCommonSchema.parse(params);
         const result = await this.http.request({
             url: `/documents/comment`,
@@ -139,6 +144,7 @@ export class CommentAPI {
 
     // 删除评论
     async remove(params: { comment_id: string, doc_id: string }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: `/documents/comment`,
             method: 'delete',

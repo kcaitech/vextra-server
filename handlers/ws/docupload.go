@@ -102,6 +102,13 @@ func (serv *docUploadServe) handle(data *TransData, binaryData *([]byte)) {
 		return
 	}
 	if uploadHeader.Media != "" && binaryData != nil {
+		// 去除失败重传的图片
+		for _, media := range serv.data.Medias {
+			if media.Name == uploadHeader.Media {
+				_ = serv.ws.WriteJSON(serverData)
+				return
+			}
+		}
 		media := common.Media{
 			Name:    uploadHeader.Media,
 			Content: binaryData,
@@ -118,11 +125,13 @@ func (serv *docUploadServe) handle(data *TransData, binaryData *([]byte)) {
 			ProjectId: serv.data.ProjectId,
 		}
 
-		uploadData := common.UploadData{
-			DocumentMeta: common.Data(serv.data.Export.DocumentMeta),
-			Pages:        serv.data.Export.Pages,
-			MediaNames:   serv.data.Export.MediaNames,
-			MediasSize:   serv.data.MediasSize,
+		uploadData := common.VersionResp{
+			DocumentData: common.ExFromJson{
+				DocumentMeta: common.Data(serv.data.Export.DocumentMeta),
+				Pages:        serv.data.Export.Pages,
+				MediaNames:   serv.data.Export.MediaNames,
+			},
+			MediasSize: serv.data.MediasSize,
 		}
 
 		resp := common.Response{}

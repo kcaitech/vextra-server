@@ -1,4 +1,5 @@
 import { HttpMgr } from './http'
+import { checkRefreshToken } from './refresh_token'
 import { BaseResponseSchema, BaseResponse, UserInfoSchema, ProjectInfoSchema, TeamInfoSchema, TeamPermType } from './types'
 import { z } from 'zod'
 
@@ -231,6 +232,7 @@ export class TeamAPI {
         description?: string;
         avatar?: File;
     }): Promise<CreateTeamResponse> {
+        await checkRefreshToken(this.http);
         const formData = new FormData();
         formData.append('name', params.name);
         if (params.description) {
@@ -260,6 +262,7 @@ export class TeamAPI {
         page_size?: number;
         start_time?: number;
     }): Promise<TeamApplyListResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: `/team/apply`,
             method: 'get',
@@ -278,6 +281,7 @@ export class TeamAPI {
         apply_id: string;
         approval_code: number;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: `/team/apply/audit`,
             method: 'post',
@@ -297,6 +301,7 @@ export class TeamAPI {
         page?: number;
         page_size?: number;
     }): Promise<TeamNoticeResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/team/self_apply',
             method: 'get',
@@ -316,6 +321,7 @@ export class TeamAPI {
         user_id: string;
         nickname: string;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/team/member/nickname',
             method: 'put',
@@ -334,6 +340,7 @@ export class TeamAPI {
         page?: number;
         page_size?: number;
     }): Promise<TeamListResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/team/list',
             method: 'get',
@@ -353,6 +360,7 @@ export class TeamAPI {
         page?: number;
         page_size?: number;
     }): Promise<TeamMemberListResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/team/member/list',
             method: 'get',
@@ -373,6 +381,7 @@ export class TeamAPI {
         description?: string;
         avatar?: File
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         const formData = new FormData();
         formData.append('team_id', params.team_id);
         if (params.name) {
@@ -403,6 +412,7 @@ export class TeamAPI {
         open_invite?: boolean;
         invited_perm_type?: number;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         return this.http.request({
             url: '/team/invite',
             method: 'put',
@@ -415,6 +425,7 @@ export class TeamAPI {
         team_id: string;
         user_id: string;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         return this.http.request({
             url: '/team/owner',
             method: 'put',
@@ -426,6 +437,7 @@ export class TeamAPI {
     async getTeamInviteInfo(params: {
         team_id: string;
     }): Promise<TeamInfoResponse|BaseResponse> {
+        await checkRefreshToken(this.http);
         return this.http.request({
             url: '/team/info/invite',
             method: 'get',
@@ -438,6 +450,7 @@ export class TeamAPI {
         team_id: string;
         applicant_notes?: string
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         return this.http.request({
             url: '/team/apply',
             method: 'post',
@@ -450,6 +463,7 @@ export class TeamAPI {
         team_id: string;
         user_id: string;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         return this.http.request({
             url: '/team/member',
             method: 'delete',
@@ -463,6 +477,7 @@ export class TeamAPI {
         user_id: string;
         perm_type: TeamPermType;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/team/member/perm',
             method: 'put',
@@ -480,6 +495,7 @@ export class TeamAPI {
     async exitTeam(params: {
         team_id: string;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/team/exit',
             method: 'post',
@@ -497,6 +513,7 @@ export class TeamAPI {
     async deleteTeam(params: {
         team_id: string;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/team',
             method: 'delete',
@@ -518,6 +535,7 @@ export class TeamAPI {
         name: string;
         description?: string;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/team/project',
             method: 'post',
@@ -540,6 +558,7 @@ export class TeamAPI {
         page_size?: number;
         start_time?: number;
     }): Promise<ProjectApplyListResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: `/team/project/apply`,
             method: 'get',
@@ -558,6 +577,7 @@ export class TeamAPI {
         apply_id: string;
         approval_code: number;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: `/team/project/apply/audit`,
             method: 'post',
@@ -577,6 +597,7 @@ export class TeamAPI {
         page?: number;
         page_size?: number;
     }): Promise<ProjectFavoriteListResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/team/project/favorite/list',
             method: 'get',
@@ -595,6 +616,7 @@ export class TeamAPI {
         project_id: string;
         is_favor: boolean;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/team/project/favorite',
             method: 'put',
@@ -614,6 +636,7 @@ export class TeamAPI {
         name?: string;
         description?: string;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/team/project/info',
             method: 'put',
@@ -634,6 +657,7 @@ export class TeamAPI {
         invited_switch?: boolean;
         is_public?: boolean;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/team/project/invite',
             method: 'put',
@@ -651,6 +675,7 @@ export class TeamAPI {
     async getProjectInviteInfo(params: {
         project_id: string;
     }): Promise<ProjectInvitedInfoResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/team/project/info/invite',
             method: 'get',
@@ -669,6 +694,7 @@ export class TeamAPI {
         project_id: string;
         applicant_notes?: string;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/team/project/apply',
             method: 'post',
@@ -688,6 +714,7 @@ export class TeamAPI {
         page?: number;
         page_size?: number;
     }): Promise<TeamProjectListResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/team/project/list',
             method: 'get',
@@ -707,6 +734,7 @@ export class TeamAPI {
         page?: number;
         page_size?: number;
     }): Promise<ProjectMemberListResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/team/project/member/list',
             method: 'get',
@@ -724,6 +752,7 @@ export class TeamAPI {
     async exitProject(params: {
         project_id: string;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/team/project/exit',
             method: 'post',
@@ -743,6 +772,7 @@ export class TeamAPI {
         user_id: string;
         perm_type: number;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/team/project/member/perm',
             method: 'put',
@@ -761,6 +791,7 @@ export class TeamAPI {
         project_id: string;
         user_id: string;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/team/project/member',
             method: 'delete',
@@ -779,6 +810,7 @@ export class TeamAPI {
         project_id: string;
         user_id: string;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/team/project/owner',
             method: 'put',
@@ -796,6 +828,7 @@ export class TeamAPI {
     async delProject(params: {
         project_id: string;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/team/project',
             method: 'delete',
@@ -815,6 +848,7 @@ export class TeamAPI {
         page?: number;
         page_size?: number;
     }): Promise<ProjectNoticeResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/team/project/self_apply',
             method: 'get',
@@ -834,6 +868,7 @@ export class TeamAPI {
         target_team_id?: string;
         target_project_id?: string;
     }): Promise<BaseResponse> {
+        await checkRefreshToken(this.http);
         const result = await this.http.request({
             url: '/team/project/document/move',
             method: 'post',

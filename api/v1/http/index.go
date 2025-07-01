@@ -23,6 +23,8 @@ func LoadRoutes(router *gin.Engine) {
 	config := services.GetConfig()
 	if config.DefaultRoute {
 		router.NoRoute(func(c *gin.Context) {
+			// 设置缓存时间为15分钟
+			c.Header("Cache-Control", "public, max-age=900")
 			c.File("/app/html/index.html")
 		})
 	}
