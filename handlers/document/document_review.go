@@ -11,7 +11,7 @@ import (
 	"kcaitech.com/kcserver/services"
 )
 
-func reviewgo(newDocument *models.Document, uploadData *VersionResp, docPath string, pages []struct {
+func reviewgo(newDocument models.Document, uploadData *VersionResp, docPath string, pages []struct {
 	Id string `json:"id"`
 }, medias *[]Media) {
 	reviewClient := services.GetSafereviewClient()
@@ -128,5 +128,5 @@ func review(newDocument *models.Document, uploadData *VersionResp, docPath strin
 	if (len(uploadData.PagePngs) == 0) && uploadData.DocumentText == "" && (medias == nil || len(*medias) == 0) {
 		return
 	}
-	go reviewgo(newDocument, uploadData, docPath, pages, medias)
+	go reviewgo(*newDocument, uploadData, docPath, pages, medias)
 }

@@ -123,6 +123,7 @@ func UploadDocumentData(header *Header, uploadData *VersionResp, medias *[]Media
 	}
 
 	newDocument := models.Document{
+		Id:        docId,
 		UserId:    userId,
 		Path:      docPath,
 		DocType:   models.DocTypeShareable,
