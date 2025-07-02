@@ -88,6 +88,15 @@ func MigrateDocumentStorage(documentId int64, generateApiUrl string, config conf
 	return fmt.Errorf("failed after %d attempts", maxRetries)
 }
 
+// MigrateVersionResp 迁移专用的版本响应结构体，用于兼容API的实际返回格式
+type MigrateVersionResp struct {
+	LastCmdId    string                `json:"lastCmdId"` // API实际返回的字段名
+	DocumentData autoupdate.ExFromJson `json:"documentData"`
+	DocumentText string                `json:"documentText"`
+	MediasSize   uint64                `json:"mediasSize"`
+	PagePngs     []string              `json:"pages_png_generated"`
+}
+
 func migrateDocumentStorageOnce(documentId int64, generateApiUrl string, sourceMinioConf config.Config, path string) error {
 	// var generateApiUrl = "http://192.168.0.131:8088/generate" // 旧版本更新服务地址
 	documentIdStr := str.IntToString(documentId)
@@ -109,11 +118,21 @@ func migrateDocumentStorageOnce(documentId int64, generateApiUrl string, sourceM
 		return errors.New("请求失败")
 	}
 
-	version := autoupdate.VersionResp{}
-	err = json.Unmarshal(body, &version)
+	// 先用迁移专用的结构体解析API响应
+	migrateVersion := MigrateVersionResp{}
+	err = json.Unmarshal(body, &migrateVersion)
 	if err != nil {
 		log.Println(generateApiUrl, "resp", err)
 		return err
+	}
+
+	// 转换为标准的VersionResp结构体
+	version := autoupdate.VersionResp{
+		LastCmdVerId: migrateVersion.LastCmdId, // 字段名转换
+		DocumentData: migrateVersion.DocumentData,
+		DocumentText: migrateVersion.DocumentText,
+		MediasSize:   migrateVersion.MediasSize,
+		PagePngs:     migrateVersion.PagePngs,
 	}
 
 	// 获取旧的媒体文件
