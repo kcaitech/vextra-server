@@ -19,8 +19,6 @@ import (
 	"kcaitech.com/kcserver/utils/str"
 )
 
-// type Data map[string]any
-
 type Header struct {
 	UserId       string `json:"user_id"`
 	DocumentId   string `json:"document_id"`
@@ -44,17 +42,6 @@ type Response struct {
 type PageSvg struct {
 	Name    string
 	Content string
-}
-
-type UploadData struct {
-	DocumentMeta Data            `json:"document_meta"`
-	Pages        json.RawMessage `json:"pages"`
-	// FreeSymbols         json.RawMessage `json:"freesymbols"` // 这个现在在document meta里
-	MediaNames   []string `json:"media_names"`
-	MediasSize   uint64   `json:"medias_size"`
-	DocumentText string   `json:"document_text"`
-	// PageImageList *[][]byte `json:"page_image_list"`
-	PageSvgs []string `json:"pageSvgs"`
 }
 
 type Media struct {
@@ -85,7 +72,8 @@ func compressPutObjectByte(path string, content []byte, _storage *storage.Storag
 	return _storage.Bucket.PutObjectByte(path, content, "")
 }
 
-func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media, resp *Response) {
+func UploadDocumentData(header *Header, uploadData *VersionResp, medias *[]Media, resp *Response) {
+
 	userId := header.UserId
 	documentId := (header.DocumentId)
 	projectId := (header.ProjectId)
@@ -135,24 +123,15 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 	}
 
 	newDocument := models.Document{
+		Id:        docId,
 		UserId:    userId,
 		Path:      docPath,
 		DocType:   models.DocTypeShareable,
 		TeamId:    teamId,
 		ProjectId: projectId,
-		Id:        docId,
 	}
 
 	documentSize := uint64(0)
-
-	// reviewText(uploadData.DocumentText, &newDocument)
-	// reviewPages(uploadData.PageImageList, &newDocument, docPath, documentService)
-
-	// if !newDocument.LockedAt.IsZero() && !isFirstUpload {
-	// 	_, _ = documentService.UpdateColumnsById(documentId, map[string]any{
-	// 		"locked_at": nil,
-	// 	})
-	// }
 
 	uploadWaitGroup := sync.WaitGroup{}
 
@@ -160,13 +139,13 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 	var pages []struct {
 		Id string `json:"id"`
 	}
-	if err := json.Unmarshal(uploadData.Pages, &pages); err != nil {
+	if err := json.Unmarshal(uploadData.DocumentData.Pages, &pages); err != nil {
 		resp.Message = "Pages内有元素缺少Id " + err.Error()
 		log.Println("Pages内有元素缺少Id", err)
 		return
 	}
 	var pagesRaw = []json.RawMessage{}
-	if err := json.Unmarshal(uploadData.Pages, &pagesRaw); err != nil {
+	if err := json.Unmarshal(uploadData.DocumentData.Pages, &pagesRaw); err != nil {
 		resp.Message = "Pages格式错误 " + err.Error()
 		log.Println("Pages格式错误", err)
 		return
@@ -193,8 +172,6 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 
 	// medias部分
 	if medias != nil { // 非首次上传即版本更新，不会有medias
-		// reviewMedias(medias, &newDocument, documentService, services.GetSafereviewClient())
-
 		// upload medias
 		for _, media := range *medias {
 			path := docPath + "/medias/" + media.Name
@@ -216,7 +193,7 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 	documentSize += uploadData.MediasSize
 
 	var _medias []Media // 审核时需要
-	for _, mediaName := range uploadData.MediaNames {
+	for _, mediaName := range uploadData.DocumentData.MediaNames {
 		mediaPath := docPath + "/medias/" + mediaName
 		mediaData, err := services.GetStorageClient().Bucket.GetObject(mediaPath)
 		if err != nil {
@@ -234,7 +211,7 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 	uploadWaitGroup.Wait()
 
 	// 设置versionId
-	pagesList := uploadData.DocumentMeta["pagesList"].([]any)
+	pagesList := uploadData.DocumentData.DocumentMeta["pagesList"].([]any)
 	for _, page := range pagesList {
 		pageItem, ok := page.(map[string]any)
 		pageId, ok1 := pageItem["id"].(string)
@@ -246,9 +223,9 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 		}
 		pageItem["versionId"] = versionId
 	}
-	uploadData.DocumentMeta["lastCmdVer"] = str.DefaultToInt(lastCmdVerId, 0)
+	uploadData.DocumentData.DocumentMeta["lastCmdVer"] = str.DefaultToInt(lastCmdVerId, 0)
 
-	documentMetaStr, err := json.Marshal(uploadData.DocumentMeta)
+	documentMetaStr, err := json.Marshal(uploadData.DocumentData.DocumentMeta)
 	if err != nil {
 		resp.Message = "document-meta.json格式错误"
 		log.Println("document-meta.json格式错误", err)
@@ -263,10 +240,10 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 		return
 	}
 	documentVersionId := putObjectResult.VersionID
-	documentSize += uint64(len(uploadData.DocumentMeta))
+	documentSize += uint64(len(uploadData.DocumentData.DocumentMeta))
 
 	// 获取文档名称
-	documentName, _ := uploadData.DocumentMeta["name"].(string)
+	documentName, _ := uploadData.DocumentData.DocumentMeta["name"].(string)
 	documentAccessRecordService := services.NewDocumentAccessRecordService()
 	// 创建文档记录和历史记录
 	now := (time.Now())

@@ -1,14 +1,14 @@
 import { throttle } from "./timing_util";
 import { Connect, ConnectClient } from "./connect";
-import { DataTypes, DocSelectionData, DocSelectionOpData, IContext, SelectionEvents } from "./types";
+import { DataTypes, DocSelectionData, DocSelectionOpData, IClientContext, SelectionEvents } from "./types";
 
 export class Selection extends ConnectClient {
-    private context: IContext;
+    private context: IClientContext;
     private onMessageList: ((data: DocSelectionOpData) => void)[] = [];
     private docSelectionOpUpdate: typeof this._update | undefined;
     private selectionWatcherForOp = this._selectionWatcherForOp.bind(this);
 
-    constructor(connect: Connect, context: IContext) {
+    constructor(connect: Connect, context: IClientContext) {
         super(connect, DataTypes.Selection);
         this.context = context;
         context.selection.watch(this.selectionWatcherForOp);

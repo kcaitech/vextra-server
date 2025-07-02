@@ -288,8 +288,12 @@ func SetDocumentName(c *gin.Context) {
 	reviewClient := services.GetSafereviewClient()
 	if reviewClient != nil {
 		reviewResponse, err := (reviewClient).ReviewText(req.Name)
-		if err != nil || reviewResponse.Status != safereviewBase.ReviewTextResultPass {
-			log.Println("名称审核不通过", req.Name, err, reviewResponse)
+		if err != nil {
+			log.Println("名称审核失败", req.Name, err)
+			response.ReviewFail(c, "审核失败")
+			return
+		} else if reviewResponse != nil && reviewResponse.Status != safereviewBase.ReviewTextResultPass {
+			log.Println("名称审核不通过", req.Name, reviewResponse)
 			response.ReviewFail(c, "审核不通过")
 			return
 		}

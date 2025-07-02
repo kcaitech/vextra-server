@@ -1,5 +1,6 @@
 import axios, { AxiosResponse } from 'axios'
 import { HttpCode } from './httpcode'
+import * as base64 from "js-base64";
 
 declare module "axios" {
     interface AxiosResponse<T = any> {
@@ -35,6 +36,20 @@ function clone(data: any) {
     return JSON.parse(JSON.stringify(data))
 }
 
+function getTokenExp(token: string | undefined): number {
+    try {
+        if (!token) return 0;
+        const res = token.split(".");
+        if (res.length !== 3) return 0; // jwt格式不正确
+        const r = base64.decode(res[1]);
+        const payload = JSON.parse(r);
+        return (payload.exp ?? 0) * 1000;
+    } catch (e) {
+        console.log("parse jwt error", e);
+        return 0;
+    }
+}
+
 export class HttpMgr {
     private _cache = new Map<string, ReqItem>()
     private _cache1 = new Map<number, ReqItem>()
@@ -48,27 +63,31 @@ export class HttpMgr {
     private timer: any
     private service: any
     private onUnauthorized: () => void
-    private _token?: string
-
-    private get localStorage() {
-        if (typeof window !== 'undefined' && window.localStorage) {
-            return window.localStorage
-        }
-        return undefined
+    private _token: {
+        getToken: () => string | undefined,
+        setToken: (token: string | undefined) => void
     }
 
-    private get token() {
-        if (this._token) return this._token
-        return this.localStorage?.getItem('token') ?? undefined
+    private _token_exp_cache: string | undefined = undefined
+    private _token_exp: number = 0
+
+    public get token() {
+        return this._token.getToken()
     }
-    private set token(value: string | undefined) {
-        this._token = value
-        if (value) {
-            this.localStorage?.setItem('token', value)
-        } else {
-            this.localStorage?.removeItem('token')
-        }
+    public set token(value: string | undefined) {
+        this._token.setToken(value)
     }
+
+    public get token_remain() {
+        const _token = this.token
+        if (this._token_exp_cache && this._token_exp_cache === _token) {
+            return this._token_exp - Date.now()
+        }   
+        this._token_exp_cache = _token
+        this._token_exp = getTokenExp(_token)
+        return this._token_exp - Date.now()
+    }
+
     private auth_request(config: any) {
         const token = this.token
         if (token) {
@@ -116,7 +135,10 @@ export class HttpMgr {
         }
     }
 
-    constructor(apiUrl: string, onUnauthorized: () => void, token?: string) {
+    constructor(apiUrl: string, onUnauthorized: () => void, token: {
+        getToken: () => string | undefined,
+        setToken: (token: string | undefined) => void
+    }) {
         this._request = this._request.bind(this)
         this.onUnauthorized = onUnauthorized
         this.service = axios.create({

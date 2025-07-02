@@ -1,0 +1,37 @@
+storage_url:
+  document: https://storage.test.vextra.cn
+  attatch: https://storage.test.vextra.cn/attatch
+
+version_server:
+  url: http://localhost:30000/generate
+  min_update_interval: 600
+  min_cmd_count: 1
+
+mongo:
+  url: mongodb://root:jKKsinkjilKKLSW@192.168.0.125:27017
+  db: kcserver
+
+redis:
+  addr: 192.168.0.125:6379
+  password: ""
+  db: 1
+
+storage:
+  provider: minio
+  endpoint: "192.168.0.125:9000"
+  region: "zhuhai-1"
+  accessKeyID: "59L3pDWuk9oLQWIgytCI"
+  secretAccessKey: "GmwAzetY1L0jU4pUAqpO7RJGIsG7k3gozVH6whoJ"
+  stsAccessKeyID: "user"
+  stsSecretAccessKey: "GmwAzetY1L0jU4pUAqpO7RJGIsG7k3gozVH6whoJ"
+  bucketName: "document"
+  attatchBucketName: "attatch"
+
+default_route: true
+detailed_log: true
+allow_cors: true
+
+auth_server_url: https://account.test.vextra.cn
+auth_client_id: kcserver
+auth_client_secret: yourSecurePassword123
+auth_callback_url: https://test.vextra.cn/login_callback

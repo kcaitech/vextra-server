@@ -4,13 +4,30 @@ import { ShareAPI } from "./share";
 import { TeamAPI } from "./team";
 import { UsersAPI } from "./users";
 import { DocumentAPI } from "./document";
+
+const defaultToken = {
+    getToken: () => {
+        return localStorage.getItem('token') ?? undefined
+    },
+    setToken: (token: string | undefined) => {
+        if (token) {
+            localStorage.setItem('token', token)
+        } else {
+            localStorage.removeItem('token')
+        }
+    }
+}
+
 export class Request {
     user_api: UsersAPI
     team_api: TeamAPI
     comment_api: CommentAPI
     share_api: ShareAPI
     document_api: DocumentAPI
-    constructor(apiUrl: string, onUnauthorized: () => void, token?: string) {
+    constructor(apiUrl: string, onUnauthorized: () => void, token: {
+        getToken: () => string | undefined,
+        setToken: (token: string | undefined) => void
+    } = defaultToken) {
         const httpmgr = new HttpMgr(apiUrl, onUnauthorized, token);
         this.user_api = new UsersAPI(httpmgr);
         this.team_api = new TeamAPI(httpmgr);

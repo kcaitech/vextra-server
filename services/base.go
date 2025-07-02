@@ -120,7 +120,7 @@ func GetSafereviewClient() safereview.Client {
 // storage client 的单例
 var storageClient *storage.StorageClient
 
-func InitStorageClient(config *storage.StorageConf) (*storage.StorageClient, error) {
+func InitStorageClient(config *storage.Config) (*storage.StorageClient, error) {
 	if storageClient != nil {
 		return storageClient, nil
 	}
@@ -184,7 +184,7 @@ func InitAllBaseServices(config *config.Configuration) error {
 		return err
 	}
 	// 初始化safereview, 不是必须的
-	_, err = InitSafereviewClient(&config.SafeReiew)
+	_, err = InitSafereviewClient(&config.SafeReview)
 	if err == nil {
 		// return err
 		// 打印错误信息
