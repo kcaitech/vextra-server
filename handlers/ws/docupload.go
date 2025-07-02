@@ -120,10 +120,10 @@ func (serv *docUploadServe) handle(data *TransData, binaryData *([]byte)) {
 	}
 	if uploadHeader.Commit && serv.data != nil && serv.data.Export != nil {
 		log.Println("uploading commit", uploadHeader.DocumentId)
-		header := common.Header{
-			UserId:    (serv.userId),
-			ProjectId: serv.data.ProjectId,
-		}
+		// header := document.Header{
+		// 	UserId:    (serv.userId),
+		// 	ProjectId: serv.data.ProjectId,
+		// }
 
 		uploadData := common.VersionResp{
 			DocumentData: common.ExFromJson{
@@ -135,7 +135,7 @@ func (serv *docUploadServe) handle(data *TransData, binaryData *([]byte)) {
 		}
 
 		resp := common.Response{}
-		common.UploadDocumentData(&header, &uploadData, &serv.data.Medias, &resp)
+		common.UploadNewDocumentData(serv.userId, serv.data.ProjectId, &uploadData, &serv.data.Medias, &resp)
 
 		if resp.Code == http.StatusOK {
 			retData, err := json.Marshal(resp.Data)
