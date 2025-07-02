@@ -1,4 +1,4 @@
-package main
+package tables
 
 import (
 	"log"
@@ -7,8 +7,8 @@ import (
 	"gorm.io/gorm"
 )
 
-// checkAndUpdate 辅助函数：检查记录是否存在并更新
-func checkAndUpdate(db *gorm.DB, table string, whereClause string, whereArgs interface{}, newRecord interface{}) error {
+// CheckAndUpdate 辅助函数：检查记录是否存在并更新
+func CheckAndUpdate(db *gorm.DB, table string, whereClause string, whereArgs interface{}, newRecord interface{}) error {
 	var count int64
 	query := db.Table(table)
 

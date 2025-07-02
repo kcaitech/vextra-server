@@ -1,14 +1,15 @@
-package main
+package storage
 
 import (
 	"fmt"
 	"log"
 	"strings"
 
+	"kcaitech.com/kcserver/scripts/migrate-20250702/config"
 	"kcaitech.com/kcserver/services"
 )
 
-func getOldTeams(sourceConf Config) {
+func MigrateTeamAvatars(sourceConf config.Config) {
 	storage, err := CreateStorageClient(sourceConf)
 	if err != nil {
 		log.Printf("Failed to create storage client: %v", err)

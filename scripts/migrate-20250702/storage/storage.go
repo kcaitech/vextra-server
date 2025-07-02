@@ -1,4 +1,4 @@
-package main
+package storage
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/minio/minio-go/v7"
 	minioCreds "github.com/minio/minio-go/v7/pkg/credentials"
+	"kcaitech.com/kcserver/scripts/migrate-20250702/config"
 )
 
 // StorageInterface 定义存储操作接口
@@ -32,7 +33,7 @@ type MinioStorage struct {
 	client *minio.Client
 }
 
-func NewMinioStorage(config Config) (*MinioStorage, error) {
+func NewMinioStorage(config config.Config) (*MinioStorage, error) {
 	creds := minioCreds.NewStaticV4(config.Source.Storage.Minio.AccessKey, config.Source.Storage.Minio.SecretKey, "")
 	client, err := minio.New(config.Source.Storage.Minio.Endpoint, &minio.Options{
 		Creds:  creds,
@@ -78,7 +79,7 @@ type OSSStorage struct {
 	client *oss.Client
 }
 
-func NewOSSStorage(config Config) (*OSSStorage, error) {
+func NewOSSStorage(config config.Config) (*OSSStorage, error) {
 	client, err := oss.New(config.Source.Storage.OSS.Endpoint, config.Source.Storage.OSS.AccessKey, config.Source.Storage.OSS.SecretKey, oss.Region(config.Source.Storage.OSS.Region))
 	if err != nil {
 		return nil, err
@@ -133,7 +134,7 @@ type S3Storage struct {
 	client *s3.S3
 }
 
-func NewS3Storage(config Config) (*S3Storage, error) {
+func NewS3Storage(config config.Config) (*S3Storage, error) {
 	sess, err := session.NewSession(&aws.Config{
 		Region:           aws.String(config.Source.Storage.S3.Region),
 		Endpoint:         aws.String(config.Source.Storage.S3.Endpoint),
@@ -190,7 +191,7 @@ func (s *S3Storage) ListObjects(bucketName, prefix string) <-chan ObjectInfo {
 }
 
 // CreateStorageClient 根据provider创建存储客户端
-func CreateStorageClient(config Config) (StorageInterface, error) {
+func CreateStorageClient(config config.Config) (StorageInterface, error) {
 	switch config.Source.Storage.Provider {
 	case "minio":
 		return NewMinioStorage(config)

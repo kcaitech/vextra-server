@@ -1,4 +1,4 @@
-package main
+package config
 
 // Config 迁移配置结构
 type Config struct {
@@ -72,10 +72,4 @@ type Config struct {
 			Database string `json:"database"`
 		} `json:"mysql"`
 	} `json:"auth"`
-}
-
-// NewWeixinUser 微信用户结构
-type NewWeixinUser struct {
-	UserID  string `json:"user_id" gorm:"primarykey"`
-	UnionID string `json:"union_id" gorm:"unique"`
 }

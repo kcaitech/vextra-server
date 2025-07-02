@@ -1,4 +1,4 @@
-package main
+package storage
 
 import (
 	"encoding/json"
@@ -10,11 +10,12 @@ import (
 	"time"
 
 	autoupdate "kcaitech.com/kcserver/handlers/document"
+	"kcaitech.com/kcserver/scripts/migrate-20250702/config"
 	"kcaitech.com/kcserver/utils/str"
 )
 
 // getOldMedias 获取旧的媒体文件
-func getOldMedias(path string, mediaNames []string, sourceConf Config) ([]autoupdate.Media, error) {
+func getOldMedias(path string, mediaNames []string, sourceConf config.Config) ([]autoupdate.Media, error) {
 	if len(mediaNames) == 0 {
 		log.Printf("No media files to migrate for document %s", path)
 		return []autoupdate.Media{}, nil
@@ -64,7 +65,7 @@ func getOldMedias(path string, mediaNames []string, sourceConf Config) ([]autoup
 	return oldMedias, nil
 }
 
-func migrateDocumentStorage(documentId int64, generateApiUrl string, config Config, path string) error {
+func MigrateDocumentStorage(documentId int64, generateApiUrl string, config config.Config, path string) error {
 	const maxRetries = 3
 	const retryDelay = 3 * time.Second
 
@@ -87,7 +88,7 @@ func migrateDocumentStorage(documentId int64, generateApiUrl string, config Conf
 	return fmt.Errorf("failed after %d attempts", maxRetries)
 }
 
-func migrateDocumentStorageOnce(documentId int64, generateApiUrl string, sourceMinioConf Config, path string) error {
+func migrateDocumentStorageOnce(documentId int64, generateApiUrl string, sourceMinioConf config.Config, path string) error {
 	// var generateApiUrl = "http://192.168.0.131:8088/generate" // 旧版本更新服务地址
 	documentIdStr := str.IntToString(documentId)
 	resp, err := http.Get(generateApiUrl + "?documentId=" + documentIdStr)

@@ -6,7 +6,7 @@ import { z } from 'zod';
 // 首先定义 DocumentListItemSchema
 export const DocumentListItemSchema = z.object({
     document: DocumentSchema,
-    user: UserInfoSchema,
+    user: UserInfoSchema.optional(),
     team: TeamInfoSchema.nullable(),
     project: ProjectInfoSchema.nullable(),
     document_favorites: z.object({
