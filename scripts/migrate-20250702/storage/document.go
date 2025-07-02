@@ -156,7 +156,7 @@ func migrateDocumentStorageOnce(documentId int64, generateApiUrl string, sourceM
 		mediasPtr = &oldMedias
 	}
 
-	autoupdate.UpdateDocumentData(documentIdStr, version.LastCmdVerId, &version, mediasPtr, &response)
+	autoupdate.UpdateDocumentData(documentIdStr, "0", &version, mediasPtr, &response)
 	if response.Status != autoupdate.ResponseStatusSuccess {
 		log.Println("auto update failed", response.Message)
 		return errors.New("auto update failed")
