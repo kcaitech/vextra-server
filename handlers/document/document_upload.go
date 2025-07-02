@@ -215,7 +215,21 @@ func UploadDocumentData(header *Header, uploadData *UploadData, medias *[]Media,
 	}
 	documentSize += uploadData.MediasSize
 
-	review(&newDocument, uploadData, docPath, pages, medias)
+	var _medias []Media // 审核时需要
+	for _, mediaName := range uploadData.MediaNames {
+		mediaPath := docPath + "/medias/" + mediaName
+		mediaData, err := services.GetStorageClient().Bucket.GetObject(mediaPath)
+		if err != nil {
+			log.Printf("获取媒体文件 %s 失败: %v", mediaName, err)
+			continue
+		}
+		_medias = append(_medias, Media{
+			Name:    mediaName,
+			Content: &mediaData,
+		})
+	}
+
+	review(&newDocument, uploadData, docPath, pages, &_medias)
 
 	uploadWaitGroup.Wait()
 
