@@ -99,15 +99,6 @@ func main() {
 		log.Fatalf("Error reading config file: %v", err)
 	}
 
-	// 调试：打印存储配置信息
-	log.Printf("配置加载成功，存储配置详情：")
-	log.Printf("Provider: %s", conf.Storage.Provider)
-	log.Printf("Minio配置: Endpoint=%s, AccessKeyID=%s, BucketName=%s, AttatchBucketName=%s",
-		conf.Storage.Endpoint,
-		conf.Storage.AccessKeyID,
-		conf.Storage.BucketName,
-		conf.Storage.AttatchBucketName)
-
 	err = services.InitAllBaseServices(conf)
 	if err != nil {
 		log.Fatalf("Error initializing services: %v", err)
@@ -133,7 +124,6 @@ func main() {
 		config.Source.MySQL.Port,
 		config.Source.MySQL.Database,
 	)
-	log.Println("sourceDSN: ", sourceDSN)
 	sourceDB, err := gorm.Open(mysql.Open(sourceDSN), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	})
@@ -149,7 +139,6 @@ func main() {
 		config.Auth.MySQL.Port,
 		config.Auth.MySQL.Database,
 	)
-	log.Println("authDSN: ", authDSN)
 	authDB, err := gorm.Open(mysql.Open(authDSN), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	})
@@ -206,11 +195,9 @@ func main() {
 		config.Target.MySQL.Port,
 		config.Target.MySQL.Database,
 	)
-	log.Println("targetDSN: ", targetDSN)
 	targetDB, err := gorm.Open(mysql.Open(targetDSN), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Info),
 	})
-	log.Println("targetDB: ", targetDB)
 	if err != nil {
 		log.Fatalf("Error connecting to target database: %v", err)
 	}
@@ -232,7 +219,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error connecting to target MongoDB: %v", err)
 	}
-	log.Println("targetMongo: ", targetMongo, sourceMongo)
 
 	// 开始迁移
 	log.Println("Starting migration...")
