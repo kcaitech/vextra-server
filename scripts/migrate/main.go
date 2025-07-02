@@ -99,6 +99,15 @@ func main() {
 		log.Fatalf("Error reading config file: %v", err)
 	}
 
+	// 调试：打印存储配置信息
+	log.Printf("配置加载成功，存储配置详情：")
+	log.Printf("Provider: %s", conf.Storage.Provider)
+	log.Printf("Minio配置: Endpoint=%s, AccessKeyID=%s, BucketName=%s, AttatchBucketName=%s",
+		conf.Storage.Endpoint,
+		conf.Storage.AccessKeyID,
+		conf.Storage.BucketName,
+		conf.Storage.AttatchBucketName)
+
 	err = services.InitAllBaseServices(conf)
 	if err != nil {
 		log.Fatalf("Error initializing services: %v", err)
