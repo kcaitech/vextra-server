@@ -24,7 +24,7 @@ func GetUserReceiveSharesList(c *gin.Context) {
 	}
 	cursor := c.Query("cursor")
 	limit := utils.QueryInt(c, "limit", 20)
-	
+
 	sharesList, hasMore := services.NewDocumentService().FindSharesByUserIdWithCursor(userId, cursor, limit)
 	// 获取用户信息
 	userIds := make([]string, 0)

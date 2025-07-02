@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/go-redsync/redsync/v4"
@@ -49,20 +50,14 @@ type ExFromJson struct {
 	DocumentMeta Data            `json:"document_meta"`
 	Pages        json.RawMessage `json:"pages"`
 	MediaNames   []string        `json:"media_names"`
-
-	// FreeSymbols         json.RawMessage `json:"freesymbols"` // 这个在DocumentMeta里
-	// MediasSize          uint64          `json:"medias_size"`
-	// DocumentText        string          `json:"document_text"`
-	// PageImageBase64List []string        `json:"page_image_base64_list"`
 }
 
 type VersionResp struct {
-	// DocumentInfo DocumentInfo `json:"documentInfo"`
 	LastCmdVerId string     `json:"lastCmdVerId"`
 	DocumentData ExFromJson `json:"documentData"`
 	DocumentText string     `json:"documentText"`
 	MediasSize   uint64     `json:"mediasSize"`
-	PageSvgs     []string   `json:"pageSvgs"`
+	PagePngs     []string   `json:"pages_png_generated"`
 }
 
 func AutoUpdate(documentId string, config *config.Configuration) {
@@ -138,7 +133,18 @@ func AutoUpdate(documentId string, config *config.Configuration) {
 	reqBody := map[string]interface{}{
 		"documentInfo": documentInfo,
 		"cmdItemList":  cmdItemList,
+		"force":        false,
 	}
+
+	reviewClient := services.GetSafereviewClient()
+	if reviewClient != nil { // 需要审查才生成png图片
+		tmpPngDir := config.SafeReview.TmpPngDir + "/" + documentId
+		reqBody["gen_pages_png"] = map[string]interface{}{
+			"tmp_dir": tmpPngDir,
+		}
+		os.MkdirAll(tmpPngDir, 0755)
+	}
+
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
 		log.Println("Failed to marshal request body:", err)
@@ -169,10 +175,6 @@ func AutoUpdate(documentId string, config *config.Configuration) {
 		return
 	}
 
-	// log.Println("auto update document, start svg2png")
-	// svg2png
-	// pagePngs := svg2png(version.PageSvgs, config.Svg2Png.Url)
-
 	log.Println("auto update document, start upload data", documentId)
 	// upload document data
 	header := Header{
@@ -180,16 +182,7 @@ func AutoUpdate(documentId string, config *config.Configuration) {
 		LastCmdVerId: version.LastCmdVerId,
 	}
 	response := Response{}
-	data := UploadData{
-		DocumentMeta: Data(version.DocumentData.DocumentMeta),
-		Pages:        version.DocumentData.Pages,
-		// FreeSymbols        : version.DocumentData.DocumentMeta.
-		MediaNames:   version.DocumentData.MediaNames,
-		MediasSize:   version.MediasSize,
-		DocumentText: version.DocumentText,
-		PageSvgs:     version.PageSvgs,
-	}
-	UploadDocumentData(&header, &data, nil, &response)
+	UploadDocumentData(&header, &version, nil, &response)
 
 	if response.Status != ResponseStatusSuccess {
 		log.Println("UploadDocumentData fail")

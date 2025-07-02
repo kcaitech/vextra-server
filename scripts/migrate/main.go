@@ -99,15 +99,6 @@ func main() {
 		log.Fatalf("Error reading config file: %v", err)
 	}
 
-	// 调试：打印存储配置信息
-	log.Printf("配置加载成功，存储配置详情：")
-	log.Printf("Provider: %s", conf.Storage.Provider)
-	log.Printf("Minio配置: Endpoint=%s, AccessKeyID=%s, BucketName=%s, AttatchBucketName=%s",
-		conf.Storage.Minio.Endpoint,
-		conf.Storage.Minio.AccessKeyID,
-		conf.Storage.Minio.BucketName,
-		conf.Storage.Minio.AttatchBucketName)
-
 	err = services.InitAllBaseServices(conf)
 	if err != nil {
 		log.Fatalf("Error initializing services: %v", err)
@@ -1306,13 +1297,7 @@ func migrateDocumentStorageOnce(documentId int64, generateApiUrl string, sourceM
 		return errors.New("请求失败")
 	}
 
-	var version struct {
-		LastCmdVerId string                `json:"lastCmdId"`
-		DocumentData autoupdate.ExFromJson `json:"documentData"`
-		DocumentText string                `json:"documentText"`
-		MediasSize   uint64                `json:"mediasSize"`
-		PageSvgs     []string              `json:"pageSvgs"`
-	}
+	version := autoupdate.VersionResp{}
 	err = json.Unmarshal(body, &version)
 	if err != nil {
 		log.Println(generateApiUrl, "resp", err)
@@ -1333,14 +1318,6 @@ func migrateDocumentStorageOnce(documentId int64, generateApiUrl string, sourceM
 		LastCmdVerId: version.LastCmdVerId,
 	}
 	response := autoupdate.Response{}
-	data := autoupdate.UploadData{
-		DocumentMeta: autoupdate.Data(version.DocumentData.DocumentMeta),
-		Pages:        version.DocumentData.Pages,
-		MediaNames:   version.DocumentData.MediaNames,
-		MediasSize:   version.MediasSize,
-		DocumentText: version.DocumentText,
-		PageSvgs:     version.PageSvgs,
-	}
 
 	// 传递媒体文件到 UploadDocumentData
 	var mediasPtr *[]autoupdate.Media
@@ -1348,7 +1325,7 @@ func migrateDocumentStorageOnce(documentId int64, generateApiUrl string, sourceM
 		mediasPtr = &oldMedias
 	}
 
-	autoupdate.UploadDocumentData(&header, &data, mediasPtr, &response)
+	autoupdate.UploadDocumentData(&header, &version, mediasPtr, &response)
 	if response.Status != autoupdate.ResponseStatusSuccess {
 		log.Println("auto update failed", response.Message)
 		return errors.New("auto update failed")

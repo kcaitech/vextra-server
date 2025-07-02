@@ -34,11 +34,10 @@ func Init() *config.Configuration {
 	configDir := "config/"
 	conf, err := config.LoadYamlFile(configDir + "config.yaml")
 	if err != nil {
-		conf, err = config.LoadJsonFile(configDir + "config.json")
+		fmt.Println("err", err)
+		panic(err)
 	}
-	if err != nil {
-		conf, _ = config.LoadJsonEnv("kcconfig")
-	}
+	fmt.Println("conf", conf)
 
 	// 初始化services
 	err = services.InitAllBaseServices(conf)
