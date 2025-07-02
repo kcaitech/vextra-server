@@ -165,11 +165,11 @@ func main() {
 	// 1. 迁移MySQL数据
 	log.Println("Migrating MySQL data...")
 
+	tables.MigrateDocumentAccessRecord(sourceDB, targetDB, getUserID)
+	tables.MigrateDocumentVersion(sourceDB, targetDB)
 	tables.MigrateDocument(sourceDB, targetDB, getUserID, config)
 	tables.MigrateDocumentPermissionRequests(sourceDB, targetDB, getUserID)
-	tables.MigrateDocumentVersion(sourceDB, targetDB)
 	tables.MigrateDocumentPermission(sourceDB, targetDB)
-	tables.MigrateDocumentAccessRecord(sourceDB, targetDB, getUserID)
 	tables.MigrateDocumentFavorites(sourceDB, targetDB, getUserID)
 	tables.MigrateTeam(sourceDB, targetDB)
 	tables.MigrateTeamMember(sourceDB, targetDB, getUserID)

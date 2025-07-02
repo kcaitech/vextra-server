@@ -39,10 +39,10 @@ type Response struct {
 	Data    Data               `json:"data,omitempty"`
 }
 
-type PageSvg struct {
-	Name    string
-	Content string
-}
+// type PageSvg struct {
+// 	Name    string
+// 	Content string
+// }
 
 type Media struct {
 	Name    string
@@ -72,64 +72,7 @@ func compressPutObjectByte(path string, content []byte, _storage *storage.Storag
 	return _storage.Bucket.PutObjectByte(path, content, "")
 }
 
-func UploadDocumentData(header *Header, uploadData *VersionResp, medias *[]Media, resp *Response) {
-
-	userId := header.UserId
-	documentId := (header.DocumentId)
-	projectId := (header.ProjectId)
-	lastCmdVerId := header.LastCmdVerId
-	if (userId == "" && documentId == "") || (userId != "" && documentId != "") || (documentId != "" && lastCmdVerId == "") { // userId和documentId必须只传一个 // todo这不对吧，要鉴权
-		resp.Message = "参数错误"
-		log.Println("参数错误", userId, documentId)
-		return
-	}
-	isFirstUpload := documentId == ""
-	var teamId string
-	if projectId != "" {
-		projectService := services.NewProjectService()
-		project := models.Project{}
-		if err := projectService.GetById(projectId, &project); err != nil {
-			resp.Message = "项目不存在"
-			return
-		}
-		teamId = project.TeamId
-		permType, err := projectService.GetProjectPermTypeByForUser(projectId, userId)
-		if err != nil || permType == nil {
-			log.Println("获取项目权限失败", err)
-		}
-		if err != nil || permType == nil || *permType < models.ProjectPermTypeEditable {
-			resp.Message = "无权限"
-			return
-		}
-	}
-
-	// 获取文档信息
-	documentService := services.NewDocumentService()
-
-	docPath := ""
-	docId := ""
-	var document = models.Document{}
-	if !isFirstUpload {
-		if documentService.GetById(documentId, &document) != nil {
-			resp.Message = "文档不存在"
-			return
-		}
-		docPath = document.Path
-		docId = document.Id
-	} else {
-		document_id := uuid.NewString()
-		docPath = document_id
-		docId = document_id
-	}
-
-	newDocument := models.Document{
-		Id:        docId,
-		UserId:    userId,
-		Path:      docPath,
-		DocType:   models.DocTypeShareable,
-		TeamId:    teamId,
-		ProjectId: projectId,
-	}
+func uploadDocumentData(document *models.Document, lastCmdVerId string, uploadData *VersionResp, medias *[]Media, resp *Response) {
 
 	documentSize := uint64(0)
 
@@ -154,7 +97,7 @@ func UploadDocumentData(header *Header, uploadData *VersionResp, medias *[]Media
 	// 上传pages目录
 	for i := 0; i < len(pages); i++ {
 		pageId := pages[i].Id
-		pagePath := docPath + "/pages/" + pageId + ".json"
+		pagePath := document.Path + "/pages/" + pageId + ".json"
 		pageContent := pagesRaw[i]
 		documentSize += uint64(len(pageContent))
 		uploadWaitGroup.Add(1)
@@ -174,7 +117,7 @@ func UploadDocumentData(header *Header, uploadData *VersionResp, medias *[]Media
 	if medias != nil { // 非首次上传即版本更新，不会有medias
 		// upload medias
 		for _, media := range *medias {
-			path := docPath + "/medias/" + media.Name
+			path := document.Path + "/medias/" + media.Name
 			if media.Content == nil {
 				continue
 			}
@@ -192,7 +135,7 @@ func UploadDocumentData(header *Header, uploadData *VersionResp, medias *[]Media
 	}
 	documentSize += uploadData.MediasSize
 
-	review(&newDocument, uploadData, docPath, pages, medias)
+	review(document, uploadData, document.Path, pages, medias)
 
 	uploadWaitGroup.Wait()
 
@@ -217,7 +160,7 @@ func UploadDocumentData(header *Header, uploadData *VersionResp, medias *[]Media
 		log.Println("document-meta.json格式错误", err)
 		return
 	}
-	path := docPath + "/document-meta.json"
+	path := document.Path + "/document-meta.json"
 	_storage := services.GetStorageClient()
 	putObjectResult, err := compressPutObjectByte(path, documentMetaStr, _storage)
 	if err != nil {
@@ -225,61 +168,67 @@ func UploadDocumentData(header *Header, uploadData *VersionResp, medias *[]Media
 		log.Println("document-meta.json上传错误", err)
 		return
 	}
-	documentVersionId := putObjectResult.VersionID
+	// documentVersionId := putObjectResult.VersionID
 	documentSize += uint64(len(uploadData.DocumentData.DocumentMeta))
 
+	document.Size = documentSize
+	document.VersionId = putObjectResult.VersionID
+}
+
+// 更新文档数据
+func UpdateDocumentData(documentId string, lastCmdVerId string, uploadData *VersionResp, medias *[]Media, resp *Response) {
+
+	// 获取文档信息
+	documentService := services.NewDocumentService()
+
+	var document = models.Document{}
+	if documentService.GetById(documentId, &document) != nil {
+		resp.Message = "文档不存在"
+		return
+	}
+
+	// uploadData.DocumentData.DocumentMeta["lastCmdVer"] = str.DefaultToInt(lastCmdVerId, 0)
+
+	uploadDocumentData(&document, lastCmdVerId, uploadData, medias, resp)
+	if resp.Message != "" {
+		return
+	}
+
 	// 获取文档名称
-	documentName, _ := uploadData.DocumentData.DocumentMeta["name"].(string)
+	// documentName, _ := uploadData.DocumentData.DocumentMeta["name"].(string)
 	documentAccessRecordService := services.NewDocumentAccessRecordService()
 	// 创建文档记录和历史记录
 	now := (time.Now())
-	if isFirstUpload {
-		newDocument.Name = documentName
-		newDocument.Size = documentSize
-		newDocument.VersionId = documentVersionId
-		newDocument.Id = docId
-		if err := documentService.Create(&newDocument); err != nil {
-			resp.Message = "对象上传错误."
-			log.Println("对象上传错误2", err)
-			return
-		}
-		documentId = newDocument.Id
+
+	// document.Size = documentSize
+	// document.VersionId = documentVersionId
+	if _, err := documentService.UpdatesById(documentId, &document); err != nil {
+		resp.Message = "对象上传错误"
+		log.Println("对象上传错误3", err)
+		return
+	}
+	var documentAccessRecord = models.DocumentAccessRecord{}
+	err := documentAccessRecordService.Get(&documentAccessRecord, "user_id = ? and document_id = ?", document.UserId, documentId)
+	if err != nil && !errors.Is(err, services.ErrRecordNotFound) {
+		resp.Message = "对象上传错误"
+		log.Println("对象上传错误4", err)
+		return
+	}
+	if errors.Is(err, services.ErrRecordNotFound) {
 		_ = documentAccessRecordService.Create(&models.DocumentAccessRecord{
-			UserId:         userId,
+			UserId:         document.UserId,
 			DocumentId:     documentId,
 			LastAccessTime: now,
 		})
 	} else {
-		document.Size = documentSize
-		document.VersionId = documentVersionId
-		if _, err := documentService.UpdatesById(documentId, &document); err != nil {
-			resp.Message = "对象上传错误"
-			log.Println("对象上传错误3", err)
-			return
-		}
-		var documentAccessRecord = models.DocumentAccessRecord{}
-		err := documentAccessRecordService.Get(&documentAccessRecord, "user_id = ? and document_id = ?", userId, documentId)
-		if err != nil && !errors.Is(err, services.ErrRecordNotFound) {
-			resp.Message = "对象上传错误"
-			log.Println("对象上传错误4", err)
-			return
-		}
-		if errors.Is(err, services.ErrRecordNotFound) {
-			_ = documentAccessRecordService.Create(&models.DocumentAccessRecord{
-				UserId:         userId,
-				DocumentId:     documentId,
-				LastAccessTime: now,
-			})
-		} else {
-			documentAccessRecord.LastAccessTime = now
-			_, _ = documentAccessRecordService.UpdatesById(documentAccessRecord.Id, &documentAccessRecord)
-		}
+		documentAccessRecord.LastAccessTime = now
+		_, _ = documentAccessRecordService.UpdatesById(documentAccessRecord.Id, &documentAccessRecord)
 	}
 
 	// 创建文档版本记录
 	if err := documentService.DocumentVersionService.Create(&models.DocumentVersion{
 		DocumentId:   documentId,
-		VersionId:    documentVersionId,
+		VersionId:    document.VersionId,
 		LastCmdVerId: uint(str.DefaultToInt(lastCmdVerId, 0)),
 	}); err != nil {
 		resp.Message = "对象上传错误"
@@ -290,6 +239,91 @@ func UploadDocumentData(header *Header, uploadData *VersionResp, medias *[]Media
 	resp.Status = ResponseStatusSuccess
 	resp.Data = Data{
 		"document_id": (documentId),
-		"version_id":  documentVersionId,
+		"version_id":  document.VersionId,
+	}
+}
+
+// 上传新文档数据
+func UploadNewDocumentData(userId string, projectId string, uploadData *VersionResp, medias *[]Media, resp *Response) {
+
+	if userId == "" {
+		resp.Message = "userId不能为空"
+		return
+	}
+	var teamId string
+	if projectId != "" {
+		projectService := services.NewProjectService()
+		project := models.Project{}
+		if err := projectService.GetById(projectId, &project); err != nil {
+			resp.Message = "项目不存在"
+			return
+		}
+		teamId = project.TeamId
+		permType, err := projectService.GetProjectPermTypeByForUser(projectId, userId)
+		if err != nil || permType == nil {
+			log.Println("获取项目权限失败", err)
+		}
+		if err != nil || permType == nil || *permType < models.ProjectPermTypeEditable {
+			resp.Message = "无权限"
+			return
+		}
+	}
+
+	// 获取文档信息
+	documentService := services.NewDocumentService()
+
+	document_id := uuid.NewString()
+
+	newDocument := models.Document{
+		Id:        document_id,
+		UserId:    userId,
+		Path:      document_id,
+		DocType:   models.DocTypeShareable,
+		TeamId:    teamId,
+		ProjectId: projectId,
+	}
+
+	// uploadData.DocumentData.DocumentMeta["lastCmdVer"] = 0
+
+	uploadDocumentData(&newDocument, "0", uploadData, medias, resp)
+	if resp.Message != "" {
+		return
+	}
+
+	// 获取文档名称
+	documentName, _ := uploadData.DocumentData.DocumentMeta["name"].(string)
+	documentAccessRecordService := services.NewDocumentAccessRecordService()
+	// 创建文档记录和历史记录
+	now := (time.Now())
+
+	newDocument.Name = documentName
+
+	if err := documentService.Create(&newDocument); err != nil {
+		resp.Message = "对象上传错误."
+		log.Println("对象上传错误2", err)
+		return
+	}
+
+	_ = documentAccessRecordService.Create(&models.DocumentAccessRecord{
+		UserId:         userId,
+		DocumentId:     newDocument.Id,
+		LastAccessTime: now,
+	})
+
+	// 创建文档版本记录
+	if err := documentService.DocumentVersionService.Create(&models.DocumentVersion{
+		DocumentId:   newDocument.Id,
+		VersionId:    newDocument.VersionId,
+		LastCmdVerId: uint(0),
+	}); err != nil {
+		resp.Message = "对象上传错误"
+		log.Println("对象上传错误5", err)
+		return
+	}
+
+	resp.Status = ResponseStatusSuccess
+	resp.Data = Data{
+		"document_id": (newDocument.Id),
+		"version_id":  newDocument.VersionId,
 	}
 }

@@ -177,12 +177,12 @@ func AutoUpdate(documentId string, config *config.Configuration) {
 
 	log.Println("auto update document, start upload data", documentId)
 	// upload document data
-	header := Header{
-		DocumentId:   documentId,
-		LastCmdVerId: version.LastCmdVerId,
-	}
+	// header := Header{
+	// 	DocumentId:   documentId,
+	// 	LastCmdVerId: version.LastCmdVerId,
+	// }
 	response := Response{}
-	UploadDocumentData(&header, &version, nil, &response)
+	UpdateDocumentData(documentId, version.LastCmdVerId, &version, nil, &response)
 
 	if response.Status != ResponseStatusSuccess {
 		log.Println("UploadDocumentData fail")

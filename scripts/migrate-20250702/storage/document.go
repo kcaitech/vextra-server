@@ -144,10 +144,10 @@ func migrateDocumentStorageOnce(documentId int64, generateApiUrl string, sourceM
 
 	log.Println("auto update document, start upload data", documentId)
 	// upload document data
-	header := autoupdate.Header{
-		DocumentId:   documentIdStr,
-		LastCmdVerId: version.LastCmdVerId,
-	}
+	// header := autoupdate.Header{
+	// 	DocumentId:   documentIdStr,
+	// 	LastCmdVerId: version.LastCmdVerId,
+	// }
 	response := autoupdate.Response{}
 
 	// 传递媒体文件到 UploadDocumentData
@@ -156,7 +156,7 @@ func migrateDocumentStorageOnce(documentId int64, generateApiUrl string, sourceM
 		mediasPtr = &oldMedias
 	}
 
-	autoupdate.UploadDocumentData(&header, &version, mediasPtr, &response)
+	autoupdate.UpdateDocumentData(documentIdStr, version.LastCmdVerId, &version, mediasPtr, &response)
 	if response.Status != autoupdate.ResponseStatusSuccess {
 		log.Println("auto update failed", response.Message)
 		return errors.New("auto update failed")
