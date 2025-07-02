@@ -322,7 +322,7 @@ func UploadNewDocumentData(userId string, projectId string, uploadData *VersionR
 		return
 	}
 
-	resp.Status = ResponseStatusSuccess
+	resp.Code = http.StatusOK
 	resp.Data = Data{
 		"document_id": (newDocument.Id),
 		"version_id":  newDocument.VersionId,
