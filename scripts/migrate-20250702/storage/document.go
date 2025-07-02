@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	autoupdate "kcaitech.com/kcserver/handlers/document"
+	autoupdate "kcaitech.com/kcserver/handlers/common"
 	"kcaitech.com/kcserver/scripts/migrate-20250702/config"
 	"kcaitech.com/kcserver/utils/str"
 )
@@ -156,8 +156,8 @@ func migrateDocumentStorageOnce(documentId int64, generateApiUrl string, sourceM
 		mediasPtr = &oldMedias
 	}
 
-	autoupdate.UpdateDocumentData(documentIdStr, version.LastCmdVerId, &version, mediasPtr, &response)
-	if response.Status != autoupdate.ResponseStatusSuccess {
+	autoupdate.UpdateDocumentData(documentIdStr, "0", &version, mediasPtr, &response)
+	if response.Code != http.StatusOK {
 		log.Println("auto update failed", response.Message)
 		return errors.New("auto update failed")
 	}
