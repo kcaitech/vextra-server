@@ -58,6 +58,7 @@ type VersionResp struct {
 	DocumentText string     `json:"documentText"`
 	MediasSize   uint64     `json:"mediasSize"`
 	PagePngs     []string   `json:"pages_png_generated"`
+	TmpPngDir    string     `json:"tmp_png_dir"`
 }
 
 func AutoUpdate(documentId string, config *config.Configuration) {
@@ -136,9 +137,9 @@ func AutoUpdate(documentId string, config *config.Configuration) {
 		// "force":        false,
 	}
 
+	tmpPngDir := config.SafeReview.TmpPngDir + "/" + documentId
 	reviewClient := services.GetSafereviewClient()
 	if reviewClient != nil { // 需要审查才生成png图片
-		tmpPngDir := config.SafeReview.TmpPngDir + "/" + documentId
 		reqBody["gen_pages_png"] = map[string]interface{}{
 			"tmp_dir": tmpPngDir,
 		}
@@ -174,6 +175,8 @@ func AutoUpdate(documentId string, config *config.Configuration) {
 		log.Println(generateApiUrl, "resp", err)
 		return
 	}
+
+	version.TmpPngDir = tmpPngDir
 
 	log.Println("auto update document, start upload data", documentId)
 	// upload document data

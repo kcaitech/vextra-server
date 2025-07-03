@@ -22,7 +22,7 @@ import (
 
 func reviewgo(newDocument models.Document, uploadData *VersionResp, docPath string, pages []struct {
 	Id string `json:"id"`
-}, medias *[]Media, tmpPngDir string) {
+}, medias *[]Media) {
 	reviewClient := services.GetSafereviewClient()
 	if reviewClient == nil {
 		return
@@ -68,9 +68,9 @@ func reviewgo(newDocument models.Document, uploadData *VersionResp, docPath stri
 			path := docPath + "/page_image/" + page.Id + ".png"
 
 			// 读取png文件
-			pngBytes, err := os.ReadFile(tmpPngDir + "/" + pagePng)
+			pngBytes, err := os.ReadFile(uploadData.TmpPngDir + "/" + pagePng)
 			if err != nil {
-				log.Println("读取png文件失败", err, tmpPngDir+"/"+pagePng)
+				log.Println("读取png文件失败", err, uploadData.TmpPngDir+"/"+pagePng)
 				continue
 			}
 
@@ -93,7 +93,7 @@ func reviewgo(newDocument models.Document, uploadData *VersionResp, docPath stri
 		}
 	}
 	// 清空临时目录
-	os.RemoveAll(tmpPngDir)
+	os.RemoveAll(uploadData.TmpPngDir)
 
 	// medias
 	if medias != nil && len(*medias) > 0 {
@@ -140,8 +140,7 @@ func review(newDocument *models.Document, uploadData *VersionResp, docPath strin
 	if (len(uploadData.PagePngs) == 0) && uploadData.DocumentText == "" && (medias == nil || len(*medias) == 0) {
 		return
 	}
-	tmpPngDir := services.GetConfig().SafeReview.TmpPngDir + "/" + newDocument.Id
-	go reviewgo(*newDocument, uploadData, docPath, pages, medias, tmpPngDir)
+	go reviewgo(*newDocument, uploadData, docPath, pages, medias)
 }
 
 // ReReviewDocument 重新审核文档接口
@@ -226,9 +225,8 @@ func reReviewDocumentContent(document *models.Document) error {
 	}
 
 	// 生成UUID用于临时目录
-	var tmpPngDir string
 	tmpPngDirUUID := uuid.New().String()
-	tmpPngDir = config.SafeReview.TmpPngDir + "/" + tmpPngDirUUID
+	tmpPngDir := config.SafeReview.TmpPngDir + "/" + tmpPngDirUUID
 	reqBody["gen_pages_png"] = map[string]interface{}{
 		"tmp_dir": tmpPngDir,
 	}
@@ -291,8 +289,10 @@ func reReviewDocumentContent(document *models.Document) error {
 		})
 	}
 
+	documentData.TmpPngDir = tmpPngDir
+
 	// 调用审核函数，传递临时目录路径
-	reviewgo(*document, &documentData, docPath, pages, &medias, tmpPngDir)
+	reviewgo(*document, &documentData, docPath, pages, &medias)
 	return nil
 }
 
