@@ -117,10 +117,10 @@ func uploadDocumentData(document *models.Document, lastCmdVerId string, uploadDa
 	if medias != nil { // 非首次上传即版本更新，不会有medias
 		// upload medias
 		for _, media := range *medias {
-			path := document.Path + "/medias/" + media.Name
 			if media.Content == nil {
 				continue
 			}
+			path := document.Path + "/medias/" + media.Name
 			uploadWaitGroup.Add(1)
 			go func(path string, media []byte) {
 				defer uploadWaitGroup.Done()
