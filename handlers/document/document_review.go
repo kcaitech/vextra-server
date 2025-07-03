@@ -206,7 +206,8 @@ func reReviewDocumentContent(document *models.Document) error {
 
 	// 获取命令列表（从头开始获取所有命令用于重新审核）
 	cmdService := services.GetCmdService()
-	cmdItemList, err := cmdService.GetCmdItemsFromStart(document.Id, 1)
+	lastCmdId := documentInfo.LastCmdId + 1
+	cmdItemList, err := cmdService.GetCmdItemsFromStart(document.Id, lastCmdId)
 	if err != nil {
 		return fmt.Errorf("获取命令列表失败: %w", err)
 	}
@@ -215,7 +216,6 @@ func reReviewDocumentContent(document *models.Document) error {
 	reqBody := map[string]interface{}{
 		"documentInfo": documentInfo,
 		"cmdItemList":  cmdItemList,
-		"force":        true, // 强制重新生成以获取完整内容
 	}
 
 	// 检查是否需要生成PNG图片用于审核

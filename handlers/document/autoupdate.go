@@ -133,7 +133,7 @@ func AutoUpdate(documentId string, config *config.Configuration) {
 	reqBody := map[string]interface{}{
 		"documentInfo": documentInfo,
 		"cmdItemList":  cmdItemList,
-		"force":        false,
+		// "force":        false,
 	}
 
 	reviewClient := services.GetSafereviewClient()
