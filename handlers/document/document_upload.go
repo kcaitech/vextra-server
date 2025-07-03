@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
+	"kcaitech.com/kcserver/utils"
 	"kcaitech.com/kcserver/utils/my_map"
 
 	"kcaitech.com/kcserver/models"
@@ -272,7 +272,13 @@ func UploadNewDocumentData(userId string, projectId string, uploadData *VersionR
 	// 获取文档信息
 	documentService := services.NewDocumentService()
 
-	document_id := uuid.NewString()
+	// 还是换成base62,与用户id、团队id等保持一致
+	document_id, err := utils.GenerateBase62ID()
+	if err != nil {
+		resp.Message = "生成文档id失败"
+		log.Println("生成文档id失败", err)
+		return
+	}
 
 	newDocument := models.Document{
 		Id:        document_id,
