@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"kcaitech.com/kcserver/common/response"
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/providers/safereview"
@@ -21,7 +22,7 @@ import (
 
 func reviewgo(newDocument models.Document, uploadData *VersionResp, docPath string, pages []struct {
 	Id string `json:"id"`
-}, medias *[]Media) {
+}, medias *[]Media, tmpPngDir string) {
 	reviewClient := services.GetSafereviewClient()
 	if reviewClient == nil {
 		return
@@ -47,7 +48,15 @@ func reviewgo(newDocument models.Document, uploadData *VersionResp, docPath stri
 			})
 		}
 	}
-	tmp_dir := services.GetConfig().SafeReview.TmpPngDir + "/" + newDocument.Id
+
+	// 处理临时目录路径
+	var tmp_dir string
+	if tmpPngDir != "" {
+		tmp_dir = tmpPngDir
+	} else {
+		tmp_dir = services.GetConfig().SafeReview.TmpPngDir + "/" + newDocument.Id
+	}
+
 	// review pages
 	if len(uploadData.PagePngs) > 0 {
 		for _, page := range pages {
@@ -139,7 +148,7 @@ func review(newDocument *models.Document, uploadData *VersionResp, docPath strin
 	if (len(uploadData.PagePngs) == 0) && uploadData.DocumentText == "" && (medias == nil || len(*medias) == 0) {
 		return
 	}
-	go reviewgo(*newDocument, uploadData, docPath, pages, medias)
+	go reviewgo(*newDocument, uploadData, docPath, pages, medias, "")
 }
 
 // ReReviewDocument 重新审核文档接口
@@ -153,6 +162,11 @@ func ReReviewDocument(c *gin.Context) {
 	documentId := c.Query("doc_id")
 	if documentId == "" {
 		response.BadRequest(c, "参数错误：doc_id")
+		return
+	}
+
+	reviewClient := services.GetSafereviewClient()
+	if reviewClient == nil {
 		return
 	}
 
@@ -218,15 +232,14 @@ func reReviewDocumentContent(document *models.Document) error {
 		"cmdItemList":  cmdItemList,
 	}
 
-	// 检查是否需要生成PNG图片用于审核
-	reviewClient := services.GetSafereviewClient()
-	if reviewClient != nil {
-		tmpPngDir := config.SafeReview.TmpPngDir + "/" + document.Id
-		reqBody["gen_pages_png"] = map[string]interface{}{
-			"tmp_dir": tmpPngDir,
-		}
-		os.MkdirAll(tmpPngDir, 0755)
+	// 生成UUID用于临时目录
+	var tmpPngDir string
+	tmpPngDirUUID := uuid.New().String()
+	tmpPngDir = config.SafeReview.TmpPngDir + "/" + tmpPngDirUUID
+	reqBody["gen_pages_png"] = map[string]interface{}{
+		"tmp_dir": tmpPngDir,
 	}
+	os.MkdirAll(tmpPngDir, 0755)
 
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
@@ -285,8 +298,8 @@ func reReviewDocumentContent(document *models.Document) error {
 		})
 	}
 
-	// 调用审核函数
-	reviewgo(*document, &documentData, docPath, pages, &medias)
+	// 调用审核函数，传递临时目录路径
+	reviewgo(*document, &documentData, docPath, pages, &medias, tmpPngDir)
 	return nil
 }
 
