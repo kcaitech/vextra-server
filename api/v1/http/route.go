@@ -2,6 +2,8 @@ package http
 
 import (
 	"context"
+	"net/http"
+	"strings"
 
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/contrib/gzip"
@@ -21,13 +23,17 @@ func LoadRoutes(router *gin.Engine) {
 	// 如果不是直接使用，不使用noroute，不然代理不好处理错误路径
 	// 未知的路由交由前端vue router处理
 	config := services.GetConfig()
-	if config.DefaultRoute {
-		router.NoRoute(func(c *gin.Context) {
-			// 设置缓存时间为15分钟
-			c.Header("Cache-Control", "public, max-age=900")
-			c.File("/app/html/index.html")
-		})
-	}
+	// if config.DefaultRoute {
+	router.NoRoute(func(c *gin.Context) {
+		if c.Request.URL.Path == "/api" || strings.HasPrefix(c.Request.URL.Path, "/api/") {
+			c.JSON(http.StatusNotFound, gin.H{"error": "auth endpoint not found"})
+			return
+		}
+		// 设置缓存时间为15分钟
+		c.Header("Cache-Control", "public, max-age=900")
+		c.File("/app/html/index.html")
+	})
+	// }
 
 	if config.DetailedLog {
 		router.Use(middlewares.AccessDetailedLogMiddleware())

@@ -15,7 +15,7 @@ func loadLoginRoutes(api *gin.RouterGroup) {
 	router := api.Group("/auth")
 	router.GET("/login_url", func(c *gin.Context) {
 		config := services.GetConfig()
-		url := config.AuthServerURL + "/login?redirect_url=" + config.AuthCallbackURL + "&client_id=" + config.AuthClientID + "&state=" + uuid.New().String()
+		url := config.AuthServer.URL + "/login?redirect_url=" + config.AuthServer.CallbackURL + "&client_id=" + config.AuthServer.ClientID + "&state=" + uuid.New().String()
 		response.Success(c, map[string]any{
 			"url": url,
 		})
