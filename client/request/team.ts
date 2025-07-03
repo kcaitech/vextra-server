@@ -201,7 +201,7 @@ const ProjectNoticeResponseSchema = BaseResponseSchema.extend({
     data: z.array(z.object({
         request: ProjectRequestSchema,
         project: ProjectInfoSchema,
-        approver: UserInfoSchema
+        approver: UserInfoSchema.optional()
     }))
 })
 
@@ -213,7 +213,7 @@ const TeamNoticeResponseSchema = BaseResponseSchema.extend({
     data: z.array(z.object({
         request: TeamRequestSchema,
         team: TeamInfoSchema,
-        approver: UserInfoSchema
+        approver: UserInfoSchema.optional()
     }))
 })
 
