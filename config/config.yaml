@@ -1,34 +1,27 @@
 db:
   user: root
-  password: kKEIjksvnOOIjdZ6rtzE
-  host: localhost
-  port: 3307
+  password: password
+  host: 192.168.0.125
+  port: 3306
   database: kcserver
   charset: utf8mb4
 
 mongo:
-  url: mongodb://root:jKKsinkjilKKLSW@localhost:27017
+  url: mongodb://root:jKKsinkjilKKLSW@192.168.0.125:27017
   db: kcserver
 
 redis:
-  addr: localhost:6379
+  addr: 192.168.0.125:6379
   password: kcserver
   db: 0
 
 storage_public_url:
-  document: http://localhost:9000
-  attatch: http://localhost:9000/attatch
-
-safe_review:
-  provider: baidu
-  baidu:
-    appId: 44042444
-    apiKey: skYZWZolIBpo4j4olXzNRUKD
-    secretKey: H5KUEgVaO08I3tDPjGp9m4LqdsKcOh40
+  document: http://document.test.vextra.cn
+  attatch: http://attatch.test.vextra.cn
 
 storage:
   provider: minio
-  endpoint: "localhost:9000"
+  endpoint: "192.168.0.125:9000"
   region: "zhuhai-1"
   accessKeyID: "59L3pDWuk9oLQWIgytCI"
   secretAccessKey: "GmwAzetY1L0jU4pUAqpO7RJGIsG7k3gozVH6whoJ"
@@ -64,7 +57,7 @@ doc_update_server:
   min_cmd_count: 1
 
 default_route: false
-detailed_log: false
+detailed_log: true
 allow_cors: true
 
 auth_server_url: https://account.test.vextra.cn
