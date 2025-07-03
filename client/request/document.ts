@@ -1,6 +1,6 @@
 import { HttpMgr } from "./http"
+import { BaseResponse, BaseResponseSchema, PermType, ProjectInfoSchema, TeamInfoSchema, UserInfoSchema, DocumentInfoSchema as DocumentSchema, LockedInfoSchema } from "./types"
 import { checkRefreshToken } from "./refresh_token";
-import { BaseResponse, BaseResponseSchema, PermType, ProjectInfoSchema, TeamInfoSchema, UserInfoSchema, DocumentInfoSchema as DocumentSchema } from "./types"
 import { z } from 'zod';
 
 // 首先定义 DocumentListItemSchema
@@ -154,13 +154,6 @@ export const DocumentKeyResponseSchema = BaseResponseSchema.extend({
 
 export type DocumentKeyResponse = z.infer<typeof DocumentKeyResponseSchema>;
 
-export enum LocketType {
-    LockedTypeMedia = 0, // 图片审核不通过
-    LockedTypeText = 1, // 文本审核不通过
-    LockedTypePage = 2, // 页面审核不通过
-    LockedTypeComment = 3, // 评论审核不通过
-}
-
 // 文档信息类型
 export const DocumentInfoSchema1 = z.object({
     document: DocumentSchema,
@@ -192,15 +185,9 @@ export const DocumentInfoSchema1 = z.object({
     })),
     shares_count: z.number(),
     application_count: z.number(),
-    locked_info: z.array(z.object({
-        id: z.string(),
-        document_id: z.string(),
-        created_at: z.string(),
-        locked_reason: z.string(),
-        locked_words: z.string(),
-        locked_type: z.nativeEnum(LocketType),
-        lock_target: z.string(),
-    })).nullable(),
+    locked_info: z.array(
+        LockedInfoSchema
+    ).nullable(),
     user: UserInfoSchema
 });
 
@@ -465,4 +452,13 @@ export class DocumentAPI {
         }
     }
 
+    // 重新审核文档
+    async reReviewDocument(params: { doc_id: string }): Promise<BaseResponse> {
+        return this.http.request({
+            url: `/documents/review`,
+            method: 'post',
+            params: params, 
+        })
+    }
+    
 }

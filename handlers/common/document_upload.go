@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/google/uuid"
+	"kcaitech.com/kcserver/utils"
 	"kcaitech.com/kcserver/utils/my_map"
 
 	"kcaitech.com/kcserver/models"
@@ -118,10 +118,10 @@ func uploadDocumentData(document *models.Document, lastCmdVerId string, uploadDa
 	if medias != nil { // 非首次上传即版本更新，不会有medias
 		// upload medias
 		for _, media := range *medias {
-			path := document.Path + "/medias/" + media.Name
 			if media.Content == nil {
 				continue
 			}
+			path := document.Path + "/medias/" + media.Name
 			uploadWaitGroup.Add(1)
 			go func(path string, media []byte) {
 				defer uploadWaitGroup.Done()
@@ -136,7 +136,24 @@ func uploadDocumentData(document *models.Document, lastCmdVerId string, uploadDa
 	}
 	documentSize += uploadData.MediasSize
 
-	review(document, uploadData, document.Path, pages, medias)
+	var _medias []Media // 审核时需要
+	if medias != nil {
+		_medias = *medias
+	}
+	for _, mediaName := range uploadData.DocumentData.MediaNames {
+		mediaPath := document.Path + "/medias/" + mediaName
+		mediaData, err := services.GetStorageClient().Bucket.GetObject(mediaPath)
+		if err != nil {
+			log.Printf("获取媒体文件 %s 失败: %v", mediaName, err)
+			continue
+		}
+		_medias = append(_medias, Media{
+			Name:    mediaName,
+			Content: &mediaData,
+		})
+	}
+
+	review(document, uploadData, document.Path, pages, &_medias)
 
 	uploadWaitGroup.Wait()
 
@@ -273,7 +290,13 @@ func UploadNewDocumentData(userId string, projectId string, uploadData *VersionR
 	// 获取文档信息
 	documentService := services.NewDocumentService()
 
-	document_id := uuid.NewString()
+	// 还是换成base62,与用户id、团队id等保持一致
+	document_id, err := utils.GenerateBase62ID()
+	if err != nil {
+		resp.Message = "生成文档id失败"
+		log.Println("生成文档id失败", err)
+		return
+	}
 
 	newDocument := models.Document{
 		Id:        document_id,

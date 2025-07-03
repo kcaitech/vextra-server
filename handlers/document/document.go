@@ -159,6 +159,19 @@ func GetUserDocumentInfo(c *gin.Context) {
 		return
 	}
 	locked, _ := docService.GetLocked(documentId)
+
+	// 处理锁定信息中的LockedWords
+	if len(locked) > 0 {
+		_storage := services.GetStorageClient()
+		for i := range locked {
+			item := &locked[i]
+			// 如果是缩略图类型的媒体锁定，设置LockedWords为GetDocumentThumbnail的返回值
+			if item.LockedType == models.LockedTypeMedia && item.LockedTarget == "thumbnail" {
+				item.LockedWords = GetDocumentThumbnail(nil, result.Document.Path, _storage)
+			}
+		}
+	}
+
 	if len(locked) > 0 && result.Document.UserId != userId {
 		common.Resp(c, common.StatusDocumentNotFound, "审核不通过", nil)
 		return

@@ -3,6 +3,7 @@ package http
 import (
 	"github.com/gin-gonic/gin"
 
+	"kcaitech.com/kcserver/handlers/common"
 	handlers "kcaitech.com/kcserver/handlers/document"
 )
 
@@ -26,6 +27,7 @@ func loadDocumentRoutes(api *gin.RouterGroup) {
 	router.POST("/copy", handlers.CopyDocument)                              // 复制文档
 	router.GET("/resource", handlers.GetResourceDocumentList)                // 获取资源文档列表
 	router.POST("/resource", handlers.CreateResourceDocument)                // 创建资源文档
+	router.POST("/review", common.ReReviewDocument)                          // todo: 重新审核文档
 	// 评论
 	router.GET("/comments", handlers.GetDocumentComment)         // 获取文档评论
 	router.POST("/comment", handlers.PostUserComment)            // 创建评论
