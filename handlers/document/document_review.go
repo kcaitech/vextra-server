@@ -49,14 +49,6 @@ func reviewgo(newDocument models.Document, uploadData *VersionResp, docPath stri
 		}
 	}
 
-	// 处理临时目录路径
-	var tmp_dir string
-	if tmpPngDir != "" {
-		tmp_dir = tmpPngDir
-	} else {
-		tmp_dir = services.GetConfig().SafeReview.TmpPngDir + "/" + newDocument.Id
-	}
-
 	// review pages
 	if len(uploadData.PagePngs) > 0 {
 		for _, page := range pages {
@@ -76,9 +68,9 @@ func reviewgo(newDocument models.Document, uploadData *VersionResp, docPath stri
 			path := docPath + "/page_image/" + page.Id + ".png"
 
 			// 读取png文件
-			pngBytes, err := os.ReadFile(tmp_dir + "/" + pagePng)
+			pngBytes, err := os.ReadFile(tmpPngDir + "/" + pagePng)
 			if err != nil {
-				log.Println("读取png文件失败", err, tmp_dir+"/"+pagePng)
+				log.Println("读取png文件失败", err, tmpPngDir+"/"+pagePng)
 				continue
 			}
 
@@ -101,7 +93,7 @@ func reviewgo(newDocument models.Document, uploadData *VersionResp, docPath stri
 		}
 	}
 	// 清空临时目录
-	os.RemoveAll(tmp_dir)
+	os.RemoveAll(tmpPngDir)
 
 	// medias
 	if medias != nil && len(*medias) > 0 {
@@ -148,7 +140,8 @@ func review(newDocument *models.Document, uploadData *VersionResp, docPath strin
 	if (len(uploadData.PagePngs) == 0) && uploadData.DocumentText == "" && (medias == nil || len(*medias) == 0) {
 		return
 	}
-	go reviewgo(*newDocument, uploadData, docPath, pages, medias, "")
+	tmpPngDir := services.GetConfig().SafeReview.TmpPngDir + "/" + newDocument.Id
+	go reviewgo(*newDocument, uploadData, docPath, pages, medias, tmpPngDir)
 }
 
 // ReReviewDocument 重新审核文档接口
