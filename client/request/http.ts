@@ -8,6 +8,7 @@ declare module "axios" {
         code: number
         message: string
         error: object
+        sha1?: string
     }
     export function create(config?: AxiosRequestConfig): AxiosInstance;
 }
@@ -21,19 +22,10 @@ type HttpArgs<T = any> = {
     params?: any
 }
 
-type ReqItem = {
-    reqid: number,
-    args: HttpArgs,
-    resolves: ((data: any) => void)[],
-    rejects: ((reason?: any) => void)[],
-    reqtime: number,
-    requesting: boolean,
-    sha1?: string,
-    data?: any
-}
-
-function clone(data: any) {
-    return JSON.parse(JSON.stringify(data))
+type CacheItem = {
+    data: any,
+    sha1: string,
+    timestamp: number
 }
 
 function getTokenExp(token: string | undefined): number {
@@ -51,29 +43,21 @@ function getTokenExp(token: string | undefined): number {
 }
 
 export class HttpMgr {
-    private _cache = new Map<string, ReqItem>()
-    private _cache1 = new Map<number, ReqItem>()
-    private reqlist: {
-        args: HttpArgs,
-        resolve: (data: any) => void,
-        reject: (reason?: any) => void,
-        cache?: ReqItem
-    }[] = []
-    private _reqid: number = 0
-    private timer: any
     private service: any
     private onUnauthorized: () => void
     private _token: {
         getToken: () => string | undefined,
         setToken: (token: string | undefined) => void
     }
-
     private _token_exp_cache: string | undefined = undefined
     private _token_exp: number = 0
+    private _cache = new Map<string, CacheItem>()
+    // private readonly CACHE_EXPIRE_TIME = 30 * 60 * 1000 // 30分钟缓存过期时间
 
     public get token() {
         return this._token.getToken()
     }
+
     public set token(value: string | undefined) {
         this._token.setToken(value)
     }
@@ -82,10 +66,50 @@ export class HttpMgr {
         const _token = this.token
         if (this._token_exp_cache && this._token_exp_cache === _token) {
             return this._token_exp - Date.now()
-        }   
+        }
         this._token_exp_cache = _token
         this._token_exp = getTokenExp(_token)
         return this._token_exp - Date.now()
+    }
+
+    private generateCacheKey(args: HttpArgs): string {
+        const { url, method, data, params } = args
+        const keyString = JSON.stringify({ url, method, data, params })
+        return this.simpleHash(keyString)
+    }
+
+    private simpleHash(str: string): string {
+        let hash = 0
+        if (str.length === 0) return hash.toString()
+
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i)
+            hash = ((hash << 5) - hash) + char
+            hash = hash & hash // Convert to 32bit integer
+        }
+
+        return Math.abs(hash).toString(36)
+    }
+
+    private getCachedItem(cacheKey: string): CacheItem | null {
+        const item = this._cache.get(cacheKey)
+        if (!item) return null
+
+        // 检查缓存是否过期
+        // if (Date.now() - item.timestamp > this.CACHE_EXPIRE_TIME) {
+        //     this._cache.delete(cacheKey)
+        //     return null
+        // }
+
+        return item
+    }
+
+    private setCachedItem(cacheKey: string, data: any, sha1: string) {
+        this._cache.set(cacheKey, {
+            data,
+            sha1,
+            timestamp: Date.now()
+        })
     }
 
     private auth_request(config: any) {
@@ -97,13 +121,6 @@ export class HttpMgr {
     }
 
     private handle401() {
-        if (this.token) {
-            if (this.timer) clearTimeout(this.timer)
-            this.timer = setTimeout(() => {
-                // ElMessage({ duration: 3000, message: '登录失效，请重新登录', type: 'info' });
-                this.timer = undefined;
-            }, 500);
-        }
         this.onUnauthorized()
         this.token = undefined
     }
@@ -139,7 +156,6 @@ export class HttpMgr {
         getToken: () => string | undefined,
         setToken: (token: string | undefined) => void
     }) {
-        this._request = this._request.bind(this)
         this.onUnauthorized = onUnauthorized
         this.service = axios.create({
             baseURL: apiUrl,
@@ -159,115 +175,42 @@ export class HttpMgr {
     }
 
     async request(args: HttpArgs): Promise<AxiosResponse<any, any>> {
-        const promise = new Promise<AxiosResponse<any, any>>((resolve, reject) => {
-            this.reqlist.push({ args, resolve, reject })
-        })
-        if (!this.timer) {
-            this.timer = setTimeout(this._request, 0)
+        const cacheKey = this.generateCacheKey(args)
+        const cachedItem = this.getCachedItem(cacheKey)
+
+        if (cachedItem) { // 有缓存，则添加sha1参数
+            if (args.params) {
+                args.params.sha1 = cachedItem.sha1
+            } else {
+                args.params = { sha1: cachedItem.sha1 }
+            }
         }
-        return promise
+
+        const response = await this.service(args)
+
+        if (!response.sha1) {
+            this._cache.delete(cacheKey)
+            return response
+        }
+
+        if (cachedItem && response.sha1 === cachedItem.sha1) {
+            return {
+                ...response,
+                data: cachedItem.data
+            }
+        }
+        this.setCachedItem(cacheKey, response.data, response.sha1)
+        return response
     }
 
-    private _request() {
-        this.timer = undefined
-        const _caches: ReqItem[] = []
-        for (let i = 0; i < this.reqlist.length;) {
-            const req = this.reqlist[i]
-            const id = JSON.stringify(req.args)
-            let cache = this._cache.get(id)
-            if (cache && cache.requesting) {
-                if (Date.now() - cache.reqtime > REQUEST_TIMEOUT) {
-                    cache.rejects.forEach(f => f("Time Out"))
-                    cache.rejects.length = 0
-                    cache.resolves.length = 0
-                } else {
-                    cache.resolves.push(req.resolve)
-                    cache.rejects.push(req.reject)
-                    this.reqlist.splice(i, 1)
-                    continue
-                }
-            }
-            cache = {
-                reqid: ++this._reqid,
-                args: req.args,
-                resolves: [req.resolve],
-                rejects: [req.reject],
-                reqtime: Date.now(),
-                requesting: true,
-                sha1: cache?.sha1,
-                data: cache?.data,
-            }
-            req.cache = cache
-            this._cache.set(id, cache)
-            this._cache1.set(cache.reqid, cache)
-            _caches.push(cache)
-            ++i;
-        }
-        if (this.reqlist.length > 1) {
-            // batch_request
-            this.service({
-                url: `/batch_request`,
-                method: 'post',
-                data: this.reqlist.map(v => ({ reqid: v.cache!.reqid, data: v.args, sha1: v.cache!.sha1 }))
-            }).then((data: AxiosResponse<{ reqid: number, data?: any, error?: string, sha1?: string }[]>) => {
-                for (let i = 0, len = data.data.length; i < len; ++i) {
-                    const item = data.data[i]
-                    const reqid = item.reqid
-                    const sha1 = item.sha1
-                    const cache = this._cache1.get(reqid)
-                    this._cache1.delete(reqid)
-                    if (item.error) console.log(item.error)
-                    if (!cache) continue
-                    cache.requesting = false
-                    if (item.error) {
-                        cache.rejects.forEach(f => f(item.error))
-                        cache.rejects.length = 0
-                        cache.resolves.length = 0
-                        continue
-                    }
-                    if (sha1 && cache.sha1 && sha1 === cache.sha1) {
-                        const data = cache.data
-                        cache.resolves.forEach(f => f(clone(data)))
-                    } else {
-                        const data = item.data
-                        cache.resolves.forEach(f => f(clone(data)))
-                        cache.sha1 = sha1
-                        cache.data = item.data
-                    }
-                    cache.rejects.length = 0
-                    cache.resolves.length = 0
-                }
-            }).catch((err: any) => {
-                console.log(err)
-                _caches.forEach(c => {
-                    c.rejects.forEach(f => f(err))
-                    c.rejects.length = 0
-                    c.resolves.length = 0
-                })
-            })
-        } else if (this.reqlist.length === 1) {
-            // normal_request
-            const req = this.reqlist[0]
-            this.service(req.args).then((data: AxiosResponse) => {
-                const reqid = req.cache!.reqid
-                const cache = this._cache1.get(reqid)
-                this._cache1.delete(reqid)
-                if (cache) {
-                    cache.requesting = false
-                    cache.data = data
-                    cache.sha1 = undefined
-                    cache.resolves.forEach(f => f(clone(data)))
-                }
-            }).catch((err: any) => {
-                console.log(err)
-                _caches.forEach(c => {
-                    c.rejects.forEach(f => f(err))
-                    c.rejects.length = 0
-                    c.resolves.length = 0
-                })
-            })
-        }
+    // 清除缓存的方法
+    clearCache() {
+        this._cache.clear()
+    }
 
-        this.reqlist.length = 0
+    // 清除特定请求的缓存
+    clearRequestCache(args: HttpArgs) {
+        const cacheKey = this.generateCacheKey(args)
+        this._cache.delete(cacheKey)
     }
 }

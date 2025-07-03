@@ -62,24 +62,34 @@ func Sha1SaveData(c *gin.Context) {
 	// 计算响应数据的SHA1
 	currentSha1 := sha1base64(responseData)
 
-	// 如果SHA1相同，只返回SHA1
+	// 如果SHA1相同，只返回包含SHA1的响应
 	if clientSha1 == currentSha1 {
-		onlysha1Response := map[string]interface{}{
-			"sha1": currentSha1,
+		// 不需要传递data，因为客户端已经有缓存的数据
+		// 只需要返回SHA1确认缓存仍然有效
+		writer.ResponseWriter.Header().Set("Content-Type", "application/json")
+		writer.ResponseWriter.WriteHeader(writer.statusCode)
+
+		onlysha1Response := Response{
+			Code:    http.StatusOK,
+			Message: "",
+			Data:    nil,
+			Sha1:    currentSha1,
 		}
-		Resp(c, http.StatusOK, "", onlysha1Response, currentSha1)
+
+		json.NewEncoder(writer.ResponseWriter).Encode(onlysha1Response)
 		return
 	}
 
 	// SHA1不同，解析原始响应并添加SHA1
-	var originalResponse map[string]interface{}
+	var originalResponse Response
 	if err := json.Unmarshal(responseData, &originalResponse); err != nil {
 		// 如果解析失败，直接返回原始响应
 		writer.ResponseWriter.Write(responseData)
 		return
 	}
-	// 直接添加sha1
-	originalResponse["sha1"] = currentSha1
+
+	// 添加SHA1到响应中
+	originalResponse.Sha1 = currentSha1
 
 	// 返回修改后的响应
 	writer.ResponseWriter.Header().Set("Content-Type", "application/json")

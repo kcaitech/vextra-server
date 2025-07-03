@@ -33,8 +33,13 @@ func Resp(c *gin.Context, code int, message string, data any, sha1 ...string) Re
 		Code:    code,
 		Message: message,
 		Data:    data,
-		Sha1:    sha1[0],
 	}
+
+	// 安全地设置SHA1，避免panic
+	if len(sha1) > 0 && sha1[0] != "" {
+		resp.Sha1 = sha1[0]
+	}
+
 	c.JSON(code, resp)
 	return resp
 }

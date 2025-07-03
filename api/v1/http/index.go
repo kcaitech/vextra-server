@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/contrib/gzip"
 	"github.com/gin-gonic/gin"
 	handlers "kcaitech.com/kcserver/handlers"
+	"kcaitech.com/kcserver/handlers/common"
 	"kcaitech.com/kcserver/middlewares"
 	"kcaitech.com/kcserver/services"
 )
@@ -47,10 +48,10 @@ func LoadRoutes(router *gin.Engine) {
 	loadWsRoutes(apiGroup)    // 单独鉴权
 	loadLoginRoutes(apiGroup) // 从refreshToken获取信息
 	apiGroup.Use(services.GetKCAuthClient().AuthRequired())
+	apiGroup.Use(common.Sha1SaveData)
 	loadUserRoutes(apiGroup)
 	loadDocumentRoutes(apiGroup)
 	loadShareRoutes(apiGroup)
 	loadTeamRoutes(apiGroup)
 	loadFeedbackRoutes(apiGroup)
-	apiGroup.POST("/batch_request", handlers.BatchRequestHandler(router))
 }
