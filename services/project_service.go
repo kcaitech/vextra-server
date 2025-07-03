@@ -286,7 +286,7 @@ type BaseProjectJoinRequestQuery struct {
 
 type SelfProjectJoinRequestQuery struct {
 	BaseProjectJoinRequestQuery
-	User *models.UserProfile `gorm:"-" json:"approver"`
+	User *models.UserProfile `gorm:"-" json:"approver,omitempty"`
 }
 
 type ProjectJoinRequestQuery struct {
