@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/providers/safereview"
 	"kcaitech.com/kcserver/services"
@@ -46,7 +47,7 @@ func reviewgo(newDocument models.Document, uploadData *VersionResp, docPath stri
 			})
 		}
 	}
-	tmp_dir := services.GetConfig().SafeReview.TmpPngDir + "/" + newDocument.Id
+
 	// review pages
 	if len(uploadData.PagePngs) > 0 {
 		for _, page := range pages {
@@ -66,9 +67,9 @@ func reviewgo(newDocument models.Document, uploadData *VersionResp, docPath stri
 			path := docPath + "/page_image/" + page.Id + ".png"
 
 			// 读取png文件
-			pngBytes, err := os.ReadFile(tmp_dir + "/" + pagePng)
+			pngBytes, err := os.ReadFile(uploadData.TmpPngDir + "/" + pagePng)
 			if err != nil {
-				log.Println("读取png文件失败", err, tmp_dir+"/"+pagePng)
+				log.Println("读取png文件失败", err, uploadData.TmpPngDir+"/"+pagePng)
 				continue
 			}
 
@@ -91,7 +92,7 @@ func reviewgo(newDocument models.Document, uploadData *VersionResp, docPath stri
 		}
 	}
 	// 清空临时目录
-	os.RemoveAll(tmp_dir)
+	os.RemoveAll(uploadData.TmpPngDir)
 
 	// medias
 	if medias != nil && len(*medias) > 0 {
@@ -155,6 +156,11 @@ func ReReviewDocument(c *gin.Context) {
 		return
 	}
 
+	reviewClient := services.GetSafereviewClient()
+	if reviewClient == nil {
+		return
+	}
+
 	documentService := services.NewDocumentService()
 	var document models.Document
 	if err := documentService.GetById(documentId, &document); err != nil {
@@ -195,7 +201,7 @@ func ReReviewDocument(c *gin.Context) {
 func reReviewDocumentContent(document *models.Document) error {
 	// 获取配置
 	config := services.GetConfig()
-	reviewApiUrl := strings.Replace(config.VersionServer.Url, "generate", "review", 1)
+	generateApiUrl := config.VersionServer.Url
 
 	// 获取文档基本信息
 	documentInfo, err := GetDocumentBasicInfoById(document.Id)
@@ -203,17 +209,35 @@ func reReviewDocumentContent(document *models.Document) error {
 		return fmt.Errorf("获取文档信息失败: %w", err)
 	}
 
-	// 构建请求到版本服务器
+	// 获取命令列表（从头开始获取所有命令用于重新审核）
+	cmdService := services.GetCmdService()
+	lastCmdId := documentInfo.LastCmdId + 1
+	cmdItemList, err := cmdService.GetCmdItemsFromStart(document.Id, lastCmdId)
+	if err != nil {
+		return fmt.Errorf("获取命令列表失败: %w", err)
+	}
+
+	// 构建请求体
 	reqBody := map[string]interface{}{
 		"documentInfo": documentInfo,
+		"cmdItemList":  cmdItemList,
 	}
+
+	// 生成UUID用于临时目录
+	tmpPngDirUUID := uuid.New().String()
+	tmpPngDir := config.SafeReview.TmpPngDir + "/" + tmpPngDirUUID
+	reqBody["gen_pages_png"] = map[string]interface{}{
+		"tmp_dir": tmpPngDir,
+	}
+	os.MkdirAll(tmpPngDir, 0755)
+
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
 		return fmt.Errorf("构建请求失败: %w", err)
 	}
 
 	// 发送请求到版本服务器
-	resp, err := http.Post(reviewApiUrl, "application/json", bytes.NewBuffer(jsonData))
+	resp, err := http.Post(generateApiUrl, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		return fmt.Errorf("调用版本服务器失败: %w", err)
 	}
@@ -264,7 +288,9 @@ func reReviewDocumentContent(document *models.Document) error {
 		})
 	}
 
-	// 调用审核函数
+	documentData.TmpPngDir = tmpPngDir
+
+	// 调用审核函数，传递临时目录路径
 	reviewgo(*document, &documentData, docPath, pages, &medias)
 	return nil
 }
