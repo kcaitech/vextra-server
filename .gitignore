@@ -30,3 +30,4 @@
 package-lock.json
 **/kcserver-debug.exe
 **/kcserver
+config/config.yaml

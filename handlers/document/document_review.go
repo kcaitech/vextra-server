@@ -196,7 +196,7 @@ func ReReviewDocument(c *gin.Context) {
 func reReviewDocumentContent(document *models.Document) error {
 	// 获取配置
 	config := services.GetConfig()
-	reviewApiUrl := strings.Replace(config.VersionServer.Url, "generate", "review", 1)
+	generateApiUrl := config.VersionServer.Url
 
 	// 获取文档基本信息
 	documentInfo, err := GetDocumentBasicInfoById(document.Id)
@@ -204,17 +204,37 @@ func reReviewDocumentContent(document *models.Document) error {
 		return fmt.Errorf("获取文档信息失败: %w", err)
 	}
 
-	// 构建请求到版本服务器
+	// 获取命令列表（从头开始获取所有命令用于重新审核）
+	cmdService := services.GetCmdService()
+	cmdItemList, err := cmdService.GetCmdItemsFromStart(document.Id, 1)
+	if err != nil {
+		return fmt.Errorf("获取命令列表失败: %w", err)
+	}
+
+	// 构建请求体
 	reqBody := map[string]interface{}{
 		"documentInfo": documentInfo,
+		"cmdItemList":  cmdItemList,
+		"force":        true, // 强制重新生成以获取完整内容
 	}
+
+	// 检查是否需要生成PNG图片用于审核
+	reviewClient := services.GetSafereviewClient()
+	if reviewClient != nil {
+		tmpPngDir := config.SafeReview.TmpPngDir + "/" + document.Id
+		reqBody["gen_pages_png"] = map[string]interface{}{
+			"tmp_dir": tmpPngDir,
+		}
+		os.MkdirAll(tmpPngDir, 0755)
+	}
+
 	jsonData, err := json.Marshal(reqBody)
 	if err != nil {
 		return fmt.Errorf("构建请求失败: %w", err)
 	}
 
 	// 发送请求到版本服务器
-	resp, err := http.Post(reviewApiUrl, "application/json", bytes.NewBuffer(jsonData))
+	resp, err := http.Post(generateApiUrl, "application/json", bytes.NewBuffer(jsonData))
 	if err != nil {
 		return fmt.Errorf("调用版本服务器失败: %w", err)
 	}
