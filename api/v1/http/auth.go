@@ -2,7 +2,6 @@ package http
 
 import (
 	"log"
-	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -31,26 +30,17 @@ func loadLoginRoutes(api *gin.RouterGroup) {
 
 // refreshToken
 func RefreshToken(c *gin.Context) {
-	// token, err := utils.GetAccessToken(c)
-	// if err != nil {
-	// 	common.Unauthorized(c)
-	// 	return
-	// }
 	client := services.GetKCAuthClient()
 	refreshToken, _ := c.Cookie("refreshToken")
 	if refreshToken == "" {
 		log.Print("Refresh token not provided")
-		common.BadRequest(c, "Refresh token not provided")
+		common.Unauthorized(c)
 		return
 	}
-	token, statusCode, err := client.RefreshToken(refreshToken, c)
+	token, _, err := client.RefreshToken(refreshToken, c)
 	if err != nil {
 		log.Printf("Refresh token failed: %s", err.Error())
-		if statusCode == http.StatusUnauthorized {
-			common.Unauthorized(c)
-		} else {
-			common.BadRequest(c, err.Error())
-		}
+		common.Unauthorized(c)
 		return
 	}
 	common.Success(c, map[string]any{
