@@ -202,7 +202,7 @@ export class ShareAPI {
     async delShareAuthority(params: { share_id: string }): Promise<BaseResponse> {
         await checkRefreshToken(this.http);
         const result = await this.http.request({
-            url: `/share`,
+            url: `/share/perm`,
             method: 'delete',
             params: params,
         });
