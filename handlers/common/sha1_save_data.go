@@ -34,10 +34,6 @@ func sha1base64(data []byte) string {
 
 func Sha1SaveData(c *gin.Context) {
 	clientSha1 := c.Query("sha1")
-	if clientSha1 == "" {
-		c.Next()
-		return
-	}
 
 	// 创建响应拦截器
 	writer := &SHA1ResponseWriter{
