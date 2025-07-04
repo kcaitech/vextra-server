@@ -2,6 +2,10 @@ package http
 
 import (
 	"context"
+	"net/http"
+	"path/filepath"
+	"slices"
+	"strings"
 
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/contrib/gzip"
@@ -11,6 +15,17 @@ import (
 	"kcaitech.com/kcserver/middlewares"
 	"kcaitech.com/kcserver/services"
 )
+
+var StaticFileSuffix = []string{".html", ".js", ".css", ".png", ".jpg", ".jpeg", ".gif", ".svg", ".ico", ".woff", ".woff2", ".ttf"}
+
+func isStaticFile(path string) bool {
+	// 先获取path后缀
+	suffix := filepath.Ext(path)
+	if suffix == "" {
+		return false
+	}
+	return slices.Contains(StaticFileSuffix, suffix)
+}
 
 func LoadRoutes(router *gin.Engine) {
 	router.RedirectTrailingSlash = false
@@ -22,13 +37,26 @@ func LoadRoutes(router *gin.Engine) {
 	// 如果不是直接使用，不使用noroute，不然代理不好处理错误路径
 	// 未知的路由交由前端vue router处理
 	config := services.GetConfig()
-	if config.DefaultRoute {
-		router.NoRoute(func(c *gin.Context) {
-			// 设置缓存时间为15分钟
-			c.Header("Cache-Control", "public, max-age=900")
-			c.File("/app/html/index.html")
-		})
-	}
+	// if config.DefaultRoute {
+	router.NoRoute(func(c *gin.Context) {
+		path := c.Request.URL.Path
+		if path == "/api" || strings.HasPrefix(path, "/api/") {
+			c.JSON(http.StatusNotFound, gin.H{"error": "auth endpoint not found"})
+			return
+		}
+
+		// 检查是否是对静态文件的请求（HTML、JS、CSS等）
+		if isStaticFile(path) {
+			// 直接尝试提供文件，如果文件不存在则返回404
+			c.File("/app/html" + path)
+			return
+		}
+
+		// 设置缓存时间为15分钟
+		c.Header("Cache-Control", "public, max-age=900")
+		c.File("/app/html/index.html")
+	})
+	// }
 
 	if config.DetailedLog {
 		router.Use(middlewares.AccessDetailedLogMiddleware())

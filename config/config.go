@@ -57,6 +57,14 @@ func loadYamlConfig(filePath string, config any) error {
 	return nil
 }
 
+type AuthServerConfig struct {
+	URLInner     string `yaml:"url_inner" json:"url_inner"`
+	URL          string `yaml:"url" json:"url"`
+	ClientID     string `yaml:"client_id" json:"client_id"`
+	ClientSecret string `yaml:"client_secret" json:"client_secret"`
+	CallbackURL  string `yaml:"callback_url" json:"callback_url"`
+}
+
 type Configuration struct {
 	BaseConfiguration `yaml:",inline" json:",inline"`
 	VersionServer     struct {
@@ -70,14 +78,11 @@ type Configuration struct {
 	SafeReview safereview.SafeReviewConf `yaml:"safe_review" json:"safe_review"`
 	Storage    storage.Config            `yaml:"storage" json:"storage"`
 
-	DefaultRoute bool `yaml:"default_route,omitempty" json:"default_route,omitempty"`
-	DetailedLog  bool `yaml:"detailed_log,omitempty" json:"detailed_log,omitempty"`
-	AllowCors    bool `yaml:"allow_cors,omitempty" json:"allow_cors,omitempty"`
+	// DefaultRoute bool `yaml:"default_route,omitempty" json:"default_route,omitempty"`
+	DetailedLog bool `yaml:"detailed_log,omitempty" json:"detailed_log,omitempty"`
+	AllowCors   bool `yaml:"allow_cors,omitempty" json:"allow_cors,omitempty"`
 
-	AuthServerURL    string `yaml:"auth_server_url,omitempty" json:"auth_server_url,omitempty"`
-	AuthClientID     string `yaml:"auth_client_id,omitempty" json:"auth_client_id,omitempty"`
-	AuthClientSecret string `yaml:"auth_client_secret,omitempty" json:"auth_client_secret,omitempty"`
-	AuthCallbackURL  string `yaml:"auth_callback_url,omitempty" json:"auth_callback_url,omitempty"`
+	AuthServer AuthServerConfig `yaml:"auth_server" json:"auth_server"`
 }
 
 func LoadYamlFile(filePath string) (*Configuration, error) {
