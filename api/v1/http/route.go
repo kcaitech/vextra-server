@@ -28,6 +28,13 @@ func isStaticFile(path string) bool {
 
 const staticFilePath = "/app/html"
 
+func joinPath(dir, path string) string {
+	if !strings.HasPrefix(path, "/") {
+		return dir + "/" + path
+	}
+	return dir + path
+}
+
 func onNotFound(c *gin.Context) {
 	path := c.Request.URL.Path
 	if path == "/api" || strings.HasPrefix(path, "/api/") {
@@ -35,14 +42,8 @@ func onNotFound(c *gin.Context) {
 		return
 	}
 
-	// 检查是否是对静态文件的请求（HTML、JS、CSS等）
 	if isStaticFile(path) {
-		// 确保路径拼接正确
-		filePath := staticFilePath + path
-		if !strings.HasPrefix(path, "/") {
-			filePath = staticFilePath + "/" + path
-		}
-		c.File(filePath)
+		c.File(joinPath(staticFilePath, path))
 		return
 	}
 
