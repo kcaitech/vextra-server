@@ -26,42 +26,38 @@ func isStaticFile(path string) bool {
 	return slices.Contains(StaticFileSuffix, suffix)
 }
 
-const staticPath = "/app/html"
+const staticFilePath = "/app/html"
+
+func onNotFound(c *gin.Context) {
+	path := c.Request.URL.Path
+	if path == "/api" || strings.HasPrefix(path, "/api/") {
+		c.JSON(http.StatusNotFound, gin.H{"error": "auth endpoint not found"})
+		return
+	}
+
+	// 检查是否是对静态文件的请求（HTML、JS、CSS等）
+	if isStaticFile(path) {
+		// 确保路径拼接正确
+		filePath := staticFilePath + path
+		if !strings.HasPrefix(path, "/") {
+			filePath = staticFilePath + "/" + path
+		}
+		c.File(filePath)
+		return
+	}
+
+	// 设置缓存时间为15分钟
+	c.Header("Cache-Control", "public, max-age=900")
+	c.File(staticFilePath + "/index.html")
+}
 
 func LoadRoutes(router *gin.Engine) {
 	router.RedirectTrailingSlash = false
 	router.GET("/health_check", handlers.HealthCheck)
-	// router.GET("/version", handlers.GetAppVersion) // 由前端文件提供
-
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
-	router.Use(static.Serve("/", static.LocalFile(staticPath, false))) // 前端工程
-	// 如果不是直接使用，不使用noroute，不然代理不好处理错误路径
-	// 未知的路由交由前端vue router处理
+	router.Use(static.Serve("/", static.LocalFile(staticFilePath, false))) // 前端工程
 	config := services.GetConfig()
-	// if config.DefaultRoute {
-	router.NoRoute(func(c *gin.Context) {
-		path := c.Request.URL.Path
-		if path == "/api" || strings.HasPrefix(path, "/api/") {
-			c.JSON(http.StatusNotFound, gin.H{"error": "auth endpoint not found"})
-			return
-		}
-
-		// 检查是否是对静态文件的请求（HTML、JS、CSS等）
-		if isStaticFile(path) {
-			// 确保路径拼接正确
-			filePath := staticPath + path
-			if !strings.HasPrefix(path, "/") {
-				filePath = staticPath + "/" + path
-			}
-			c.File(filePath)
-			return
-		}
-
-		// 设置缓存时间为15分钟
-		c.Header("Cache-Control", "public, max-age=900")
-		c.File("/app/html/index.html")
-	})
-	// }
+	router.NoRoute(onNotFound)
 
 	if config.DetailedLog {
 		router.Use(middlewares.AccessDetailedLogMiddleware())
