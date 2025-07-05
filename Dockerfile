@@ -20,7 +20,7 @@ RUN go mod download && go mod tidy -v && go build -ldflags "-s -w" -o kcserver .
 FROM alpine:3.17
 WORKDIR /app
 COPY --from=builder /app/kcserver /app/
-COPY package.yaml /app/
+COPY version.json /app/
 # COPY --from=builder /app/kcserver/src/config /app/config/
 # COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo/
 COPY --from=builder /usr/share/zoneinfo/Asia/Shanghai /usr/share/zoneinfo/Asia/Shanghai

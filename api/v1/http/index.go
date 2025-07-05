@@ -76,6 +76,9 @@ func LoadRoutes(router *gin.Engine) {
 	}, middlewares.DefaultRateLimiterConfig()).RateLimitMiddleware())
 
 	apiGroup := router.Group("/api")
+	apiGroup.GET("/version.json", func(c *gin.Context) {
+		c.File("/app/version.json")
+	})
 	loadWsRoutes(apiGroup)    // 单独鉴权
 	loadLoginRoutes(apiGroup) // 从refreshToken获取信息
 	apiGroup.Use(services.GetKCAuthClient().AuthRequired())
