@@ -53,11 +53,7 @@ func GetResourceDocumentList(c *gin.Context) {
 		nextCursor = lastItem.Document.CreatedAt.Format(time.RFC3339)
 	}
 
-	common.Success(c, gin.H{
-		"list":        result,
-		"has_more":    hasMore,
-		"next_cursor": nextCursor,
-	})
+	common.SuccessWithCursor(c, result, hasMore, nextCursor)
 }
 
 type CreateResourceDocumentReq struct {

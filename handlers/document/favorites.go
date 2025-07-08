@@ -60,11 +60,7 @@ func GetUserDocumentFavoritesList(c *gin.Context) {
 		nextCursor = lastItem.DocumentAccessRecord.LastAccessTime.Format(time.RFC3339)
 	}
 
-	common.Success(c, gin.H{
-		"list":        result,
-		"has_more":    hasMore,
-		"next_cursor": nextCursor,
-	})
+	common.SuccessWithCursor(c, result, hasMore, nextCursor)
 }
 
 type SetUserDocumentFavoriteStatusReq struct {

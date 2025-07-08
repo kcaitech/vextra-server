@@ -29,11 +29,7 @@ export const DocumentListItemSchema = z.object({
 
 // 文档列表响应类型
 export const DocumentListResponseSchema = BaseResponseSchema.extend({
-    data: z.object({
-        list: z.array(DocumentListItemSchema),
-        has_more: z.boolean(),
-        next_cursor: z.string().optional(),
-    })
+    data: z.array(DocumentListItemSchema)
 });
 
 export const DocumentRecycleListItemSchema = z.object({
@@ -61,11 +57,7 @@ export const DocumentRecycleListItemSchema = z.object({
 })
 
 export const DocumentRecycleListResponseSchema = BaseResponseSchema.extend({
-    data: z.object({
-        list: z.array(DocumentRecycleListItemSchema),
-        has_more: z.boolean(),
-        next_cursor: z.string().optional(),
-    })
+    data: z.array(DocumentRecycleListItemSchema)
 })
 export type DocumentRecycleListResponse = z.infer<typeof DocumentRecycleListResponseSchema>
 export type DocumentRecycleListItem = z.infer<typeof DocumentRecycleListItemSchema>

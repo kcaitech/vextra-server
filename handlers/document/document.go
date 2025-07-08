@@ -78,11 +78,7 @@ func GetUserDocumentList(c *gin.Context) {
 		nextCursor = lastItem.DocumentAccessRecord.LastAccessTime.Format(time.RFC3339)
 	}
 
-	common.Success(c, gin.H{
-		"list":        result,
-		"has_more":    hasMore,
-		"next_cursor": nextCursor,
-	})
+	common.SuccessWithCursor(c, result, hasMore, nextCursor)
 }
 
 // DeleteUserDocument 删除用户的某份文档

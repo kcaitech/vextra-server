@@ -12,32 +12,34 @@ const (
 )
 
 type Response struct {
-	Code    int    `json:"code"`
-	Message string `json:"message,omitempty"`
-	Data    any    `json:"data,omitempty"`
-	Sha1    string `json:"sha1,omitempty"`
+	Code       int    `json:"code"`
+	Message    string `json:"message,omitempty"`
+	Data       any    `json:"data,omitempty"`
+	Sha1       string `json:"sha1,omitempty"`
+	HasMore    bool   `json:"has_more,omitempty"`
+	NextCursor string `json:"next_cursor,omitempty"`
 }
 
-// func Abort(c *gin.Context, code int, message string, data any) Response {
-// 	resp := Response{
-// 		Code:    code,
-// 		Message: message,
-// 		Data:    data,
-// 	}
-// 	c.AbortWithStatusJSON(http.StatusOK, resp)
-// 	return resp
-// }
+func SuccessWithCursor(c *gin.Context, data any, has_more bool, next_cursor string) Response {
+	resp := Response{
+		Code: http.StatusOK,
+		Data: data,
+	}
 
-func Resp(c *gin.Context, code int, message string, data any, sha1 ...string) Response {
+	if has_more {
+		resp.HasMore = has_more
+		resp.NextCursor = next_cursor
+	}
+
+	c.JSON(http.StatusOK, resp)
+	return resp
+}
+
+func Resp(c *gin.Context, code int, message string, data any) Response {
 	resp := Response{
 		Code:    code,
 		Message: message,
 		Data:    data,
-	}
-
-	// 安全地设置SHA1，避免panic
-	if len(sha1) > 0 && sha1[0] != "" {
-		resp.Sha1 = sha1[0]
 	}
 
 	c.JSON(code, resp)
@@ -47,13 +49,6 @@ func Resp(c *gin.Context, code int, message string, data any, sha1 ...string) Re
 func Success(c *gin.Context, data any) Response {
 	return Resp(c, http.StatusOK, "", data)
 }
-
-// func Fail(c *gin.Context, message string) Response {
-// 	if message == "" {
-// 		message = "操作失败"
-// 	}
-// 	return Resp(c, http.StatusU, message, nil)
-// }
 
 func Unauthorized(c *gin.Context) Response {
 	// if message == "" {

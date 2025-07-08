@@ -115,11 +115,7 @@ const ShareListItemSchema = z.object({
 
 // 共享文件列表响应类型
 const ShareListResponseSchema = BaseResponseSchema.extend({
-    data: z.object({
-        list: z.array(ShareListItemSchema),
-        has_more: z.boolean(),
-        next_cursor: z.string().optional(),
-    })
+    data: z.array(ShareListItemSchema)
 })
 
 export type ShareListResponse = z.infer<typeof ShareListResponseSchema>
