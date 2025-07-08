@@ -58,9 +58,9 @@ func LoadRoutes(router *gin.Engine) {
 	router.GET("/health_check", handlers.HealthCheck)
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	router.Use(static.Serve("/", static.LocalFile(staticFilePath, false))) // 前端工程
-	config := services.GetConfig()
 	router.NoRoute(onNotFound)
 
+	config := services.GetConfig()
 	if config.DetailedLog {
 		router.Use(middlewares.AccessDetailedLogMiddleware())
 	} else {
