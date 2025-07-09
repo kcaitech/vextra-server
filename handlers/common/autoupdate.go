@@ -35,7 +35,7 @@ type DocumentVersioningInfo struct {
 var documentVersioningInfoMap = my_map.NewSyncMap[string, DocumentVersioningInfo]()
 
 func getDocumentLastUpdateTimeFromRedis(documentId string, redis *redis.RedisDB) time.Time {
-	if lastUpdateTime, err := redis.Client.Get(context.Background(), fmt.Sprintf(common.RedisKeyDocumentVersioningLastUpdateTime, documentId)).Int64(); err == nil && lastUpdateTime > 0 {
+	if lastUpdateTime, err := redis.Client.Get(context.Background(), fmt.Sprintf("%s%s", common.RedisKeyDocumentVersioningLastUpdateTime, documentId)).Int64(); err == nil && lastUpdateTime > 0 {
 		return time.UnixMilli(lastUpdateTime)
 	}
 	return time.UnixMilli(0)
@@ -80,7 +80,7 @@ func AutoUpdate(documentId string, config *config.Configuration) {
 	// 上锁
 	// documentIdStr := str.IntToString(documentId)
 	redis := services.GetRedisDB()
-	documentVersioningMutex := redis.RedSync.NewMutex(fmt.Sprintf(common.RedisKeyDocumentVersioningMutex, documentId), redsync.WithExpiry(time.Second*10))
+	documentVersioningMutex := redis.RedSync.NewMutex(fmt.Sprintf("%s%s", common.RedisKeyDocumentVersioningMutex, documentId), redsync.WithExpiry(time.Second*10))
 	if err := documentVersioningMutex.TryLock(); err != nil {
 		info.LastUpdateTime = time.Now()
 		return
@@ -200,11 +200,11 @@ func AutoUpdate(documentId string, config *config.Configuration) {
 		VersionStartWith: lastCmdId,
 	}); err == nil {
 		redisClient := services.GetRedisDB()
-		redisClient.Client.Publish(context.Background(), "Document Version[DocumentId:"+(documentId)+"]", publishData)
+		redisClient.Client.Publish(context.Background(), fmt.Sprintf("%s%s", common.RedisKeyDocumentVersion, documentId), publishData)
 	}
 
 	// 更新redis
-	if _, err := redis.Client.Set(context.Background(), fmt.Sprintf(common.RedisKeyDocumentVersioningLastUpdateTime, documentId), time.Now().UnixMilli(), time.Hour*1).Result(); err != nil {
+	if _, err := redis.Client.Set(context.Background(), fmt.Sprintf("%s%s", common.RedisKeyDocumentVersioningLastUpdateTime, documentId), time.Now().UnixMilli(), time.Hour*1).Result(); err != nil {
 		log.Println("redis.Client.Set err", err)
 	} else {
 		log.Println("auto update successed")

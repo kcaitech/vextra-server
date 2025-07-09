@@ -1,14 +1,14 @@
 package common
 
 const (
-	RedisKeyDocumentVersioningLastUpdateTime = "Document Versioning LastUpdateTime[DocumentId:%s]"
-	RedisKeyDocumentVersioningMutex          = "Document Versioning Mutex[DocumentId::%s]"
-	RedisKeyDocumentComment                  = "Document Comment[DocumentId:%s]"
-	RedisKeyDocumentLastCmdVerId             = "Document LastCmdVerId[DocumentId:%s]"
-	RedisKeyDocumentOpMutex                  = "Document Op Mutex[DocumentId:%s]"
-	RedisKeyDocumentOp                       = "Document Op[DocumentId:%s]"
-	RedisKeyDocumentSelection                = "Document Selection[DocumentId:%s]"
-	RedisKeyDocumentSelectionData            = "Document Selection Data[DocumentId:%s]"
-	RedisKeyDocumentVersion                  = "Document Version[DocumentId:%s]"
-	RedisKeyRateLimit                        = "ratelimit:"
+	RedisKeyDocumentVersioningLastUpdateTime = "server_version_last_update:"
+	RedisKeyDocumentVersioningMutex          = "server_version_mutex:"
+	RedisKeyDocumentVersion                  = "server_version:"
+	RedisKeyDocumentLastCmdVerId             = "server_last_cmd_ver_id:"
+	RedisKeyDocumentComment                  = "server_comment:"
+	RedisKeyDocumentOpMutex                  = "server_op_mutex:"
+	RedisKeyDocumentOp                       = "server_op:"
+	RedisKeyDocumentSelection                = "server_selection:"
+	RedisKeyDocumentSelectionData            = "server_selection_data:"
+	RedisKeyRateLimit                        = "server_ratelimit:"
 )

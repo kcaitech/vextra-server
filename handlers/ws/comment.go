@@ -47,7 +47,7 @@ func (serv *commnetServe) start(documentId string) {
 	// 监控评论变化
 	go func() {
 		// defer tunnelServer.Close()
-		pubsub := serv.redis.Client.Subscribe(context.Background(), fmt.Sprintf(common.RedisKeyDocumentComment, documentId))
+		pubsub := serv.redis.Client.Subscribe(context.Background(), fmt.Sprintf("%s%s", common.RedisKeyDocumentComment, documentId))
 		defer pubsub.Close()
 		channel := pubsub.Channel()
 		for {
