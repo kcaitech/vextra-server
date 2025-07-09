@@ -457,7 +457,9 @@ export class DocumentAPI {
                 console.error('文档信息数据校验失败:', error);
                 throw error;
             }
-        }, immediate);
+        }, immediate, () => {
+            checkRefreshToken(this.http)
+        });
         return () => {
             this.http.unwatch(httpArgs, callback)
         }

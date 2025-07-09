@@ -295,7 +295,9 @@ export class TeamAPI {
                 console.error('团队申请列表数据校验失败:', error);
                 throw error;
             }
-        }, immediate);
+        }, immediate, () => {
+            checkRefreshToken(this.http)
+        });
         return () => {
             this.http.unwatch(httpArgs, callback)
         }
@@ -395,7 +397,9 @@ export class TeamAPI {
                 console.error('团队列表数据校验失败:', error);
                 throw error;
             }
-        }, immediate);
+        }, immediate, () => {
+            checkRefreshToken(this.http)
+        });
         return () => {
             this.http.unwatch(httpArgs, callback)
         }
@@ -792,7 +796,9 @@ export class TeamAPI {
                 console.error('团队项目列表数据校验失败:', error);
                 throw error;
             }
-        }, immediate);
+        }, immediate, () => {
+            checkRefreshToken(this.http)
+        });
         return () => {
             this.http.unwatch(httpArgs, callback)
         }
@@ -949,7 +955,9 @@ export class TeamAPI {
                 console.error('获取项目申请通知信息数据校验失败:', error);
                 throw error;
             }
-        }, immediate);
+        }, immediate, () => {
+            checkRefreshToken(this.http)
+        });
         return () => {
             this.http.unwatch(httpArgs, callback)
         }

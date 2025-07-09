@@ -218,15 +218,15 @@ export class HttpMgr {
     // watch
     private watch_interval = 1000 * 30 // 30秒
     private watch_interval_id: NodeJS.Timeout | null = null
-    private watch_map = new Map<string, { args: HttpArgs, callbacks: ((data: any) => void)[] }>()
+    private watch_map = new Map<string, { args: HttpArgs, callbacks: ((data: any) => void)[], refresh_token: Function }>()
 
-    watch(args: HttpArgs, callback: (data: any) => void, immediate: boolean = false) {
+    watch(args: HttpArgs, callback: (data: any) => void, immediate: boolean, refresh_token: () => void) {
         const cacheKey = this.generateCacheKey(args)
         const item = this.watch_map.get(cacheKey)
         if (item) {
             item.callbacks.push(callback)
         } else {
-            this.watch_map.set(cacheKey, { args, callbacks: [callback] })
+            this.watch_map.set(cacheKey, { args, callbacks: [callback], refresh_token })
         }
         if (immediate) {
             this.request(args).then(callback)
@@ -251,6 +251,7 @@ export class HttpMgr {
     private request_watch() {
         const watch_map = this.watch_map
         for (const [, item] of watch_map) {
+            item.refresh_token()
             this.request(item.args).then((data) => {
                 for (const callback of item.callbacks) {
                     try {

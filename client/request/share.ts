@@ -255,7 +255,9 @@ export class ShareAPI {
                 console.error('申请列表数据校验失败:', error);
                 throw error;
             }
-        }, immediate);
+        }, immediate, () => {
+            checkRefreshToken(this.http)
+        });
         return () => {
             this.http.unwatch(httpArgs, callback)
         }
