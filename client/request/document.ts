@@ -1,4 +1,4 @@
-import { HttpMgr } from "./http"
+import { HttpArgs, HttpMgr } from "./http"
 import { BaseResponse, BaseResponseSchema, PermType, ProjectInfoSchema, TeamInfoSchema, UserInfoSchema, DocumentInfoSchema as DocumentSchema, LockedInfoSchema } from "./types"
 import { checkRefreshToken } from "./refresh_token";
 import { z } from 'zod';
@@ -441,6 +441,25 @@ export class DocumentAPI {
         } catch (error) {
             console.error('文档信息数据校验失败:', error);
             throw error;
+        }
+    }
+
+    watchDocumentInfo(params: { doc_id: string }, callback: (data: DocumentInfoResponse) => void, immediate: boolean = false) {
+        const httpArgs: HttpArgs = {
+            url: `/documents/info`,
+            method: 'get',
+            params: params,
+        }
+        this.http.watch(httpArgs, (result) => {
+            try {
+                callback(DocumentInfoResponseSchema.parse(result))
+            } catch (error) {
+                console.error('文档信息数据校验失败:', error);
+                throw error;
+            }
+        }, immediate);
+        return () => {
+            this.http.unwatch(httpArgs, callback)
         }
     }
 

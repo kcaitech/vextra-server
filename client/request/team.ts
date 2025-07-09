@@ -1,4 +1,4 @@
-import { HttpMgr } from './http'
+import { HttpArgs, HttpMgr } from './http'
 import { checkRefreshToken } from './refresh_token'
 import { BaseResponseSchema, BaseResponse, UserInfoSchema, ProjectInfoSchema, TeamInfoSchema, TeamPermType } from './types'
 import { z } from 'zod'
@@ -276,6 +276,31 @@ export class TeamAPI {
         }
     }
 
+    watchTeamApply(params: {
+        team_id?: string;
+        status?: number;
+        page?: number;
+        page_size?: number;
+        start_time?: number;
+    }, callback: (data: TeamApplyListResponse) => void, immediate: boolean = false) {
+        const httpArgs: HttpArgs = {
+            url: '/team/apply',
+            method: 'get',
+            params: params,
+        }
+        this.http.watch(httpArgs, (result) => {
+            try {
+                callback(TeamApplyListResponseSchema.parse(result))
+            } catch (error) {
+                console.error('团队申请列表数据校验失败:', error);
+                throw error;
+            }
+        }, immediate);
+        return () => {
+            this.http.unwatch(httpArgs, callback)
+        }
+    }
+
     //团队加入审核
     async promissionTeamApply(params: {
         apply_id: string;
@@ -351,6 +376,28 @@ export class TeamAPI {
         } catch (error) {
             console.error('团队列表数据校验失败:', error);
             throw error;
+        }
+    }
+
+    watchTeamList(params: {
+        page?: number;
+        page_size?: number;
+    }, callback: (data: TeamListResponse) => void, immediate: boolean = false) {
+        const httpArgs: HttpArgs = {
+            url: '/team/list',
+            method: 'get',
+            params: params,
+        }
+        this.http.watch(httpArgs, (result) => {
+            try {
+                callback(TeamListResponseSchema.parse(result))
+            } catch (error) {
+                console.error('团队列表数据校验失败:', error);
+                throw error;
+            }
+        }, immediate);
+        return () => {
+            this.http.unwatch(httpArgs, callback)
         }
     }
 
@@ -728,6 +775,29 @@ export class TeamAPI {
         }
     }
 
+    watchProjectLists(params: {
+        team_id?: string;
+        page?: number;
+        page_size?: number;
+    }, callback: (data: TeamProjectListResponse) => void, immediate: boolean = false) {
+        const httpArgs: HttpArgs = {
+            url: '/team/project/list',
+            method: 'get',
+            params: params,
+        }
+        this.http.watch(httpArgs, (result) => {
+            try {
+                callback(TeamProjectListResponseSchema.parse(result))
+            } catch (error) {
+                console.error('团队项目列表数据校验失败:', error);
+                throw error;
+            }
+        }, immediate);
+        return () => {
+            this.http.unwatch(httpArgs, callback)
+        }
+    }
+
     //获取项目成员列表
     async getProjectMemberList(params: {
         project_id: string;
@@ -859,6 +929,29 @@ export class TeamAPI {
         } catch (error) {
             console.error('获取项目申请通知信息数据校验失败:', error);
             throw error;
+        }
+    }
+
+    watchSelfProjectApplyInfo(params: {
+        team_id?: string;
+        page?: number;
+        page_size?: number;
+    }, callback: (data: ProjectNoticeResponse) => void, immediate: boolean = false) {
+        const httpArgs: HttpArgs = {
+            url: '/team/project/self_apply',
+            method: 'get',
+            params: params,
+        }
+        this.http.watch(httpArgs, (result) => {
+            try {
+                callback(ProjectNoticeResponseSchema.parse(result))
+            } catch (error) {
+                console.error('获取项目申请通知信息数据校验失败:', error);
+                throw error;
+            }
+        }, immediate);
+        return () => {
+            this.http.unwatch(httpArgs, callback)
         }
     }
 

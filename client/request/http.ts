@@ -15,7 +15,7 @@ declare module "axios" {
 
 const REQUEST_TIMEOUT = 10000;
 
-type HttpArgs<T = any> = {
+export type HttpArgs<T = any> = {
     url: string,
     method: 'post' | 'get' | 'put' | 'delete',
     data?: T,
@@ -112,7 +112,7 @@ export class HttpMgr {
         })
     }
 
-    private auth_request(config: any) {
+    private auth_request(config: any) { // todo 将refresh token 放到这里,但有部分请求不需要refresh token
         const token = this.token
         if (token) {
             config.headers.Authorization = `Bearer ${token}`
@@ -139,7 +139,7 @@ export class HttpMgr {
         if (error?.status === HttpCode.StatusUnauthorized) {
             this.handle401();
             return Promise.reject(error?.response)
-        } else if (dataAxios.code === HttpCode.StatusBadRequest) {
+        } else if (dataAxios.code === HttpCode.StatusBadRequest) { // todo 这些错误应该reject的
             return Promise.resolve(dataAxios)
         } else if (dataAxios.code === HttpCode.StatusForbidden) {
             return Promise.resolve(dataAxios)
@@ -212,5 +212,68 @@ export class HttpMgr {
     clearRequestCache(args: HttpArgs) {
         const cacheKey = this.generateCacheKey(args)
         this._cache.delete(cacheKey)
+    }
+
+
+    // watch
+    private watch_interval = 1000 * 30 // 30秒
+    private watch_interval_id: NodeJS.Timeout | null = null
+    private watch_map = new Map<string, { args: HttpArgs, callbacks: ((data: any) => void)[] }>()
+
+    watch(args: HttpArgs, callback: (data: any) => void, immediate: boolean = false) {
+        const cacheKey = this.generateCacheKey(args)
+        const item = this.watch_map.get(cacheKey)
+        if (item) {
+            item.callbacks.push(callback)
+        } else {
+            this.watch_map.set(cacheKey, { args, callbacks: [callback] })
+        }
+        if (immediate) {
+            this.request(args).then(callback)
+        }
+        this.start_watch()
+    }
+
+    unwatch(args: HttpArgs, callback: (data: any) => void) {
+        const cacheKey = this.generateCacheKey(args)
+        const item = this.watch_map.get(cacheKey)
+        if (item) {
+            item.callbacks = item.callbacks.filter((cb) => cb !== callback)
+            if (item.callbacks.length === 0) {
+                this.watch_map.delete(cacheKey)
+                if (this.watch_map.size === 0) {
+                    this.stop_watch()
+                }
+            }
+        }
+    }
+
+    private request_watch() {
+        const watch_map = this.watch_map
+        for (const [, item] of watch_map) {
+            this.request(item.args).then((data) => {
+                for (const callback of item.callbacks) {
+                    try {
+                        callback(data)
+                    } catch (e) {
+                        console.error('watch callback error', e)
+                    }
+                }
+            })
+        }
+    }
+
+    private start_watch() {
+        if (this.watch_interval_id) {
+            return
+        }
+        this.watch_interval_id = setInterval(this.request_watch.bind(this), this.watch_interval)
+    }
+
+    private stop_watch() {
+        if (this.watch_interval_id) {
+            clearInterval(this.watch_interval_id)
+            this.watch_interval_id = null
+        }
     }
 }

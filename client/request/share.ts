@@ -1,4 +1,4 @@
-import { HttpMgr } from './http'
+import { HttpArgs, HttpMgr } from './http'
 import { checkRefreshToken } from './refresh_token';
 import { BaseResponseSchema, BaseResponse, PermType, UserInfoSchema, TeamInfoSchema, ProjectInfoSchema, DocumentInfoSchema } from './types';
 import { z } from 'zod';
@@ -239,6 +239,25 @@ export class ShareAPI {
         } catch (error) {
             console.error('申请列表数据校验失败:', error);
             throw error;
+        }
+    }
+
+    watchApplyList(params: { start_time?: number, page?: number; page_size?: number }, callback: (data: ShareApplyListResponse) => void, immediate: boolean = false) {
+        const httpArgs: HttpArgs = {
+            url: '/share/apply',
+            method: 'get',
+            params: params,
+        }
+        this.http.watch(httpArgs, (result) => {
+            try {
+                callback(ShareApplyListResponseSchema.parse(result))
+            } catch (error) {
+                console.error('申请列表数据校验失败:', error);
+                throw error;
+            }
+        }, immediate);
+        return () => {
+            this.http.unwatch(httpArgs, callback)
         }
     }
 
