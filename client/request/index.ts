@@ -24,7 +24,7 @@ export class Request {
     comment_api: CommentAPI
     share_api: ShareAPI
     document_api: DocumentAPI
-    constructor(apiUrl: string, onUnauthorized: () => void, token: {
+    private constructor(apiUrl: string, onUnauthorized: () => void, token: {
         getToken: () => string | undefined,
         setToken: (token: string | undefined) => void
     } = defaultToken) {
@@ -36,8 +36,20 @@ export class Request {
         this.document_api = new DocumentAPI(httpmgr);
     }
 
+    // todo
     watch(key: string, callback: (value: any) => void) {
-        // todo
+    }
+
+    // 需要单例模式。不然如有多个实例，可能同时刷新token，导致先刷新成功token的请求带上的token失效
+    static instance: Request | null = null;
+    static getInstance(apiUrl: string, onUnauthorized: () => void, token: {
+        getToken: () => string | undefined,
+        setToken: (token: string | undefined) => void
+    } = defaultToken) {
+        if (!Request.instance) {
+            Request.instance = new Request(apiUrl, onUnauthorized, token);
+        }
+        return Request.instance;
     }
 }
 
