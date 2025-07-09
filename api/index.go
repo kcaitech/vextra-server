@@ -1,4 +1,4 @@
-package http
+package api
 
 import (
 	"context"
@@ -10,8 +10,8 @@ import (
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/contrib/gzip"
 	"github.com/gin-gonic/gin"
+	v1 "kcaitech.com/kcserver/api/v1"
 	handlers "kcaitech.com/kcserver/handlers"
-	"kcaitech.com/kcserver/handlers/common"
 	"kcaitech.com/kcserver/middlewares"
 	"kcaitech.com/kcserver/services"
 )
@@ -79,13 +79,6 @@ func LoadRoutes(router *gin.Engine) {
 	apiGroup.GET("/version.json", func(c *gin.Context) {
 		c.File("/app/version.json")
 	})
-	loadWsRoutes(apiGroup)    // 单独鉴权
-	loadLoginRoutes(apiGroup) // 从refreshToken获取信息
-	apiGroup.Use(services.GetKCAuthClient().AuthRequired())
-	apiGroup.Use(common.Sha1SaveData)
-	loadUserRoutes(apiGroup)
-	loadDocumentRoutes(apiGroup)
-	loadShareRoutes(apiGroup)
-	loadTeamRoutes(apiGroup)
-	loadFeedbackRoutes(apiGroup)
+
+	v1.LoadRoutes(apiGroup.Group("/v1"))
 }

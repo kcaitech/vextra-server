@@ -5,7 +5,7 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
-	httpApi "kcaitech.com/kcserver/api/v1/http"
+	api "kcaitech.com/kcserver/api"
 	config "kcaitech.com/kcserver/config"
 	"kcaitech.com/kcserver/middlewares"
 	"kcaitech.com/kcserver/services"
@@ -53,6 +53,6 @@ const port = 80
 func main() {
 	Init()
 	start(func(router *gin.Engine) {
-		httpApi.LoadRoutes(router)
+		api.LoadRoutes(router)
 	}, port)
 }
