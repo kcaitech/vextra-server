@@ -1,6 +1,7 @@
 package document
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -23,8 +24,12 @@ func GetResourceDocumentList(c *gin.Context) {
 		userIds = append(userIds, item.Document.UserId)
 	}
 
-	userMap, err := GetUsersInfo(c, userIds)
+	userMap, err, statusCode := GetUsersInfo(c, userIds)
 	if err != nil {
+		if statusCode == http.StatusUnauthorized {
+			common.Unauthorized(c)
+			return
+		}
 		common.ServerError(c, err.Error())
 		return
 	}

@@ -3,6 +3,7 @@ package document
 import (
 	"errors"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -32,8 +33,12 @@ func GetUserReceiveSharesList(c *gin.Context) {
 		userIds = append(userIds, item.Document.UserId)
 	}
 
-	userMap, err := GetUsersInfo(c, userIds)
+	userMap, err, statusCode := GetUsersInfo(c, userIds)
 	if err != nil {
+		if statusCode == http.StatusUnauthorized {
+			common.Unauthorized(c)
+			return
+		}
 		common.ServerError(c, err.Error())
 		return
 	}
@@ -208,8 +213,12 @@ func GetDocumentSharesList(c *gin.Context) {
 	for _, item := range *sharesList {
 		userIds = append(userIds, item.DocumentPermission.GranteeId)
 	}
-	userMap, err := GetUsersInfo(c, userIds)
+	userMap, err, statusCode := GetUsersInfo(c, userIds)
 	if err != nil {
+		if statusCode == http.StatusUnauthorized {
+			common.Unauthorized(c)
+			return
+		}
 		common.ServerError(c, err.Error())
 		return
 	}
@@ -418,8 +427,12 @@ func GetDocumentPermissionRequestsList(c *gin.Context) {
 	for _, item := range *result {
 		userIds = append(userIds, item.DocumentPermissionRequests.UserId)
 	}
-	userMap, err := GetUsersInfo(c, userIds)
+	userMap, err, statusCode := GetUsersInfo(c, userIds)
 	if err != nil {
+		if statusCode == http.StatusUnauthorized {
+			common.Unauthorized(c)
+			return
+		}
 		common.ServerError(c, err.Error())
 		return
 	}

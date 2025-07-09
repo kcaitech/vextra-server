@@ -11,11 +11,11 @@ import (
 	"kcaitech.com/kcserver/utils"
 )
 
-func GetUsersInfo(c *gin.Context, userIds []string) (map[string]*auth.UserInfo, error) {
+func GetUsersInfo(c *gin.Context, userIds []string) (map[string]*auth.UserInfo, error, int) {
 	token, _ := utils.GetAccessToken(c)
-	users, err := services.GetKCAuthClient().GetUsersInfo(token, userIds)
+	users, err, statusCode := services.GetKCAuthClient().GetUsersInfo(token, userIds)
 	if err != nil {
-		return nil, err
+		return nil, err, statusCode
 	}
 
 	userMap := make(map[string]*auth.UserInfo)
@@ -24,7 +24,7 @@ func GetUsersInfo(c *gin.Context, userIds []string) (map[string]*auth.UserInfo, 
 	for _, user := range users {
 		userMap[user.UserID] = &user
 	}
-	return userMap, nil
+	return userMap, nil, statusCode
 }
 
 func GetUserInfo(c *gin.Context) (*auth.UserInfo, error) {

@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -155,8 +156,12 @@ func GetTeamList(c *gin.Context) {
 		userIds = append(userIds, item.CreatorTeamMember.UserId)
 	}
 	// 获取用户信息
-	userMap, err := GetUsersInfo(c, userIds)
+	userMap, err, statusCode := GetUsersInfo(c, userIds)
 	if err != nil {
+		if statusCode == http.StatusUnauthorized {
+			common.Unauthorized(c)
+			return
+		}
 		log.Println("get users info fail:", err.Error())
 		common.ServerError(c, "查询错误")
 		return
@@ -221,8 +226,12 @@ func GetTeamMemberList(c *gin.Context) {
 	for _, member := range result {
 		userIds = append(userIds, member.TeamMember.UserId)
 	}
-	userMap, err := GetUsersInfo(c, userIds)
+	userMap, err, statusCode := GetUsersInfo(c, userIds)
 	if err != nil {
+		if statusCode == http.StatusUnauthorized {
+			common.Unauthorized(c)
+			return
+		}
 		log.Println("get users info fail:", err.Error())
 		common.ServerError(c, "查询错误")
 		return
@@ -438,8 +447,12 @@ func GetTeamJoinRequestList(c *gin.Context) {
 	for _, item := range result {
 		userIds = append(userIds, item.TeamJoinRequest.UserId)
 	}
-	userMap, err := GetUsersInfo(c, userIds)
+	userMap, err, statusCode := GetUsersInfo(c, userIds)
 	if err != nil {
+		if statusCode == http.StatusUnauthorized {
+			common.Unauthorized(c)
+			return
+		}
 		common.ServerError(c, err.Error())
 		return
 	}
@@ -512,8 +525,12 @@ func GetSelfTeamJoinRequestList(c *gin.Context) {
 		userIds = append(userIds, item.TeamJoinRequest.ProcessedBy)
 	}
 
-	userMap, err := GetUsersInfo(c, userIds)
+	userMap, err, statusCode := GetUsersInfo(c, userIds)
 	if err != nil {
+		if statusCode == http.StatusUnauthorized {
+			common.Unauthorized(c)
+			return
+		}
 		common.ServerError(c, err.Error())
 		return
 	}

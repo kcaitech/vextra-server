@@ -2,6 +2,7 @@ package document
 
 import (
 	"errors"
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -32,14 +33,22 @@ func GetUserRecycleBinDocumentList(c *gin.Context) {
 		deleteUserIds = append(deleteUserIds, item.Document.DeleteBy)
 	}
 
-	userMap, err := GetUsersInfo(c, userIds)
+	userMap, err, statusCode := GetUsersInfo(c, userIds)
 	if err != nil {
+		if statusCode == http.StatusUnauthorized {
+			common.Unauthorized(c)
+			return
+		}
 		common.ServerError(c, err.Error())
 		return
 	}
 
-	deleteUserMap, err := GetUsersInfo(c, deleteUserIds)
+	deleteUserMap, err, statusCode := GetUsersInfo(c, deleteUserIds)
 	if err != nil {
+		if statusCode == http.StatusUnauthorized {
+			common.Unauthorized(c)
+			return
+		}
 		common.ServerError(c, err.Error())
 		return
 	}

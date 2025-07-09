@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -52,8 +53,12 @@ func GetDocumentComment(c *gin.Context) {
 		userIds = append(userIds, comment.User)
 	}
 
-	userMap, err := GetUsersInfo(c, userIds)
+	userMap, err, statusCode := GetUsersInfo(c, userIds)
 	if err != nil {
+		if statusCode == http.StatusUnauthorized {
+			common.Unauthorized(c)
+			return
+		}
 		common.ServerError(c, err.Error())
 		return
 	}

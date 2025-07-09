@@ -3,6 +3,7 @@ package document
 import (
 	"errors"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -147,8 +148,12 @@ func GetProjectList(c *gin.Context) {
 		userIds = append(userIds, item.CreatorTeamMember.UserId)
 	}
 	// 获取用户信息
-	userMap, err := GetUsersInfo(c, userIds)
+	userMap, err, statusCode := GetUsersInfo(c, userIds)
 	if err != nil {
+		if statusCode == http.StatusUnauthorized {
+			common.Unauthorized(c)
+			return
+		}
 		log.Println("get users info fail:", err.Error())
 		common.ServerError(c, "查询错误")
 		return
@@ -228,8 +233,12 @@ func GetProjectMemberList(c *gin.Context) {
 		userIds = append(userIds, member.ProjectMember.UserId)
 	}
 
-	userMap, err := GetUsersInfo(c, userIds)
+	userMap, err, statusCode := GetUsersInfo(c, userIds)
 	if err != nil {
+		if statusCode == http.StatusUnauthorized {
+			common.Unauthorized(c)
+			return
+		}
 		log.Println("get users info fail:", err.Error())
 		common.ServerError(c, "查询错误")
 		return
@@ -456,8 +465,12 @@ func GetProjectJoinRequestList(c *gin.Context) {
 		userIds = append(userIds, item.ProjectJoinRequest.UserId)
 	}
 
-	userMap, err := GetUsersInfo(c, userIds)
+	userMap, err, statusCode := GetUsersInfo(c, userIds)
 	if err != nil {
+		if statusCode == http.StatusUnauthorized {
+			common.Unauthorized(c)
+			return
+		}
 		common.ServerError(c, "获取用户信息失败")
 		return
 	}
@@ -534,8 +547,12 @@ func GetSelfProjectJoinRequestList(c *gin.Context) {
 	}
 
 	if len(userIds) > 0 {
-		userMap, err := GetUsersInfo(c, userIds)
+		userMap, err, statusCode := GetUsersInfo(c, userIds)
 		if err != nil {
+			if statusCode == http.StatusUnauthorized {
+				common.Unauthorized(c)
+				return
+			}
 			common.ServerError(c, "获取用户信息失败")
 			return
 		}
