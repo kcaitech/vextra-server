@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -11,6 +12,7 @@ import (
 	"time"
 
 	"github.com/go-redsync/redsync/v4"
+	"kcaitech.com/kcserver/common"
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/providers/redis"
 	"kcaitech.com/kcserver/utils/my_map"
@@ -33,7 +35,7 @@ type DocumentVersioningInfo struct {
 var documentVersioningInfoMap = my_map.NewSyncMap[string, DocumentVersioningInfo]()
 
 func getDocumentLastUpdateTimeFromRedis(documentId string, redis *redis.RedisDB) time.Time {
-	if lastUpdateTime, err := redis.Client.Get(context.Background(), "Document Versioning LastUpdateTime[DocumentId:"+(documentId)+"]").Int64(); err == nil && lastUpdateTime > 0 {
+	if lastUpdateTime, err := redis.Client.Get(context.Background(), fmt.Sprintf(common.RedisKeyDocumentVersioningLastUpdateTime, documentId)).Int64(); err == nil && lastUpdateTime > 0 {
 		return time.UnixMilli(lastUpdateTime)
 	}
 	return time.UnixMilli(0)
@@ -78,7 +80,7 @@ func AutoUpdate(documentId string, config *config.Configuration) {
 	// 上锁
 	// documentIdStr := str.IntToString(documentId)
 	redis := services.GetRedisDB()
-	documentVersioningMutex := redis.RedSync.NewMutex("Document Versioning Mutex[DocumentId:"+documentId+"]", redsync.WithExpiry(time.Second*10))
+	documentVersioningMutex := redis.RedSync.NewMutex(fmt.Sprintf(common.RedisKeyDocumentVersioningMutex, documentId), redsync.WithExpiry(time.Second*10))
 	if err := documentVersioningMutex.TryLock(); err != nil {
 		info.LastUpdateTime = time.Now()
 		return
@@ -202,7 +204,7 @@ func AutoUpdate(documentId string, config *config.Configuration) {
 	}
 
 	// 更新redis
-	if _, err := redis.Client.Set(context.Background(), "Document Versioning LastUpdateTime[DocumentId:"+documentId+"]", time.Now().UnixMilli(), time.Hour*1).Result(); err != nil {
+	if _, err := redis.Client.Set(context.Background(), fmt.Sprintf(common.RedisKeyDocumentVersioningLastUpdateTime, documentId), time.Now().UnixMilli(), time.Hour*1).Result(); err != nil {
 		log.Println("redis.Client.Set err", err)
 	} else {
 		log.Println("auto update successed")

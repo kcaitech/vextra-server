@@ -3,10 +3,12 @@ package ws
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"time"
 
 	"github.com/go-redsync/redsync/v4"
+	com "kcaitech.com/kcserver/common"
 	"kcaitech.com/kcserver/handlers/common"
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/providers/mongo"
@@ -53,13 +55,13 @@ type opServe struct {
 // 从redis中获取最后一条cmd的id，若redis中没有则从mongodb中获取
 func (serv *opServe) getPreviousId(documentId string) (uint, error) {
 	// documentIdStr := str.IntToString(documentId)
-	previousId, err := serv.redis.Client.Get(context.Background(), "Document lastCmdVerId[DocumentId:"+documentId+"]").Int() // redis也是最终一致性
+	previousId, err := serv.redis.Client.Get(context.Background(), fmt.Sprintf(com.RedisKeyDocumentLastCmdVerId, documentId)).Int() // redis也是最终一致性
 	if err == nil {
 		return uint(previousId), nil
 	}
 
 	if err != redis.Nil { // todo redis获取不到时，应该去mongodb获取，并更新到redis？
-		log.Println("Document lastCmdVerId[DocumentId:"+documentId+"]"+"获取失败", err)
+		log.Println(fmt.Sprintf(com.RedisKeyDocumentLastCmdVerId, documentId), "获取失败", err)
 		return 0, err
 	}
 
@@ -119,7 +121,7 @@ func NewOpServe(ws *websocket.Ws, userId string, documentId string, versionId st
 
 	// documentIdStr := str.IntToString(documentId)
 	redis := services.GetRedisDB()
-	mutex := redis.RedSync.NewMutex("Document Op Mutex[DocumentId:"+documentId+"]", redsync.WithExpiry(time.Second*10))
+	mutex := redis.RedSync.NewMutex(fmt.Sprintf(com.RedisKeyDocumentOpMutex, documentId), redsync.WithExpiry(time.Second*10))
 
 	serv := opServe{
 		ws: ws,
@@ -157,11 +159,11 @@ func (serv *opServe) start(documentId string, lastCmdVersion uint) {
 			log.Println("json编码错误 cmdItemsData", err)
 			return
 		}
-		log.Println("Document Op[DocumentId:"+documentId+"]"+"获取成功", len(cmdItemList), lastCmdVersion)
+		log.Println(fmt.Sprintf(com.RedisKeyDocumentOp, documentId), "获取成功", len(cmdItemList), lastCmdVersion)
 		serv.send(string(cmdItemListData))
 
 		// documentIdStr := str.IntToString(documentId)
-		pubsub := serv.redis.Client.Subscribe(context.Background(), "Document Op[DocumentId:"+documentId+"]")
+		pubsub := serv.redis.Client.Subscribe(context.Background(), fmt.Sprintf(com.RedisKeyDocumentOp, documentId))
 		defer pubsub.Close()
 		channel := pubsub.Channel()
 		for {
@@ -293,7 +295,7 @@ func (serv *opServe) handleCommit(data *TransData, receiveData *ReceiveData) {
 	documentId := (serv.documentId)
 
 	// 先删除，防止插入失败时无法正确更新lastCmdVerId
-	if _, err = serv.redis.Client.Del(context.Background(), "Document lastCmdVerId[DocumentId:"+documentId+"]").Result(); err != nil {
+	if _, err = serv.redis.Client.Del(context.Background(), fmt.Sprintf(com.RedisKeyDocumentLastCmdVerId, documentId)).Result(); err != nil {
 		msgErr("redis del fail", &serverData, &err)
 		return
 	}
@@ -333,12 +335,12 @@ func (serv *opServe) handleCommit(data *TransData, receiveData *ReceiveData) {
 		msgErr("数据插入失败", &serverData, &err)
 		return
 	} else {
-		if _, err = serv.redis.Client.Set(context.Background(), "Document lastCmdVerId[DocumentId:"+documentId+"]", previousId, time.Hour*1).Result(); err != nil {
-			log.Println("Document lastCmdVerId[DocumentId:"+documentId+"]"+"设置失败", err)
+		if _, err = serv.redis.Client.Set(context.Background(), fmt.Sprintf(com.RedisKeyDocumentLastCmdVerId, documentId), previousId, time.Hour*1).Result(); err != nil {
+			log.Println(fmt.Sprintf(com.RedisKeyDocumentLastCmdVerId, documentId), "设置失败", err)
 			// return errors.New("数据插入失败")
 		}
 		log.Println("收到cmd广播", len(cmdItemListData), documentId)
-		serv.redis.Client.Publish(context.Background(), "Document Op[DocumentId:"+documentId+"]", cmdItemListData) // 通知客户端是通过redis订阅来触发的
+		serv.redis.Client.Publish(context.Background(), fmt.Sprintf(com.RedisKeyDocumentOp, documentId), cmdItemListData) // 通知客户端是通过redis订阅来触发的
 		// return nil
 		// debug
 		// log.Panic()

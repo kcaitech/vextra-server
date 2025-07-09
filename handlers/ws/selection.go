@@ -3,9 +3,11 @@ package ws
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"time"
 
+	"kcaitech.com/kcserver/common"
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/providers/redis"
 	"kcaitech.com/kcserver/services"
@@ -23,8 +25,8 @@ type DocSelectionData struct {
 	Permission        models.PermType `json:"permission,omitempty"`
 	// Avatar            string          `json:"avatar,omitempty"`
 	// Nickname          string          `json:"nickname,omitempty"`
-	User              *models.UserProfile `json:"user,omitempty"`
-	EnterTime 		  int64				  `json:"enter_time,omitempty"`
+	User      *models.UserProfile `json:"user,omitempty"`
+	EnterTime int64               `json:"enter_time,omitempty"`
 }
 
 type DocSelectionOpType uint8
@@ -47,9 +49,9 @@ type selectionServe struct {
 	documentId string
 	userId     string
 	user       *models.UserProfile
-	enterTime int64
-	permType  models.PermType
-	redis     *redis.RedisDB
+	enterTime  int64
+	permType   models.PermType
+	redis      *redis.RedisDB
 }
 
 func NewSelectionServe(ws *websocket.Ws, token, userId string, documentId string, genSId func() string) *selectionServe {
@@ -94,10 +96,10 @@ func NewSelectionServe(ws *websocket.Ws, token, userId string, documentId string
 		documentId: documentId,
 		userId:     userId,
 		user:       &userProfile,
-		enterTime: time.Now().UnixNano() / 1000000,
-		permType:  permType,
-		quit:      make(chan struct{}),
-		redis:     services.GetRedisDB(),
+		enterTime:  time.Now().UnixNano() / 1000000,
+		permType:   permType,
+		quit:       make(chan struct{}),
+		redis:      services.GetRedisDB(),
 	}
 	serv.start(documentId)
 	// serv.isready = true
@@ -110,7 +112,7 @@ func (serv *selectionServe) start(documentId string) {
 	// 监控选区变化
 	go func() {
 		// defer tunnelServer.Close()
-		subscribe := serv.redis.Client.Subscribe(context.Background(), "Document Selection[DocumentId:"+documentId+"]")
+		subscribe := serv.redis.Client.Subscribe(context.Background(), fmt.Sprintf(common.RedisKeyDocumentSelection, documentId))
 		defer subscribe.Close()
 		channel := subscribe.Channel()
 		for {
@@ -135,8 +137,8 @@ func (serv *selectionServe) close() {
 		UserId: userIdStr,
 	}
 	if data, err := json.Marshal(docSelectionOpData); err == nil {
-		serv.redis.Client.HDel(context.Background(), "Document Selection Data[DocumentId:"+documentId+"]", userIdStr)
-		serv.redis.Client.Publish(context.Background(), "Document Selection[DocumentId:"+documentId+"]", string(data))
+		serv.redis.Client.HDel(context.Background(), fmt.Sprintf(common.RedisKeyDocumentSelectionData, documentId), userIdStr)
+		serv.redis.Client.Publish(context.Background(), fmt.Sprintf(common.RedisKeyDocumentSelection, documentId), string(data))
 	}
 	close(serv.quit)
 }
@@ -182,9 +184,9 @@ func (serv *selectionServe) handle(data *TransData, binaryData *([]byte)) {
 		msgErr("document selection数据解码错误", &serverData, &err)
 		return
 	} else {
-		serv.redis.Client.HSet(context.Background(), "Document Selection Data[DocumentId:"+documentId+"]", userIdStr, string(selectionDataJson))
-		serv.redis.Client.Expire(context.Background(), "Document Selection Data[DocumentId:"+documentId+"]", time.Hour*1)
-		serv.redis.Client.Publish(context.Background(), "Document Selection[DocumentId:"+documentId+"]", string(docSelectionOpDataJson))
+		serv.redis.Client.HSet(context.Background(), fmt.Sprintf(common.RedisKeyDocumentSelectionData, documentId), userIdStr, string(selectionDataJson))
+		serv.redis.Client.Expire(context.Background(), fmt.Sprintf(common.RedisKeyDocumentSelectionData, documentId), time.Hour*1)
+		serv.redis.Client.Publish(context.Background(), fmt.Sprintf(common.RedisKeyDocumentSelection, documentId), string(docSelectionOpDataJson))
 		serv.ws.WriteJSON(serverData)
 	}
 }

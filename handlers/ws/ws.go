@@ -69,12 +69,6 @@ type ACommuncation struct {
 	userId     string
 	documentId string
 	versionId  string
-	// dbModule         *models.DBModule
-	// redis            *redis.RedisDB
-	// mongo            *mongo.MongoDB
-	// storageClient    *storage.StorageClient
-	// safereviewClient *safereview.Client
-	// config           *config.Configuration
 }
 
 func (c *ACommuncation) msgErr(msg string, serverData *TransData, err *error) {
@@ -334,12 +328,6 @@ func Ws(c *gin.Context) {
 		genSId:   genSId,
 		serveMap: map[string]ServeFace{},
 		token:    token,
-		// dbModule:         dbModule,
-		// redis:            redis,
-		// mongo:            mongo,
-		// storageClient:    storageClient,
-		// safereviewClient: safereviewClient,
-		// config:           config,
 	}).serve()
 
 }

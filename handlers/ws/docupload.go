@@ -27,20 +27,10 @@ type DocData struct {
 type docUploadServe struct {
 	ws     *websocket.Ws
 	userId string
-
-	// cache // todo cache in redis
-	data *DocData
+	data   *DocData
 }
 
 func NewDocUploadServe(ws *websocket.Ws, userId string) *docUploadServe {
-
-	// 权限校验
-	// var permType models.PermType
-	// if err := services.NewDocumentService().GetPermTypeByDocumentAndUserId(&permType, documentId, userId); err != nil || permType < models.PermTypeReadOnly {
-	// 	log.Println("NO comment perm", err, permType)
-	// 	return nil
-	// }
-
 	serv := docUploadServe{
 		ws:     ws,
 		userId: userId,

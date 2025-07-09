@@ -2,8 +2,10 @@ package ws
 
 import (
 	"context"
+	"fmt"
 	"log"
 
+	"kcaitech.com/kcserver/common"
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/providers/redis"
 	"kcaitech.com/kcserver/services"
@@ -45,7 +47,7 @@ func (serv *commnetServe) start(documentId string) {
 	// 监控评论变化
 	go func() {
 		// defer tunnelServer.Close()
-		pubsub := serv.redis.Client.Subscribe(context.Background(), "Document Comment[DocumentId:"+documentId+"]")
+		pubsub := serv.redis.Client.Subscribe(context.Background(), fmt.Sprintf(common.RedisKeyDocumentComment, documentId))
 		defer pubsub.Close()
 		channel := pubsub.Channel()
 		for {
@@ -71,11 +73,6 @@ func (serv *commnetServe) handle(data *TransData, binaryData *([]byte)) {
 }
 
 func (serv *commnetServe) send(data string) {
-	// jsonData := &Data{}
-	// if err := json.Unmarshal([]byte(data), jsonData); err != nil {
-	// 	log.Println("comment, redis data wrong", err)
-	// 	return
-	// }
 	sid := serv.genSId()
 	serverData := TransData{
 		Type:   DataTypes_Comment,

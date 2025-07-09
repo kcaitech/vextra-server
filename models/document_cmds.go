@@ -66,8 +66,7 @@ func RenewCmdVerIds(cmdItems []CmdItem) {
 // service
 
 type CmdService struct {
-	MongoDB *mongo.MongoDB
-	// Redis   *redis.RedisDB // 用于同步锁及消息发布
+	MongoDB    *mongo.MongoDB
 	Collection *mongodb.Collection
 }
 
