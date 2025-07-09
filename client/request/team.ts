@@ -342,6 +342,31 @@ export class TeamAPI {
         }
     }
 
+    watchSelfTeamApplyInfo(params: {
+        team_id?: string;
+        page?: number;
+        page_size?: number;
+    }, callback: (data: TeamNoticeResponse) => void, immediate: boolean = false) {
+        const httpArgs: HttpArgs = {
+            url: '/team/self_apply',
+            method: 'get',
+            params: params,
+        }
+        this.http.watch(httpArgs, (result) => {
+            try {
+                callback(TeamNoticeResponseSchema.parse(result))
+            } catch (error) {
+                console.error('获取团队申请通知信息数据校验失败:', error);
+                throw error;
+            }
+        }, immediate, () => {
+            checkRefreshToken(this.http)
+        });
+        return () => {
+            this.http.unwatch(httpArgs, callback)
+        }
+    }
+
     //设置团队成员昵称
     async setTeamMemberNickname(params: {
         team_id: string;
@@ -620,6 +645,34 @@ export class TeamAPI {
         } catch (error) {
             console.error('项目申请列表数据校验失败:', error);
             throw error;
+        }
+    }
+
+    watchTeamProjectApply(params: {
+        team_id?: string;
+        project_id?: string;
+        status?: number;
+        page?: number;
+        page_size?: number;
+        start_time?: number;
+    }, callback: (data: ProjectApplyListResponse) => void, immediate: boolean = false) {
+        const httpArgs: HttpArgs = {
+            url: '/team/project/apply',
+            method: 'get',
+            params: params,
+        }
+        this.http.watch(httpArgs, (result) => {
+            try {
+                callback(ProjectApplyListResponseSchema.parse(result))
+            } catch (error) {
+                console.error('项目申请列表数据校验失败:', error);
+                throw error;
+            }
+        }, immediate, () => {
+            checkRefreshToken(this.http)
+        });
+        return () => {
+            this.http.unwatch(httpArgs, callback)
         }
     }
 

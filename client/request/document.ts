@@ -412,6 +412,27 @@ export class DocumentAPI {
         }
     }
 
+    watchDocumentAuthority(params: { doc_id: string }, callback: (data: DocumentPermission) => void, immediate: boolean = false) {
+        const httpArgs: HttpArgs = {
+            url: `/documents/permission`,
+            method: 'get',
+            params: params,
+        }
+        this.http.watch(httpArgs, (result) => {
+            try {
+                callback(DocumentPermissionSchema.parse(result))
+            } catch (error) {
+                console.error('文档权限数据校验失败:', error);
+                throw error;
+            }
+        }, immediate, () => {
+            checkRefreshToken(this.http)
+        });
+        return () => {
+            this.http.unwatch(httpArgs, callback)
+        }
+    }
+
     //获取文档密钥
     async getDocumentAccessKey(params: { doc_id: string }): Promise<DocumentKeyResponse> {
         await checkRefreshToken(this.http);
