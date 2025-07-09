@@ -28,11 +28,37 @@ function isTokenExpired(httpMgr: HttpMgr): boolean {
     return false;
 }
 
+// 用于跟踪 refresh token 请求的 Promise
+let refreshTokenPromise: Promise<any> | null = null;
 export async function checkRefreshToken(httpMgr: HttpMgr) {
-    if (httpMgr.token && isTokenExpired(httpMgr)) {
-        const res = await refreshToken(httpMgr);
-        if (res.code === HttpCode.StatusOK && res.data.token) {
-            httpMgr.token = res.data.token;
-        }
+
+    if (!httpMgr.token || !isTokenExpired(httpMgr)) {
+        return;
     }
+
+    // 如果已经有 refresh token 请求在进行中，等待它完成
+    if (refreshTokenPromise) {
+        return await refreshTokenPromise;
+    }
+    
+    // 创建新的 refresh token 请求
+    refreshTokenPromise = (async () => {
+        try {
+            const res = await refreshToken(httpMgr);
+            if (res.code === HttpCode.StatusOK && res.data.token) {
+                httpMgr.token = res.data.token;
+            }
+            return res;
+        } catch (err) {
+            console.error('RefreshToken请求失败:', err);
+            // 刷新失败时清除 token
+            httpMgr.token = undefined;
+            throw err;
+        } finally {
+            // 无论成功还是失败，都要重置 Promise
+            refreshTokenPromise = null;
+        }
+    })();
+    
+    return await refreshTokenPromise;
 }

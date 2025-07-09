@@ -40,7 +40,7 @@ export class Request {
     watch(key: string, callback: (value: any) => void) {
     }
 
-    // 需要单例模式。不然如有多个实例，可能同时刷新token，导致先刷新成功token的请求带上的token失效
+    // 单例模式
     static instance: Request | null = null;
     static getInstance(apiUrl: string, onUnauthorized: () => void, token: {
         getToken: () => string | undefined,
