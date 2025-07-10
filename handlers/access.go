@@ -11,12 +11,19 @@ import (
 	"kcaitech.com/kcserver/handlers/common"
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/services"
+	"kcaitech.com/kcserver/utils"
 	"kcaitech.com/kcserver/utils/websocket"
 
 	wsclient "kcaitech.com/kcserver/handlers/ws"
 )
 
-func AccessGrant(c *gin.Context) {
+func AccessCreate(c *gin.Context) {
+	userId, err := utils.GetUserId(c)
+	if err != nil {
+		common.Unauthorized(c)
+		return
+	}
+
 	var grantPost services.GrantPost
 	if err := c.ShouldBindJSON(&grantPost); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request"})
@@ -27,7 +34,7 @@ func AccessGrant(c *gin.Context) {
 	accessSecret := uuid.New().String()
 
 	accessAuthService := services.NewAccessAuthService()
-	if err := accessAuthService.UpdateAccessAuth(accessKey, accessSecret, grantPost); err != nil {
+	if err := accessAuthService.UpdateAccessAuth(userId, accessKey, accessSecret, grantPost); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "update access_auth failed"})
 		return
 	}
@@ -35,13 +42,36 @@ func AccessGrant(c *gin.Context) {
 	common.Success(c, gin.H{"access_key": accessKey, "access_secret": accessSecret})
 }
 
+func AccessList(c *gin.Context) {
+	userId, err := utils.GetUserId(c)
+	if err != nil {
+		common.Unauthorized(c)
+		return
+	}
+
+	accessAuthService := services.NewAccessAuthService()
+	accessAuths, err := accessAuthService.GetCombinedAccessAuth(userId)
+	if err != nil {
+		common.BadRequest(c, "get access_auth failed")
+		return
+	}
+
+	common.Success(c, accessAuths)
+}
+
 type AccessUpdatePost struct {
 	services.GrantPost
-	AccessKey    string `json:"access_key"`
-	AccessSecret string `json:"access_secret"`
+	AccessKey string `json:"access_key"`
+	// AccessSecret string `json:"access_secret"`
 }
 
 func AccessUpdate(c *gin.Context) {
+	userId, err := utils.GetUserId(c)
+	if err != nil {
+		common.Unauthorized(c)
+		return
+	}
+
 	var updateAccessAuthPost AccessUpdatePost
 	if err := c.ShouldBindJSON(&updateAccessAuthPost); err != nil {
 		common.BadRequest(c, "invalid request")
@@ -56,12 +86,12 @@ func AccessUpdate(c *gin.Context) {
 		return
 	}
 
-	if accessAuth.Key != updateAccessAuthPost.AccessKey {
-		common.BadRequest(c, "access_key or access_secret is invalid")
+	if accessAuth.UserId != userId {
+		common.BadRequest(c, "access_key is invalid")
 		return
 	}
 
-	if err := accessAuthService.UpdateAccessAuth(updateAccessAuthPost.AccessKey, updateAccessAuthPost.AccessSecret, updateAccessAuthPost.GrantPost); err != nil {
+	if err := accessAuthService.UpdateAccessAuth(userId, updateAccessAuthPost.AccessKey, "", updateAccessAuthPost.GrantPost); err != nil {
 		common.BadRequest(c, "update access_auth failed")
 		return
 	}
@@ -77,6 +107,39 @@ func AccessUpdate(c *gin.Context) {
 	}
 
 	common.Success(c, gin.H{"message": "update access_auth success"})
+}
+
+func AccessDelete(c *gin.Context) {
+	userId, err := utils.GetUserId(c)
+	if err != nil {
+		common.Unauthorized(c)
+		return
+	}
+
+	accessKey := c.PostForm("access_key")
+	if accessKey == "" {
+		common.BadRequest(c, "access_key is required")
+		return
+	}
+
+	accessAuthService := services.NewAccessAuthService()
+	accessAuth, err := accessAuthService.GetAccessAuth(accessKey)
+	if err != nil {
+		common.BadRequest(c, "access_key is invalid")
+		return
+	}
+
+	if accessAuth.UserId != userId {
+		common.BadRequest(c, "access_key is invalid")
+		return
+	}
+
+	if err := accessAuthService.DeleteAccessAuth(accessKey); err != nil {
+		common.BadRequest(c, "delete access_auth failed")
+		return
+	}
+
+	common.Success(c, gin.H{"message": "delete access_auth success"})
 }
 
 func AccessToken(c *gin.Context) {

@@ -8,8 +8,12 @@ import (
 
 func loadAccessRoutes(api *gin.RouterGroup) {
 	router := api.Group("/access")
-	router.POST("/grant", services.GetKCAuthClient().AuthRequired(), handlers.AccessGrant)
-	router.POST("/update", services.GetKCAuthClient().AuthRequired(), handlers.AccessUpdate)
 	router.POST("/token", handlers.AccessToken)
 	router.GET("/ws", handlers.AccessWs)
+	// 下面的需要用户登录
+	router.Use(services.GetKCAuthClient().AuthRequired())
+	router.POST("/create", handlers.AccessCreate)
+	router.GET("/list", handlers.AccessList)
+	router.POST("/update", handlers.AccessUpdate)
+	router.POST("/delete", handlers.AccessDelete)
 }

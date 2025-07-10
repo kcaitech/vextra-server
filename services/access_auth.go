@@ -27,6 +27,35 @@ func (s *AccessAuthService) GetAccessAuth(accessKey string) (*models.AccessAuth,
 	return &accessAuth, nil
 }
 
+func (s *AccessAuthService) GetAccessAuthByUserId(userId string) ([]*models.AccessAuth, error) {
+	var accessAuths []*models.AccessAuth
+	if err := s.DBModule.DB.Where("user_id = ?", userId).Find(&accessAuths).Error; err != nil {
+		return nil, err
+	}
+	return accessAuths, nil
+}
+
+type CombinedAccessAuth struct {
+	*models.AccessAuth
+	*models.AccessAuthResource
+}
+
+func (s *AccessAuthService) GetCombinedAccessAuth(userId string) ([]*CombinedAccessAuth, error) {
+	var combinedAccessAuths []*CombinedAccessAuth
+
+	// 使用JOIN查询获取AccessAuth和AccessAuthResource的组合数据
+	if err := s.DBModule.DB.
+		Table("access_auth").
+		Select("access_auth.*, access_auth_resource.*").
+		Joins("LEFT JOIN access_auth_resource ON access_auth.key = access_auth_resource.key").
+		Where("access_auth.user_id = ?", userId).
+		Scan(&combinedAccessAuths).Error; err != nil {
+		return nil, err
+	}
+
+	return combinedAccessAuths, nil
+}
+
 func (s *AccessAuthService) CreateAccessAuth(accessAuth *models.AccessAuth) error {
 	return s.DBModule.DB.Create(accessAuth).Error
 }
@@ -83,7 +112,7 @@ func HashPassword(password string) string {
 	return string(hashedPassword)
 }
 
-func (s *AccessAuthService) UpdateAccessAuth(accessKey string, accessSecret string, grantPost GrantPost) error {
+func (s *AccessAuthService) UpdateAccessAuth(userId string, accessKey string, accessSecret string, grantPost GrantPost) error {
 	priorityMask := 0
 	for _, priority := range grantPost.Priority {
 		switch priority {
@@ -113,10 +142,14 @@ func (s *AccessAuthService) UpdateAccessAuth(accessKey string, accessSecret stri
 	}
 
 	accessAuth := &models.AccessAuth{
+		UserId:       userId,
 		Key:          accessKey,
-		Secret:       HashPassword(accessSecret),
-		PriorityMask: uint64(priorityMask),
-		ResourceMask: uint64(resourceMask),
+		PriorityMask: uint32(priorityMask),
+		ResourceMask: uint32(resourceMask),
+	}
+
+	if accessSecret != "" {
+		accessAuth.Secret = HashPassword(accessSecret)
 	}
 
 	if err := s.SaveAccessAuth(accessAuth); err != nil {
