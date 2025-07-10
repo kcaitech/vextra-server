@@ -1,8 +1,6 @@
 package handlers
 
 import (
-	"context"
-	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -10,14 +8,12 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
-	"kcaitech.com/kcserver/config"
 	"kcaitech.com/kcserver/handlers/common"
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils"
 	"kcaitech.com/kcserver/utils/websocket"
 
-	com "kcaitech.com/kcserver/common"
 	wsclient "kcaitech.com/kcserver/handlers/ws"
 )
 
@@ -234,36 +230,14 @@ func AccessWs(c *gin.Context) {
 		return
 	}
 
-	if config.ConcurrentDocumentLimit > 0 {
-		redisClient := services.GetRedisDB().Client
-		connectionKey := fmt.Sprintf("%s%s", com.RedisKeyDocumentConcurrentLimit, uuid.New().String())
-
-		err := redisClient.SetEx(context.Background(), connectionKey, 0, time.Hour*24).Err()
-		if err != nil {
-			log.Println("ws-设置连接标识失败", err)
-			common.ServerError(c, "设置连接标识失败")
-			return
-		}
-
-		defer func() {
-			redisClient.Del(context.Background(), connectionKey)
-		}()
-
-		// 统计当前连接数
-		keyPattern := com.RedisKeyDocumentConcurrentLimit + ":*"
-		keys, err := redisClient.Keys(context.Background(), keyPattern).Result()
-		if err != nil {
-			log.Println("ws-获取并发连接数失败", err)
-			common.ServerError(c, "获取并发连接数失败")
-			return
-		}
-
-		currentCount := int64(len(keys))
-		if currentCount > config.ConcurrentDocumentLimit {
-			log.Println("ws-并发限制", currentCount)
-			common.ServerError(c, "并发限制")
-			return
-		}
+	err, defer_func := wsclient.CheckConcurrentDocumentLimit()
+	if defer_func != nil {
+		defer defer_func()
+	}
+	if err != nil {
+		log.Println("ws-并发限制", err)
+		common.ServerError(c, "并发限制")
+		return
 	}
 
 	userId := accessAuth.UserId

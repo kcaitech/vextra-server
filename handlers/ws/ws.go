@@ -2,6 +2,7 @@ package ws
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -14,6 +15,41 @@ import (
 	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils/websocket"
 )
+
+func CheckConcurrentDocumentLimit() (err error, defer_func func()) {
+	if config.ConcurrentDocumentLimit == 0 {
+		return nil, nil
+	}
+
+	redisClient := services.GetRedisDB().Client
+	connectionKey := fmt.Sprintf("%s%s", com.RedisKeyDocumentConcurrentLimit, uuid.New().String())
+
+	err = redisClient.SetEx(context.Background(), connectionKey, 0, time.Hour*24).Err()
+	if err != nil {
+		log.Println("ws-设置连接标识失败", err)
+		return err, nil
+	}
+
+	defer_func = func() {
+		redisClient.Del(context.Background(), connectionKey)
+	}
+
+	// 统计当前连接数
+	keyPattern := com.RedisKeyDocumentConcurrentLimit + ":*"
+	keys, err := redisClient.Keys(context.Background(), keyPattern).Result()
+	if err != nil {
+		log.Println("ws-获取并发连接数失败", err)
+		return err, defer_func
+	}
+
+	currentCount := int64(len(keys))
+	if currentCount > config.ConcurrentDocumentLimit {
+		log.Println("ws-并发限制", currentCount)
+		return errors.New("并发限制"), defer_func
+	}
+
+	return nil, defer_func
+}
 
 // Ws websocket连接
 func Ws(c *gin.Context) {
@@ -40,36 +76,14 @@ func Ws(c *gin.Context) {
 		return
 	}
 
-	if config.ConcurrentDocumentLimit > 0 {
-		redisClient := services.GetRedisDB().Client
-		connectionKey := fmt.Sprintf("%s%s", com.RedisKeyDocumentConcurrentLimit, uuid.New().String())
-
-		err := redisClient.SetEx(context.Background(), connectionKey, 0, time.Hour*24).Err()
-		if err != nil {
-			log.Println("ws-设置连接标识失败", err)
-			common.ServerError(c, "设置连接标识失败")
-			return
-		}
-
-		defer func() {
-			redisClient.Del(context.Background(), connectionKey)
-		}()
-
-		// 统计当前连接数
-		keyPattern := com.RedisKeyDocumentConcurrentLimit + ":*"
-		keys, err := redisClient.Keys(context.Background(), keyPattern).Result()
-		if err != nil {
-			log.Println("ws-获取并发连接数失败", err)
-			common.ServerError(c, "获取并发连接数失败")
-			return
-		}
-
-		currentCount := int64(len(keys))
-		if currentCount > config.ConcurrentDocumentLimit {
-			log.Println("ws-并发限制", currentCount)
-			common.ServerError(c, "并发限制")
-			return
-		}
+	err, defer_func := CheckConcurrentDocumentLimit()
+	if defer_func != nil {
+		defer defer_func()
+	}
+	if err != nil {
+		log.Println("ws-并发限制", err)
+		common.ServerError(c, "并发限制")
+		return
 	}
 
 	// 建立ws连接
