@@ -36,10 +36,6 @@ export class Request {
         this.document_api = new DocumentAPI(httpmgr);
     }
 
-    // todo
-    watch(key: string, callback: (value: any) => void) {
-    }
-
     // 单例模式
     static instance: Request | null = null;
     static getInstance(apiUrl: string, onUnauthorized: () => void, token: {

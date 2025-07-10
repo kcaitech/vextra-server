@@ -1,6 +1,7 @@
 import axios, { AxiosResponse } from 'axios'
 import { HttpCode } from './httpcode'
 import * as base64 from "js-base64";
+import { checkRefreshToken } from './refresh_token';
 
 declare module "axios" {
     interface AxiosResponse<T = any> {
@@ -218,42 +219,48 @@ export class HttpMgr {
     // watch
     private watch_interval = 1000 * 30 // 30秒
     private watch_interval_id: NodeJS.Timeout | null = null
-    private watch_map = new Map<string, { args: HttpArgs, callbacks: ((data: any) => void)[], refresh_token: Function }>()
+    private watch_map = new Map<number, { args: () => HttpArgs, callback: ((data: any) => void), refresh_token: boolean }>()
+    private watch_id = 0
 
-    watch(args: HttpArgs, callback: (data: any) => void, immediate: boolean, refresh_token: () => void) {
-        const cacheKey = this.generateCacheKey(args)
-        const item = this.watch_map.get(cacheKey)
-        if (item) {
-            item.callbacks.push(callback)
-        } else {
-            this.watch_map.set(cacheKey, { args, callbacks: [callback], refresh_token })
-        }
+    watch(args: () => HttpArgs, callback: (data: any) => void, immediate: boolean, refresh_token: boolean) {
+        const id = this.watch_id++
+        this.watch_map.set(id, { args, callback, refresh_token })
         if (immediate) {
-            this.request(args).then(callback)
+            this.request(args()).then(callback)
         }
         this.start_watch()
-    }
-
-    unwatch(args: HttpArgs, callback: (data: any) => void) {
-        const cacheKey = this.generateCacheKey(args)
-        const item = this.watch_map.get(cacheKey)
-        if (item) {
-            item.callbacks = item.callbacks.filter((cb) => cb !== callback)
-            if (item.callbacks.length === 0) {
-                this.watch_map.delete(cacheKey)
-                if (this.watch_map.size === 0) {
-                    this.stop_watch()
-                }
-            }
+        return () => {
+            this.unwatch(id)
         }
     }
 
-    private request_watch() {
+    private unwatch(id: number) {
+        this.watch_map.delete(id)
+        if (this.watch_map.size === 0) {
+            this.stop_watch()
+        }
+    }
+
+    private async request_watch() {
         const watch_map = this.watch_map
+
+        const group_watch = new Map<string, { args: HttpArgs, callbacks: ((data: any) => void)[], refresh_token: boolean }>()
         for (const [, item] of watch_map) {
-            item.refresh_token()
+            const args = item.args()
+            const cacheKey = this.generateCacheKey(args)
+            const group_item = group_watch.get(cacheKey)
+            if (group_item) {
+                group_item.callbacks.push(item.callback)
+            } else {
+                group_watch.set(cacheKey, { args, callbacks: [item.callback], refresh_token: item.refresh_token })
+            }
+        }
+        for (const [, item] of group_watch) {
+            if (item.refresh_token) {
+                await this.refresh_token()
+            }
             this.request(item.args).then((data) => {
-                for (const callback of item.callbacks) {
+                for (const callback of item.callbacks) { // 这里需要优化，因为可能存在多个回调
                     try {
                         callback(data)
                     } catch (e) {
@@ -276,5 +283,10 @@ export class HttpMgr {
             clearInterval(this.watch_interval_id)
             this.watch_interval_id = null
         }
+    }
+
+    // refresh token
+    async refresh_token() {
+        await checkRefreshToken(this)
     }
 }

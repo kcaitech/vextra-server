@@ -1,5 +1,4 @@
 import { HttpMgr } from './http'
-import { checkRefreshToken, refreshToken } from './refresh_token';
 import { UserInfoSchema, BaseResponseSchema, BaseResponse } from './types'
 import { z } from 'zod';
 
@@ -43,7 +42,7 @@ export class UsersAPI {
 
     // 获取用户信息
     async getInfo(): Promise<UserInfoResponse> {
-        await checkRefreshToken(this.http);
+        await this.http.refresh_token();
         const result = await this.http.request({
             url: '/users/info',
             method: 'get',
@@ -58,7 +57,7 @@ export class UsersAPI {
 
     //设置用户头像
     async setAvatar(file: File): Promise<BaseResponse> {
-        await checkRefreshToken(this.http);
+        await this.http.refresh_token();
         const formData = new FormData()
         formData.append('file', file)
 
@@ -79,7 +78,7 @@ export class UsersAPI {
     async setNickname(params: {
         nickname: string;
     }): Promise<BaseResponse> {
-        await checkRefreshToken(this.http);
+        await this.http.refresh_token();
         const result = await this.http.request({
             url: '/users/info/nickname',
             method: 'put',
@@ -97,7 +96,7 @@ export class UsersAPI {
     async getKVStorage(params: {
         key: string;
     }): Promise<UserKVStorageResponse> {
-        await checkRefreshToken(this.http);
+        await this.http.refresh_token();
         const result = await this.http.request({
             url: '/users/kv_storage',
             method: 'get',
@@ -116,7 +115,7 @@ export class UsersAPI {
         key: string;
         value: string;
     }): Promise<BaseResponse> {
-        await checkRefreshToken(this.http);
+        await this.http.refresh_token();
         return this.http.request({
             url: '/users/kv_storage',
             method: 'post',
@@ -131,7 +130,7 @@ export class UsersAPI {
         page_url?: string;
         files?: ArrayBuffer[];
     }): Promise<BaseResponse> {
-        await checkRefreshToken(this.http);
+        await this.http.refresh_token();
         const formData = new FormData();
         formData.append('type', params.type.toString());
         formData.append('content', params.content);
@@ -153,9 +152,9 @@ export class UsersAPI {
         })
     }
 
-    async refreshToken() {
-        return refreshToken(this.http);
-    }
+    // async refreshToken() {
+    //     return refreshToken(this.http);
+    // }
 
     async getLoginUrl(): Promise<string> {
         const result = await this.http.request({
