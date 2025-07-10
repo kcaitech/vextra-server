@@ -294,7 +294,7 @@ export class TeamAPI {
         const args = (): HttpArgs => ({
             url: '/team/apply',
             method: 'get',
-            params: params,
+            params: params(),
         })
         return this.http.watch(args, parse, immediate, true)
     }
@@ -354,7 +354,7 @@ export class TeamAPI {
         const args = (): HttpArgs => ({
             url: '/team/self_apply',
             method: 'get',
-            params: params,
+            params: params(),
         })
         return this.http.watch(args, parse, immediate, true)
     }
@@ -413,7 +413,7 @@ export class TeamAPI {
         const args = (): HttpArgs => ({
             url: '/team/list',
             method: 'get',
-            params: params,
+            params: params(),
         })
         return this.http.watch(args, parse, immediate, true)
     }
@@ -832,7 +832,7 @@ export class TeamAPI {
         const args = (): HttpArgs => ({
             url: '/team/project/list',
             method: 'get',
-            params: params,
+            params: params(),
         })
         return this.http.watch(args, parse, immediate, true)
     }
@@ -987,7 +987,7 @@ export class TeamAPI {
         const args = (): HttpArgs => ({
             url: '/team/project/self_apply',
             method: 'get',
-            params: params,
+            params: params(),
         })
         return this.http.watch(args, parse, immediate, true)
     }
