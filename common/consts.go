@@ -11,4 +11,5 @@ const (
 	RedisKeyDocumentSelection                = "server_document_selection:"
 	RedisKeyDocumentSelectionData            = "server_document_selection_data:"
 	RedisKeyRateLimit                        = "server_ratelimit:"
+	RedisKeyDocumentConcurrentLimit          = "server_document_concurrent_limit:"
 )
