@@ -53,7 +53,7 @@ export class HttpMgr {
     private _token_exp_cache: string | undefined = undefined
     private _token_exp: number = 0
     private _cache = new Map<string, CacheItem>()
-    // private readonly CACHE_EXPIRE_TIME = 30 * 60 * 1000 // 30分钟缓存过期时间
+    private readonly CACHE_EXPIRE_TIME = 30 * 60 * 1000 // 30分钟缓存过期时间
 
     public get token() {
         return this._token.getToken()
@@ -95,14 +95,17 @@ export class HttpMgr {
     private getCachedItem(cacheKey: string): CacheItem | null {
         const item = this._cache.get(cacheKey)
         if (!item) return null
-
-        // 检查缓存是否过期
-        // if (Date.now() - item.timestamp > this.CACHE_EXPIRE_TIME) {
-        //     this._cache.delete(cacheKey)
-        //     return null
-        // }
-
+        item.timestamp = Date.now() // 更新缓存时间, 避免被清除
         return item
+    }
+
+    private clearExpiredCache() {
+        const now = Date.now()
+        for (const [key, item] of this._cache) {
+            if (now - item.timestamp > this.CACHE_EXPIRE_TIME) {
+                this._cache.delete(key)
+            }
+        }
     }
 
     private setCachedItem(cacheKey: string, data: any, sha1: string) {
@@ -173,6 +176,9 @@ export class HttpMgr {
         this.service.interceptors.response.use(
             this.handle_response.bind(this),
             this.handle_response_err.bind(this));
+
+        // 定时清除过期缓存
+        setInterval(this.clearExpiredCache.bind(this), this.CACHE_EXPIRE_TIME)
     }
 
     async request(args: HttpArgs): Promise<AxiosResponse<any, any>> {
@@ -214,7 +220,6 @@ export class HttpMgr {
         const cacheKey = this.generateCacheKey(args)
         this._cache.delete(cacheKey)
     }
-
 
     // watch
     private watch_interval = 1000 * 30 // 30秒
