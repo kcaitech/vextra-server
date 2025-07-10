@@ -15,7 +15,7 @@ const TeamRequestSchema = z.object({
     team_id: z.string(),
     perm_type: z.nativeEnum(TeamPermType),
     status: z.number(),
-    first_displayed_at: z.string().nullable(),
+    // first_displayed_at: z.string().nullable(),
     processed_at: z.string().nullable(),
     processed_by: z.string().nullable(),
     applicant_notes: z.string().nullable(),
@@ -30,7 +30,7 @@ const ProjectRequestSchema = z.object({
     project_id: z.string(),
     perm_type: z.nativeEnum(TeamPermType),
     status: z.number(),
-    first_displayed_at: z.string().nullable(),
+    // first_displayed_at: z.string().nullable(),
     processed_at: z.string().nullable(),
     processed_by: z.string().nullable(),
     applicant_notes: z.string().nullable(),
@@ -107,7 +107,7 @@ const ProjectApplyListResponseSchema = BaseResponseSchema.extend({
     data: z.array(z.object({
         request: ProjectRequestSchema,
         project: ProjectInfoSchema,
-        user: UserInfoSchema
+        user: UserInfoSchema.optional()
     }))
 })
 
@@ -118,7 +118,7 @@ const TeamApplyListResponseSchema = BaseResponseSchema.extend({
     data: z.array(z.object({
         request: TeamRequestSchema,
         team: TeamInfoSchema,
-        user: UserInfoSchema
+        user: UserInfoSchema.optional()
     }))
 })
 

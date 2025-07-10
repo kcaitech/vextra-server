@@ -11,7 +11,6 @@ import (
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils"
-	"kcaitech.com/kcserver/utils/sliceutil"
 	"kcaitech.com/kcserver/utils/str"
 	myTime "kcaitech.com/kcserver/utils/time"
 )
@@ -448,17 +447,18 @@ func GetDocumentPermissionRequestsList(c *gin.Context) {
 		}
 	}
 
-	if len(*result) > 0 {
-		permissionRequestsIdList := sliceutil.MapT(func(item services.PermissionRequestsQueryResItem) int64 {
-			return item.DocumentPermissionRequests.Id
-		}, *result...)
-		if _, err := documentService.DocumentPermissionRequestsService.UpdatesIgnoreZero(
-			&models.DocumentPermissionRequests{FirstDisplayedAt: myTime.Time(time.Now())},
-			"id in ?", permissionRequestsIdList,
-		); err != nil {
-			log.Println(err)
-		}
-	}
+	// 这里更新的不对，FirstDisplayedAt重复更新了。这个值没有使用，先不更新了
+	// if len(*result) > 0 {
+	// 	permissionRequestsIdList := sliceutil.MapT(func(item services.PermissionRequestsQueryResItem) int64 {
+	// 		return item.DocumentPermissionRequests.Id
+	// 	}, *result...)
+	// 	if _, err := documentService.DocumentPermissionRequestsService.UpdatesIgnoreZero(
+	// 		&models.DocumentPermissionRequests{FirstDisplayedAt: myTime.Time(time.Now())},
+	// 		"id in ?", permissionRequestsIdList,
+	// 	); err != nil {
+	// 		log.Println(err)
+	// 	}
+	// }
 	common.Success(c, result)
 }
 
