@@ -411,7 +411,7 @@ export class DocumentAPI {
         }
     }
 
-    watchDocumentAuthority(params: () => { doc_id: string }, callback: (data: DocumentPermission) => void, immediate: boolean = false) {
+    watchDocumentAuthority(params: () => { doc_id: string }, callback: (data: DocumentPermission) => void, immediate: boolean) {
         const parse = (result: any) => {
             try {
                 callback(DocumentPermissionSchema.parse(result))
@@ -460,7 +460,7 @@ export class DocumentAPI {
         }
     }
 
-    watchDocumentInfo(params: () => { doc_id: string }, callback: (data: DocumentInfoResponse) => void, immediate: boolean = false) {
+    watchDocumentInfo(params: () => { doc_id: string }, callback: (data: DocumentInfoResponse) => void, immediate: boolean) {
         const parse = (result: any) => {
             try {
                 callback(DocumentInfoResponseSchema.parse(result))

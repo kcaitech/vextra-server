@@ -241,7 +241,7 @@ export class ShareAPI {
         }
     }
 
-    watchApplyList(params: () => { start_time?: number, page?: number; page_size?: number }, callback: (data: ShareApplyListResponse) => void, immediate: boolean = false) {
+    watchApplyList(params: () => { start_time?: number, page?: number; page_size?: number }, callback: (data: ShareApplyListResponse) => void, immediate: boolean) {
         const parse = (result: any) => {
             try {
                 callback(ShareApplyListResponseSchema.parse(result))

@@ -281,7 +281,7 @@ export class TeamAPI {
         page?: number;
         page_size?: number;
         start_time?: number;
-    }, callback: (data: TeamApplyListResponse) => void, immediate: boolean = false) {
+    }, callback: (data: TeamApplyListResponse) => void, immediate: boolean) {
         const parse = (result: any) => {
             try {
                 callback(TeamApplyListResponseSchema.parse(result))
@@ -342,7 +342,7 @@ export class TeamAPI {
         team_id?: string;
         page?: number;
         page_size?: number;
-    }, callback: (data: TeamNoticeResponse) => void, immediate: boolean = false) {
+    }, callback: (data: TeamNoticeResponse) => void, immediate: boolean) {
         const parse = (result: any) => {
             try {
                 callback(TeamNoticeResponseSchema.parse(result))
@@ -401,7 +401,7 @@ export class TeamAPI {
     watchTeamList(params: () => {
         page?: number;
         page_size?: number;
-    }, callback: (data: TeamListResponse) => void, immediate: boolean = false) {
+    }, callback: (data: TeamListResponse) => void, immediate: boolean) {
         const parse = (result: any) => {
             try {
                 callback(TeamListResponseSchema.parse(result))
@@ -643,7 +643,7 @@ export class TeamAPI {
         page?: number;
         page_size?: number;
         start_time?: number;
-    }, callback: (data: ProjectApplyListResponse) => void, immediate: boolean = false) {
+    }, callback: (data: ProjectApplyListResponse) => void, immediate: boolean) {
         const parse = (result: any) => {
             try {
                 callback(ProjectApplyListResponseSchema.parse(result))
@@ -820,7 +820,7 @@ export class TeamAPI {
         team_id?: string;
         page?: number;
         page_size?: number;
-    }, callback: (data: TeamProjectListResponse) => void, immediate: boolean = false) {
+    }, callback: (data: TeamProjectListResponse) => void, immediate: boolean) {
         const parse = (result: any) => {
             try {
                 callback(TeamProjectListResponseSchema.parse(result))
@@ -975,7 +975,7 @@ export class TeamAPI {
         team_id?: string;
         page?: number;
         page_size?: number;
-    }, callback: (data: ProjectNoticeResponse) => void, immediate: boolean = false) {
+    }, callback: (data: ProjectNoticeResponse) => void, immediate: boolean) {
         const parse = (result: any) => {
             try {
                 callback(ProjectNoticeResponseSchema.parse(result))
