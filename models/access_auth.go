@@ -2,7 +2,7 @@ package models
 
 import "gorm.io/gorm"
 
-type AccessAuthPriorityMask uint64
+type AccessAuthPriorityMask uint32
 
 const (
 	// 文档操作权限
@@ -19,7 +19,7 @@ const (
 	AccessAuthPriorityMaskAll = AccessAuthPriorityMaskRead | AccessAuthPriorityMaskComment | AccessAuthPriorityMaskWrite | AccessAuthPriorityMaskDelete | AccessAuthPriorityMaskCreate
 )
 
-type AccessAuthRangeMask uint64
+type AccessAuthRangeMask uint32
 
 const (
 	AccessAuthResourceMaskDocument = 1 << 0
@@ -34,9 +34,9 @@ type AccessAuth struct {
 	BaseModelStruct
 	UserId       string `json:"user_id"`
 	Key          string `gorm:"size:255;uniqueIndex" json:"key"`
-	Secret       string `gorm:"size:255" json:"secret"`
-	PriorityMask uint64 `json:"priority_mask"`
-	ResourceMask uint64 `json:"resource_mask"`
+	Secret       string `gorm:"size:255" json:"-"`
+	PriorityMask uint32 `json:"priority_mask"`
+	ResourceMask uint32 `json:"resource_mask"`
 }
 
 func (model AccessAuth) GetId() interface{} {
@@ -73,7 +73,7 @@ func (m *AccessAuth) HasCreatePriority() bool {
 }
 
 func (m *AccessAuth) HasPriority(priority AccessAuthPriorityMask) bool {
-	return m.PriorityMask&uint64(priority) != 0
+	return m.PriorityMask&uint32(priority) != 0
 }
 
 func (m *AccessAuth) HasUserAccessRange() bool {
@@ -90,7 +90,7 @@ func (m *AccessAuth) HasTeamAccessRange() bool {
 }
 
 func (m *AccessAuth) HasAccessRange(rangeMask AccessAuthRangeMask) bool {
-	return m.ResourceMask&uint64(rangeMask) != 0
+	return m.ResourceMask&uint32(rangeMask) != 0
 }
 
 type AccessAuthResourceType uint8
@@ -122,7 +122,7 @@ func (model AccessAuthResource) AutoMigrate(db *gorm.DB) error {
 
 // tablename
 func (model AccessAuthResource) TableName() string {
-	return "access_auth_range"
+	return "access_auth_resource"
 }
 
 func (m *AccessAuthResource) IsDocumentResource() bool {
