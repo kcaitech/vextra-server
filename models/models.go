@@ -236,6 +236,16 @@ func (module *DBModule) AutoMigrate() error {
 	if err != nil {
 		return fmt.Errorf("ResourceDocument:%s", err.Error())
 	}
+	// access_auth
+	err = AccessAuth{}.AutoMigrate(module.DB)
+	if err != nil {
+		return fmt.Errorf("AccessAuth:%s", err.Error())
+	}
+	// access_auth_range
+	err = AccessAuthResource{}.AutoMigrate(module.DB)
+	if err != nil {
+		return fmt.Errorf("AccessAuthRange:%s", err.Error())
+	}
 
 	// 这两个不是这里实现的
 	// user

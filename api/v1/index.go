@@ -9,6 +9,7 @@ import (
 func LoadRoutes(apiGroup *gin.RouterGroup) {
 	loadWsRoutes(apiGroup)    // 单独鉴权
 	loadLoginRoutes(apiGroup) // 从refreshToken获取信息
+	loadAccessRoutes(apiGroup)
 	apiGroup.Use(services.GetKCAuthClient().AuthRequired())
 	apiGroup.Use(common.Sha1SaveData)
 	loadUserRoutes(apiGroup)
