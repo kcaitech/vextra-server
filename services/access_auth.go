@@ -69,19 +69,19 @@ func (s *AccessAuthService) DeleteAccessAuth(accessKey string) error {
 }
 
 func (s *AccessAuthService) GetAccessAuthResource(key string) ([]models.AccessAuthResource, error) {
-	var accessAuthRanges []models.AccessAuthResource
-	if err := s.DBModule.DB.Where("key = ?", key).Find(&accessAuthRanges).Error; err != nil {
+	var accessAuthResources []models.AccessAuthResource
+	if err := s.DBModule.DB.Where("key = ?", key).Find(&accessAuthResources).Error; err != nil {
 		return nil, err
 	}
-	return accessAuthRanges, nil
+	return accessAuthResources, nil
 }
 
-func (s *AccessAuthService) CreateAccessAuthResource(accessAuthRange *models.AccessAuthResource) error {
-	return s.DBModule.DB.Create(accessAuthRange).Error
+func (s *AccessAuthService) CreateAccessAuthResource(accessAuthResource *models.AccessAuthResource) error {
+	return s.DBModule.DB.Create(accessAuthResource).Error
 }
 
-func (s *AccessAuthService) SaveAccessAuthResource(accessAuthRange *models.AccessAuthResource) error {
-	return s.DBModule.DB.Save(accessAuthRange).Error
+func (s *AccessAuthService) SaveAccessAuthResource(accessAuthResource *models.AccessAuthResource) error {
+	return s.DBModule.DB.Save(accessAuthResource).Error
 }
 
 func (s *AccessAuthService) DeleteAccessAuthResourceNotExists(key string, resourceType uint8, resourceIds []string) error {
@@ -157,34 +157,34 @@ func (s *AccessAuthService) UpdateAccessAuth(userId string, accessKey string, ac
 	}
 
 	for _, document := range grantPost.Document {
-		accessAuthRange := &models.AccessAuthResource{
+		accessAuthResource := &models.AccessAuthResource{
 			Key:        accessKey,
 			ResourceId: document,
 			Type:       uint8(models.AccessAuthResourceTypeDocument),
 		}
-		if err := s.CreateAccessAuthResource(accessAuthRange); err != nil {
+		if err := s.CreateAccessAuthResource(accessAuthResource); err != nil {
 			return err
 		}
 	}
 
 	for _, project := range grantPost.Project {
-		accessAuthRange := &models.AccessAuthResource{
+		accessAuthResource := &models.AccessAuthResource{
 			Key:        accessKey,
 			ResourceId: project,
 			Type:       uint8(models.AccessAuthResourceTypeProject),
 		}
-		if err := s.CreateAccessAuthResource(accessAuthRange); err != nil {
+		if err := s.CreateAccessAuthResource(accessAuthResource); err != nil {
 			return err
 		}
 	}
 
 	for _, team := range grantPost.Team {
-		accessAuthRange := &models.AccessAuthResource{
+		accessAuthResource := &models.AccessAuthResource{
 			Key:        accessKey,
 			ResourceId: team,
 			Type:       uint8(models.AccessAuthResourceTypeTeam),
 		}
-		if err := s.CreateAccessAuthResource(accessAuthRange); err != nil {
+		if err := s.CreateAccessAuthResource(accessAuthResource); err != nil {
 			return err
 		}
 	}
