@@ -4,6 +4,7 @@ import { ShareAPI } from "./share";
 import { TeamAPI } from "./team";
 import { UsersAPI } from "./users";
 import { DocumentAPI } from "./document";
+import { AccessAPI } from "./access";
 
 const defaultToken = {
     getToken: () => {
@@ -24,6 +25,7 @@ export class Request {
     comment_api: CommentAPI
     share_api: ShareAPI
     document_api: DocumentAPI
+    access_api: AccessAPI
     private constructor(apiUrl: string, onUnauthorized: () => void, token: {
         getToken: () => string | undefined,
         setToken: (token: string | undefined) => void
@@ -34,6 +36,7 @@ export class Request {
         this.comment_api = new CommentAPI(httpmgr);
         this.share_api = new ShareAPI(httpmgr);
         this.document_api = new DocumentAPI(httpmgr);
+        this.access_api = new AccessAPI(httpmgr);
     }
 
     // 单例模式
@@ -59,4 +62,4 @@ export * from "./team"
 export * from "./share"
 export * from "./comment"
 export * from "./document"
-
+export * from "./access"
