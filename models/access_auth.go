@@ -19,7 +19,7 @@ const (
 	AccessAuthPriorityMaskAll = AccessAuthPriorityMaskRead | AccessAuthPriorityMaskComment | AccessAuthPriorityMaskWrite | AccessAuthPriorityMaskDelete | AccessAuthPriorityMaskCreate
 )
 
-type AccessAuthRangeMask uint32
+type AccessAuthResourceMask uint32
 
 const (
 	AccessAuthResourceMaskDocument = 1 << 0
@@ -89,7 +89,7 @@ func (m *AccessAuth) HasTeamAccessRange() bool {
 	return m.ResourceMask&AccessAuthResourceMaskTeam != 0
 }
 
-func (m *AccessAuth) HasAccessRange(rangeMask AccessAuthRangeMask) bool {
+func (m *AccessAuth) HasAccessRange(rangeMask AccessAuthResourceMask) bool {
 	return m.ResourceMask&uint32(rangeMask) != 0
 }
 
@@ -103,9 +103,9 @@ const (
 
 type AccessAuthResource struct {
 	BaseModelStruct
-	Key        string `json:"key" gorm:"uniqueIndex:idx_key_resource_id"`
+	Key        string `json:"key" gorm:"size:255;uniqueIndex:idx_key_resource_id"`
 	Type       uint8  `json:"type" gorm:"uniqueIndex:idx_key_resource_id"`
-	ResourceId string `json:"resource_id" gorm:"uniqueIndex:idx_key_resource_id"` // 与key的组合是唯一的
+	ResourceId string `json:"resource_id" gorm:"size:255;uniqueIndex:idx_key_resource_id"` // 与key的组合是唯一的
 }
 
 func (model AccessAuthResource) GetId() int64 {

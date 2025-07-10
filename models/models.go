@@ -244,7 +244,7 @@ func (module *DBModule) AutoMigrate() error {
 	// access_auth_range
 	err = AccessAuthResource{}.AutoMigrate(module.DB)
 	if err != nil {
-		return fmt.Errorf("AccessAuthRange:%s", err.Error())
+		return fmt.Errorf("AccessAuthResource:%s", err.Error())
 	}
 
 	// 这两个不是这里实现的
