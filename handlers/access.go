@@ -3,7 +3,6 @@ package handlers
 import (
 	"log"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -110,6 +109,10 @@ func AccessUpdate(c *gin.Context) {
 	common.Success(c, gin.H{"message": "update access_auth success"})
 }
 
+type AccessDeletePost struct {
+	AccessKey string `json:"access_key"`
+}
+
 func AccessDelete(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
 	if err != nil {
@@ -117,14 +120,19 @@ func AccessDelete(c *gin.Context) {
 		return
 	}
 
-	accessKey := c.PostForm("access_key")
-	if accessKey == "" {
+	var accessDeletePost AccessDeletePost
+	if err := c.ShouldBindJSON(&accessDeletePost); err != nil {
+		common.BadRequest(c, "invalid request")
+		return
+	}
+
+	if accessDeletePost.AccessKey == "" {
 		common.BadRequest(c, "access_key is required")
 		return
 	}
 
 	accessAuthService := services.NewAccessAuthService()
-	accessAuth, err := accessAuthService.GetAccessAuth(accessKey)
+	accessAuth, err := accessAuthService.GetAccessAuth(accessDeletePost.AccessKey)
 	if err != nil {
 		common.BadRequest(c, "access_key is invalid")
 		return
@@ -135,7 +143,7 @@ func AccessDelete(c *gin.Context) {
 		return
 	}
 
-	if err := accessAuthService.DeleteAccessAuth(accessKey); err != nil {
+	if err := accessAuthService.DeleteAccessAuth(accessDeletePost.AccessKey); err != nil {
 		common.BadRequest(c, "delete access_auth failed")
 		return
 	}
@@ -143,37 +151,48 @@ func AccessDelete(c *gin.Context) {
 	common.Success(c, gin.H{"message": "delete access_auth success"})
 }
 
+type AccessTokenPost struct {
+	AccessKey    string `json:"access_key"`
+	AccessSecret string `json:"access_secret"`
+	Expire       *int   `json:"expire,omitempty"`
+}
+
 func AccessToken(c *gin.Context) {
 	// 验证access_key, access_secret
-	accessKey := c.PostForm("access_key")
-	accessSecret := c.PostForm("access_secret")
-	expire := c.PostForm("expire")
-	expireInt, err := strconv.Atoi(expire)
-	if err != nil {
-		expireInt = int(time.Hour.Seconds())
+	var accessTokenPost AccessTokenPost
+	if err := c.ShouldBindJSON(&accessTokenPost); err != nil {
+		common.BadRequest(c, "invalid request")
+		return
 	}
 
-	if accessKey == "" || accessSecret == "" {
+	expireInt := int(time.Hour.Seconds()) // 默认值
+	if accessTokenPost.Expire != nil {
+		expireInt = *accessTokenPost.Expire
+	}
+
+	if accessTokenPost.AccessKey == "" || accessTokenPost.AccessSecret == "" {
 		common.BadRequest(c, "access_key and access_secret are required")
 		return
 	}
 
 	accessAuthService := services.NewAccessAuthService()
-	accessAuth, err := accessAuthService.GetAccessAuth(accessKey)
+	accessAuth, err := accessAuthService.GetAccessAuth(accessTokenPost.AccessKey)
 	if err != nil {
-		common.BadRequest(c, "access_key or access_secret is invalid")
+		log.Println("access_key is invalid", err, accessTokenPost.AccessKey)
+		common.BadRequest(c, "access_key is invalid")
 		return
 	}
 
 	// has access_secret
-	if services.HashPassword(accessSecret) != accessAuth.Secret {
-		common.BadRequest(c, "access_key or access_secret is invalid")
+	if err := services.CheckPassword(accessAuth.Secret, accessTokenPost.AccessSecret); err != nil {
+		log.Println("access_secret is invalid", accessTokenPost.AccessSecret, accessAuth.Secret)
+		common.BadRequest(c, "access_secret is invalid")
 		return
 	}
 
 	// 生成token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"access_key": accessKey,
+		"access_key": accessTokenPost.AccessKey,
 		"exp":        time.Now().Add(time.Duration(expireInt) * time.Second).Unix(),
 	})
 	tokenString, err := token.SignedString([]byte(accessAuth.Secret))
@@ -195,24 +214,17 @@ func AccessWs(c *gin.Context) {
 		return
 	}
 
-	// jwt解析token, 获取access_key
-	tokenObj, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+	tokenObj, _ := jwt.ParseWithClaims(token, &jwt.MapClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return nil, nil
 	})
-	if err != nil {
-		log.Println("ws-Token错误", err)
-		common.Unauthorized(c)
-		return
-	}
-
-	claims, ok := tokenObj.Claims.(jwt.MapClaims)
+	claims, ok := tokenObj.Claims.(*jwt.MapClaims)
 	if !ok {
 		log.Println("ws-Token claims错误")
 		common.Unauthorized(c)
 		return
 	}
 
-	accessKey, ok := claims["access_key"].(string)
+	accessKey, ok := (*claims)["access_key"].(string)
 	if !ok {
 		log.Println("ws-access_key不存在")
 		common.Unauthorized(c)
@@ -220,7 +232,7 @@ func AccessWs(c *gin.Context) {
 	}
 
 	// 验证token是否过期
-	exp, ok := claims["exp"].(float64)
+	exp, ok := (*claims)["exp"].(float64)
 	if !ok || time.Now().Unix() > int64(exp) {
 		log.Println("ws-Token过期")
 		common.Unauthorized(c)
@@ -240,7 +252,7 @@ func AccessWs(c *gin.Context) {
 		return []byte(accessAuth.Secret), nil
 	})
 	if err != nil {
-		log.Println("ws-Token错误", err)
+		log.Println("jwt parse with claims error", err)
 		common.Unauthorized(c)
 		return
 	}

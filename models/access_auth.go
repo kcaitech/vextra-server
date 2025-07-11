@@ -33,7 +33,7 @@ const (
 type AccessAuth struct {
 	BaseModelStruct
 	UserId       string `json:"user_id"`
-	Key          string `gorm:"size:64;uniqueIndex" json:"key"`
+	AccessKey    string `gorm:"size:64;uniqueIndex" json:"key"`
 	Secret       string `gorm:"size:255" json:"-"`
 	PriorityMask uint32 `json:"priority_mask"`
 	ResourceMask uint32 `json:"resource_mask"`
@@ -103,7 +103,7 @@ const (
 
 type AccessAuthResource struct {
 	BaseModelStruct
-	Key        string `json:"key" gorm:"size:64;uniqueIndex:idx_key_resource_id"`
+	AccessKey  string `json:"key" gorm:"size:64;uniqueIndex:idx_key_resource_id"`
 	Type       uint8  `json:"type" gorm:"uniqueIndex:idx_key_resource_id"`
 	ResourceId string `json:"resource_id" gorm:"size:64;uniqueIndex:idx_key_resource_id"` // 与key的组合是唯一的
 }

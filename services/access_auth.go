@@ -1,6 +1,7 @@
 package services
 
 import (
+	"encoding/json"
 	"log"
 
 	"golang.org/x/crypto/bcrypt"
@@ -21,7 +22,7 @@ func NewAccessAuthService() *AccessAuthService {
 
 func (s *AccessAuthService) GetAccessAuth(accessKey string) (*models.AccessAuth, error) {
 	var accessAuth models.AccessAuth
-	if err := s.DBModule.DB.Where("key = ?", accessKey).First(&accessAuth).Error; err != nil {
+	if err := s.DBModule.DB.Where("access_key = ?", accessKey).First(&accessAuth).Error; err != nil {
 		return nil, err
 	}
 	return &accessAuth, nil
@@ -36,18 +37,33 @@ func (s *AccessAuthService) GetAccessAuthByUserId(userId string) ([]*models.Acce
 }
 
 type CombinedAccessAuth struct {
-	*models.AccessAuth
-	*models.AccessAuthResource
+	// AccessAuth 字段
+	UserId       string `json:"user_id"`
+	AccessKey    string `json:"key"`
+	PriorityMask uint32 `json:"priority_mask"`
+	ResourceMask uint32 `json:"resource_mask"`
+	// AccessAuthResource 字段
+	ResourceId string `json:"resource_id"`
+	Type       uint8  `json:"type"`
+}
+
+func (c *CombinedAccessAuth) MarshalJSON() ([]byte, error) {
+	type Alias CombinedAccessAuth
+	return json.Marshal(&struct {
+		*Alias
+	}{
+		Alias: (*Alias)(c),
+	})
 }
 
 func (s *AccessAuthService) GetCombinedAccessAuth(userId string) ([]*CombinedAccessAuth, error) {
-	var combinedAccessAuths []*CombinedAccessAuth
+	var combinedAccessAuths []*CombinedAccessAuth = make([]*CombinedAccessAuth, 0)
 
 	// 使用JOIN查询获取AccessAuth和AccessAuthResource的组合数据
 	if err := s.DBModule.DB.
 		Table("access_auth").
-		Select("access_auth.*, access_auth_resource.*").
-		Joins("LEFT JOIN access_auth_resource ON access_auth.key = access_auth_resource.key").
+		Select("access_auth.user_id, access_auth.access_key, access_auth.priority_mask, access_auth.resource_mask, access_auth_resource.type, access_auth_resource.resource_id").
+		Joins("LEFT JOIN access_auth_resource ON access_auth.access_key = access_auth_resource.access_key").
 		Where("access_auth.user_id = ?", userId).
 		Scan(&combinedAccessAuths).Error; err != nil {
 		return nil, err
@@ -65,12 +81,12 @@ func (s *AccessAuthService) SaveAccessAuth(accessAuth *models.AccessAuth) error 
 }
 
 func (s *AccessAuthService) DeleteAccessAuth(accessKey string) error {
-	return s.DBModule.DB.Where("key = ?", accessKey).Delete(&models.AccessAuth{}).Error
+	return s.DBModule.DB.Where("access_key = ?", accessKey).Delete(&models.AccessAuth{}).Error
 }
 
 func (s *AccessAuthService) GetAccessAuthResource(key string) ([]models.AccessAuthResource, error) {
 	var accessAuthResources []models.AccessAuthResource
-	if err := s.DBModule.DB.Where("key = ?", key).Find(&accessAuthResources).Error; err != nil {
+	if err := s.DBModule.DB.Where("access_key = ?", key).Find(&accessAuthResources).Error; err != nil {
 		return nil, err
 	}
 	return accessAuthResources, nil
@@ -85,11 +101,11 @@ func (s *AccessAuthService) SaveAccessAuthResource(accessAuthResource *models.Ac
 }
 
 func (s *AccessAuthService) DeleteAccessAuthResourceNotExists(key string, resourceType uint8, resourceIds []string) error {
-	return s.DBModule.DB.Where("key = ? AND type = ? AND resource_id NOT IN (?)", key, resourceType, resourceIds).Delete(&models.AccessAuthResource{}).Error
+	return s.DBModule.DB.Where("access_key = ? AND type = ? AND resource_id NOT IN (?)", key, resourceType, resourceIds).Delete(&models.AccessAuthResource{}).Error
 }
 
 func (s *AccessAuthService) DeleteAccessAuthResource(key string, resourceType uint8, resourceId string) error {
-	return s.DBModule.DB.Where("key = ? AND type = ? AND resource_id = ?", key, resourceType, resourceId).Delete(&models.AccessAuthResource{}).Error
+	return s.DBModule.DB.Where("access_key = ? AND type = ? AND resource_id = ?", key, resourceType, resourceId).Delete(&models.AccessAuthResource{}).Error
 }
 
 type GrantPost struct {
@@ -110,6 +126,10 @@ func HashPassword(password string) string {
 	}
 
 	return string(hashedPassword)
+}
+
+func CheckPassword(hashedPassword, password string) error {
+	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 }
 
 func (s *AccessAuthService) UpdateAccessAuth(userId string, accessKey string, accessSecret string, grantPost GrantPost) error {
@@ -143,13 +163,14 @@ func (s *AccessAuthService) UpdateAccessAuth(userId string, accessKey string, ac
 
 	accessAuth := &models.AccessAuth{
 		UserId:       userId,
-		Key:          accessKey,
+		AccessKey:    accessKey,
 		PriorityMask: uint32(priorityMask),
 		ResourceMask: uint32(resourceMask),
 	}
 
 	if accessSecret != "" {
 		accessAuth.Secret = HashPassword(accessSecret)
+		log.Println("access_secret", accessAuth.Secret)
 	}
 
 	if err := s.SaveAccessAuth(accessAuth); err != nil {
@@ -158,7 +179,7 @@ func (s *AccessAuthService) UpdateAccessAuth(userId string, accessKey string, ac
 
 	for _, document := range grantPost.Document {
 		accessAuthResource := &models.AccessAuthResource{
-			Key:        accessKey,
+			AccessKey:  accessKey,
 			ResourceId: document,
 			Type:       uint8(models.AccessAuthResourceTypeDocument),
 		}
@@ -169,7 +190,7 @@ func (s *AccessAuthService) UpdateAccessAuth(userId string, accessKey string, ac
 
 	for _, project := range grantPost.Project {
 		accessAuthResource := &models.AccessAuthResource{
-			Key:        accessKey,
+			AccessKey:  accessKey,
 			ResourceId: project,
 			Type:       uint8(models.AccessAuthResourceTypeProject),
 		}
@@ -180,7 +201,7 @@ func (s *AccessAuthService) UpdateAccessAuth(userId string, accessKey string, ac
 
 	for _, team := range grantPost.Team {
 		accessAuthResource := &models.AccessAuthResource{
-			Key:        accessKey,
+			AccessKey:  accessKey,
 			ResourceId: team,
 			Type:       uint8(models.AccessAuthResourceTypeTeam),
 		}
