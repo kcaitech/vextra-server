@@ -70,7 +70,7 @@ func (that *MinioBucket) PutObject(putObjectInput *PutObjectInput) (*UploadInfo,
 	}
 	result, err := that.client.client.PutObject(
 		context.Background(),
-		that.config.BucketName,
+		that.config.DocumentBucket,
 		putObjectInput.ObjectName,
 		putObjectInput.Reader,
 		putObjectInput.ObjectSize,
@@ -89,7 +89,7 @@ func (that *MinioBucket) PutObject(putObjectInput *PutObjectInput) (*UploadInfo,
 func (that *MinioBucket) GetObjectInfo(objectName string) (*ObjectInfo, error) {
 	objectInfo, err := that.client.client.StatObject(
 		context.Background(),
-		that.config.BucketName,
+		that.config.DocumentBucket,
 		objectName,
 		minio.StatObjectOptions{},
 	)
@@ -104,7 +104,7 @@ func (that *MinioBucket) GetObjectInfo(objectName string) (*ObjectInfo, error) {
 func (that *MinioBucket) GetObject(objectName string) ([]byte, error) {
 	object, err := that.client.client.GetObject(
 		context.Background(),
-		that.config.BucketName,
+		that.config.DocumentBucket,
 		objectName,
 		minio.GetObjectOptions{},
 	)
@@ -148,7 +148,7 @@ func (that *MinioBucket) GenerateAccessKey(authPath string, authOp int, expires 
 				"Action": authOpList,
 				"Effect": "Allow",
 				"Resource": []string{
-					"arn:aws:s3:::" + that.config.BucketName + "/" + authPath,
+					"arn:aws:s3:::" + that.config.DocumentBucket + "/" + authPath,
 				},
 			},
 		},
@@ -186,11 +186,11 @@ func (that *MinioBucket) CopyObject(srcPath string, destPath string) (*UploadInf
 	_, err := that.client.client.CopyObject(
 		context.Background(),
 		minio.CopyDestOptions{
-			Bucket: that.config.BucketName,
+			Bucket: that.config.DocumentBucket,
 			Object: destPath,
 		},
 		minio.CopySrcOptions{
-			Bucket: that.config.BucketName,
+			Bucket: that.config.DocumentBucket,
 			Object: srcPath,
 		},
 	)
@@ -204,7 +204,7 @@ func (that *MinioBucket) CopyDirectory(srcDirPath string, destDirPath string) (*
 	if srcDirPath == "" || srcDirPath == "/" || destDirPath == "" || destDirPath == "/" {
 		return nil, errors.New("路径不能为空")
 	}
-	for objectInfo := range that.client.client.ListObjects(context.Background(), that.config.BucketName, minio.ListObjectsOptions{
+	for objectInfo := range that.client.client.ListObjects(context.Background(), that.config.DocumentBucket, minio.ListObjectsOptions{
 		Prefix:    srcDirPath,
 		Recursive: true,
 	}) {
@@ -218,14 +218,14 @@ func (that *MinioBucket) CopyDirectory(srcDirPath string, destDirPath string) (*
 }
 
 func (that *MinioBucket) DeleteObject(objectName string) error {
-	return that.client.client.RemoveObject(context.Background(), that.config.BucketName, objectName, minio.RemoveObjectOptions{})
+	return that.client.client.RemoveObject(context.Background(), that.config.DocumentBucket, objectName, minio.RemoveObjectOptions{})
 }
 
 func (that *MinioBucket) ListObjects(prefix string) <-chan ObjectInfo {
 	ch := make(chan ObjectInfo)
 	go func() {
 		defer close(ch)
-		for objectInfo := range that.client.client.ListObjects(context.Background(), that.config.BucketName, minio.ListObjectsOptions{
+		for objectInfo := range that.client.client.ListObjects(context.Background(), that.config.DocumentBucket, minio.ListObjectsOptions{
 			Prefix:    prefix,
 			Recursive: true,
 		}) {
@@ -244,7 +244,7 @@ func (that *MinioBucket) PresignedGetObject(objectName string, expires time.Dura
 	// 生成预签名URL
 	presignedURL, err := that.client.client.PresignedGetObject(
 		context.Background(),
-		that.config.BucketName,
+		that.config.DocumentBucket,
 		objectName,
 		expires,
 		reqParams,

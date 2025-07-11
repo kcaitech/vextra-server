@@ -4,7 +4,6 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"kcaitech.com/kcserver/handlers/common"
 	"kcaitech.com/kcserver/services"
 	// handlers "kcaitech.com/kcserver/handlers/auth"
@@ -14,13 +13,15 @@ func loadLoginRoutes(api *gin.RouterGroup) {
 	router := api.Group("/auth")
 	router.GET("/login_url", func(c *gin.Context) {
 		config := services.GetConfig()
-		url := config.AuthServer.URL + "/login?redirect_url=" + config.AuthServer.CallbackURL + "&client_id=" + config.AuthServer.ClientID + "&state=" + uuid.New().String()
-		common.Success(c, map[string]any{
-			"url": url,
-		})
+		response := map[string]any{
+			"url": config.AuthServer.LoginURL,
+		}
+		if config.AuthServer.ClientID != "" {
+			response["client_id"] = config.AuthServer.ClientID
+		}
+		common.Success(c, response)
 	})
-	// router.POST("/login/wx", handlers.WxOpenWebLogin)
-	// router.POST("/login/wx_mp", handlers.WxMpLogin)
+
 	router.POST("/refresh_token", RefreshToken)
 	router.GET("/login/callback", LoginCallback)
 	router.GET("/login/mini_program", LoginMiniProgram)

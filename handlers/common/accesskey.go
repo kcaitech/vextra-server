@@ -95,7 +95,7 @@ func GetDocumentAccessKey(userId string, documentId string) (*map[string]any, in
 		"signer_type":       accessKeyValue.SignerType,
 		"provider":          services.GetConfig().Storage.Provider,
 		"region":            storageConfig.Region,
-		"bucket_name":       storageConfig.BucketName,
+		"bucket_name":       storageConfig.DocumentBucket,
 		"endpoint":          documentStorageUrl,
 	}, http.StatusOK, nil
 }

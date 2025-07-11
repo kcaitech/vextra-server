@@ -156,12 +156,12 @@ export class UsersAPI {
     //     return refreshToken(this.http);
     // }
 
-    async getLoginUrl(): Promise<string> {
+    async getLoginUrl(): Promise<{ url: string, client_id?: string }> {
         const result = await this.http.request({
             url: 'auth/login_url',
             method: 'get',
         })
-        return result.data.url
+        return result.data
     }
 
     async loginCallback(code: string): Promise<UserInfoWithTokenResponse> {

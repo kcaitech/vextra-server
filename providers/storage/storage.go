@@ -39,10 +39,10 @@ func NewStoraageClient(config *Config) (*StorageClient, error) {
 	return &StorageClient{
 		Client: client,
 		Bucket: client.NewBucket(&BucketConfig{
-			BucketName: bucketConfig.BucketName,
+			DocumentBucket: bucketConfig.DocumentBucket,
 		}),
 		AttatchBucket: client.NewBucket(&BucketConfig{
-			BucketName: bucketConfig.AttatchBucketName,
+			DocumentBucket: bucketConfig.AttatchBucket,
 		}),
 	}, nil
 }
