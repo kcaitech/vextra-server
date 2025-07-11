@@ -60,11 +60,12 @@ func (s *AccessAuthService) GetCombinedAccessAuth(userId string) ([]*CombinedAcc
 	var combinedAccessAuths []*CombinedAccessAuth = make([]*CombinedAccessAuth, 0)
 
 	// 使用JOIN查询获取AccessAuth和AccessAuthResource的组合数据
+	// 添加软删除条件，过滤已删除的记录
 	if err := s.DBModule.DB.
 		Table("access_auth").
 		Select("access_auth.user_id, access_auth.access_key, access_auth.priority_mask, access_auth.resource_mask, access_auth_resource.type, access_auth_resource.resource_id").
-		Joins("LEFT JOIN access_auth_resource ON access_auth.access_key = access_auth_resource.access_key").
-		Where("access_auth.user_id = ?", userId).
+		Joins("LEFT JOIN access_auth_resource ON access_auth.access_key = access_auth_resource.access_key AND access_auth_resource.deleted_at IS NULL").
+		Where("access_auth.user_id = ? AND access_auth.deleted_at IS NULL", userId).
 		Scan(&combinedAccessAuths).Error; err != nil {
 		return nil, err
 	}
