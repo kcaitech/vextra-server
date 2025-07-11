@@ -27,8 +27,6 @@ func isStaticFile(path string) bool {
 	return slices.Contains(StaticFileSuffix, suffix)
 }
 
-const staticFilePath = "/app/html"
-
 func joinPath(dir, path string) string {
 	if !strings.HasPrefix(path, "/") {
 		return dir + "/" + path
@@ -36,29 +34,31 @@ func joinPath(dir, path string) string {
 	return dir + path
 }
 
-func onNotFound(c *gin.Context) {
-	path := c.Request.URL.Path
-	if path == "/api" || strings.HasPrefix(path, "/api/") {
-		c.JSON(http.StatusNotFound, gin.H{"error": "auth endpoint not found"})
-		return
-	}
+func onNotFound(webFilePath string) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		path := c.Request.URL.Path
+		if path == "/api" || strings.HasPrefix(path, "/api/") {
+			c.JSON(http.StatusNotFound, gin.H{"error": "auth endpoint not found"})
+			return
+		}
 
-	if isStaticFile(path) {
-		c.File(joinPath(staticFilePath, path))
-		return
-	}
+		if isStaticFile(path) {
+			c.File(joinPath(webFilePath, path))
+			return
+		}
 
-	// 设置缓存时间为15分钟
-	c.Header("Cache-Control", "public, max-age=900")
-	c.File(staticFilePath + "/index.html")
+		// 设置缓存时间为15分钟
+		c.Header("Cache-Control", "public, max-age=900")
+		c.File(webFilePath + "/index.html")
+	}
 }
 
-func LoadRoutes(router *gin.Engine) {
+func LoadRoutes(router *gin.Engine, webFilePath string) {
 	router.RedirectTrailingSlash = false
 	router.GET("/health_check", handlers.HealthCheck)
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
-	router.Use(static.Serve("/", static.LocalFile(staticFilePath, false))) // 前端工程
-	router.NoRoute(onNotFound)
+	router.Use(static.Serve("/", static.LocalFile(webFilePath, false))) // 前端工程
+	router.NoRoute(onNotFound(webFilePath))
 
 	config := services.GetConfig()
 	if config.DetailedLog {

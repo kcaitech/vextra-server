@@ -179,7 +179,7 @@ func InitAllBaseServices(config *config.Configuration) error {
 		return err
 	}
 	// 初始化jwt
-	_, err = InitKCAuthClient(config.AuthServer.URLInner, config.AuthServer.ClientID, config.AuthServer.ClientSecret)
+	_, err = InitKCAuthClient(config.AuthServer.Addr, config.AuthServer.ClientID, config.AuthServer.ClientSecret)
 	if err != nil {
 		return err
 	}

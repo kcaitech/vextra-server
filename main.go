@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 
@@ -11,7 +12,7 @@ import (
 	"kcaitech.com/kcserver/services"
 )
 
-func start(afterInit func(router *gin.Engine), port int32) {
+func start(afterInit func(router *gin.Engine), port int) {
 	log.Printf("kcserver服务已启动 %d", port)
 
 	//gin.SetMode(gin.DebugMode)
@@ -29,7 +30,7 @@ func start(afterInit func(router *gin.Engine), port int32) {
 	}
 }
 
-func Init() *config.Configuration {
+func initServices() {
 
 	configDir := "config/"
 	conf, err := config.LoadYamlFile(configDir + "config.yaml")
@@ -45,14 +46,18 @@ func Init() *config.Configuration {
 		log.Fatalf("kcserver服务初始化失败: %v", err)
 	}
 
-	return conf
+	// return conf
 }
 
-const port = 80
+const defaultPort = 80
+const defaultWebFilePath = "/app/html"
 
 func main() {
-	Init()
+	port := flag.Int("port", defaultPort, "port")
+	webFilePath := flag.String("web", defaultWebFilePath, "web file path")
+	flag.Parse()
+	initServices()
 	start(func(router *gin.Engine) {
-		api.LoadRoutes(router)
-	}, port)
+		api.LoadRoutes(router, *webFilePath)
+	}, *port)
 }

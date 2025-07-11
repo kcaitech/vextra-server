@@ -58,11 +58,10 @@ func loadYamlConfig(filePath string, config any) error {
 }
 
 type AuthServerConfig struct {
-	URLInner     string `yaml:"url_inner" json:"url_inner"`
-	URL          string `yaml:"url" json:"url"`
+	Addr         string `yaml:"addr" json:"addr"`
+	LoginURL     string `yaml:"login_url" json:"login_url"`
 	ClientID     string `yaml:"client_id" json:"client_id"`
 	ClientSecret string `yaml:"client_secret" json:"client_secret"`
-	CallbackURL  string `yaml:"callback_url" json:"callback_url"`
 }
 
 type Configuration struct {
