@@ -16,8 +16,8 @@ redis:
   db: 0
 
 storage_public_url:
-  document: http://document.test.vextra.cn
-  attatch: http://attatch.test.vextra.cn
+  document: https://storage.test.vextra.cn
+  attatch: https://storage.test.vextra.cn/attatch
 
 storage:
   provider: minio
