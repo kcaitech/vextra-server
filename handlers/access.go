@@ -3,6 +3,7 @@ package handlers
 import (
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -146,6 +147,12 @@ func AccessToken(c *gin.Context) {
 	// 验证access_key, access_secret
 	accessKey := c.PostForm("access_key")
 	accessSecret := c.PostForm("access_secret")
+	expire := c.PostForm("expire")
+	expireInt, err := strconv.Atoi(expire)
+	if err != nil {
+		expireInt = int(time.Hour.Seconds())
+	}
+
 	if accessKey == "" || accessSecret == "" {
 		common.BadRequest(c, "access_key and access_secret are required")
 		return
@@ -167,7 +174,7 @@ func AccessToken(c *gin.Context) {
 	// 生成token
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"access_key": accessKey,
-		"exp":        time.Now().Add(time.Hour).Unix(),
+		"exp":        time.Now().Add(time.Duration(expireInt) * time.Second).Unix(),
 	})
 	tokenString, err := token.SignedString([]byte(accessAuth.Secret))
 	if err != nil {
@@ -175,7 +182,7 @@ func AccessToken(c *gin.Context) {
 		return
 	}
 
-	common.Success(c, gin.H{"token": tokenString})
+	common.Success(c, gin.H{"token": tokenString, "expire": expireInt})
 }
 
 // Ws websocket连接
@@ -208,6 +215,14 @@ func AccessWs(c *gin.Context) {
 	accessKey, ok := claims["access_key"].(string)
 	if !ok {
 		log.Println("ws-access_key不存在")
+		common.Unauthorized(c)
+		return
+	}
+
+	// 验证token是否过期
+	exp, ok := claims["exp"].(float64)
+	if !ok || time.Now().Unix() > int64(exp) {
+		log.Println("ws-Token过期")
 		common.Unauthorized(c)
 		return
 	}
