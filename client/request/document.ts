@@ -483,6 +483,7 @@ export class DocumentAPI {
             url: `/documents/review`,
             method: 'post',
             params: params,
+            timeout: 60000,
         })
     }
 
