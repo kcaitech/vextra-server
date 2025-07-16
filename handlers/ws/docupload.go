@@ -95,6 +95,7 @@ func (serv *docUploadServe) handle(data *TransData, binaryData *([]byte)) {
 		// 去除失败重传的图片
 		for _, media := range serv.data.Medias {
 			if media.Name == uploadHeader.Media {
+				log.Println("uploading media already exists", uploadHeader.Media, " size:", uint64(len(*binaryData)))
 				_ = serv.ws.WriteJSON(serverData)
 				return
 			}
@@ -105,6 +106,8 @@ func (serv *docUploadServe) handle(data *TransData, binaryData *([]byte)) {
 		}
 		serv.data.Medias = append(serv.data.Medias, media)
 		serv.data.MediasSize += uint64(len(*binaryData))
+		log.Println("uploading media", uploadHeader.Media, " size:", uint64(len(*binaryData)),
+			"already uploaded media count:", len(serv.data.Medias), " total size:", serv.data.MediasSize)
 		_ = serv.ws.WriteJSON(serverData)
 		return
 	}
