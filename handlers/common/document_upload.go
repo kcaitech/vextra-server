@@ -139,18 +139,19 @@ func uploadDocumentData(document *models.Document, lastCmdVerId string, uploadDa
 	var _medias []Media // 审核时需要
 	if medias != nil {
 		_medias = *medias
-	}
-	for _, mediaName := range uploadData.DocumentData.MediaNames {
-		mediaPath := document.Path + "/medias/" + mediaName
-		mediaData, err := services.GetStorageClient().Bucket.GetObject(mediaPath)
-		if err != nil {
-			log.Printf("获取媒体文件 %s 失败: %v", mediaName, err)
-			continue
+	} else {
+		for _, mediaName := range uploadData.DocumentData.MediaNames {
+			mediaPath := document.Path + "/medias/" + mediaName
+			mediaData, err := services.GetStorageClient().Bucket.GetObject(mediaPath)
+			if err != nil {
+				log.Printf("获取媒体文件1 %s 失败: %v", mediaName, err)
+				continue
+			}
+			_medias = append(_medias, Media{
+				Name:    mediaName,
+				Content: &mediaData,
+			})
 		}
-		_medias = append(_medias, Media{
-			Name:    mediaName,
-			Content: &mediaData,
-		})
 	}
 
 	review(document, uploadData, document.Path, pages, &_medias)
