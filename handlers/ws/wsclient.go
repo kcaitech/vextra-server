@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"reflect"
 	"sync/atomic"
 
 	"kcaitech.com/kcserver/handlers/common"
@@ -57,6 +58,14 @@ type StartData struct {
 type ServeFace interface {
 	handle(data *TransData, binaryData *([]byte))
 	close()
+}
+
+// 检查接口是否为nil（包括底层值为nil的情况）
+func isInterfaceNil(i interface{}) bool {
+	if i == nil {
+		return true
+	}
+	return reflect.ValueOf(i).IsNil()
 }
 
 type WSClient struct {
@@ -110,7 +119,11 @@ func (c *WSClient) bindServe(t string, s ServeFace) {
 	if old != nil {
 		(old).close()
 	}
-	c.serveMap[t] = s
+	if !isInterfaceNil(s) {
+		c.serveMap[t] = s
+	} else {
+		delete(c.serveMap, t)
+	}
 }
 
 func (c *WSClient) handleBind(clientData *TransData) {
@@ -217,7 +230,7 @@ func (c *WSClient) Serve() {
 	// close handlers
 	defer (func() {
 		for _, h := range c.serveMap {
-			if nil != h {
+			if h != nil {
 				h.close()
 			}
 		}
