@@ -14,13 +14,14 @@ declare module "axios" {
     export function create(config?: AxiosRequestConfig): AxiosInstance;
 }
 
-const REQUEST_TIMEOUT = 10000;
+const REQUEST_TIMEOUT = 10000; // 默认10秒超时
 
 export type HttpArgs<T = any> = {
     url: string,
     method: 'post' | 'get' | 'put' | 'delete',
     data?: T,
-    params?: any
+    params?: any,
+    timeout?: number // 可选的超时时间，单位毫秒
 }
 
 type CacheItem = {
@@ -159,11 +160,11 @@ export class HttpMgr {
     constructor(apiUrl: string, onUnauthorized: () => void, token: {
         getToken: () => string | undefined,
         setToken: (token: string | undefined) => void
-    }) {
+    }, timeout: number = REQUEST_TIMEOUT) {
         this.onUnauthorized = onUnauthorized
         this.service = axios.create({
             baseURL: apiUrl,
-            timeout: REQUEST_TIMEOUT,
+            timeout: timeout,
         })
         this._token = token
 

@@ -29,8 +29,8 @@ export class Request {
     private constructor(apiUrl: string, onUnauthorized: () => void, token: {
         getToken: () => string | undefined,
         setToken: (token: string | undefined) => void
-    } = defaultToken) {
-        const httpmgr = new HttpMgr(apiUrl, onUnauthorized, token);
+    } = defaultToken, timeout?: number) {
+        const httpmgr = new HttpMgr(apiUrl, onUnauthorized, token, timeout);
         this.user_api = new UsersAPI(httpmgr);
         this.team_api = new TeamAPI(httpmgr);
         this.comment_api = new CommentAPI(httpmgr);
@@ -44,9 +44,9 @@ export class Request {
     static getInstance(apiUrl: string, onUnauthorized: () => void, token: {
         getToken: () => string | undefined,
         setToken: (token: string | undefined) => void
-    } = defaultToken) {
+    } = defaultToken, timeout?: number) {
         if (!Request.instance) {
-            Request.instance = new Request(apiUrl, onUnauthorized, token);
+            Request.instance = new Request(apiUrl, onUnauthorized, token, timeout);
         }
         return Request.instance;
     }

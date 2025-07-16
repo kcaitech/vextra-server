@@ -230,7 +230,7 @@ func (c *WSClient) Serve() {
 	// close handlers
 	defer (func() {
 		for _, h := range c.serveMap {
-			if h != nil {
+			if nil != h {
 				h.close()
 			}
 		}
