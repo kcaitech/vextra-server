@@ -257,7 +257,7 @@ func AccessWs(c *gin.Context) {
 		return
 	}
 
-	err, defer_func := wsclient.CheckConcurrentDocumentLimit()
+	defer_func, err := wsclient.CheckConcurrentDocumentLimit()
 	if defer_func != nil {
 		defer defer_func()
 	}

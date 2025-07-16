@@ -16,7 +16,7 @@ import (
 	"kcaitech.com/kcserver/utils/websocket"
 )
 
-func CheckConcurrentDocumentLimit() (err error, defer_func func()) {
+func CheckConcurrentDocumentLimit() (defer_func func(), err error) {
 	if config.ConcurrentDocumentLimit == 0 {
 		return nil, nil
 	}
@@ -27,7 +27,7 @@ func CheckConcurrentDocumentLimit() (err error, defer_func func()) {
 	err = redisClient.SetEx(context.Background(), connectionKey, 0, time.Hour*24).Err()
 	if err != nil {
 		log.Println("ws-设置连接标识失败", err)
-		return err, nil
+		return nil, err
 	}
 
 	defer_func = func() {
@@ -39,16 +39,16 @@ func CheckConcurrentDocumentLimit() (err error, defer_func func()) {
 	keys, err := redisClient.Keys(context.Background(), keyPattern).Result()
 	if err != nil {
 		log.Println("ws-获取并发连接数失败", err)
-		return err, defer_func
+		return defer_func, err
 	}
 
 	currentCount := int64(len(keys))
 	if currentCount > config.ConcurrentDocumentLimit {
 		log.Println("ws-并发限制", currentCount)
-		return errors.New("并发限制"), defer_func
+		return defer_func, errors.New("并发限制")
 	}
 
-	return nil, defer_func
+	return defer_func, nil
 }
 
 // Ws websocket连接
@@ -76,7 +76,7 @@ func Ws(c *gin.Context) {
 		return
 	}
 
-	err, defer_func := CheckConcurrentDocumentLimit()
+	defer_func, err := CheckConcurrentDocumentLimit()
 	if defer_func != nil {
 		defer defer_func()
 	}
