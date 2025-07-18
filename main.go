@@ -30,10 +30,9 @@ func start(afterInit func(router *gin.Engine), port int) {
 	}
 }
 
-func initServices() {
+func initServices(configFile string) {
 
-	configDir := "config/"
-	conf, err := config.LoadYamlFile(configDir + "config.yaml")
+	conf, err := config.LoadYamlFile(configFile)
 	if err != nil {
 		fmt.Println("err", err)
 		panic(err)
@@ -49,14 +48,16 @@ func initServices() {
 	// return conf
 }
 
+const defaultConfigFile = "config/config.yaml"
 const defaultPort = 80
 const defaultWebFilePath = "/app/html"
 
 func main() {
+	configFile := flag.String("config", defaultConfigFile, "config file")
 	port := flag.Int("port", defaultPort, "port")
 	webFilePath := flag.String("web", defaultWebFilePath, "web file path")
 	flag.Parse()
-	initServices()
+	initServices(*configFile)
 	start(func(router *gin.Engine) {
 		api.LoadRoutes(router, *webFilePath)
 	}, *port)
