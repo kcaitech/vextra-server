@@ -61,12 +61,12 @@ func LoadRoutes(router *gin.Engine, webFilePath string) {
 	router.NoRoute(onNotFound(webFilePath))
 
 	config := services.GetConfig()
-	if config.DetailedLog {
+	if config.Middleware.DebugLog {
 		router.Use(middlewares.AccessDetailedLogMiddleware())
 	} else {
 		router.Use(middlewares.AccessLogMiddleware())
 	}
-	if config.AllowCors {
+	if config.Middleware.Cors {
 		router.Use(middlewares.CORSMiddleware()) // 测试时需要
 	}
 

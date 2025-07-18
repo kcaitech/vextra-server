@@ -41,27 +41,16 @@ type BaseConfiguration struct {
 // 	Config = conf
 // }
 
-func loadYamlConfig(filePath string, config any) error {
-
-	content, err := os.ReadFile(filePath)
-	if err != nil {
-		log.Printf("读取配置文件失败: %v", err)
-		return err
-	}
-
-	err = yaml.Unmarshal(content, config)
-	if err != nil {
-		log.Printf("配置文件解析失败: %v", err)
-		return err
-	}
-	return nil
-}
-
 type AuthServerConfig struct {
 	Addr         string `yaml:"addr" json:"addr"`
 	LoginURL     string `yaml:"login_url" json:"login_url"`
 	ClientID     string `yaml:"client_id" json:"client_id"`
 	ClientSecret string `yaml:"client_secret" json:"client_secret"`
+}
+
+type MiddlewareConfig struct {
+	Cors     bool `yaml:"cors,omitempty" json:"cors,omitempty"`
+	DebugLog bool `yaml:"debug_log,omitempty" json:"debug_log,omitempty"`
 }
 
 type Configuration struct {
@@ -77,15 +66,30 @@ type Configuration struct {
 	SafeReview safereview.SafeReviewConf `yaml:"safe_review" json:"safe_review"`
 	Storage    storage.Config            `yaml:"storage" json:"storage"`
 
-	// DefaultRoute bool `yaml:"default_route,omitempty" json:"default_route,omitempty"`
-	DetailedLog bool `yaml:"detailed_log,omitempty" json:"detailed_log,omitempty"`
-	AllowCors   bool `yaml:"allow_cors,omitempty" json:"allow_cors,omitempty"`
+	Middleware MiddlewareConfig `yaml:"middleware" json:"middleware"`
 
 	AuthServer AuthServerConfig `yaml:"auth_server" json:"auth_server"`
 }
 
+func loadYamlConfig(filePath string, config *Configuration) error {
+
+	content, err := os.ReadFile(filePath)
+	if err != nil {
+		log.Printf("读取配置文件失败: %v", err)
+		return err
+	}
+
+	err = yaml.Unmarshal(content, config)
+	if err != nil {
+		log.Printf("配置文件解析失败: %v", err)
+		return err
+	}
+	return nil
+}
+
 func LoadYamlFile(filePath string) (*Configuration, error) {
-	var Config Configuration
-	err := loadYamlConfig(filePath, &Config)
-	return &Config, err
+	config := &Configuration{}
+	defaultConfig(config)
+	err := loadYamlConfig(filePath, config)
+	return config, err
 }

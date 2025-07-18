@@ -56,8 +56,9 @@ doc_update_server:
   min_update_interval: 600
   min_cmd_count: 1
 
-detailed_log: true
-allow_cors: true
+middleware:
+  cors: true
+  debug_log: true
 
 auth_server:
   addr: https://account.test.vextra.cn
