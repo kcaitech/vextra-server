@@ -55,7 +55,7 @@ func onNotFound(webFilePath string) func(c *gin.Context) {
 
 func LoadRoutes(router *gin.Engine, webFilePath string) {
 	router.RedirectTrailingSlash = false
-	router.GET("/health_check", handlers.HealthCheck)
+	router.GET("/health", handlers.HealthCheck)
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	router.Use(static.Serve("/", static.LocalFile(webFilePath, false))) // 前端工程
 	router.NoRoute(onNotFound(webFilePath))
