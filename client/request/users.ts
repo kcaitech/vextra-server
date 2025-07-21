@@ -161,6 +161,13 @@ export class UsersAPI {
             url: 'auth/login_url',
             method: 'get',
         })
+        // 需要处理一下url，如果url中包含~，则需要替换为当前域名
+        const url = result.data.url;
+        if (url.indexOf('~') > 0) {
+            const host = typeof window !== 'undefined' ? window.location.host : 'localhost';
+            const new_url = url.replace('~', host);
+            return { url: new_url, client_id: result.data.client_id };
+        }
         return result.data
     }
 
