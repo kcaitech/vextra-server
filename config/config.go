@@ -89,7 +89,7 @@ func loadYamlConfig(filePath string, config *Configuration) error {
 
 func LoadYamlFile(filePath string) (*Configuration, error) {
 	config := &Configuration{}
-	defaultConfig(config)
 	err := loadYamlConfig(filePath, config)
+	confirmConfig(config)
 	return config, err
 }
