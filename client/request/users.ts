@@ -166,6 +166,7 @@ export class UsersAPI {
         if (url.indexOf('~') > 0) {
             const host = typeof window !== 'undefined' ? window.location.host : 'localhost';
             const new_url = url.replace('~', host);
+            console.log('login new_url:', new_url, " url:", url);
             return { url: new_url, client_id: result.data.client_id };
         }
         return result.data
