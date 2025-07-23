@@ -162,14 +162,16 @@ export class UsersAPI {
             method: 'get',
         })
         // 需要处理一下url，如果url中包含~，则需要替换为当前域名
-        const url = result.data.url;
+        let url = result.data.url;
         if (url.indexOf('~') > 0) {
             const host = typeof window !== 'undefined' ? window.location.host : 'localhost';
-            const new_url = url.replace('~', host);
-            console.log('login new_url:', new_url, " url:", url);
-            return { url: new_url, client_id: result.data.client_id };
+            url = url.replace('~', host);
         }
-        return result.data
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            const protocol = typeof window !== 'undefined' ? window.location.protocol : 'http:';
+            url = protocol + '//' + url;
+        }
+        return { url: url, client_id: result.data.client_id };
     }
 
     async loginCallback(code: string): Promise<UserInfoWithTokenResponse> {
