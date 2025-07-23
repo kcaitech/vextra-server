@@ -79,12 +79,12 @@ func GetMongoDB() *mongo.MongoDB {
 // jwt client 的单例
 var jwtClient *auth.KCAuthClient
 
-func InitKCAuthClient(authServerURL, clientID, clientSecret string) (*auth.KCAuthClient, error) {
+func InitKCAuthClient(apiAddr, clientID, clientSecret string) (*auth.KCAuthClient, error) {
 	if jwtClient != nil {
 		return jwtClient, nil
 	}
 	// var err error
-	jwtClient = auth.NewAuthClient(authServerURL, clientID, clientSecret)
+	jwtClient = auth.NewAuthClient(apiAddr, clientID, clientSecret)
 	return jwtClient, nil
 }
 
@@ -179,7 +179,7 @@ func InitAllBaseServices(config *config.Configuration) error {
 		return err
 	}
 	// 初始化jwt
-	_, err = InitKCAuthClient(config.AuthServer.Addr, config.AuthServer.ClientID, config.AuthServer.ClientSecret)
+	_, err = InitKCAuthClient(config.AuthServer.APIAddr, config.AuthServer.ClientID, config.AuthServer.ClientSecret)
 	if err != nil {
 		return err
 	}

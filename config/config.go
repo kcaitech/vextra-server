@@ -42,7 +42,7 @@ type BaseConfiguration struct {
 // }
 
 type AuthServerConfig struct {
-	Addr         string `yaml:"addr" json:"addr"`
+	APIAddr      string `yaml:"api_addr" json:"api_addr"`
 	LoginURL     string `yaml:"login_url" json:"login_url"`
 	ClientID     string `yaml:"client_id" json:"client_id"`
 	ClientSecret string `yaml:"client_secret" json:"client_secret"`

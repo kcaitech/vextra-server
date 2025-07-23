@@ -61,7 +61,7 @@ middleware:
   debug_log: true
 
 auth_server:
-  addr: https://account.test.vextra.cn
+  api_addr: https://account.test.vextra.cn/api
   login_url: https://account.test.vextra.cn
   client_id: kcserver
   client_secret: yourSecurePassword123
