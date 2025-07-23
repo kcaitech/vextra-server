@@ -167,10 +167,6 @@ func (serv *selectionServe) handle(data *TransData, binaryData *([]byte)) {
 
 	selectionData.UserId = userIdStr
 	selectionData.Permission = serv.permType
-	// todo
-	// selectionData.Avatar = config.Config.StorageUrl.Attatch + serv.user.Avatar
-	// selectionData.Avatar = serv.user.Avatar
-	// selectionData.Nickname = serv.user.Nickname
 
 	selectionData.User = serv.user
 	selectionData.EnterTime = serv.enterTime

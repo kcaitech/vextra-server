@@ -9,9 +9,6 @@ type UserProfile struct {
 }
 
 func (user UserProfile) MarshalJSON() ([]byte, error) {
-	// todo
-	// if strings.HasPrefix(user.Avatar, "/") {
-	// 	user.Avatar = config.Config.StorageUrl.Attatch + user.Avatar
-	// }
+
 	return MarshalJSON(user)
 }

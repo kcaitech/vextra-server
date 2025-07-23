@@ -3,6 +3,7 @@ package document
 import (
 	"encoding/base64"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -134,10 +135,7 @@ func CreateTeam(c *gin.Context) {
 		"name":        team.Name,
 		"description": team.Description,
 	}
-	// todo
-	// if team.Avatar != "" {
-	// 	result["avatar"] = config.Config.StorageUrl.Attatch + team.Avatar
-	// }
+
 	common.Success(c, result)
 }
 
@@ -179,12 +177,13 @@ func GetTeamList(c *gin.Context) {
 		if !ok {
 			continue
 		}
+		cfg := services.GetConfig()
 		resultWithCreator = append(resultWithCreator, TeamQueryResItemWithCreator{
 			Team: models.Team{
 				Id:              item.Team.Id,
 				Name:            item.Team.Name,
 				Description:     item.Team.Description,
-				Avatar:          services.GetConfig().StorageUrl.Attatch + item.Team.Avatar,
+				Avatar:          fmt.Sprintf("%s/%s%s", cfg.StorageUrl.Attatch, cfg.Storage.AttatchBucket, item.Team.Avatar),
 				InvitedPermType: item.Team.InvitedPermType,
 				OpenInvite:      item.Team.OpenInvite,
 			},
@@ -741,8 +740,8 @@ func SetTeamInfo(c *gin.Context) {
 		}
 		avatarPath, err := teamService.UploadTeamAvatarById(teamId, fileBytes, contentType)
 		if err == nil {
-			result["avatar"] = services.GetConfig().StorageUrl.Attatch + avatarPath
-			// result["avatar"] = avatarPath
+			cfg := services.GetConfig()
+			result["avatar"] = fmt.Sprintf("%s/%s%s", cfg.StorageUrl.Attatch, cfg.Storage.AttatchBucket, avatarPath)
 		} else {
 			log.Println("上传头像失败", err)
 		}

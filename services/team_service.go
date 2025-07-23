@@ -126,30 +126,6 @@ func (s *TeamService) GetTeamPermTypeByForUser(teamId string, userId string) (*m
 	return &teamMember.PermType, nil
 }
 
-// type Team struct {
-// 	Id              int64               `json:"id"`
-// 	CreatedAt       time.Time           `json:"created_at"`
-// 	Name            string              `json:"name"`
-// 	Description     string              `json:"description"`
-// 	Avatar          string              `json:"avatar"`
-// 	InvitedPermType models.TeamPermType `json:"invited_perm_type"`
-// 	InvitedSwitch   bool                `json:"invited_switch"`
-// }
-
-// func (team Team) MarshalJSON() ([]byte, error) {
-// 	// todo
-// 	// if strings.HasPrefix(team.Avatar, "/") {
-// 	// 	team.Avatar = config.Config.StorageUrl.Attatch + team.Avatar
-// 	// }
-// 	return models.MarshalJSON(team)
-// }
-
-// type TeamMember models.TeamMember
-
-// func (model TeamMember) MarshalJSON() ([]byte, error) {
-// 	return models.MarshalJSON(model)
-// }
-
 type TeamQueryResItem struct {
 	Team           models.Team       `gorm:"embedded;embeddedPrefix:t__" json:"team" table:"t"`
 	SelfTeamMember models.TeamMember `gorm:"embedded;embeddedPrefix:tm__" json:"-" join:"team_member,tm;inner;team_id,id"`
