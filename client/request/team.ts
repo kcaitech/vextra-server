@@ -241,7 +241,7 @@ export class TeamAPI {
             formData.append('avatar', params.avatar);
         }
         const result = await this.http.request({
-            url: '/team',
+            url: '/team/',
             method: 'post',
             data: formData,
         });
@@ -579,7 +579,7 @@ export class TeamAPI {
     }): Promise<BaseResponse> {
         await this.http.refresh_token();
         const result = await this.http.request({
-            url: '/team',
+            url: '/team/',
             method: 'delete',
             params,
         });

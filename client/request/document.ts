@@ -389,7 +389,7 @@ export class DocumentAPI {
     }): Promise<BaseResponse> {
         await this.http.refresh_token();
         return this.http.request({
-            url: 'documents/',
+            url: '/documents/',
             method: 'delete',
             params: params,
         })

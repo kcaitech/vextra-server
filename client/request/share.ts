@@ -181,7 +181,7 @@ export class ShareAPI {
     async changeShareAuthority(params: { share_id: string; perm_type: PermType }): Promise<BaseResponse> {
         await this.http.refresh_token();
         const result = await this.http.request({
-            url: '/share',
+            url: '/share/',
             method: 'put',
             data: params,
         });
@@ -280,7 +280,7 @@ export class ShareAPI {
     }): Promise<BaseResponse> {
         await this.http.refresh_token();
         return this.http.request({
-            url: '/share',
+            url: '/share/',
             method: 'delete',
             params: params,
         })
