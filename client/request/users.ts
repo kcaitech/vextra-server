@@ -163,7 +163,7 @@ export class UsersAPI {
         })
         // 需要处理一下url，如果url中包含~，则需要替换为当前域名
         let url = result.data.url;
-        if (url.indexOf('~') > 0) {
+        if (url.includes('~')) {
             const host = typeof window !== 'undefined' ? window.location.host : 'localhost';
             url = url.replace('~', host);
         }
