@@ -117,15 +117,16 @@ func (that *OSSBucket) GenerateAccessKey(authPath string, authOp int, expires in
 	authPath = strings.TrimLeft(authPath, "/")
 	authOpList := make([]string, 0, strconv.IntSize)
 	authOpListDistinct := make(map[int]struct{}, strconv.IntSize)
-	for i := 0; i < strconv.IntSize; i++ {
+	for i := range strconv.IntSize {
 		authOpValue := 1 << i
 		if _, ok := authOpListDistinct[authOpValue]; ok {
 			continue
 		}
 		if authOp&(authOpValue) > 0 {
-			for _, v := range ossAuthOpMap[authOpValue] {
-				authOpList = append(authOpList, v)
-			}
+			authOpList = append(authOpList, ossAuthOpMap[authOpValue]...)
+			// for _, v := range ossAuthOpMap[authOpValue] {
+			// 	authOpList = append(authOpList, v)
+			// }
 			authOpListDistinct[authOpValue] = struct{}{}
 		}
 	}

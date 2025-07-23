@@ -3,7 +3,6 @@ package document
 import (
 	"encoding/base64"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -177,13 +176,14 @@ func GetTeamList(c *gin.Context) {
 		if !ok {
 			continue
 		}
-		cfg := services.GetConfig()
+
 		resultWithCreator = append(resultWithCreator, TeamQueryResItemWithCreator{
+
 			Team: models.Team{
 				Id:              item.Team.Id,
 				Name:            item.Team.Name,
 				Description:     item.Team.Description,
-				Avatar:          fmt.Sprintf("%s/%s%s", cfg.StorageUrl.Attatch, cfg.Storage.AttatchBucket, item.Team.Avatar),
+				Avatar:          services.GetConfig().StorageUrl.Attatch + item.Team.Avatar,
 				InvitedPermType: item.Team.InvitedPermType,
 				OpenInvite:      item.Team.OpenInvite,
 			},
@@ -740,8 +740,7 @@ func SetTeamInfo(c *gin.Context) {
 		}
 		avatarPath, err := teamService.UploadTeamAvatarById(teamId, fileBytes, contentType)
 		if err == nil {
-			cfg := services.GetConfig()
-			result["avatar"] = fmt.Sprintf("%s/%s%s", cfg.StorageUrl.Attatch, cfg.Storage.AttatchBucket, avatarPath)
+			result["avatar"] = services.GetConfig().StorageUrl.Attatch + avatarPath
 		} else {
 			log.Println("上传头像失败", err)
 		}

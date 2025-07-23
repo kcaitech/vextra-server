@@ -102,31 +102,6 @@ func (that *DefaultBucket) PutObjectByte(objectName string, content []byte, cont
 	})
 }
 
-// func (that *DefaultBucket) PutObjectList(putObjectInputList []*PutObjectInput) ([]*UploadInfo, []error) {
-// 	uploadInfoMap := my_map.NewSyncMap[int, *UploadInfo]()
-// 	errorMap := my_map.NewSyncMap[int, error]()
-// 	uploadWaitGroup := sync.WaitGroup{}
-// 	for index, putObjectInput := range putObjectInputList {
-// 		uploadWaitGroup.Add(1)
-// 		go func(index int, putObjectInput *PutObjectInput) {
-// 			defer uploadWaitGroup.Done()
-// 			result, err := that.That.PutObject(putObjectInput)
-// 			uploadInfoMap.Set(index, result)
-// 			errorMap.Set(index, err)
-// 		}(index, putObjectInput)
-// 	}
-// 	uploadWaitGroup.Wait()
-// 	uploadInfoList := make([]*UploadInfo, 0, len(putObjectInputList))
-// 	errorList := make([]error, 0, len(putObjectInputList))
-// 	for index := 0; index < len(putObjectInputList); index++ {
-// 		uploadInfo, _ := uploadInfoMap.Get(index)
-// 		err, _ := errorMap.Get(index)
-// 		uploadInfoList = append(uploadInfoList, uploadInfo)
-// 		errorList = append(errorList, err)
-// 	}
-// 	return uploadInfoList, errorList
-// }
-
 func (that *DefaultBucket) CopyObject(srcPath string, destPath string) (*UploadInfo, error) {
 	return nil, errors.New("CopyObject方法未实现")
 }
@@ -153,10 +128,3 @@ const (
 func (that *DefaultBucket) GenerateAccessKey(authPath string, authOp int, expires int, roleSessionName string) (*AccessKeyValue, error) {
 	return nil, errors.New("generateAccessKey方法未实现")
 }
-
-// type StorageConf struct {
-// 	Provider Provider `yaml:"provider" json:"provider"`
-// 	Minio    Config   `yaml:"minio" json:"minio"`
-// 	S3       Config   `yaml:"s3" json:"s3"`
-// 	Oss      Config   `yaml:"oss" json:"oss"`
-// }
