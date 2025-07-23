@@ -77,7 +77,7 @@ func LoadRoutes(router *gin.Engine, webFilePath string) {
 
 	apiGroup := router.Group("/api")
 	apiGroup.GET("/version.json", func(c *gin.Context) {
-		c.File("/app/version.json")
+		c.File(webFilePath + "/version.json")
 	})
 
 	v1.LoadRoutes(apiGroup.Group("/v1"))
