@@ -5,15 +5,29 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"kcaitech.com/kcserver/models"
 	"kcaitech.com/kcserver/providers/storage"
 	"kcaitech.com/kcserver/services"
+	"kcaitech.com/kcserver/utils"
 )
 
+type AccessKeyInfo struct {
+	AccessKey       string `json:"access_key"`
+	SecretAccessKey string `json:"secret_access_key"`
+	SessionToken    string `json:"session_token"`
+	SignerType      int    `json:"signer_type"`
+	Provider        string `json:"provider"`
+	Region          string `json:"region"`
+	BucketName      string `json:"bucket_name"`
+	Endpoint        string `json:"endpoint"`
+}
+
 // GetDocumentAccessKey 获取文档访问密钥
-func GetDocumentAccessKey(userId string, documentId string) (*map[string]any, int, error) {
+func GetDocumentAccessKey(userId string, documentId string) (*AccessKeyInfo, int, error) {
 	documentService := services.NewDocumentService()
 
 	document := models.Document{}
@@ -88,14 +102,77 @@ func GetDocumentAccessKey(userId string, documentId string) (*map[string]any, in
 
 	storageConfig := _storage.Bucket.GetConfig()
 	documentStorageUrl := services.GetConfig().StorageUrl.Document
-	return &map[string]any{
-		"access_key":        accessKeyValue.AccessKey,
-		"secret_access_key": accessKeyValue.SecretAccessKey,
-		"session_token":     accessKeyValue.SessionToken,
-		"signer_type":       accessKeyValue.SignerType,
-		"provider":          services.GetConfig().Storage.Provider,
-		"region":            storageConfig.Region,
-		"bucket_name":       storageConfig.DocumentBucket,
-		"endpoint":          documentStorageUrl,
+	return &AccessKeyInfo{
+		AccessKey:       accessKeyValue.AccessKey,
+		SecretAccessKey: accessKeyValue.SecretAccessKey,
+		SessionToken:    accessKeyValue.SessionToken,
+		SignerType:      accessKeyValue.SignerType,
+		Provider:        string(services.GetConfig().Storage.Provider),
+		Region:          storageConfig.Region,
+		BucketName:      storageConfig.DocumentBucket,
+		Endpoint:        documentStorageUrl,
 	}, http.StatusOK, nil
+}
+
+type ThumbnailResponse struct {
+	AccessKeyInfo
+	ObjectKey string `json:"object_key"`
+}
+
+func GetDocumentThumbnailAccessKey(c *gin.Context, documentId string, _storage *storage.StorageClient) (*ThumbnailResponse, int, error) {
+	documentService := services.NewDocumentService()
+	userId, err := utils.GetUserId(c)
+	if err != nil {
+		return nil, http.StatusUnauthorized, err
+	}
+	var permType models.PermType
+	if _, _, err = documentService.GetDocumentPermissionByDocumentAndUserId(&permType, documentId, userId); err != nil {
+		return nil, http.StatusOK, err
+	}
+	if permType <= models.PermTypeNone {
+		return nil, http.StatusForbidden, fmt.Errorf("Forbidden")
+	}
+	accessKeyInfo, err := GetDocumentThumbnailAccessKeyNoCheckAuth(c, documentId, _storage)
+	if err != nil {
+		return nil, http.StatusOK, err
+	}
+	return accessKeyInfo, http.StatusOK, nil
+}
+
+func GetDocumentThumbnailAccessKeyNoCheckAuth(c *gin.Context, documentId string, _storage *storage.StorageClient) (*ThumbnailResponse, error) {
+	userId, err := utils.GetUserId(c)
+	if err != nil {
+		return nil, err
+	}
+	objects := _storage.Bucket.ListObjects(documentId + "/thumbnail/")
+	for object := range objects {
+		if object.Err != nil {
+			continue
+		}
+
+		// 生成预签名URL，有效期1小时
+		reqParams := make(url.Values)
+		reqParams.Set("response-content-disposition", "inline")
+		accessKeyValue, err := _storage.Bucket.GenerateAccessKey(object.Key, storage.AuthOpGetObject, 3600, "U"+(userId)+"D"+(documentId))
+		if err != nil {
+			return nil, err
+		}
+
+		storageConfig := _storage.Bucket.GetConfig()
+		documentStorageUrl := services.GetConfig().StorageUrl.Document
+		return &ThumbnailResponse{
+			AccessKeyInfo: AccessKeyInfo{
+				AccessKey:       accessKeyValue.AccessKey,
+				SecretAccessKey: accessKeyValue.SecretAccessKey,
+				SessionToken:    accessKeyValue.SessionToken,
+				SignerType:      accessKeyValue.SignerType,
+				Provider:        string(services.GetConfig().Storage.Provider),
+				Region:          storageConfig.Region,
+				BucketName:      storageConfig.DocumentBucket,
+				Endpoint:        documentStorageUrl,
+			},
+			ObjectKey: object.Key,
+		}, nil
+	}
+	return nil, errors.New("thumbnail not found")
 }

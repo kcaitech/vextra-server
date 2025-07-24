@@ -1,5 +1,6 @@
 import { HttpArgs, HttpMgr } from './http'
-import { BaseResponseSchema, BaseResponse, UserInfoSchema, ProjectInfoSchema, TeamInfoSchema, TeamPermType } from './types'
+import { BaseResponseSchema, BaseResponse,  } from './types'
+import { UserInfoSchema, ProjectInfoSchema, TeamInfoSchema, TeamPermType } from '../common/types'
 import { z } from 'zod'
 
 // 团队模型

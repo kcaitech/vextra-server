@@ -4,7 +4,7 @@ import { Resource } from "./resource";
 import { Selection } from "./selection"
 import { Comment } from "./comment"
 import { DocUpload, ExportFunc, MediasMgr } from "./upload";
-import { Cmd, DataTypes, IClientContext, NetworkStatusType } from "./types";
+import { BindResponse, BindResponseSchema, Cmd, DataTypes, IClientContext, NetworkStatusType } from "./types";
 import { Version } from "./version";
 import { Thumbnail } from "./thumbnail";
 export { Connect } from "./connect"
@@ -47,13 +47,17 @@ export class WSClient {
     }
 
     // 先bind，再start
-    async bind(document_id: string) {
+    async bind(document_id: string): Promise<BindResponse> {
         await this.connect.waitReady()
         const ret = await this.connect.send(DataTypes.Bind, {
             document_id
         })
+        // data {
+        //     "doc_info":   docInfo,
+        //     "access_key": accessKey,
+        // }
         this.bind_document_id = document_id
-        return ret;
+        return BindResponseSchema.parse(ret);
     }
 
     async start(context: IClientContext) {

@@ -12,6 +12,11 @@ import (
 	"kcaitech.com/kcserver/utils"
 )
 
+type AccessRecordQueryResItem struct {
+	services.AccessRecordAndFavoritesQueryResItem
+	Thumbnail *common.ThumbnailResponse `json:"thumbnail,omitempty"`
+}
+
 // GetUserDocumentAccessRecordsList 获取用户的文档访问记录列表
 func GetUserDocumentAccessRecordsList(c *gin.Context) {
 	userId, err := utils.GetUserId(c)
@@ -42,10 +47,7 @@ func GetUserDocumentAccessRecordsList(c *gin.Context) {
 		return
 	}
 
-	// 获取存储客户端
-	storage := services.GetStorageClient()
-
-	result := make([]services.AccessRecordAndFavoritesQueryResItem, 0)
+	result := make([]AccessRecordQueryResItem, 0)
 	for _, item := range *accessRecordsList {
 		userId := item.Document.UserId
 		userInfo, exists := userMap[userId]
@@ -56,8 +58,11 @@ func GetUserDocumentAccessRecordsList(c *gin.Context) {
 				Avatar:   userInfo.Avatar,
 			}
 		}
-		item.Document.Thumbnail = GetDocumentThumbnail(c, item.Document.Path, storage)
-		result = append(result, item)
+		thumbnail, _ := common.GetDocumentThumbnailAccessKeyNoCheckAuth(c, item.Document.Id, services.GetStorageClient())
+		result = append(result, AccessRecordQueryResItem{
+			AccessRecordAndFavoritesQueryResItem: item,
+			Thumbnail:                            thumbnail,
+		})
 	}
 
 	// 构建包含下一页游标信息的响应

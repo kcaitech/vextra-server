@@ -1,6 +1,7 @@
 // 导入axios实例
 import { HttpMgr } from './http'
-import { BaseResponseSchema, BaseResponse, UserInfoSchema } from './types';
+import { BaseResponseSchema, BaseResponse } from './types';
+import { UserInfoSchema } from '../common/types';
 import { z } from 'zod';
 
 // 评论状态枚举

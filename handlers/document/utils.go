@@ -1,12 +1,8 @@
 package document
 
 import (
-	"net/url"
-	"time"
-
 	"github.com/gin-gonic/gin"
 	"kcaitech.com/kcserver/providers/auth"
-	"kcaitech.com/kcserver/providers/storage"
 	"kcaitech.com/kcserver/services"
 	"kcaitech.com/kcserver/utils"
 )
@@ -34,36 +30,4 @@ func GetUserInfo(c *gin.Context) (*auth.UserInfo, error) {
 		return nil, err
 	}
 	return users, nil
-}
-
-func GetDocumentThumbnail(c *gin.Context, documentId string, storage *storage.StorageClient) string {
-	objects := storage.Bucket.ListObjects(documentId + "/thumbnail/")
-	for object := range objects {
-		if object.Err != nil {
-			continue
-		}
-
-		// 生成预签名URL，有效期1小时
-		reqParams := make(url.Values)
-		reqParams.Set("response-content-disposition", "inline")
-		presignedURL, err := storage.Bucket.PresignedGetObject(object.Key, time.Hour, nil)
-		if err != nil {
-			break
-		}
-
-		// 将预签名URL中的域名替换成配置中的storage_url.document
-		documentStorageUrl := services.GetConfig().StorageUrl.Document
-		parsedURL, parseErr := url.Parse(presignedURL)
-		if parseErr != nil {
-			return presignedURL
-		}
-		configURL, configErr := url.Parse(documentStorageUrl)
-		if configErr != nil {
-			return presignedURL
-		}
-		parsedURL.Scheme = configURL.Scheme
-		parsedURL.Host = configURL.Host
-		return parsedURL.String()
-	}
-	return ""
 }

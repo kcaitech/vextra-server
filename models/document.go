@@ -72,7 +72,7 @@ type Document struct {
 	VersionId string `gorm:"size:64" json:"version_id"`
 	TeamId    string `gorm:"index" json:"team_id"`
 	ProjectId string `gorm:"index" json:"project_id"`
-	Thumbnail string `json:"thumbnail"`
+	// Thumbnail string `json:"thumbnail"`
 }
 
 func (model Document) GetId() interface{} {

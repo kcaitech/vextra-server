@@ -1,5 +1,6 @@
 import { HttpArgs, HttpMgr } from './http'
-import { BaseResponseSchema, BaseResponse, PermType, UserInfoSchema, TeamInfoSchema, ProjectInfoSchema, DocumentInfoSchema } from './types';
+import { BaseResponseSchema, BaseResponse, PermType } from './types';
+import { UserInfoSchema, TeamInfoSchema, ProjectInfoSchema, DocumentInfoSchema } from '../common/types';
 import { z } from 'zod';
 
 export const ShareListResponseSchema1 = BaseResponseSchema.extend({

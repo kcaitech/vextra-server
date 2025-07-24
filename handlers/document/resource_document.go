@@ -11,6 +11,11 @@ import (
 	"kcaitech.com/kcserver/utils"
 )
 
+type ResourceDocumentQueryResItem struct {
+	services.ResourceDocumentQueryResItem
+	Thumbnail *common.ThumbnailResponse `json:"thumbnail,omitempty"`
+}
+
 func GetResourceDocumentList(c *gin.Context) {
 	cursor := c.Query("cursor")
 	limit := utils.QueryInt(c, "limit", 20)
@@ -34,9 +39,7 @@ func GetResourceDocumentList(c *gin.Context) {
 		return
 	}
 
-	storage := services.GetStorageClient()
-
-	result := make([]services.ResourceDocumentQueryResItem, 0)
+	result := make([]ResourceDocumentQueryResItem, 0)
 
 	for _, item := range *resourceDocuments {
 		userId := item.Document.UserId
@@ -48,8 +51,12 @@ func GetResourceDocumentList(c *gin.Context) {
 				Avatar:   userInfo.Avatar,
 			}
 		}
-		item.Document.Thumbnail = GetDocumentThumbnail(c, item.Document.Path, storage)
-		result = append(result, item)
+
+		thumbnail, _ := common.GetDocumentThumbnailAccessKeyNoCheckAuth(c, item.Document.Id, services.GetStorageClient())
+		result = append(result, ResourceDocumentQueryResItem{
+			ResourceDocumentQueryResItem: item,
+			Thumbnail:                    thumbnail,
+		})
 	}
 
 	var nextCursor string

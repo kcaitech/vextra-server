@@ -1,5 +1,6 @@
 import { HttpMgr } from './http'
-import { UserInfoSchema, BaseResponseSchema, BaseResponse } from './types'
+import { BaseResponseSchema, BaseResponse } from './types'
+import { UserInfoSchema } from '../common/types'
 import { z } from 'zod';
 
 // 用户反馈类型枚举

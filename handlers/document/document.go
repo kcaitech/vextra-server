@@ -162,12 +162,11 @@ func GetUserDocumentInfo(c *gin.Context) {
 
 	// 处理锁定信息中的LockedWords
 	if len(locked) > 0 {
-		_storage := services.GetStorageClient()
 		for i := range locked {
 			item := &locked[i]
 			// 如果是缩略图类型的媒体锁定，设置LockedWords为GetDocumentThumbnail的返回值
 			if item.LockedType == models.LockedTypeMedia && item.LockedTarget == "thumbnail" {
-				item.LockedWords = GetDocumentThumbnail(nil, result.Document.Path, _storage)
+				item.LockedWords = "thumbnail" // 通过api/v1/document/thumbnail_access_key获取
 			}
 		}
 	}
@@ -535,63 +534,3 @@ func CopyDocument(c *gin.Context) {
 		common.Success(c, result)
 	}
 }
-
-// CreateTest 创建测试文档环境
-// func CreateTest(c *gin.Context) {
-// 	var req struct {
-// 		VerifyCode   string `json:"verify_code" binding:"required"`
-// 		UserId       string `json:"user_id" binding:"required"`
-// 		DocumentId   string `json:"document_id" binding:"required"`
-// 		DocumentId2  string `json:"document_id2"`
-// 		DocumentName string `json:"document_name" binding:"required"`
-// 	}
-// 	if err := c.ShouldBindJSON(&req); err != nil {
-// 		common.BadRequest(c, "")
-// 		return
-// 	}
-
-// 	if req.VerifyCode != "123456" {
-// 		common.Forbidden(c, "")
-// 		return
-// 	}
-
-// 	result := map[string]any{}
-
-// 	if req.DocumentId2 == "" {
-// 		userId := req.UserId
-// 		if userId == "" {
-// 			common.BadRequest(c, "参数错误：user_id")
-// 			return
-// 		}
-
-// 		documentId := str.DefaultToInt(req.DocumentId, 0)
-// 		if documentId <= 0 {
-// 			common.BadRequest(c, "参数错误：document_id")
-// 			return
-// 		}
-
-// 		result1 := copyDocument(userId, documentId, c, req.DocumentName)
-// 		if result1 == nil {
-// 			common.Fail(c, "创建文档失败")
-// 			return
-// 		}
-// 		models.StructToMap(result1, result)
-// 	} else {
-// 		result["document"] = map[string]any{
-// 			"id": req.DocumentId2,
-// 		}
-// 	}
-
-// 	// 创建JWT
-// 	token, err := jwt.CreateJwt(&jwt.Data{
-// 		Id:       req.UserId,
-// 		Nickname: "测试用户",
-// 	})
-// 	if err != nil {
-// 		common.Fail(c, err.Error())
-// 		return
-// 	}
-// 	result["token"] = token
-
-// 	common.Success(c, result)
-// }

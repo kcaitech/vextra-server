@@ -52,9 +52,7 @@ export class Request {
     }
 }
 
-export type { UserInfo, TeamInfo, ProjectInfo, LockedInfo } from "./types"
 
-export { TeamPermType, LocketType } from "./types"
 
 export { HttpCode } from "./httpcode"
 export * from "./users"
@@ -63,3 +61,5 @@ export * from "./share"
 export * from "./comment"
 export * from "./document"
 export * from "./access"
+
+export type { ThumbnailResponseData } from "./types"

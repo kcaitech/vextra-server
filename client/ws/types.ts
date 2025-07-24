@@ -1,5 +1,6 @@
+import { z } from "zod";
 import { CommentItem } from "../request/comment";
-import { UserInfo } from "../request/types";
+import { AccessKeyInfoSchema, DocumentInfoSchemaEx, UserInfo } from "../common/types";
 
 export enum DataTypes {
     Op = "op",
@@ -155,3 +156,26 @@ export type VersionData = {
     version_id: string;
     version_start_with: number;
 }
+
+
+export const BaseResponseSchema = z.object({
+    // type: z.string(),
+	// data_id: z.string(),
+	// // data: z.string().optional(), // 需要解析成具体的类型
+	// msg: z.string().optional(),
+	code: z.number().optional(),
+})
+
+
+export const BindRespDataSchema = z.object({
+    doc_info: DocumentInfoSchemaEx,
+    access_key: AccessKeyInfoSchema,
+})
+
+export type BindResponseData = z.infer<typeof BindRespDataSchema>;
+
+export const BindResponseSchema = BaseResponseSchema.extend({
+    data: BindRespDataSchema,
+})
+
+export type BindResponse = z.infer<typeof BindResponseSchema>;

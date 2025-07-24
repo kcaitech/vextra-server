@@ -1,10 +1,11 @@
 import { HttpArgs, HttpMgr } from "./http"
-import { BaseResponse, BaseResponseSchema, PermType, ProjectInfoSchema, TeamInfoSchema, UserInfoSchema, DocumentInfoSchema as DocumentSchema, LockedInfoSchema } from "./types"
+import { BaseResponse, BaseResponseSchema, PermType, AccessKeyResponseSchema, AccessKeyResponse, ThumbnailResponseDataSchema, ThumbnailResponse, ThumbnailResponseSchema } from "./types"
+import { DocumentInfoSchemaEx, UserInfoSchema, TeamInfoSchema, ProjectInfoSchema, DocumentInfoSchema,  } from "../common/types"
 import { z } from 'zod';
 
 // 首先定义 DocumentListItemSchema
 export const DocumentListItemSchema = z.object({
-    document: DocumentSchema,
+    document: DocumentInfoSchema,
     user: UserInfoSchema.optional(),
     team: TeamInfoSchema.nullable(),
     project: ProjectInfoSchema.nullable(),
@@ -23,7 +24,8 @@ export const DocumentListItemSchema = z.object({
         last_access_time: z.string(),
         created_at: z.string(),
         updated_at: z.string()
-    })
+    }),
+    thumbnail: ThumbnailResponseDataSchema.optional()
 });
 
 // 文档列表响应类型
@@ -32,7 +34,7 @@ export const DocumentListResponseSchema = BaseResponseSchema.extend({
 });
 
 export const DocumentRecycleListItemSchema = z.object({
-    document: DocumentSchema,
+    document: DocumentInfoSchema,
     user: UserInfoSchema,
     team: TeamInfoSchema.nullable(),
     project: ProjectInfoSchema.nullable(),
@@ -65,7 +67,7 @@ export type DocumentListItem = z.infer<typeof DocumentListItemSchema>
 
 // 用户文档访问记录模型
 const DocumentAccessRecordSchema = z.object({
-    document: DocumentSchema,
+    document: DocumentInfoSchema,
     team: TeamInfoSchema.nullable(),
     project: ProjectInfoSchema.nullable(),
     document_favorites: z.object({
@@ -85,7 +87,7 @@ const DocumentAccessRecordSchema = z.object({
 export type DocumentAccessRecord = z.infer<typeof DocumentAccessRecordSchema>
 
 const ResourceDocumentSchema = z.object({
-    document: DocumentSchema,
+    document: DocumentInfoSchema,
     team: TeamInfoSchema.nullable(),
     project: ProjectInfoSchema.nullable(),
     document_favorites: z.object({
@@ -94,6 +96,7 @@ const ResourceDocumentSchema = z.object({
         document_id: z.string(),
         is_favorite: z.boolean()
     }),
+    thumbnail: ThumbnailResponseDataSchema.optional()
 })
 
 export type ResourceDocument = z.infer<typeof ResourceDocumentSchema>
@@ -126,66 +129,8 @@ export const DocumentPermissionSchema = BaseResponseSchema.extend({
 
 export type DocumentPermission = z.infer<typeof DocumentPermissionSchema>;
 
-// 文档密钥类型
-export const DocumentKeySchema = z.object({
-    endpoint: z.string(),
-    region: z.string(),
-    access_key: z.string(),
-    secret_access_key: z.string(),
-    session_token: z.string(),
-    bucket_name: z.string(),
-    provider: z.string(),
-});
-
-export type DocumentKey = z.infer<typeof DocumentKeySchema>;
-
-export const DocumentKeyResponseSchema = BaseResponseSchema.extend({
-    data: DocumentKeySchema,
-});
-
-export type DocumentKeyResponse = z.infer<typeof DocumentKeyResponseSchema>;
-
-// 文档信息类型
-export const DocumentInfoSchema1 = z.object({
-    document: DocumentSchema,
-    team: TeamInfoSchema.nullable(),
-    project: ProjectInfoSchema.nullable(),
-    document_favorites: z.object({
-        id: z.string(),
-        is_favorite: z.boolean()
-    }),
-    document_access_record: z.object({
-        id: z.string(),
-        last_access_time: z.string()
-    }),
-    document_permission: z.object({
-        id: z.string(),
-        resource_type: z.number(),
-        resource_id: z.string(),
-        grantee_type: z.number(),
-        grantee_id: z.string(),
-        perm_type: z.number(),
-        perm_source_type: z.number()
-    }),
-    document_permission_requests: z.array(z.object({
-        id: z.string(),
-        user_id: z.string(),
-        document_id: z.string(),
-        perm_type: z.number(),
-        status: z.number()
-    })),
-    shares_count: z.number(),
-    application_count: z.number(),
-    locked_info: z.array(
-        LockedInfoSchema
-    ).nullable(),
-    user: UserInfoSchema
-});
-
-export type DocumentInfo = z.infer<typeof DocumentInfoSchema1>;
-
 export const DocumentInfoResponseSchema = BaseResponseSchema.extend({
-    data: DocumentInfoSchema1,
+    data: DocumentInfoSchemaEx,
 });
 
 export type DocumentInfoResponse = z.infer<typeof DocumentInfoResponseSchema>;
@@ -429,7 +374,7 @@ export class DocumentAPI {
     }
 
     //获取文档密钥
-    async getDocumentAccessKey(params: { doc_id: string }): Promise<DocumentKeyResponse> {
+    async getDocumentAccessKey(params: { doc_id: string }): Promise<AccessKeyResponse> {
         await this.http.refresh_token();
         const result = await this.http.request({
             url: `/documents/access_key`,
@@ -437,9 +382,24 @@ export class DocumentAPI {
             params: params,
         });
         try {
-            return DocumentKeyResponseSchema.parse(result);
+            return AccessKeyResponseSchema.parse(result);
         } catch (error) {
             console.error('文档密钥数据校验失败:', error);
+            throw error;
+        }
+    }
+
+    async getDocumentThumbnailAccessKey(params: { doc_id: string }): Promise<ThumbnailResponse> {
+        await this.http.refresh_token();
+        const result = await this.http.request({
+            url: `/documents/thumbnail_access_key`,
+            method: 'get',
+            params: params,
+        });
+        try {
+            return ThumbnailResponseSchema.parse(result);
+        } catch (error) {
+            console.error('文档缩略图密钥数据校验失败:', error);
             throw error;
         }
     }

@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"net/url"
-	"time"
 )
 
 type Provider string
@@ -56,7 +54,7 @@ type Bucket interface {
 	GetObject(objectName string) ([]byte, error)
 	DeleteObject(objectName string) error
 	ListObjects(prefix string) <-chan ObjectInfo
-	PresignedGetObject(objectName string, expires time.Duration, reqParams url.Values) (string, error)
+	// PresignedGetObject(objectName string, expires time.Duration, reqParams url.Values) (string, error)
 }
 
 type BucketConfig struct {
