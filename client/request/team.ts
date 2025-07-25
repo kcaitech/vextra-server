@@ -601,7 +601,7 @@ export class TeamAPI {
     }): Promise<BaseResponse> {
         await this.http.refresh_token();
         const result = await this.http.request({
-            url: '/team/project',
+            url: '/team/project/',
             method: 'post',
             data: params,
         });
@@ -939,7 +939,7 @@ export class TeamAPI {
     }): Promise<BaseResponse> {
         await this.http.refresh_token();
         const result = await this.http.request({
-            url: '/team/project',
+            url: '/team/project/',
             method: 'delete',
             params: params,
         });
