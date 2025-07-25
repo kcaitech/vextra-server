@@ -76,20 +76,23 @@ type WSClient struct {
 	userId     string
 	documentId string
 	versionId  string
+
+	serverSideWs bool
 }
 
-func NewWSClient(ws *websocket.Ws, token string, userId string) *WSClient {
+func NewWSClient(ws *websocket.Ws, token string, userId string, serverSideWs bool) *WSClient {
 	var _sid atomic.Int64
 	genSId := func() string {
 		sid := _sid.Add(1)
 		return "s" + str.IntToString(sid)
 	}
 	return &WSClient{
-		ws:       ws,
-		token:    token,
-		userId:   userId,
-		genSId:   genSId,
-		serveMap: map[string]ServeFace{},
+		ws:           ws,
+		token:        token,
+		userId:       userId,
+		genSId:       genSId,
+		serveMap:     map[string]ServeFace{},
+		serverSideWs: serverSideWs,
 	}
 }
 
@@ -161,7 +164,7 @@ func (c *WSClient) handleBind(clientData *TransData) {
 		return
 	}
 
-	accessKey, err_code, err := common.GetDocumentAccessKey(c.userId, documentId)
+	accessKey, err_code, err := common.GetDocumentAccessKey(c.userId, documentId, !c.serverSideWs)
 	if err != nil {
 		c.msgErrWithCode(err.Error(), &serverData, nil, err_code)
 		return

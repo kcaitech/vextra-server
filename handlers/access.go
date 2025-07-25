@@ -279,5 +279,5 @@ func AccessWs(c *gin.Context) {
 
 	log.Println("websocket连接成功")
 
-	wsclient.NewWSClient(ws, token, userId).Serve()
+	wsclient.NewWSClient(ws, token, userId, true).Serve()
 }

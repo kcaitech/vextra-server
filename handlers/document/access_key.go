@@ -22,7 +22,7 @@ func GetDocumentAccessKey(c *gin.Context) {
 		return
 	}
 
-	key, code, err := common.GetDocumentAccessKey(userId, documentId)
+	key, code, err := common.GetDocumentAccessKey(userId, documentId, true)
 	if err == nil {
 		common.Success(c, key)
 	} else if code == http.StatusUnauthorized {

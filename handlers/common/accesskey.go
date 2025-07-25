@@ -27,7 +27,7 @@ type AccessKeyInfo struct {
 }
 
 // GetDocumentAccessKey 获取文档访问密钥
-func GetDocumentAccessKey(userId string, documentId string) (*AccessKeyInfo, int, error) {
+func GetDocumentAccessKey(userId string, documentId string, retPublicEndpoint bool) (*AccessKeyInfo, int, error) {
 	documentService := services.NewDocumentService()
 
 	document := models.Document{}
@@ -102,6 +102,9 @@ func GetDocumentAccessKey(userId string, documentId string) (*AccessKeyInfo, int
 
 	storageConfig := _storage.Bucket.GetConfig()
 	documentStorageUrl := services.GetConfig().StorageUrl.Document
+	if !retPublicEndpoint {
+		documentStorageUrl = storageConfig.Endpoint
+	}
 	return &AccessKeyInfo{
 		AccessKey:       accessKeyValue.AccessKey,
 		SecretAccessKey: accessKeyValue.SecretAccessKey,
