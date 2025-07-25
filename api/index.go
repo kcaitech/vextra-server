@@ -76,9 +76,11 @@ func LoadRoutes(router *gin.Engine, webFilePath string) {
 	}, middlewares.DefaultRateLimiterConfig()).RateLimitMiddleware())
 
 	apiGroup := router.Group("/api")
-	apiGroup.GET("/version.json", func(c *gin.Context) {
-		c.File(webFilePath + "/version.json")
+	v1Group := apiGroup.Group("/v1")
+	// 因配置的关系，需要放到v1里面。如后面有v2..也要同时放到v2里面
+	v1Group.GET("/version.json", func(c *gin.Context) {
+		c.File("version.json") // 当前目录
 	})
 
-	v1.LoadRoutes(apiGroup.Group("/v1"))
+	v1.LoadRoutes(v1Group)
 }
