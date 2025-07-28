@@ -208,6 +208,7 @@ func AccessToken(c *gin.Context) {
 func AccessWs(c *gin.Context) {
 	// get token
 	token := c.Query("token")
+	from := c.Query("from")
 	if token == "" {
 		log.Println("ws-未登录")
 		common.Unauthorized(c)
@@ -279,5 +280,6 @@ func AccessWs(c *gin.Context) {
 
 	log.Println("websocket连接成功")
 
-	wsclient.NewWSClient(ws, token, userId, true).Serve()
+	serverSideWs := from == "server"
+	wsclient.NewWSClient(ws, token, userId, serverSideWs).Serve()
 }
