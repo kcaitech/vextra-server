@@ -36,8 +36,9 @@ export class WSClient {
         }
     }
 
-    constructor(wsUrl: string, token?: string) {
-        this.connect = new Connect(wsUrl, token);
+    // from: server 表示是服务端发起的连接，client 表示是客户端发起的连接. 默认是client
+    constructor(wsUrl: string, token?: string, from?: 'server' | 'client') {
+        this.connect = new Connect(wsUrl, token, from);
         this.connect.addOnChange(this.onNetChange.bind(this))
         this.op = new CoopNet(this.connect)
         this.resource = new Resource(this.connect)

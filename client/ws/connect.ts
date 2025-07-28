@@ -83,9 +83,11 @@ export class Connect {
 
     private _wsUrl: string
     private _token?: string
-    constructor(wsUrl: string, token?: string) {
+    private _from?: 'server' | 'client'
+    constructor(wsUrl: string, token?: string, from?: 'server' | 'client') {
         this._wsUrl = wsUrl
         this._token = token
+        this._from = from
     }
 
     private get localStorage() {
@@ -122,7 +124,8 @@ export class Connect {
 
         const connect = () => {
             console.log("connect")
-            const tokenUrl = this._wsUrl + '?token=' + encodeURIComponent(this.token ?? "")
+            let tokenUrl = this._wsUrl + '?token=' + encodeURIComponent(this.token ?? "")
+            if (this._from) tokenUrl += '&from=' + this._from
             const ws = new WebSocket(tokenUrl);
             ws.onclose = this.receiveClose.bind(this)
             ws.onerror = this.receiveError.bind(this);
