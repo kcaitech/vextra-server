@@ -1,32 +1,47 @@
 {
-  "name": "@kcdesign/kcserver-client",
-  "version": "1.0.1",
-  "private": false,
-  "type": "module",
-  "description": "kcserver client",
-  "author": "kcaitech.com",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/types/index.d.ts",
-  "publishConfig": {
-    "registry": "https://packages.aliyun.com/6393d698d690c872dceedcc0/npm/npm-registry/"
-  },
-  "scripts": {
-    "dev": "npx tsc --watch",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "axios": "^1.6.7",
-    "js-base64": "^3.7.7",
-    "uuid": "^11.1.0",
-    "zod": "^3.24.2"
-  },
-  "devDependencies": {
-    "@types/node": "^20.17.30",
-    "terser": "^5.39.0",
-    "typescript": "^5.3.3",
-    "vite": "^6.2.6",
-    "vite-plugin-dts": "^3.7.2"
-  }
+    "name": "@kcaitech/vextra-server-client",
+    "version": "1.0.0",
+    "private": false,
+    "type": "module",
+    "description": "vextra server client",
+    "author": "kcaitech.com",
+    "main": "./dist/index.cjs",
+    "module": "./dist/index.js",
+    "types": "./dist/types/index.d.ts",
+    "license": "AGPL-3.0",
+    "files": [
+        "dist"
+    ],
+    "keywords": [
+        "vextra",
+        "vextra-server",
+        "figma",
+        "sketch"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/kcaitech/vextra-server.git"
+    },
+    "publishConfig": {
+        "registry": "https://registry.npmjs.org/",
+        "access": "public"
+    },
+    "scripts": {
+        "dev": "npx tsc --watch",
+        "build": "vite build",
+        "preview": "vite preview"
+    },
+    "dependencies": {
+        "axios": "^1.6.7",
+        "js-base64": "^3.7.7",
+        "uuid": "^11.1.0",
+        "zod": "^3.24.2"
+    },
+    "devDependencies": {
+        "@types/node": "^20.17.30",
+        "terser": "^5.39.0",
+        "typescript": "^5.3.3",
+        "vite": "^6.2.6",
+        "vite-plugin-dts": "^3.7.2"
+    }
 }

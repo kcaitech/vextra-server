@@ -268,16 +268,6 @@ func AccessWs(c *gin.Context) {
 		return
 	}
 
-	defer_func, err := wsclient.CheckConcurrentDocumentLimit()
-	if defer_func != nil {
-		defer defer_func()
-	}
-	if err != nil {
-		log.Println("ws-并发限制", err)
-		common.ServerError(c, "并发限制")
-		return
-	}
-
 	userId := accessAuth.UserId
 	// 建立ws连接
 	ws, err := websocket.Upgrade(c.Writer, c.Request, nil)
