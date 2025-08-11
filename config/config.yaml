@@ -1,23 +1,23 @@
 db:
   user: root
   password: password
-  host: 192.168.0.125
+  host: mysql
   port: 3306
   database: kcserver
   charset: utf8mb4
 
 mongo:
-  url: mongodb://root:jKKsinkjilKKLSW@192.168.0.125:27017
+  url: mongodb://root:jKKsinkjilKKLSW@mongodb:27017
   db: kcserver
 
 redis:
-  addr: 192.168.0.125:6379
+  addr: redis:6379
   password: kcserver
   db: 0
 
 storage_public_url:
-  document: https://storage.test.vextra.cn
-  attatch: https://storage.test.vextra.cn/attatch
+  document: http://localhost:9000
+  attatch: http://localhost:9000/attatch
 
 storage:
   provider: minio
@@ -40,7 +40,7 @@ middleware:
   debug_log: true
 
 auth_server:
-  api_addr: https://account.test.vextra.cn/api
-  login_url: https://account.test.vextra.cn
+  api_addr: http://auth/api
+  login_url: http://localhost
   client_id: kcserver
   client_secret: yourSecurePassword123
